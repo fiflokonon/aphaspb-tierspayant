@@ -18,6 +18,12 @@ return [
     'public_key_path' => env('JOOMLA_PUBLIC_KEY_PATH', storage_path('keys/joomla-public.pem')),
 
     /*
+    | Page de connexion Joomla. Cette application n'en a aucune : la route
+    | nommée "login" ne fait que rediriger ici.
+    */
+    'login_url' => env('JOOMLA_LOGIN_URL'),
+
+    /*
     | Base de l'API Joomla et secret machine-to-machine pour GET /api/me.
     */
     'api_url' => env('JOOMLA_API_URL'),
