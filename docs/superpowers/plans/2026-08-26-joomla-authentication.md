@@ -45,17 +45,17 @@ Le dossier n'est pas un dépôt git — `git rev-parse` échoue. Sans cela, aucu
 - Consumes: rien
 - Produces: un dépôt git avec un commit initial, prérequis de l'étape « Commit » de toutes les tâches suivantes
 
-- [ ] **Step 1: Vérifier que le dépôt n'existe pas déjà**
+- [x] **Step 1: Vérifier que le dépôt n'existe pas déjà**
 
 Run: `git rev-parse --is-inside-work-tree`
 Expected: `fatal: not a git repository` (ou son équivalent localisé). Si la commande réussit, cette tâche est déjà faite — passer à la tâche 2.
 
-- [ ] **Step 2: Vérifier que `.gitignore` exclut bien vendor et node_modules**
+- [x] **Step 2: Vérifier que `.gitignore` exclut bien vendor et node_modules**
 
 Run: `grep -E '^/?(vendor|node_modules|\.env)$' .gitignore`
 Expected: les trois lignes apparaissent. Si `.env` manque, l'ajouter avant de committer — il contient des secrets.
 
-- [ ] **Step 3: Initialiser le dépôt et committer l'état actuel**
+- [x] **Step 3: Initialiser le dépôt et committer l'état actuel**
 
 ```bash
 git init
@@ -63,12 +63,12 @@ git add .
 git commit -m "chore: import du starter kit Laravel avant bascule Joomla"
 ```
 
-- [ ] **Step 4: Vérifier que rien de sensible n'est suivi**
+- [x] **Step 4: Vérifier que rien de sensible n'est suivi**
 
 Run: `git ls-files | grep -E '^(\.env$|vendor/|node_modules/)'`
 Expected: aucune sortie.
 
-- [ ] **Step 5: Créer la branche de travail**
+- [x] **Step 5: Créer la branche de travail**
 
 ```bash
 git checkout -b feat/joomla-authentication
@@ -93,13 +93,13 @@ git checkout -b feat/joomla-authentication
   - `joomlaTestKeys(): array{private: string, public: string}`
   - `joomlaToken(array $claims = [], ?string $privateKey = null): string` — forge un JWT RS256 ; `$claims` écrase les valeurs par défaut
 
-- [ ] **Step 1: Installer la dépendance**
+- [x] **Step 1: Installer la dépendance**
 
 ```bash
 composer require firebase/php-jwt:^7.1
 ```
 
-- [ ] **Step 2: Créer le fichier de configuration**
+- [x] **Step 2: Créer le fichier de configuration**
 
 Create `config/joomla.php`:
 
@@ -152,7 +152,7 @@ return [
 ];
 ```
 
-- [ ] **Step 3: Documenter les variables dans `.env.example`**
+- [x] **Step 3: Documenter les variables dans `.env.example`**
 
 Ajouter à la fin de `.env.example` :
 
@@ -167,7 +167,7 @@ JOOMLA_ADMIN_GROUPS=8
 JOOMLA_PHARMACY_GROUPS=2
 ```
 
-- [ ] **Step 4: Écrire le test qui échoue**
+- [x] **Step 4: Écrire le test qui échoue**
 
 Create `tests/Feature/Auth/JoomlaTestKeysTest.php`:
 
@@ -210,12 +210,12 @@ test('a token forged with a foreign key does not verify', function () {
 });
 ```
 
-- [ ] **Step 5: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 5: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaTestKeysTest.php`
 Expected: FAIL — `Call to undefined function useJoomlaTestKeys()`
 
-- [ ] **Step 6: Ajouter les fonctions d'aide dans `tests/Pest.php`**
+- [x] **Step 6: Ajouter les fonctions d'aide dans `tests/Pest.php`**
 
 Remplacer la fonction `something()` de fin de fichier par :
 
@@ -291,12 +291,12 @@ function joomlaToken(array $claims = [], ?string $privateKey = null): string
 }
 ```
 
-- [ ] **Step 7: Lancer le test pour vérifier qu'il passe**
+- [x] **Step 7: Lancer le test pour vérifier qu'il passe**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaTestKeysTest.php`
 Expected: PASS, 2 tests
 
-- [ ] **Step 8: Formater et committer**
+- [x] **Step 8: Formater et committer**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -321,7 +321,7 @@ Un seul point de vérité pour « ce JWT est-il authentique et destiné à cette
   - `App\Data\JoomlaClaims` — propriétés publiques `int $joomlaUserId`, `list<int> $groups`, `int $tokenVersion`, `string $jti`, `int $expiresAt`
   - `App\Services\Joomla\JoomlaTokenDecoder::decode(string $token): ?JoomlaClaims` — `null` sur tout échec, sans distinction de motif
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Unit/Joomla/JoomlaTokenDecoderTest.php`:
 
@@ -391,12 +391,12 @@ test('it refuses garbage', function () {
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Unit/Joomla/JoomlaTokenDecoderTest.php`
 Expected: FAIL — `Class "App\Services\Joomla\JoomlaTokenDecoder" not found`
 
-- [ ] **Step 3: Créer le DTO de claims**
+- [x] **Step 3: Créer le DTO de claims**
 
 Create `app/Data/JoomlaClaims.php`:
 
@@ -422,7 +422,7 @@ readonly class JoomlaClaims
 }
 ```
 
-- [ ] **Step 4: Écrire le décodeur**
+- [x] **Step 4: Écrire le décodeur**
 
 Create `app/Services/Joomla/JoomlaTokenDecoder.php`:
 
@@ -495,7 +495,7 @@ class JoomlaTokenDecoder
 }
 ```
 
-- [ ] **Step 5: Créer l'exception de configuration**
+- [x] **Step 5: Créer l'exception de configuration**
 
 Create `app/Services/Joomla/JoomlaConfigurationException.php`:
 
@@ -512,7 +512,7 @@ class JoomlaConfigurationException extends RuntimeException
 }
 ```
 
-- [ ] **Step 6: Lancer le test pour vérifier qu'il passe**
+- [x] **Step 6: Lancer le test pour vérifier qu'il passe**
 
 Run: `vendor/bin/pest tests/Unit/Joomla/JoomlaTokenDecoderTest.php`
 Expected: PASS, 7 tests
@@ -523,7 +523,7 @@ Note : `tests/Pest.php` n'applique `TestCase` et `RefreshDatabase` qu'à `Featur
 pest()->extend(Tests\TestCase::class)->in('Unit');
 ```
 
-- [ ] **Step 7: Formater et committer**
+- [x] **Step 7: Formater et committer**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -562,7 +562,7 @@ La suppression de la confirmation par mot de passe emporte la suppression de soi
   - `User::hasAnyJoomlaGroup(array $groups): bool`
   - `UserFactory::networkAdmin(): static` — état plaçant l'utilisateur dans le groupe admin configuré
 
-- [ ] **Step 1: Écrire le test de schéma qui échoue**
+- [x] **Step 1: Écrire le test de schéma qui échoue**
 
 Create `tests/Feature/Auth/UsersSchemaTest.php`:
 
@@ -588,12 +588,12 @@ test('the users table holds no credential of its own', function () {
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Auth/UsersSchemaTest.php`
 Expected: FAIL — les deux tests échouent, `joomla_user_id` absent et `password` présent
 
-- [ ] **Step 3: Réécrire la migration des utilisateurs**
+- [x] **Step 3: Réécrire la migration des utilisateurs**
 
 L'application n'est pas déployée : on modifie la migration d'origine plutôt que d'en empiler une de correction.
 
@@ -634,14 +634,14 @@ public function down(): void
 }
 ```
 
-- [ ] **Step 4: Supprimer les migrations de mot de passe et de passkeys**
+- [x] **Step 4: Supprimer les migrations de mot de passe et de passkeys**
 
 ```bash
 git rm database/migrations/2025_08_14_170933_add_two_factor_columns_to_users_table.php \
        database/migrations/2024_01_01_000000_create_passkeys_table.php
 ```
 
-- [ ] **Step 5: Réécrire le modèle User**
+- [x] **Step 5: Réécrire le modèle User**
 
 Replace `app/Models/User.php` entirely:
 
@@ -723,7 +723,7 @@ class User extends Authenticatable
 }
 ```
 
-- [ ] **Step 6: Réécrire la factory**
+- [x] **Step 6: Réécrire la factory**
 
 Replace the `definition()`, drop `withTwoFactor()`, add `networkAdmin()` in `database/factories/UserFactory.php`. The `configure()` hook and `unverified()` stay as they are, and the `$password` property and the `Hash` / `Str` imports go:
 
@@ -756,7 +756,7 @@ Replace the `definition()`, drop `withTwoFactor()`, add `networkAdmin()` in `dat
     }
 ```
 
-- [ ] **Step 7: Retirer Fortify du bootstrap et de la configuration**
+- [x] **Step 7: Retirer Fortify du bootstrap et de la configuration**
 
 Replace `bootstrap/providers.php`:
 
@@ -780,11 +780,11 @@ git rm app/Concerns/PasswordValidationRules.php \
        app/Http/Requests/Settings/ProfileDeleteRequest.php
 ```
 
-- [ ] **Step 8: Retirer la suppression de compte du contrôleur de profil**
+- [x] **Step 8: Retirer la suppression de compte du contrôleur de profil**
 
 Dans `app/Http/Controllers/Settings/ProfileController.php`, supprimer la méthode `destroy()` et les imports devenus inutiles `ProfileDeleteRequest` et `Illuminate\Support\Facades\Auth`.
 
-- [ ] **Step 9: Nettoyer les routes**
+- [x] **Step 9: Nettoyer les routes**
 
 Replace `routes/settings.php`:
 
@@ -827,7 +827,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 ```
 
-- [ ] **Step 10: Supprimer les composants Vue et les tests des flux disparus**
+- [x] **Step 10: Supprimer les composants Vue et les tests des flux disparus**
 
 ```bash
 git rm -r resources/js/pages/auth resources/js/layouts/auth
@@ -855,23 +855,23 @@ npm uninstall @laravel/passkeys vue-input-otp
 composer remove laravel/fortify
 ```
 
-- [ ] **Step 11: Retirer les deux tests de suppression de compte par mot de passe**
+- [x] **Step 11: Retirer les deux tests de suppression de compte par mot de passe**
 
 Dans `tests/Feature/Settings/ProfileUpdateTest.php`, supprimer le test qui poste `password => 'password'` sur `profile.destroy` et le test `'correct password must be provided to delete account'`. Ces deux flux n'existent plus.
 
-- [ ] **Step 12: Purger les références Vue mortes**
+- [x] **Step 12: Purger les références Vue mortes**
 
 Ouvrir `resources/js/pages/settings/Profile.vue` et `resources/js/layouts/settings/Layout.vue`, retirer tout import de `DeleteUser`, `PasswordInput` ou de l'entrée de menu « Security ». Puis régénérer les fonctions de route :
 
 Run: `php artisan wayfinder:generate`
 Expected: les dossiers `resources/js/actions/Laravel/Fortify`, `Laravel/Passkeys`, `routes/two-factor`, `routes/password`, `routes/register`, `routes/login`, `routes/verification`, `routes/user-password`, `routes/well-known` et `actions/.../SecurityController.ts` disparaissent.
 
-- [ ] **Step 13: Lancer le test de schéma**
+- [x] **Step 13: Lancer le test de schéma**
 
 Run: `vendor/bin/pest tests/Feature/Auth/UsersSchemaTest.php`
 Expected: PASS, 2 tests
 
-- [ ] **Step 14: Lancer la suite entière et la vérification de types**
+- [x] **Step 14: Lancer la suite entière et la vérification de types**
 
 Run: `php artisan test --compact`
 Expected: PASS. Les tests survivants sont `UsersSchemaTest`, `JoomlaTestKeysTest`, `JoomlaTokenDecoderTest`, `DashboardTest`, `ExampleTest` ×2, `ProfileUpdateTest` (allégé) et les 4 fichiers de `tests/Feature/Teams/`.
@@ -879,7 +879,7 @@ Expected: PASS. Les tests survivants sont `UsersSchemaTest`, `JoomlaTestKeysTest
 Run: `npm run types:check`
 Expected: aucune erreur. Toute erreur restante pointe un import Vue mort oublié à l'étape 12.
 
-- [ ] **Step 15: Formater et committer**
+- [x] **Step 15: Formater et committer**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -901,7 +901,7 @@ git commit -m "feat!: retirer Fortify, les mots de passe et les passkeys au prof
 - Consumes: `JoomlaTokenDecoder::decode()`, `App\Data\JoomlaClaims`, `UserFactory`
 - Produces: guard nommé `api`, résolvable par `Auth::guard('api')` et par le middleware `auth:api`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Auth/JoomlaJwtGuardTest.php`:
 
@@ -968,12 +968,12 @@ test('the guard ignores the session and reads only the bearer token', function (
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaJwtGuardTest.php`
 Expected: FAIL — `Auth guard [api] is not defined.`
 
-- [ ] **Step 3: Écrire le guard**
+- [x] **Step 3: Écrire le guard**
 
 Create `app/Auth/JoomlaJwtGuard.php`:
 
@@ -1056,7 +1056,7 @@ class JoomlaJwtGuard implements Guard
 }
 ```
 
-- [ ] **Step 4: Déclarer le guard dans la configuration**
+- [x] **Step 4: Déclarer le guard dans la configuration**
 
 Dans `config/auth.php`, remplacer le tableau `guards` par :
 
@@ -1073,7 +1073,7 @@ Dans `config/auth.php`, remplacer le tableau `guards` par :
     ],
 ```
 
-- [ ] **Step 5: Enregistrer le driver**
+- [x] **Step 5: Enregistrer le driver**
 
 Dans `app/Providers/AppServiceProvider.php`, ajouter l'appel dans `boot()` et la méthode qui l'implémente, plus les imports `App\Auth\JoomlaJwtGuard`, `App\Services\Joomla\JoomlaTokenDecoder` et `Illuminate\Support\Facades\Auth` :
 
@@ -1096,12 +1096,12 @@ Dans `app/Providers/AppServiceProvider.php`, ajouter l'appel dans `boot()` et la
     }
 ```
 
-- [ ] **Step 6: Lancer le test pour vérifier qu'il passe**
+- [x] **Step 6: Lancer le test pour vérifier qu'il passe**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaJwtGuardTest.php`
 Expected: PASS, 6 tests
 
-- [ ] **Step 7: Formater et committer**
+- [x] **Step 7: Formater et committer**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -1126,7 +1126,7 @@ Les claims ne transportent ni `name` ni `email` : ce sont des données personnel
   - `App\Data\JoomlaProfile` — `int $joomlaUserId`, `string $name`, `string $email`, `bool $isVerified`, `int $tokenVersion`
   - `JoomlaApiClient::profile(int $joomlaUserId): ?JoomlaProfile` — `null` si Joomla répond autre chose qu'un 200 exploitable
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Auth/JoomlaApiClientTest.php`:
 
@@ -1183,12 +1183,12 @@ test('it returns null when the payload lacks the fields the application needs', 
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaApiClientTest.php`
 Expected: FAIL — `Class "App\Services\Joomla\JoomlaApiClient" not found`
 
-- [ ] **Step 3: Créer le DTO de profil**
+- [x] **Step 3: Créer le DTO de profil**
 
 Create `app/Data/JoomlaProfile.php`:
 
@@ -1211,7 +1211,7 @@ readonly class JoomlaProfile
 }
 ```
 
-- [ ] **Step 4: Écrire le client**
+- [x] **Step 4: Écrire le client**
 
 Create `app/Services/Joomla/JoomlaApiClient.php`:
 
@@ -1275,12 +1275,12 @@ class JoomlaApiClient
 }
 ```
 
-- [ ] **Step 5: Lancer le test pour vérifier qu'il passe**
+- [x] **Step 5: Lancer le test pour vérifier qu'il passe**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaApiClientTest.php`
 Expected: PASS, 4 tests
 
-- [ ] **Step 6: Formater et committer**
+- [x] **Step 6: Formater et committer**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -1302,7 +1302,7 @@ Le JWT remis au navigateur est un ticket : il ouvre une session puis ne doit plu
 - Consumes: `JoomlaTokenDecoder::decode()`, `App\Data\JoomlaClaims`, le cache applicatif
 - Produces: `JoomlaTicket::consume(string $token): ?JoomlaClaims` — retourne les claims au premier appel, `null` à tout appel suivant avec le même `jti`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Auth/JoomlaTicketTest.php`:
 
@@ -1340,12 +1340,12 @@ test('an invalid token is refused without being remembered', function () {
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaTicketTest.php`
 Expected: FAIL — `Class "App\Services\Joomla\JoomlaTicket" not found`
 
-- [ ] **Step 3: Écrire le service**
+- [x] **Step 3: Écrire le service**
 
 Create `app/Services/Joomla/JoomlaTicket.php`:
 
@@ -1396,12 +1396,12 @@ class JoomlaTicket
 }
 ```
 
-- [ ] **Step 4: Lancer le test pour vérifier qu'il passe**
+- [x] **Step 4: Lancer le test pour vérifier qu'il passe**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaTicketTest.php`
 Expected: PASS, 4 tests
 
-- [ ] **Step 5: Formater et committer**
+- [x] **Step 5: Formater et committer**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -1426,7 +1426,7 @@ git commit -m "feat: consommation à usage unique du ticket JWT Joomla"
   - Route `POST /auth/logout`, nommée `auth.logout`
   - Clé de session `joomla.token_version_checked_at` (timestamp Unix), lue par la tâche 9
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Auth/JoomlaCallbackTest.php`:
 
@@ -1557,12 +1557,12 @@ test('logout destroys the session', function () {
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaCallbackTest.php`
 Expected: FAIL — `Route [auth.callback] not defined.`
 
-- [ ] **Step 3: Écrire le contrôleur de callback**
+- [x] **Step 3: Écrire le contrôleur de callback**
 
 Create `app/Http/Controllers/Auth/JoomlaCallbackController.php`:
 
@@ -1656,7 +1656,7 @@ class JoomlaCallbackController extends Controller
 
 Note : `landingFor()` renvoie `/` pour l'admin parce que `/admin/network` n'existe qu'à l'incrément 3. Le point d'extension est isolé dans cette seule méthode.
 
-- [ ] **Step 4: Écrire le contrôleur de déconnexion**
+- [x] **Step 4: Écrire le contrôleur de déconnexion**
 
 Create `app/Http/Controllers/Auth/LogoutController.php`:
 
@@ -1684,7 +1684,7 @@ class LogoutController extends Controller
 }
 ```
 
-- [ ] **Step 5: Déclarer les routes**
+- [x] **Step 5: Déclarer les routes**
 
 Dans `routes/web.php`, ajouter les imports `App\Http\Controllers\Auth\JoomlaCallbackController` et `App\Http\Controllers\Auth\LogoutController`, puis juste après la route `home` :
 
@@ -1693,12 +1693,12 @@ Route::post('auth/callback', JoomlaCallbackController::class)->name('auth.callba
 Route::post('auth/logout', LogoutController::class)->name('auth.logout');
 ```
 
-- [ ] **Step 6: Lancer le test pour vérifier qu'il passe**
+- [x] **Step 6: Lancer le test pour vérifier qu'il passe**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaCallbackTest.php`
 Expected: PASS, 11 tests
 
-- [ ] **Step 7: Formater et committer**
+- [x] **Step 7: Formater et committer**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -1722,7 +1722,7 @@ Un utilisateur bloqué dans Joomla conserverait sinon une session Laravel valide
 - Consumes: `JoomlaApiClient::profile()`, la clé de session `joomla.token_version_checked_at` posée par la tâche 8, `config('joomla.token_version_recheck_seconds')`
 - Produces: middleware appliqué au groupe `web`, qui déconnecte et redirige vers `/` sur écart de version
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Auth/TokenVersionTest.php`:
 
@@ -1803,12 +1803,12 @@ test('a guest is not checked at all', function () {
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Auth/TokenVersionTest.php`
 Expected: FAIL — le test « a bumped token version destroys the session » renvoie 200 au lieu d'une redirection
 
-- [ ] **Step 3: Écrire le middleware**
+- [x] **Step 3: Écrire le middleware**
 
 Create `app/Http/Middleware/VerifyJoomlaTokenVersion.php`:
 
@@ -1883,7 +1883,7 @@ class VerifyJoomlaTokenVersion
 }
 ```
 
-- [ ] **Step 4: Brancher le middleware sur le groupe web**
+- [x] **Step 4: Brancher le middleware sur le groupe web**
 
 Dans `bootstrap/app.php`, ajouter l'import `App\Http\Middleware\VerifyJoomlaTokenVersion` et l'inscrire en dernier de la pile `web`, après `SetTeamUrlDefaults` :
 
@@ -1897,12 +1897,12 @@ Dans `bootstrap/app.php`, ajouter l'import `App\Http\Middleware\VerifyJoomlaToke
         ]);
 ```
 
-- [ ] **Step 5: Lancer le test pour vérifier qu'il passe**
+- [x] **Step 5: Lancer le test pour vérifier qu'il passe**
 
 Run: `vendor/bin/pest tests/Feature/Auth/TokenVersionTest.php`
 Expected: PASS, 5 tests
 
-- [ ] **Step 6: Formater et committer**
+- [x] **Step 6: Formater et committer**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -1922,7 +1922,7 @@ git commit -m "feat: revérification du token_version Joomla sur les sessions ac
 - Consumes: `User::hasAnyJoomlaGroup()`, `config('joomla.groups.*')`, `UserFactory::networkAdmin()`
 - Produces: Gates `manage-network`, `manage-insurers`, `declare-payments`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Auth/JoomlaGatesTest.php`:
 
@@ -1976,12 +1976,12 @@ test('a user with no groups at all is granted nothing', function () {
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaGatesTest.php`
 Expected: FAIL — les Gates ne sont pas définies, donc `allows()` renvoie `false` partout et les tests attendant `true` échouent
 
-- [ ] **Step 3: Déclarer les Gates**
+- [x] **Step 3: Déclarer les Gates**
 
 Dans `app/Providers/AppServiceProvider.php`, ajouter l'appel dans `boot()`, la méthode ci-dessous, et les imports `App\Models\User` et `Illuminate\Support\Facades\Gate` :
 
@@ -2015,12 +2015,12 @@ Dans `app/Providers/AppServiceProvider.php`, ajouter l'appel dans `boot()`, la m
     }
 ```
 
-- [ ] **Step 4: Lancer le test pour vérifier qu'il passe**
+- [x] **Step 4: Lancer le test pour vérifier qu'il passe**
 
 Run: `vendor/bin/pest tests/Feature/Auth/JoomlaGatesTest.php`
 Expected: PASS, 6 tests
 
-- [ ] **Step 5: Lancer la suite entière**
+- [x] **Step 5: Lancer la suite entière**
 
 Run: `php artisan test --compact`
 Expected: PASS sur l'ensemble
@@ -2031,7 +2031,7 @@ Expected: aucune erreur. `larastan` est installé et `phpstan.neon` présent.
 Run: `npm run types:check && npm run lint:check`
 Expected: aucune erreur.
 
-- [ ] **Step 6: Formater et committer**
+- [x] **Step 6: Formater et committer**
 
 ```bash
 vendor/bin/pint --dirty --format agent
