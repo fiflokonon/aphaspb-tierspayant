@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\JoomlaCallbackController;
 use App\Http\Controllers\Auth\LoginRedirectController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\DashboardController;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 Route::inertia('/', 'Welcome')->name('home');
 
 Route::get('login', LoginRedirectController::class)->name('login');
+Route::post('auth/callback', JoomlaCallbackController::class)->name('auth.callback');
 Route::post('auth/logout', LogoutController::class)->name('auth.logout');
 
 Route::prefix('{current_team}')
