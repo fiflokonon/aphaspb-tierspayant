@@ -53,7 +53,7 @@ class VerifyJoomlaTokenVersion
             return redirect('/');
         }
 
-        $request->session()->put(self::CHECKED_AT, now()->timestamp);
+        $request->session()->put(self::CHECKED_AT, now()->getTimestamp());
 
         return $next($request);
     }
@@ -62,7 +62,7 @@ class VerifyJoomlaTokenVersion
     {
         $checkedAt = (int) $request->session()->get(self::CHECKED_AT, 0);
 
-        return now()->timestamp - $checkedAt
+        return now()->getTimestamp() - $checkedAt
             >= (int) config('joomla.token_version_recheck_seconds');
     }
 }

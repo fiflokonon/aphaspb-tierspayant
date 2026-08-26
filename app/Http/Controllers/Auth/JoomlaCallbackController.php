@@ -40,7 +40,7 @@ class JoomlaCallbackController extends Controller
         Auth::login($user, remember: false);
 
         $request->session()->regenerate();
-        $request->session()->put('joomla.token_version_checked_at', now()->timestamp);
+        $request->session()->put('joomla.token_version_checked_at', now()->getTimestamp());
 
         return redirect()->intended($this->landingFor($user));
     }
