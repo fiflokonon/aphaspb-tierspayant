@@ -1,6 +1,8 @@
 <?php
 
+use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /*
@@ -44,7 +46,72 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Generate — once per process — an RSA keypair standing in for Joomla's.
+ *
+ * @return array{private: string, public: string}
+ */
+function joomlaTestKeys(): array
 {
-    // ..
+    static $keys = null;
+
+    if ($keys === null) {
+        $resource = openssl_pkey_new([
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ]);
+
+        openssl_pkey_export($resource, $privateKey);
+
+        $keys = [
+            'private' => $privateKey,
+            'public' => openssl_pkey_get_details($resource)['key'],
+        ];
+    }
+
+    return $keys;
+}
+
+/**
+ * Point the Joomla configuration at the test keypair and fixed group ids.
+ */
+function useJoomlaTestKeys(): void
+{
+    $path = storage_path('framework/testing/joomla-public.pem');
+
+    File::ensureDirectoryExists(dirname($path));
+    File::put($path, joomlaTestKeys()['public']);
+
+    config([
+        'joomla.issuer' => 'https://joomla.test',
+        'joomla.audience' => 'laravel-api',
+        'joomla.public_key_path' => $path,
+        'joomla.api_url' => 'https://joomla.test/api',
+        'joomla.m2m_secret' => 'test-secret',
+        'joomla.groups.admin' => [8],
+        'joomla.groups.pharmacy' => [2],
+    ]);
+}
+
+/**
+ * Forge a JWT the way the Joomla plugin will. Claims passed in override defaults.
+ *
+ * @param  array<string, mixed>  $claims
+ */
+function joomlaToken(array $claims = [], ?string $privateKey = null): string
+{
+    return JWT::encode(
+        array_merge([
+            'iss' => config('joomla.issuer'),
+            'aud' => config('joomla.audience'),
+            'sub' => '1001',
+            'jti' => bin2hex(random_bytes(16)),
+            'iat' => time(),
+            'exp' => time() + 900,
+            'groups' => [2],
+            'tv' => 0,
+        ], $claims),
+        $privateKey ?? joomlaTestKeys()['private'],
+        'RS256',
+    );
 }
