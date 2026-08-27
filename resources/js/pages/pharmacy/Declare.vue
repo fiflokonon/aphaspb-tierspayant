@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head, Link } from '@inertiajs/vue3';
+import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import AmountField from '@/components/aphaspb/AmountField.vue';
 import DelayStepper from '@/components/aphaspb/DelayStepper.vue';
@@ -23,6 +23,9 @@ const props = defineProps<{
     period: { year: number; month: number; label: string };
     declaration: Declaration | null;
 }>();
+
+// The declaration owns the phone screen; the rail returns at lg.
+setLayoutProps({ focus: true });
 
 const invoiced = ref(props.declaration?.amount_invoiced ?? 0);
 const received = ref(props.declaration?.amount_received ?? 0);

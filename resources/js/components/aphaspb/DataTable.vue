@@ -12,10 +12,10 @@ defineProps<{
         class="mt-[22px] overflow-hidden rounded-[11px] border border-border bg-card"
     >
         <div
-            class="flex items-center gap-[10px] border-b border-ink/[0.08] px-4 py-[13px]"
+            class="flex flex-col gap-3 border-b border-ink/[0.08] px-4 py-[13px] sm:flex-row sm:items-center sm:gap-[10px]"
         >
             <div class="text-[12.5px] font-bold text-ink">{{ title }}</div>
-            <div class="ml-auto flex gap-[7px]">
+            <div class="flex gap-[7px] overflow-x-auto sm:ml-auto">
                 <slot name="filters" />
             </div>
         </div>

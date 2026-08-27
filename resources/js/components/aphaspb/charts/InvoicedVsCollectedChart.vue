@@ -64,7 +64,18 @@ const highest = computed(() =>
                 :bar-padding="0.28"
                 :rounded-corners="3"
             />
-            <VisAxis type="x" :tick-format="tickFormat" :grid-line="false" />
+            <!--
+                One tick per month: left to itself the axis drops all but two
+                labels on a phone, and « S … J » says nothing about which month
+                a bar belongs to.
+            -->
+            <VisAxis
+                type="x"
+                :tick-format="tickFormat"
+                :num-ticks="props.points.length"
+                :tick-values="props.points.map((_, index) => index)"
+                :grid-line="false"
+            />
             <VisAxis
                 type="y"
                 :tick-format="

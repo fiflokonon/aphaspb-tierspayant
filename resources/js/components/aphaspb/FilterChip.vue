@@ -11,7 +11,7 @@ withDefaults(
 <template>
     <button
         type="button"
-        class="flex items-center justify-center rounded-[10px] border border-input bg-card font-medium text-ink/70 transition-colors hover:bg-cream-header"
+        class="flex shrink-0 items-center justify-center rounded-[10px] border border-input bg-card font-medium whitespace-nowrap text-ink/70 transition-colors hover:bg-cream-header"
         :class="
             size === 'compact'
                 ? 'h-[32px] rounded-lg px-[11px] text-[11.5px] text-ink/[0.65]'
