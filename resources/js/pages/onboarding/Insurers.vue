@@ -35,7 +35,21 @@ const label = computed(() =>
             v-model:selected="selected"
             v-model:other="other"
             :insurers="insurers"
-        />
+        >
+            <template #heading>
+                <div
+                    class="font-mono text-[10.5px]/none font-semibold tracking-[0.06em] text-gold-dark"
+                >
+                    ÉTAPE 2 SUR 2
+                </div>
+                <h1 class="mt-[9px] text-[18px]/[1.25] font-bold text-ink">
+                    Avec quels assureurs travaillez-vous ?
+                </h1>
+                <p class="mt-[7px] text-[12px]/[1.5] text-ink/[0.55]">
+                    Une seule fois. Modifiable ensuite dans les réglages.
+                </p>
+            </template>
+        </InsurerChecklist>
 
         <div class="border-t border-ink/[0.08] bg-cream px-5 pt-4 pb-5">
             <p

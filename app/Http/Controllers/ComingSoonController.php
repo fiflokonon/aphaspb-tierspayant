@@ -37,12 +37,6 @@ class ComingSoonController extends Controller
             'body' => 'Export des statistiques agrégées par assureur, pour les notes de plaidoyer. Jamais de données individuelles.',
             'increment' => 'PRÉVU EN V1.1',
         ],
-        'pharmacy.insurers' => [
-            'component' => 'pharmacy/ComingSoon',
-            'title' => 'Mes assureurs',
-            'body' => 'Les assureurs avec lesquels votre officine travaille. Modifiable à tout moment.',
-            'increment' => 'INCRÉMENT SUIVANT',
-        ],
     ];
 
     public function __invoke(Request $request): Response

@@ -3,9 +3,14 @@ import { computed, ref } from 'vue';
 
 type Insurer = { id: number; name: string };
 
-const props = defineProps<{
-    insurers: Insurer[];
-}>();
+const props = withDefaults(
+    defineProps<{
+        insurers: Insurer[];
+        /** Insurers whose monthly slot would be lost, but not their history. */
+        withDeclarations?: number[];
+    }>(),
+    { withDeclarations: () => [] },
+);
 
 const selected = defineModel<number[]>('selected', { default: () => [] });
 const other = defineModel<string>('other', { default: '' });
@@ -41,17 +46,12 @@ function toggle(id: number) {
 <template>
     <div>
         <div class="px-5 pt-5 pb-[14px]">
-            <div
-                class="font-mono text-[10.5px]/none font-semibold tracking-[0.06em] text-gold-dark"
-            >
-                ÉTAPE 2 SUR 2
-            </div>
-            <h1 class="mt-[9px] text-[18px]/[1.25] font-bold text-ink">
-                Avec quels assureurs travaillez-vous ?
-            </h1>
-            <p class="mt-[7px] text-[12px]/[1.5] text-ink/[0.55]">
-                Une seule fois. Modifiable ensuite dans les réglages.
-            </p>
+            <!--
+                The heading is a slot: the same checklist serves the onboarding
+                step and the editable « Mes assureurs » screen, which say
+                different things about the same choice.
+            -->
+            <slot name="heading" />
             <input
                 v-model="search"
                 type="search"
@@ -83,15 +83,27 @@ function toggle(id: number) {
                 >
                     <template v-if="isTicked(insurer.id)">✓</template>
                 </span>
-                <span
-                    class="text-[13.5px]"
-                    :class="
-                        isTicked(insurer.id)
-                            ? 'font-semibold text-ink'
-                            : 'font-medium text-ink/75'
-                    "
-                >
-                    {{ insurer.name }}
+                <span class="min-w-0 flex-1">
+                    <span
+                        class="text-[13.5px]"
+                        :class="
+                            isTicked(insurer.id)
+                                ? 'font-semibold text-ink'
+                                : 'font-medium text-ink/75'
+                        "
+                    >
+                        {{ insurer.name }}
+                    </span>
+                    <span
+                        v-if="
+                            props.withDeclarations.includes(insurer.id) &&
+                            !isTicked(insurer.id)
+                        "
+                        class="mt-[3px] block text-[11px]/[1.35] text-ink/50"
+                    >
+                        Vos déclarations passées sont conservées. Cet assureur
+                        ne vous sera simplement plus proposé chaque mois.
+                    </span>
                 </span>
             </button>
 
