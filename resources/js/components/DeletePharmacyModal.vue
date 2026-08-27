@@ -67,7 +67,8 @@ const handleOpenChange = (nextOpen: boolean) => {
                     <div class="grid gap-2">
                         <Label for="confirmation-name">
                             Type
-                            <strong>"{{ props.pharmacy.name }}"</strong> to confirm
+                            <strong>"{{ props.pharmacy.name }}"</strong> to
+                            confirm
                         </Label>
                         <Input
                             id="confirmation-name"

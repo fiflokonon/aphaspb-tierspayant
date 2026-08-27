@@ -307,10 +307,7 @@ const confirmCancelInvitation = (invitation: PharmacyInvitation) => {
         </div>
 
         <!-- Danger Zone -->
-        <div
-            v-if="permissions.canDeletePharmacy"
-            class="space-y-6"
-        >
+        <div v-if="permissions.canDeletePharmacy" class="space-y-6">
             <Heading
                 variant="small"
                 title="Delete pharmacy"

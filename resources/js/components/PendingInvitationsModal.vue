@@ -47,7 +47,8 @@ const declineInvitation = (invitation: DashboardInvitation) => {
             <DialogHeader>
                 <DialogTitle>Pending pharmacy invitations</DialogTitle>
                 <DialogDescription>
-                    Accept or decline the pharmacies you have been invited to join.
+                    Accept or decline the pharmacies you have been invited to
+                    join.
                 </DialogDescription>
             </DialogHeader>
 
@@ -59,7 +60,9 @@ const declineInvitation = (invitation: DashboardInvitation) => {
                     class="rounded-lg border p-4"
                 >
                     <div class="space-y-1">
-                        <p class="font-medium">{{ invitation.pharmacy.name }}</p>
+                        <p class="font-medium">
+                            {{ invitation.pharmacy.name }}
+                        </p>
                         <p class="text-sm text-muted-foreground">
                             {{ invitation.inviterName }} invited you to join
                             this pharmacy.

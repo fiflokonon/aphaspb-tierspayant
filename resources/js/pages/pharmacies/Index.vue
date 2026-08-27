@@ -147,5 +147,8 @@ defineOptions({
         </div>
     </div>
 
-    <LeavePharmacyModal v-model:open="leavePharmacyDialogOpen" :pharmacy="pharmacyLeaving" />
+    <LeavePharmacyModal
+        v-model:open="leavePharmacyDialogOpen"
+        :pharmacy="pharmacyLeaving"
+    />
 </template>

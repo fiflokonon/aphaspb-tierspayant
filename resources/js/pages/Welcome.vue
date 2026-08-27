@@ -5,7 +5,9 @@ import { dashboard, login } from '@/routes';
 
 const page = usePage();
 const dashboardUrl = computed(() =>
-    page.props.currentPharmacy ? dashboard(page.props.currentPharmacy.slug).url : '/',
+    page.props.currentPharmacy
+        ? dashboard(page.props.currentPharmacy.slug).url
+        : '/',
 );
 </script>
 

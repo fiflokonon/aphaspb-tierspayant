@@ -47,7 +47,8 @@ const removeMember = () => {
                 <DialogTitle>Remove pharmacy member</DialogTitle>
                 <DialogDescription>
                     Are you sure you want to remove
-                    <strong>{{ props.member?.name }}</strong> from this pharmacy?
+                    <strong>{{ props.member?.name }}</strong> from this
+                    pharmacy?
                 </DialogDescription>
             </DialogHeader>
 

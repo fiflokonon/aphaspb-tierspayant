@@ -32,11 +32,14 @@ const cancelInvitation = () => {
         return;
     }
 
-    router.visit(destroyInvitation([props.pharmacy.slug, props.invitation.code]), {
-        onStart: () => (processing.value = true),
-        onFinish: () => (processing.value = false),
-        onSuccess: () => emit('update:open', false),
-    });
+    router.visit(
+        destroyInvitation([props.pharmacy.slug, props.invitation.code]),
+        {
+            onStart: () => (processing.value = true),
+            onFinish: () => (processing.value = false),
+            onSuccess: () => emit('update:open', false),
+        },
+    );
 };
 </script>
 

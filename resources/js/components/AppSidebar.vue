@@ -22,7 +22,9 @@ import type { NavItem } from '@/types';
 const page = usePage();
 
 const dashboardUrl = computed(() =>
-    page.props.currentPharmacy ? dashboard(page.props.currentPharmacy.slug).url : '/',
+    page.props.currentPharmacy
+        ? dashboard(page.props.currentPharmacy.slug).url
+        : '/',
 );
 
 const mainNavItems = computed<NavItem[]>(() => [

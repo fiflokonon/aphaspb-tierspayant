@@ -21,7 +21,9 @@ const page = usePage();
 const user = page.props.auth.user;
 const { isMobile, state } = useSidebar();
 
-const currentPharmacy = computed(() => page.props.currentPharmacy as Pharmacy | null);
+const currentPharmacy = computed(
+    () => page.props.currentPharmacy as Pharmacy | null,
+);
 </script>
 
 <template>

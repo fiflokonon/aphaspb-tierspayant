@@ -52,7 +52,9 @@ const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
 const dashboardUrl = computed(() =>
-    page.props.currentPharmacy ? dashboard(page.props.currentPharmacy.slug).url : '/',
+    page.props.currentPharmacy
+        ? dashboard(page.props.currentPharmacy.slug).url
+        : '/',
 );
 
 const activeItemStyles =
