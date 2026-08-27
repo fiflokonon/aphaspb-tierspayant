@@ -1,13 +1,13 @@
 <?php
 
 use App\Http\Controllers\Admin\InsurerManagementController;
+use App\Http\Controllers\Admin\NetworkExportController;
 use App\Http\Controllers\Admin\NetworkStatsController;
 use App\Http\Controllers\Admin\NetworkTrendsController;
 use App\Http\Controllers\Admin\RegisteredPharmaciesController;
 use App\Http\Controllers\Auth\JoomlaCallbackController;
 use App\Http\Controllers\Auth\LoginRedirectController;
 use App\Http\Controllers\Auth\LogoutController;
-use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\Dev\LocalLoginController;
 use App\Http\Controllers\Onboarding\PharmacyInsurersController;
 use App\Http\Controllers\Onboarding\PharmacyProfileController;
@@ -36,7 +36,8 @@ Route::middleware(['auth', 'can:manage-network'])
         Route::post('insurers', [InsurerManagementController::class, 'store'])->name('insurers.store');
         Route::patch('insurers/{insurer}', [InsurerManagementController::class, 'update'])->name('insurers.update');
         Route::patch('threshold', [InsurerManagementController::class, 'updateThreshold'])->name('threshold.update');
-        Route::get('csv-exports', ComingSoonController::class)->name('csv-exports');
+        Route::get('csv-exports', [NetworkExportController::class, 'index'])->name('csv-exports');
+        Route::get('csv-exports/download', [NetworkExportController::class, 'download'])->name('csv-exports.download');
     });
 
 Route::middleware(['auth', 'can:declare-payments'])

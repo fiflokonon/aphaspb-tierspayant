@@ -13,7 +13,10 @@ readonly class InsurerIndicators
     public function __construct(
         public string $insurerName,
         public int $declaringPharmacies,
+        public int $declarations,
         public ?float $averageDelayDays,
+        /** Weighted by the amounts actually received — what screen 3c states. */
+        public ?float $weightedDelayDays,
         public ?float $withinThresholdShare,
         public ?float $rejectionRate,
         public ?float $unpaidRate,

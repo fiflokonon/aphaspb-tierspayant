@@ -51,7 +51,7 @@ C'est la page vers laquelle mène la sortie du parcours de déclaration : aujour
   - Prop `declarations` : liste triée du plus récent au plus ancien
   - Props `insurers`, `years`, `filters` pour les deux filtres
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Couvrir :
 
@@ -64,18 +64,18 @@ Couvrir :
 - chaque ligne porte l'URL de correction, qui mène au parcours de déclaration sur le bon assureur et le bon mois ;
 - un compte admin reçoit un 403.
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Pharmacy/DeclarationHistoryTest.php`
 Expected: FAIL — la route rend encore `pharmacy/ComingSoon`.
 
-- [ ] **Step 3: Écrire le contrôleur**
+- [x] **Step 3: Écrire le contrôleur**
 
 Charge les déclarations de l'officine avec leur assureur en une requête — `with('insurer')`, pas une requête par ligne. Les filtres sont validés : `insurer` doit appartenir aux assureurs de l'officine, `year` doit être un entier dans la plage des déclarations existantes. Un filtre invalide est ignoré plutôt que de lever : un paramètre bricolé dans l'URL ne doit pas produire une erreur, seulement aucun effet.
 
 L'URL de correction est calculée côté serveur : `route('pharmacy.declare', ['insurer' => …, 'year' => …, 'month' => …])`.
 
-- [ ] **Step 4: Écrire la page**
+- [x] **Step 4: Écrire la page**
 
 Reprend le tableau de `1c`, augmenté des colonnes de montants de `3b` : `ASSUREUR`, `MOIS`, `STATUT`, `FACTURÉ`, `REÇU`, `RESTE DÛ`, `DÉLAI`, `NOTE PRIVÉE`, `ACTION`. Gabarit `1.6fr .8fr .9fr 1fr 1fr 1fr .7fr 1.4fr .8fr`, dans le `DataTable` existant — donc défilement horizontal sur téléphone, jamais de défilement du corps de page.
 
@@ -83,7 +83,7 @@ Le statut passe par `StatusChip`, dont le libellé vient du serveur. Les filtres
 
 Pied de tableau : « N déclarations · export CSV réservé à l'APhaSPB » — l'officine n'exporte pas, le CDC ne le prévoit pas.
 
-- [ ] **Step 5: Vérifier, y compris visuellement**
+- [x] **Step 5: Vérifier, y compris visuellement**
 
 ```bash
 vendor/bin/pest tests/Feature/Pharmacy/DeclarationHistoryTest.php
@@ -93,7 +93,7 @@ composer ci:check
 
 Puis capturer `/pharmacy/history` à 375 px et 1900 px et **regarder les images**.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A && git commit -m "feat: historique des déclarations de l'officine"
@@ -113,7 +113,7 @@ git add -A && git commit -m "feat: historique des déclarations de l'officine"
 - Consumes: `InsurerChecklist` (écrit pour l'onboarding), `SavePharmacyInsurersRequest`
 - Produces: routes `GET` et `PATCH /pharmacy/insurers`, nommées `pharmacy.insurers` et `pharmacy.insurers.update`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Couvrir :
 
@@ -124,13 +124,13 @@ Couvrir :
 - le champ libre crée un assureur inactif, comme à l'onboarding ;
 - un compte admin reçoit un 403.
 
-- [ ] **Step 2 à 4: Implémenter**
+- [x] **Step 2 à 4: Implémenter**
 
 Le contrôleur réutilise `SavePharmacyInsurersRequest` tel quel. La page réutilise `InsurerChecklist` avec un en-tête différent — pas d'« ÉTAPE 2 SUR 2 » ici.
 
 **Avertissement à afficher** quand l'officine décoche un assureur pour lequel elle a des déclarations : « Vos déclarations passées sont conservées. Cet assureur ne vous sera simplement plus proposé chaque mois. » Le contrôleur fournit la liste des assureurs concernés pour que le front sache lesquels annoter.
 
-- [ ] **Step 5: Vérifier et committer**
+- [x] **Step 5: Vérifier et committer**
 
 Capturer aux deux largeurs, puis :
 
@@ -153,7 +153,7 @@ git add -A && git commit -m "feat: gestion des assureurs de l'officine"
 - Consumes: `Pharmacy` directement — cette page ne lit aucune déclaration, donc `NetworkStatsService` n'a rien à faire ici
 - Produces: route `GET /admin/pharmacies`, nommée `admin.pharmacies`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Couvrir :
 
@@ -167,13 +167,13 @@ Couvrir :
 
 **Décision assumée :** aucune colonne « a déjà déclaré » par officine. Le CDC autorise l'identité mais pas les déclarations individuelles, et un booléen par officine est une donnée de déclaration. Le rapport global reste sur `2a`.
 
-- [ ] **Step 2 à 4: Implémenter**
+- [x] **Step 2 à 4: Implémenter**
 
 Contrôleur simple, pagination à 50 par page via `Inertia::scroll()` ou une pagination classique — trancher à l'écriture selon ce que la coquille rend le mieux ; 148 officines ne justifient pas d'infrastructure.
 
 Page dans le `DataTable` existant : `OFFICINE`, `VILLE`, `N° ONPB`, `INSCRITE LE`. Un cartouche rappelle en pied : « Cette liste ne donne accès à aucune déclaration ni à aucun montant. »
 
-- [ ] **Step 5: Vérifier et committer**
+- [x] **Step 5: Vérifier et committer**
 
 ---
 
@@ -194,7 +194,7 @@ Page dans le `DataTable` existant : `OFFICINE`, `VILLE`, `N° ONPB`, `INSCRITE L
   - `PATCH /admin/threshold` (`admin.threshold.update`) — le seuil des 30 jours uniquement
   - Le lien « modifier » de `2a`, à côté du seuil, pointe désormais sur cette page
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Couvrir :
 
@@ -209,13 +209,13 @@ Couvrir :
 - **aucune route n'écrit `anonymity_min_pharmacies`** — le test tente de le poser par les deux routes de mise à jour et vérifie que la valeur en base est inchangée ;
 - la Gate `manage-insurers` protège toutes les routes : une officine reçoit un 403.
 
-- [ ] **Step 2 à 4: Implémenter**
+- [x] **Step 2 à 4: Implémenter**
 
 `SaveThresholdRequest` n'accepte **que** la clé `payment_delay_threshold_days`, entier entre 1 et 365. Ne pas écrire une route générique « mettre à jour un réglage » : une route qui accepte une clé arbitraire est exactement le chemin par lequel le seuil d'anonymat finirait par devenir modifiable.
 
 La page liste les assureurs dans le `DataTable` : `ASSUREUR`, `OFFICINES (n)`, `ÉTAT`, `ACTION`. Les inactifs sont en tonalité `muted` avec un cartouche « INACTIF ». Un bloc séparé porte le seuil de référence, avec le rappel que le seuil d'anonymat des 5 officines n'est pas réglable et pourquoi.
 
-- [ ] **Step 5: Vérifier et committer**
+- [x] **Step 5: Vérifier et committer**
 
 ---
 
@@ -235,7 +235,7 @@ La page liste les assureurs dans le `DataTable` : `ASSUREUR`, `OFFICINES (n)`, `
   - `GET /admin/csv-exports/download` (`admin.csv-exports.download`) — le flux CSV
   - `NetworkCsvExport::rows(Period, Period, ?string $city): iterable`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Couvrir :
 
@@ -248,7 +248,7 @@ Couvrir :
 - une officine reçoit un 403 sur les deux routes ;
 - le CSV est encodé en UTF-8 avec BOM, sinon Excel massacre les accents — « L'Africaine des Assurances » doit rester lisible.
 
-- [ ] **Step 2: Décider des colonnes**
+- [x] **Step 2: Décider des colonnes**
 
 Proposition, à confirmer par l'APhaSPB avant diffusion du premier fichier :
 
@@ -260,11 +260,11 @@ encours_fcfa;taux_recouvrement_pct
 
 Séparateur point-virgule, décimales à la virgule : c'est ce qu'attend un Excel configuré en français, et le fichier est destiné à des notes de plaidoyer, pas à un pipeline de données.
 
-- [ ] **Step 3 à 5: Implémenter et vérifier**
+- [x] **Step 3 à 5: Implémenter et vérifier**
 
 Le service renvoie un itérable de lignes, le contrôleur les diffuse en `StreamedResponse` — 7 assureurs ne le justifient pas aujourd'hui, mais le coût est nul et cela évite d'avoir à y revenir si l'APhaSPB demande un export par mois et par ville.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ---
 

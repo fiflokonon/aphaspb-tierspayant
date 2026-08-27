@@ -55,6 +55,8 @@ class NetworkStatsService
             )
             ->selectRaw("SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected")
             ->selectRaw("SUM(CASE WHEN status = 'unpaid' THEN 1 ELSE 0 END) as unpaid")
+            ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days * amount_received ELSE 0 END) as delay_weighted")
+            ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN amount_received ELSE 0 END) as delay_basis")
             ->groupBy('insurer_id')
             ->get();
 
@@ -81,11 +83,14 @@ class NetworkStatsService
             $settled = (int) $row->settled;
             $invoiced = (int) $row->amount_invoiced;
             $received = (int) $row->amount_received;
+            $basis = (int) $row->delay_basis;
 
             $indicators[$insurerId] = new InsurerIndicators(
                 insurerName: (string) $names[$insurerId],
                 declaringPharmacies: $declaring,
+                declarations: $total,
                 averageDelayDays: $settled > 0 ? round((int) $row->delay_total / $settled, 1) : null,
+                weightedDelayDays: $basis > 0 ? round((int) $row->delay_weighted / $basis, 1) : null,
                 withinThresholdShare: $settled > 0 ? round((int) $row->within_threshold / $settled * 100, 1) : null,
                 rejectionRate: $total > 0 ? round((int) $row->rejected / $total * 100, 1) : null,
                 unpaidRate: $total > 0 ? round((int) $row->unpaid / $total * 100, 1) : null,
