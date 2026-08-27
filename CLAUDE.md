@@ -206,7 +206,7 @@ Vue components must have a single root element.
 
 # Contexte projet
 
-Application Laravel 12 + Inertia 2 + Vue 3 (Composition API) + Tailwind.
+Application Laravel 13 + Inertia 3 + Vue 3 (Composition API) + Tailwind 4.
 L'authentification est déléguée à un site Joomla existant qui joue le rôle de
 fournisseur d'identité. Laravel n'authentifie jamais par lui-même.
 
