@@ -12,12 +12,11 @@ class CreatePharmacy
     /**
      * Create a new pharmacy and add the user as owner.
      */
-    public function handle(User $user, string $name, bool $isPersonal = false): Pharmacy
+    public function handle(User $user, string $name): Pharmacy
     {
-        return DB::transaction(function () use ($user, $name, $isPersonal) {
+        return DB::transaction(function () use ($user, $name) {
             $pharmacy = Pharmacy::create([
                 'name' => $name,
-                'is_personal' => $isPersonal,
             ]);
 
             $membership = $pharmacy->memberships()->create([

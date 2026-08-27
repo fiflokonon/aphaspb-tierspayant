@@ -55,7 +55,6 @@ class PharmacyController extends Controller
                 'id' => $pharmacy->id,
                 'name' => $pharmacy->name,
                 'slug' => $pharmacy->slug,
-                'isPersonal' => $pharmacy->is_personal,
             ],
             'members' => $pharmacy->members()->get()->map(function (User $member) {
                 /** @var Membership $membership */
@@ -126,16 +125,14 @@ class PharmacyController extends Controller
 
         $user = $request->user();
 
-        $fallbackPharmacy = $user->isCurrentPharmacy($pharmacy)
-            ? $user->fallbackPharmacy($pharmacy)
-            : null;
+        $wasCurrent = $user->isCurrentPharmacy($pharmacy);
 
         $pharmacy->memberships()
             ->where('user_id', $user->id)
             ->delete();
 
-        if ($fallbackPharmacy) {
-            $user->switchPharmacy($fallbackPharmacy);
+        if ($wasCurrent) {
+            $user->moveToFallbackPharmacy($pharmacy);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('You left the pharmacy ":name"', ['name' => $pharmacy->name])]);
@@ -149,22 +146,20 @@ class PharmacyController extends Controller
     public function destroy(DeletePharmacyRequest $request, Pharmacy $pharmacy): RedirectResponse
     {
         $user = $request->user();
-        $fallbackPharmacy = $user->isCurrentPharmacy($pharmacy)
-            ? $user->fallbackPharmacy($pharmacy)
-            : null;
+        $wasCurrent = $user->isCurrentPharmacy($pharmacy);
 
         DB::transaction(function () use ($user, $pharmacy) {
             User::where('current_pharmacy_id', $pharmacy->id)
                 ->where('id', '!=', $user->id)
-                ->each(fn (User $affectedUser) => $affectedUser->switchPharmacy($affectedUser->personalPharmacy()));
+                ->each(fn (User $affectedUser) => $affectedUser->moveToFallbackPharmacy($pharmacy));
 
             $pharmacy->invitations()->delete();
             $pharmacy->memberships()->delete();
             $pharmacy->delete();
         });
 
-        if ($fallbackPharmacy) {
-            $user->switchPharmacy($fallbackPharmacy);
+        if ($wasCurrent) {
+            $user->moveToFallbackPharmacy($pharmacy);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Pharmacy deleted.')]);

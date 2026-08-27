@@ -45,9 +45,7 @@ class UserFactory extends Factory
     public function configure(): static
     {
         return $this->afterCreating(function ($user) {
-            $pharmacy = Pharmacy::factory()->personal()->create([
-                'name' => $user->name."'s Pharmacy",
-            ]);
+            $pharmacy = Pharmacy::factory()->create();
 
             $pharmacy->members()->attach($user, [
                 'role' => PharmacyRole::Owner->value,

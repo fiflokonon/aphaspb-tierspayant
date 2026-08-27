@@ -308,7 +308,7 @@ const confirmCancelInvitation = (invitation: PharmacyInvitation) => {
 
         <!-- Danger Zone -->
         <div
-            v-if="permissions.canDeletePharmacy && !pharmacy.isPersonal"
+            v-if="permissions.canDeletePharmacy"
             class="space-y-6"
         >
             <Heading
@@ -360,7 +360,7 @@ const confirmCancelInvitation = (invitation: PharmacyInvitation) => {
     />
 
     <DeletePharmacyModal
-        v-if="permissions.canDeletePharmacy && !pharmacy.isPersonal"
+        v-if="permissions.canDeletePharmacy"
         :pharmacy="pharmacy"
         :open="deleteDialogOpen"
         @update:open="deleteDialogOpen = $event"

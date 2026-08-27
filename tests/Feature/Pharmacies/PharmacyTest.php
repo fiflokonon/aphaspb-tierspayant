@@ -28,7 +28,6 @@ test('pharmacies can be created', function () {
 
     $this->assertDatabaseHas('pharmacies', [
         'name' => 'Test Pharmacy',
-        'is_personal' => false,
     ]);
 });
 
@@ -175,9 +174,9 @@ test('deleting current pharmacy switches to alphabetically first remaining pharm
     expect($user->fresh()->current_pharmacy_id)->toEqual($alphaPharmacy->id);
 });
 
-test('deleting current pharmacy falls back to personal pharmacy when alphabetically first', function () {
+test('deleting the current pharmacy falls back to the alphabetically first remaining one', function () {
     $user = User::factory()->create();
-    $personalPharmacy = $user->personalPharmacy();
+    $remaining = $user->currentPharmacy;
     $pharmacy = Pharmacy::factory()->create(['name' => 'Zulu Pharmacy']);
     $pharmacy->members()->attach($user, ['role' => PharmacyRole::Owner->value]);
 
@@ -195,16 +194,16 @@ test('deleting current pharmacy falls back to personal pharmacy when alphabetica
         'id' => $pharmacy->id,
     ]);
 
-    expect($user->fresh()->current_pharmacy_id)->toEqual($personalPharmacy->id);
+    expect($user->fresh()->current_pharmacy_id)->toEqual($remaining->id);
 });
 
-test('deleting non current pharmacy leaves current pharmacy unchanged', function () {
+test('deleting a non current pharmacy leaves the current one unchanged', function () {
     $user = User::factory()->create();
-    $personalPharmacy = $user->personalPharmacy();
+    $remaining = $user->currentPharmacy;
     $pharmacy = Pharmacy::factory()->create();
     $pharmacy->members()->attach($user, ['role' => PharmacyRole::Owner->value]);
 
-    $user->update(['current_pharmacy_id' => $personalPharmacy->id]);
+    $user->update(['current_pharmacy_id' => $remaining->id]);
 
     $response = $this
         ->actingAs($user)
@@ -218,7 +217,7 @@ test('deleting non current pharmacy leaves current pharmacy unchanged', function
         'id' => $pharmacy->id,
     ]);
 
-    expect($user->fresh()->current_pharmacy_id)->toEqual($personalPharmacy->id);
+    expect($user->fresh()->current_pharmacy_id)->toEqual($remaining->id);
 });
 
 test('members can leave non personal pharmacies', function () {
@@ -265,19 +264,6 @@ test('leaving current pharmacy switches to alphabetically first remaining pharma
     expect($member->fresh()->current_pharmacy_id)->toEqual($alphaPharmacy->id);
 });
 
-test('personal pharmacies cannot be left', function () {
-    $user = User::factory()->create();
-    $personalPharmacy = $user->personalPharmacy();
-
-    $response = $this
-        ->actingAs($user)
-        ->delete(route('pharmacies.leave', $personalPharmacy));
-
-    $response->assertForbidden();
-
-    expect($user->fresh()->belongsToPharmacy($personalPharmacy))->toBeTrue();
-});
-
 test('pharmacy owners cannot leave their pharmacy', function () {
     $owner = User::factory()->create();
     $pharmacy = Pharmacy::factory()->create();
@@ -304,9 +290,10 @@ test('users cannot leave pharmacies they dont belong to', function () {
     $response->assertForbidden();
 });
 
-test('deleting pharmacy switches other affected users to their personal pharmacy', function () {
+test('deleting a pharmacy moves the other affected members onto their remaining one', function () {
     $owner = User::factory()->create();
     $member = User::factory()->create();
+    $memberPharmacy = $member->currentPharmacy;
 
     $pharmacy = Pharmacy::factory()->create();
     $pharmacy->members()->attach($owner, ['role' => PharmacyRole::Owner->value]);
@@ -323,26 +310,26 @@ test('deleting pharmacy switches other affected users to their personal pharmacy
 
     $response->assertRedirect();
 
-    expect($member->fresh()->current_pharmacy_id)->toEqual($member->personalPharmacy()->id);
+    expect($member->fresh()->current_pharmacy_id)->toEqual($memberPharmacy->id);
 });
 
-test('personal pharmacies cannot be deleted', function () {
+test('an owner deleting their only pharmacy is left without a current one', function () {
     $user = User::factory()->create();
-
-    $personalPharmacy = $user->personalPharmacy();
+    $onlyPharmacy = $user->currentPharmacy;
 
     $response = $this
         ->actingAs($user)
-        ->delete(route('pharmacies.destroy', $personalPharmacy), [
-            'name' => $personalPharmacy->name,
+        ->delete(route('pharmacies.destroy', $onlyPharmacy), [
+            'name' => $onlyPharmacy->name,
         ]);
 
-    $response->assertForbidden();
+    $response->assertRedirect();
 
-    $this->assertDatabaseHas('pharmacies', [
-        'id' => $personalPharmacy->id,
-        'deleted_at' => null,
+    $this->assertSoftDeleted('pharmacies', [
+        'id' => $onlyPharmacy->id,
     ]);
+
+    expect($user->fresh()->current_pharmacy_id)->toBeNull();
 });
 
 test('pharmacies cannot be deleted by non owners', function () {

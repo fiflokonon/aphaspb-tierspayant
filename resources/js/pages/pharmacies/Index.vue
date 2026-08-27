@@ -5,7 +5,6 @@ import { ref } from 'vue';
 import CreatePharmacyModal from '@/components/CreatePharmacyModal.vue';
 import Heading from '@/components/Heading.vue';
 import LeavePharmacyModal from '@/components/LeavePharmacyModal.vue';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Tooltip,
@@ -25,7 +24,7 @@ defineProps<Props>();
 const leavePharmacyDialogOpen = ref(false);
 const pharmacyLeaving = ref<Pharmacy | null>(null);
 
-const canLeavePharmacy = (pharmacy: Pharmacy) => !pharmacy.isPersonal && pharmacy.role !== 'owner';
+const canLeavePharmacy = (pharmacy: Pharmacy) => pharmacy.role !== 'owner';
 
 const openLeavePharmacyDialog = (pharmacy: Pharmacy) => {
     pharmacyLeaving.value = pharmacy;
@@ -75,9 +74,6 @@ defineOptions({
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="font-medium">{{ pharmacy.name }}</span>
-                            <Badge v-if="pharmacy.isPersonal" variant="secondary">
-                                Personal
-                            </Badge>
                         </div>
                         <span class="text-sm text-muted-foreground">
                             {{ pharmacy.roleLabel }}

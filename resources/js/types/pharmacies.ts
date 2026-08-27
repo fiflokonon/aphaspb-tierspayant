@@ -4,7 +4,6 @@ export type Pharmacy = {
     id: number;
     name: string;
     slug: string;
-    isPersonal: boolean;
     role?: PharmacyRole;
     roleLabel?: string;
     isCurrent?: boolean;

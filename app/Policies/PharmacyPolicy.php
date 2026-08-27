@@ -45,8 +45,7 @@ class PharmacyPolicy
      */
     public function leave(User $user, Pharmacy $pharmacy): bool
     {
-        return ! $pharmacy->is_personal
-            && $user->belongsToPharmacy($pharmacy)
+        return $user->belongsToPharmacy($pharmacy)
             && ! $user->ownsPharmacy($pharmacy);
     }
 
@@ -95,6 +94,6 @@ class PharmacyPolicy
      */
     public function delete(User $user, Pharmacy $pharmacy): bool
     {
-        return ! $pharmacy->is_personal && $user->hasPharmacyPermission($pharmacy, PharmacyPermission::DeletePharmacy);
+        return $user->hasPharmacyPermission($pharmacy, PharmacyPermission::DeletePharmacy);
     }
 }

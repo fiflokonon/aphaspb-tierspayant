@@ -110,10 +110,10 @@ test('pharmacy member role cannot be set to owner', function () {
     expect($pharmacy->members()->where('user_id', $member->id)->first()->pivot->role->value)->toEqual(PharmacyRole::Member->value);
 });
 
-test('removed member current pharmacy is set to personal pharmacy', function () {
+test('a removed member falls back to their remaining pharmacy', function () {
     $owner = User::factory()->create();
     $member = User::factory()->create();
-    $personalPharmacy = $member->personalPharmacy();
+    $memberPharmacy = $member->currentPharmacy;
     $pharmacy = Pharmacy::factory()->create();
 
     $pharmacy->members()->attach($owner, ['role' => PharmacyRole::Owner->value]);
@@ -125,5 +125,5 @@ test('removed member current pharmacy is set to personal pharmacy', function () 
         ->actingAs($owner)
         ->delete(route('pharmacies.members.destroy', [$pharmacy, $member]));
 
-    expect($member->fresh()->current_pharmacy_id)->toEqual($personalPharmacy->id);
+    expect($member->fresh()->current_pharmacy_id)->toEqual($memberPharmacy->id);
 });

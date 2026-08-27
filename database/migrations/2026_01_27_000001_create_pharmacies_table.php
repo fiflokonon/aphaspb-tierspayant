@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->boolean('is_personal')->default(false);
+            $table->string('onpb_license', 50)->nullable()->unique();
+            $table->string('city')->nullable();
+            $table->string('owner_name')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

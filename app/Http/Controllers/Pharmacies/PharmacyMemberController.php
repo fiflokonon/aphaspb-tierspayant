@@ -46,7 +46,7 @@ class PharmacyMemberController extends Controller
             ->delete();
 
         if ($user->isCurrentPharmacy($pharmacy)) {
-            $user->switchPharmacy($user->personalPharmacy());
+            $user->moveToFallbackPharmacy($pharmacy);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member removed.')]);

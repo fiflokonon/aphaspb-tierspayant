@@ -67,13 +67,23 @@ trait HasPharmacies
     }
 
     /**
-     * Get the user's personal pharmacy.
+     * Move the user onto whichever pharmacy remains, or onto none.
+     *
+     * There is no personal space to fall back on: a titulaire who leaves their
+     * only officine simply has no current pharmacy until invited to another.
      */
-    public function personalPharmacy(): ?Pharmacy
+    public function moveToFallbackPharmacy(?Pharmacy $excluding = null): void
     {
-        return $this->pharmacies()
-            ->where('is_personal', true)
-            ->first();
+        $fallback = $this->fallbackPharmacy($excluding);
+
+        if ($fallback === null) {
+            $this->update(['current_pharmacy_id' => null]);
+            $this->setRelation('currentPharmacy', null);
+
+            return;
+        }
+
+        $this->switchPharmacy($fallback);
     }
 
     /**
@@ -153,7 +163,6 @@ trait HasPharmacies
             id: $pharmacy->id,
             name: $pharmacy->name,
             slug: $pharmacy->slug,
-            isPersonal: $pharmacy->is_personal,
             role: $role?->value,
             roleLabel: $role?->label(),
             isCurrent: $this->isCurrentPharmacy($pharmacy),

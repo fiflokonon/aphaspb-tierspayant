@@ -18,7 +18,9 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $name
  * @property string $slug
- * @property bool $is_personal
+ * @property string|null $onpb_license
+ * @property string|null $city
+ * @property string|null $owner_name
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -26,7 +28,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
  */
-#[Fillable(['name', 'slug', 'is_personal'])]
+#[Fillable(['name', 'slug', 'onpb_license', 'city', 'owner_name'])]
 class Pharmacy extends Model
 {
     /** @use HasFactory<PharmacyFactory> */
@@ -96,15 +98,14 @@ class Pharmacy extends Model
     }
 
     /**
-     * Get the attributes that should be cast.
+     * Determine whether the pharmacy knows who and where it is.
      *
-     * @return array<string, string>
+     * The onboarding flow gates on this: a pharmacy created from a Joomla
+     * ticket alone has neither a city nor an owner yet.
      */
-    protected function casts(): array
+    public function hasCompleteProfile(): bool
     {
-        return [
-            'is_personal' => 'boolean',
-        ];
+        return filled($this->city) && filled($this->owner_name);
     }
 
     /**

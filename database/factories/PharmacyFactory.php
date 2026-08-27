@@ -18,23 +18,15 @@ class PharmacyFactory extends Factory
      */
     public function definition(): array
     {
-        $name = fake()->unique()->company();
+        $name = 'Pharmacie '.fake()->unique()->lastName();
 
         return [
             'name' => $name,
             'slug' => Str::slug($name),
-            'is_personal' => false,
+            'onpb_license' => fake()->boolean(70) ? 'ONPB-'.fake()->unique()->numberBetween(1000, 9999) : null,
+            'city' => fake()->randomElement(['Cotonou', 'Porto-Novo', 'Parakou', 'Abomey-Calavi', 'Bohicon']),
+            'owner_name' => fake()->name(),
         ];
-    }
-
-    /**
-     * Indicate that the pharmacy is a personal pharmacy.
-     */
-    public function personal(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'is_personal' => true,
-        ]);
     }
 
     /**
