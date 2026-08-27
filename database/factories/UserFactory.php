@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\PharmacyRole;
+use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -44,14 +45,35 @@ class UserFactory extends Factory
      */
     public function configure(): static
     {
-        return $this->afterCreating(function ($user) {
+        return $this->afterCreating(function (User $user) {
             $pharmacy = Pharmacy::factory()->create();
 
             $pharmacy->members()->attach($user, [
                 'role' => PharmacyRole::Owner->value,
             ]);
 
+            // A ticked insurer, so the default user is fully onboarded: most
+            // tests want a working officine, and declaring is impossible
+            // without one. Use notOnboarded() for the opposite case.
+            $pharmacy->insurers()->attach(Insurer::factory()->create());
+
             $user->switchPharmacy($pharmacy);
+        });
+    }
+
+    /**
+     * Indicate a user as the Joomla callback leaves them: no officine at all.
+     */
+    public function notOnboarded(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            $user->pharmacies->each->forceDelete();
+            $user->pharmacies()->detach();
+            $user->update(['current_pharmacy_id' => null]);
+
+            // switchPharmacy() cached the relation in memory; clearing the row
+            // is not enough for the instance the factory hands back.
+            $user->unsetRelation('currentPharmacy')->unsetRelation('pharmacies');
         });
     }
 

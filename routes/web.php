@@ -6,6 +6,8 @@ use App\Http\Controllers\Auth\LoginRedirectController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Onboarding\PharmacyInsurersController;
+use App\Http\Controllers\Onboarding\PharmacyProfileController;
 use App\Http\Controllers\Pharmacies\PharmacyInvitationController;
 use App\Http\Middleware\EnsurePharmacyMembership;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +29,16 @@ Route::middleware(['auth', 'can:manage-network'])
     });
 
 Route::middleware(['auth', 'can:declare-payments'])
+    ->prefix('onboarding')
+    ->name('onboarding.')
+    ->group(function () {
+        Route::get('/', [PharmacyProfileController::class, 'edit'])->name('profile');
+        Route::post('/', [PharmacyProfileController::class, 'store'])->name('profile.store');
+        Route::get('insurers', [PharmacyInsurersController::class, 'edit'])->name('insurers');
+        Route::post('insurers', [PharmacyInsurersController::class, 'store'])->name('insurers.store');
+    });
+
+Route::middleware(['auth', 'can:declare-payments', 'onboarded'])
     ->prefix('pharmacy')
     ->name('pharmacy.')
     ->group(function () {
@@ -36,7 +48,7 @@ Route::middleware(['auth', 'can:declare-payments'])
     });
 
 Route::prefix('{current_pharmacy}')
-    ->middleware(['auth', 'verified', EnsurePharmacyMembership::class])
+    ->middleware(['auth', 'verified', 'onboarded', EnsurePharmacyMembership::class])
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
     });

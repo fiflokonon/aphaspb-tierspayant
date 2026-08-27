@@ -36,7 +36,7 @@ class PharmacyController extends Controller
      */
     public function store(SavePharmacyRequest $request, CreatePharmacy $createPharmacy): RedirectResponse
     {
-        $pharmacy = $createPharmacy->handle($request->user(), $request->validated('name'));
+        $pharmacy = $createPharmacy->handle($request->user(), $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Pharmacy created.')]);
 

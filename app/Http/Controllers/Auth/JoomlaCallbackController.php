@@ -78,11 +78,13 @@ class JoomlaCallbackController extends Controller
     protected function landingFor(User $user): string
     {
         if ($user->hasAnyJoomlaGroup(config('joomla.groups.admin'))) {
-            return '/';
+            return route('admin.network');
         }
 
-        return $user->currentPharmacy
-            ? route('dashboard', ['current_pharmacy' => $user->currentPharmacy->slug])
-            : '/';
+        if ($user->needsOnboarding()) {
+            return route('onboarding.profile');
+        }
+
+        return route('dashboard', ['current_pharmacy' => $user->currentPharmacy->slug]);
     }
 }

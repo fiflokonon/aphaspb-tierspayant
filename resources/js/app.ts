@@ -1,6 +1,7 @@
 import { createInertiaApp } from '@inertiajs/vue3';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import OnboardingLayout from '@/layouts/OnboardingLayout.vue';
 import PharmacyLayout from '@/layouts/PharmacyLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
@@ -13,6 +14,8 @@ createInertiaApp({
         switch (true) {
             case name === 'Welcome':
                 return null;
+            case name.startsWith('onboarding/'):
+                return OnboardingLayout;
             case name.startsWith('admin/'):
                 return AdminLayout;
             case name.startsWith('pharmacy/'):

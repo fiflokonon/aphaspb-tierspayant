@@ -64,6 +64,21 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine whether the user still has to finish setting their officine up.
+     *
+     * Three things must hold before declaring is possible: an officine exists,
+     * it knows its city and owner, and it has ticked at least one insurer.
+     */
+    public function needsOnboarding(): bool
+    {
+        $pharmacy = $this->currentPharmacy;
+
+        return $pharmacy === null
+            || ! $pharmacy->hasCompleteProfile()
+            || $pharmacy->insurers()->doesntExist();
+    }
+
+    /**
      * Determine whether the user belongs to any of the given Joomla groups.
      *
      * @param  list<int>  $groups

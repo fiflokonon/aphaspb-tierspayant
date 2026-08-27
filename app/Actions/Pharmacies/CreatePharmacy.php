@@ -10,16 +10,17 @@ use Illuminate\Support\Facades\DB;
 class CreatePharmacy
 {
     /**
-     * Create a new pharmacy and add the user as owner.
+     * Create a new pharmacy, add the user as owner, and switch them onto it.
+     *
+     * @param  array<string, mixed>  $attributes  at least a name; the onboarding
+     *                                            also passes city and owner_name
      */
-    public function handle(User $user, string $name): Pharmacy
+    public function handle(User $user, array $attributes): Pharmacy
     {
-        return DB::transaction(function () use ($user, $name) {
-            $pharmacy = Pharmacy::create([
-                'name' => $name,
-            ]);
+        return DB::transaction(function () use ($user, $attributes) {
+            $pharmacy = Pharmacy::create($attributes);
 
-            $membership = $pharmacy->memberships()->create([
+            $pharmacy->memberships()->create([
                 'user_id' => $user->id,
                 'role' => PharmacyRole::Owner,
             ]);

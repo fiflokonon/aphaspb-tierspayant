@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureOnboarded;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SetPharmacyUrlDefaults;
 use App\Http\Middleware\VerifyJoomlaTokenVersion;
@@ -17,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['sidebar_state']);
+
+        $middleware->alias([
+            'onboarded' => EnsureOnboarded::class,
+        ]);
 
         $middleware->web(append: [
             HandleInertiaRequests::class,
