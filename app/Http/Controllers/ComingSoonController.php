@@ -19,12 +19,6 @@ class ComingSoonController extends Controller
      * @var array<string, array{component: string, title: string, body: string, increment: string}>
      */
     protected const COPY = [
-        'admin.pharmacies' => [
-            'component' => 'admin/ComingSoon',
-            'title' => 'Pharmacies inscrites',
-            'body' => "La liste des officines inscrites — nom, ville, date d'inscription — sans aucun accès à leurs déclarations ni à leurs montants.",
-            'increment' => 'PRÉVU APRÈS LE PILOTE',
-        ],
         'admin.insurers' => [
             'component' => 'admin/ComingSoon',
             'title' => 'Gestion des assureurs',

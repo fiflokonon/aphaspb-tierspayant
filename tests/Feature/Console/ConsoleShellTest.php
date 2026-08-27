@@ -7,11 +7,12 @@ use Inertia\Testing\AssertableInertia;
 beforeEach(fn () => useJoomlaTestKeys());
 
 test('an admin gets the admin shell with its space and both notices', function () {
+    // Asserted on a screen that will stay a screen: pointing this at whatever
+    // happens to be a placeholder makes it break each time one is filled in.
     $this->actingAs(User::factory()->networkAdmin()->create())
-        ->get(route('admin.pharmacies'))
+        ->get(route('admin.network'))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->component('admin/ComingSoon')
             ->where('console.space', 'ESPACE ADMIN')
             ->has('console.nav', 6)
             ->has('console.notices', 2)
@@ -36,7 +37,7 @@ test('the anonymity notice states the threshold and the masked count', function 
     Insurer::factory()->create();
 
     $this->actingAs(User::factory()->networkAdmin()->create())
-        ->get(route('admin.pharmacies'))
+        ->get(route('admin.network'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('console.notices.1.body', '5 pharmacies minimum · 0 assureur masqué ce trimestre.'),
         );
