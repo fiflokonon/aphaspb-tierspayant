@@ -69,9 +69,15 @@ const tone = computed(() => TONES[props.status]);
             />
         </div>
 
+        <!--
+            The share is clamped where it is printed, not only where the gauge
+            is drawn: a component must not be able to state « 2500 % réglé »
+            whatever it is handed.
+        -->
         <div class="mt-2 flex flex-wrap items-baseline gap-x-[6px]">
             <div class="text-[13px]/none font-bold text-ink">
-                {{ Math.round(settledShare) }} % réglé
+                {{ Math.round(Math.min(100, Math.max(0, settledShare))) }} %
+                réglé
             </div>
             <div
                 v-if="outstanding > 0"

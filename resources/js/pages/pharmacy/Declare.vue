@@ -5,6 +5,7 @@ import AmountField from '@/components/aphaspb/AmountField.vue';
 import DelayStepper from '@/components/aphaspb/DelayStepper.vue';
 import DerivedStatusNotice from '@/components/aphaspb/DerivedStatusNotice.vue';
 import WizardProgress from '@/components/aphaspb/WizardProgress.vue';
+import { formatFcfa } from '@/lib/fcfa';
 import type { DeclarationStatus } from '@/types/aphaspb';
 
 type Declaration = {
@@ -52,6 +53,17 @@ const status = computed<DeclarationStatus>(() => {
 
     return received.value >= invoiced.value ? 'paid' : 'partial';
 });
+
+/**
+ * The server refuses this pair outright (amount_received lte amount_invoiced),
+ * so deriving a status from it would be a confident lie about what saving will
+ * do. It is an input error, surfaced where the eye already is.
+ */
+const exceedsInvoiced = computed(
+    () => invoiced.value > 0 && received.value > invoiced.value,
+);
+
+const excess = computed(() => Math.max(0, received.value - invoiced.value));
 
 const settledShare = computed(() =>
     invoiced.value === 0 ? 0 : (received.value / invoiced.value) * 100,
@@ -150,7 +162,11 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                             label="MONTANT REÇU"
                             name="amount_received"
                             :shortcut="{ label: 'Tout reçu', value: invoiced }"
-                            :error="errors.amount_received"
+                            :error="
+                                exceedsInvoiced
+                                    ? 'Le montant reçu ne peut pas dépasser le montant facturé.'
+                                    : errors.amount_received
+                            "
                         />
                     </div>
 
@@ -196,7 +212,30 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                 <div
                     class="mt-4 flex flex-col gap-3 px-2 pb-6 lg:mt-0 lg:border-l lg:border-ink/[0.08] lg:bg-cream-header/60 lg:px-6 lg:py-7"
                 >
+                    <div
+                        v-if="exceedsInvoiced"
+                        class="rounded-xl border border-terracotta/40 bg-terracotta/[0.08] px-[15px] py-[14px]"
+                    >
+                        <div class="flex items-center gap-[9px]">
+                            <div
+                                class="grid size-6 shrink-0 place-items-center rounded-full bg-terracotta text-xs font-bold text-white"
+                            >
+                                !
+                            </div>
+                            <div class="text-[13px]/[1.2] font-bold text-ink">
+                                Ces deux montants sont incompatibles
+                            </div>
+                        </div>
+                        <p class="mt-[10px] text-[11px]/[1.45] text-ink/60">
+                            Vous avez saisi
+                            {{ formatFcfa(excess) }} FCFA de plus en reçu qu'en
+                            facturé. Corrigez l'un des deux avant de continuer —
+                            aucun statut ne peut se déduire d'un écart négatif.
+                        </p>
+                    </div>
+
                     <DerivedStatusNotice
+                        v-else
                         :status="status"
                         :label="LABELS[status]"
                         :settled-share="settledShare"
@@ -205,7 +244,7 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                     />
 
                     <DelayStepper
-                        v-if="carriesDelay"
+                        v-if="carriesDelay && !exceedsInvoiced"
                         v-model="delay"
                         name="delay_days"
                         hint="Compté depuis le dépôt de la facture."
@@ -228,7 +267,7 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                     <div class="pt-1">
                         <button
                             type="submit"
-                            :disabled="processing"
+                            :disabled="processing || exceedsInvoiced"
                             class="flex h-13 w-full items-center justify-center rounded-xl bg-ink text-[14.5px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                         >
                             {{
