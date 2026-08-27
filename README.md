@@ -85,28 +85,33 @@ unique contre une session Laravel.
 
 ### Espace officine
 
-| Écran | URL | État |
+| Écran | URL | Ce qu'on y fait |
 |---|---|---|
-| Parcours des paiements sur 12 mois | `/{officine}/dashboard` | livré |
-| Déclaration mensuelle | `/pharmacy/declare` | livré |
-| Onboarding — profil de l'officine | `/onboarding` | livré |
-| Onboarding — choix des assureurs | `/onboarding/insurers` | livré |
-| Historique | `/pharmacy/history` | page d'attente |
-| Mes assureurs | `/pharmacy/insurers` | page d'attente |
+| Parcours des paiements sur 12 mois | `/{officine}/dashboard` | lire ses propres indicateurs |
+| Déclaration mensuelle | `/pharmacy/declare` | saisir, assureur par assureur |
+| Historique | `/pharmacy/history` | relire et corriger, filtré et paginé |
+| Mes assureurs | `/pharmacy/insurers` | activer ou retirer un assureur |
+| Onboarding — profil de l'officine | `/onboarding` | premier passage |
+| Onboarding — choix des assureurs | `/onboarding/insurers` | premier passage |
 
 ### Espace APhaSPB
 
-| Écran | URL | État |
+| Écran | URL | Ce qu'on y fait |
 |---|---|---|
-| Indicateurs par assureur | `/admin/network` | livré |
-| Évolution des délais et encours | `/admin/trends` | livré |
-| Pharmacies inscrites | `/admin/pharmacies` | page d'attente |
-| Gestion des assureurs | `/admin/insurers` | page d'attente |
-| Exports CSV | `/admin/csv-exports` | page d'attente |
+| Indicateurs par assureur | `/admin/network` | classement, délais, encours |
+| Évolution des délais et encours | `/admin/trends` | douze mois de tendance |
+| Pharmacies inscrites | `/admin/pharmacies` | annuaire, recherche, paginé |
+| Gestion des assureurs | `/admin/insurers` | ajouter, renommer, désactiver |
+| Exports CSV | `/admin/csv-exports` | agrégats réseau uniquement |
 
-Les pages d'attente sont volontairement explicites : le canvas traite une
-fonctionnalité absente comme il traite un assureur sous le seuil d'anonymat —
-un état calme et expliqué, jamais une erreur ni un lien mort.
+Aucun de ces écrans n'est une page d'attente : les onze sont livrés. Là où une
+donnée manque — un assureur sous le seuil des 5 officines déclarantes, un mois
+sans déclaration — l'écran l'explique au lieu de rester vide, comme le prévoit
+le canvas.
+
+Les deux listes dont la longueur dépend des données sont paginées :
+l'historique par 20 lignes, les pharmacies inscrites par 50. Les filtres
+voyagent avec le numéro de page, et changer un filtre ramène à la première.
 
 ## Le jeu de données de démonstration
 
@@ -180,7 +185,7 @@ npm run types:check && npm run lint:check                # front
 
 ### Ce que la suite garantit
 
-238 tests, dont trois familles qui méritent d'être connues :
+285 tests, dont trois familles qui méritent d'être connues :
 
 - **Authentification** — un JWT signé RS256 par une paire de clés de test ouvre
   une session ; un `aud` étranger, une signature invalide, un jeton expiré ou
@@ -246,6 +251,6 @@ Hors du périmètre livré, dans l'ordre où l'APhaSPB en aura probablement beso
   existe-t-il des comptes migrés depuis Joomla 3 avec des hash legacy, Laravel et
   Joomla partagent-ils le VPS ;
 - le **rappel mensuel par email le 25** (CDC §3.6) ;
-- l'**historique de l'officine**, la **liste des pharmacies inscrites** et la
-  **gestion des assureurs** — actuellement des pages d'attente ;
-- l'**export CSV**, prévu en V1.1 par le cahier des charges.
+- la **validation des douze colonnes d'export** par l'APhaSPB avant que le
+  premier fichier ne circule — le format est en place, son contenu exact n'est
+  pas encore arbitré.
