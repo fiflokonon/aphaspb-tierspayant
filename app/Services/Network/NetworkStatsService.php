@@ -99,6 +99,22 @@ class NetworkStatsService
     }
 
     /**
+     * How many insurers the anonymity threshold currently hides.
+     *
+     * Used by the sidebar notice, which restates the rule permanently rather
+     * than only where a hidden row happens to appear.
+     */
+    public function maskedInsurerCount(): int
+    {
+        [$from, $to] = Period::currentQuarter();
+
+        return count(array_filter(
+            $this->perInsurer($from, $to),
+            fn (InsurerIndicators|InsufficientData $entry): bool => $entry instanceof InsufficientData,
+        ));
+    }
+
+    /**
      * Monthly average delay per insurer, plus the network average.
      *
      * @return array{insurers: array<int, array{name: string, points: array<string, float>}>, network: array<string, float>, threshold: int}

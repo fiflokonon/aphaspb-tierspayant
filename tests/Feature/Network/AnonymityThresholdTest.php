@@ -128,3 +128,37 @@ test('no aggregate exposes anything traceable to one pharmacy', function () {
         expect($serialised)->not->toContain($pharmacy->name);
     }
 });
+
+test('the masked insurer count reports how many are hidden this quarter', function () {
+    $this->travelTo(CarbonImmutable::create(2026, 8, 15));
+
+    $shown = Insurer::factory()->create();
+    $hiddenOne = Insurer::factory()->create();
+    $hiddenTwo = Insurer::factory()->create();
+
+    declareFrom($shown, 5);
+    declareFrom($hiddenOne, 2);
+    declareFrom($hiddenTwo, 4);
+
+    expect($this->service->maskedInsurerCount())->toBe(2);
+});
+
+test('the masked insurer count is zero when every insurer clears the threshold', function () {
+    $this->travelTo(CarbonImmutable::create(2026, 8, 15));
+
+    declareFrom(Insurer::factory()->create(), 5);
+    declareFrom(Insurer::factory()->create(), 6);
+
+    expect($this->service->maskedInsurerCount())->toBe(0);
+});
+
+test('the current quarter spans three months ending on the current one', function () {
+    $this->travelTo(CarbonImmutable::create(2026, 8, 15));
+
+    [$from, $to] = Period::currentQuarter();
+
+    expect($from->year)->toBe(2026)
+        ->and($from->month)->toBe(7)
+        ->and($to->year)->toBe(2026)
+        ->and($to->month)->toBe(9);
+});

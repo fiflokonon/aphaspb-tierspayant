@@ -28,6 +28,22 @@ readonly class Period
     }
 
     /**
+     * Build the inclusive bounds of the calendar quarter containing today.
+     *
+     * @return array{0: self, 1: self}
+     */
+    public static function currentQuarter(): array
+    {
+        $now = now();
+        $firstMonth = (intdiv($now->month - 1, 3) * 3) + 1;
+
+        return [
+            new self($now->year, $firstMonth),
+            new self($now->year, $firstMonth + 2),
+        ];
+    }
+
+    /**
      * Express the period as a single sortable integer.
      *
      * Comparing (year, month) pairs in SQL is awkward; this collapses them to

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\ConsoleNavigation;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -44,6 +45,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'console' => fn () => app(ConsoleNavigation::class)->forUser($user, $request->getPathInfo()),
             'currentPharmacy' => fn () => $user?->currentPharmacy ? $user->toUserPharmacy($user->currentPharmacy) : null,
             'pharmacies' => fn () => $user?->toUserPharmacies(includeCurrent: true) ?? [],
         ];
