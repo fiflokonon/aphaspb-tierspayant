@@ -308,7 +308,7 @@ class NetworkStatsService
     /**
      * Network-wide totals over a period, in FCFA and as shares.
      *
-     * @return array{invoiced: int, received: int, outstanding: int, recovery_rate: float|null, declaring_pharmacies: int}
+     * @return array{invoiced: int, received: int, outstanding: int, recoveryRate: float|null, declaringPharmacies: int}
      */
     public function aggregatedAmounts(Period $from, Period $to): array
     {
@@ -325,8 +325,8 @@ class NetworkStatsService
             'invoiced' => $invoiced,
             'received' => $received,
             'outstanding' => max(0, $invoiced - $received),
-            'recovery_rate' => $invoiced > 0 ? round($received / $invoiced * 100, 1) : null,
-            'declaring_pharmacies' => (int) ($row->declaring_pharmacies ?? 0),
+            'recoveryRate' => $invoiced > 0 ? round($received / $invoiced * 100, 1) : null,
+            'declaringPharmacies' => (int) ($row->declaring_pharmacies ?? 0),
         ];
     }
 

@@ -64,7 +64,7 @@ Quatre KPI (`FACTURÉ · RÉSEAU` en `Md FCFA` avec « 126 officines déclarante
   - `::outstandingByInsurer(Pharmacy)` → `list<array{insurerName, outstanding}>` décroissant
   - `::outstandingBeyond(Pharmacy, int $days): int`
 
-- [ ] **Step 1: Installer la dépendance**
+- [x] **Step 1: Installer la dépendance**
 
 ```bash
 npm install @unovis/vue @unovis/ts
@@ -72,7 +72,7 @@ npm install @unovis/vue @unovis/ts
 
 Environ 173 paquets, essentiellement des modules `d3` individuels — petits et secouables à l'arborescence. Vérifier ensuite que `npm run build` passe et relever le poids du bundle : si la charge de `@unovis` dépasse nettement le reste, le signaler plutôt que de la laisser passer silencieusement.
 
-- [ ] **Step 2: Écrire les tests qui échouent**
+- [x] **Step 2: Écrire les tests qui échouent**
 
 Create `tests/Feature/Pharmacy/PharmacyStatsTest.php`, couvrant :
 
@@ -88,12 +88,12 @@ Create `tests/Feature/Pharmacy/PharmacyStatsTest.php`, couvrant :
 - **une officine ne voit que ses propres déclarations** : deux officines, chacune ne lit que les siennes ;
 - le récapitulatif tient en un nombre borné de requêtes.
 
-- [ ] **Step 3: Lancer les tests pour vérifier qu'ils échouent**
+- [x] **Step 3: Lancer les tests pour vérifier qu'ils échouent**
 
 Run: `vendor/bin/pest tests/Feature/Pharmacy/PharmacyStatsTest.php`
 Expected: FAIL — `Class "App\Services\Pharmacy\PharmacyStatsService" not found`
 
-- [ ] **Step 4: Écrire le service**
+- [x] **Step 4: Écrire le service**
 
 Toutes les méthodes filtrent sur `pharmacy_id` en premier — c'est la frontière de confidentialité de ce service, symétrique de celle de `NetworkStatsService`. Requêtes par `DB::table('declarations')` comme côté réseau : une ligne d'agrégat n'est pas un modèle, et ne pas hydrater évite de charger `private_note`.
 
@@ -106,7 +106,7 @@ SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days * amount_received EL
 
 L'ancienneté se calcule en PHP à partir des couples `(period_year, period_month, outstanding)` renvoyés par une requête groupée : la conversion « fin de mois → jours écoulés » dépend de la date du jour, et l'écrire en SQL la rendrait dépendante du moteur.
 
-- [ ] **Step 5: Vérifier et committer**
+- [x] **Step 5: Vérifier et committer**
 
 ```bash
 vendor/bin/pest tests/Feature/Pharmacy/PharmacyStatsTest.php
@@ -128,7 +128,7 @@ git add -A && git commit -m "feat: métriques de paiement de l'officine et dépe
   - `::networkSummary()` gagne `weightedDelayDays` et `outstandingBeyond90`
   - `::aggregatedByInsurer(Period, Period, ?string)` → par assureur : officines déclarantes, facturé, encours, taux de recouvrement — **sous seuil d'anonymat**, comme `perInsurer`
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 Ajouter à `NetworkStatsServiceTest` :
 
@@ -136,7 +136,7 @@ Ajouter à `NetworkStatsServiceTest` :
 - `aggregatedByInsurer` renvoie `InsufficientData` sous le seuil, exactement comme `perInsurer` — **c'est le test qui compte** : une seconde méthode d'agrégation par assureur est un second endroit où la règle d'anonymat peut être oubliée ;
 - l'encours au-delà de 90 jours ne compte que les mois assez anciens.
 
-- [ ] **Step 2 à 4: Implémenter, vérifier, committer**
+- [x] **Step 2 à 4: Implémenter, vérifier, committer**
 
 `aggregatedByInsurer` réutilise `baseQuery` et applique le même filtre de seuil que `perInsurer`. Si la duplication du filtre devient tentante, extraire la décision « suffisant ou non » dans une méthode privée appelée par les deux — un seul endroit doit décider.
 
@@ -162,19 +162,19 @@ git add -A && git commit -m "feat: délai réseau pondéré et montants agrégé
   - `DelayTrendChart` props : `series: {name, points: Record<string, number>}[]`, `network: Record<string, number>`, `threshold: number`
   - `ChartSkeleton` props : `height?: number` — squelette pulsé pour les props différées
 
-- [ ] **Step 1: Écrire le formatage**
+- [x] **Step 1: Écrire le formatage**
 
 `formatMillions` bascule en milliards au-delà de 1 000 M et sépare la décimale par une virgule, comme le canvas (`56,2 M`, `6,84 Md`).
 
-- [ ] **Step 2: Écrire le graphique de barres empilées**
+- [x] **Step 2: Écrire le graphique de barres empilées**
 
 Encaissé en vert officine, reste à recouvrer en gris chaud, empilés — l'écart *est* l'encours, ce qui est le propos du canvas. Axe des ordonnées en millions, axe des abscisses en initiales de mois. Le mois courant reçoit un cerclage or. Séries et couleurs via les jetons CSS, pas des littéraux.
 
-- [ ] **Step 3: Écrire le graphique de courbes**
+- [x] **Step 3: Écrire le graphique de courbes**
 
 Une courbe par assureur, moyenne réseau en pointillé, et une ligne de seuil horizontale annotée `SEUIL 30 JOURS`. Le seuil vient de la prop, jamais codé en dur : l'admin peut le modifier.
 
-- [ ] **Step 4: Vérifier et committer**
+- [x] **Step 4: Vérifier et committer**
 
 Contrôler le rendu à trois largeurs, le conteneur devant se redimensionner sans débordement horizontal du corps de page.
 
@@ -200,13 +200,13 @@ git add -A && git commit -m "feat: graphiques des paiements et des délais"
   - La route `dashboard` rend désormais `pharmacy/Dashboard`
   - Le rappel latéral de l'officine devient « Encours à relancer », alimenté par `outstandingBeyond()`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Couvrir : les KPI, le parcours et l'ancienneté arrivent en props ; le graphique est une **prop différée** ; une officine ne voit que ses chiffres ; un compte admin ne peut pas atteindre l'écran ; le rappel latéral porte l'encours au-delà de 60 jours.
 
 Le tableau de bord du starter kit affichait les invitations en attente — `DashboardTest` le couvre. Ces tests suivent : soit l'écran conserve le bloc d'invitations, soit les tests correspondants perdent leur objet et sont retirés en le signalant. **Décider en écrivant, pas après.** L'artboard `3b` ne montre aucune invitation ; le bloc part donc, et `PharmacyInvitationTest` continue de couvrir le flux d'invitation par ailleurs.
 
-- [ ] **Step 2 à 6: Implémenter, vérifier, committer**
+- [x] **Step 2 à 6: Implémenter, vérifier, committer**
 
 Les deux graphiques passent par `Inertia::defer()` avec `ChartSkeleton` en attente. Les cartes « ancienneté » et « qui vous doit le plus » ne sont pas différées : elles sortent de la même requête que les KPI.
 
@@ -231,11 +231,11 @@ git add -A && git commit -m "feat: parcours des paiements de l'officine sur 12 m
   - Route `GET /admin/trends` nommée `admin.trends`, entrée « Évolution » dans la navigation admin
   - Page `admin/Trends`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Couvrir : les quatre KPI réseau ; la courbe est une prop différée ; le tableau des montants agrégés rend les lignes insuffisantes ; le seuil vient des réglages, pas d'une constante ; **aucune note privée ni nom d'officine dans la réponse** ; un compte officine reçoit un 403.
 
-- [ ] **Step 2 à 6: Implémenter, vérifier, committer**
+- [x] **Step 2 à 6: Implémenter, vérifier, committer**
 
 Chaque volume s'affiche en FCFA **et** en part, conformément à la décision APhaSPB de la spec §2 : `4,79 Md FCFA · 70 %`, jamais l'un sans l'autre.
 

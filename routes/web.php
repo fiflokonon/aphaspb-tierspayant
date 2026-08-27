@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\NetworkStatsController;
+use App\Http\Controllers\Admin\NetworkTrendsController;
 use App\Http\Controllers\Auth\JoomlaCallbackController;
 use App\Http\Controllers\Auth\LoginRedirectController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -24,6 +25,7 @@ Route::middleware(['auth', 'can:manage-network'])
     ->name('admin.')
     ->group(function () {
         Route::get('network', NetworkStatsController::class)->name('network');
+        Route::get('trends', NetworkTrendsController::class)->name('trends');
         Route::get('pharmacies', ComingSoonController::class)->name('pharmacies');
         Route::get('insurers', ComingSoonController::class)->name('insurers');
         Route::get('csv-exports', ComingSoonController::class)->name('csv-exports');

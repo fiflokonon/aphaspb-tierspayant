@@ -13,7 +13,7 @@ test('an admin gets the admin shell with its space and both notices', function (
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('admin/ComingSoon')
             ->where('console.space', 'ESPACE ADMIN')
-            ->has('console.nav', 5)
+            ->has('console.nav', 6)
             ->has('console.notices', 2)
             ->where('console.notices.0.title', 'Vue anonymisée')
             ->where('console.notices.1.title', "Seuil d'affichage"),

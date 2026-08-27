@@ -60,6 +60,7 @@ class ConsoleNavigation
             'space' => 'ESPACE ADMIN',
             'nav' => $this->items($currentPath, [
                 ['Statistiques réseau', 'admin.network'],
+                ['Évolution', 'admin.trends'],
                 ['Pharmacies inscrites', 'admin.pharmacies'],
                 ['Gestion des assureurs', 'admin.insurers'],
                 ['Exports CSV', 'admin.csv-exports'],
