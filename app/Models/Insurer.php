@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -45,6 +46,16 @@ class Insurer extends Model
     protected function active(Builder $query): void
     {
         $query->where('is_active', true);
+    }
+
+    /**
+     * Get the declarations recorded for this insurer.
+     *
+     * @return HasMany<Declaration, $this>
+     */
+    public function declarations(): HasMany
+    {
+        return $this->hasMany(Declaration::class);
     }
 
     /**

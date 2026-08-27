@@ -98,6 +98,16 @@ class Pharmacy extends Model
     }
 
     /**
+     * Get the declarations recorded for this pharmacy.
+     *
+     * @return HasMany<Declaration, $this>
+     */
+    public function declarations(): HasMany
+    {
+        return $this->hasMany(Declaration::class);
+    }
+
+    /**
      * Get the insurers this pharmacy works with.
      *
      * @return BelongsToMany<Insurer, $this>
