@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\InsurerManagementController;
 use App\Http\Controllers\Admin\NetworkStatsController;
 use App\Http\Controllers\Admin\NetworkTrendsController;
 use App\Http\Controllers\Admin\RegisteredPharmaciesController;
@@ -31,7 +32,10 @@ Route::middleware(['auth', 'can:manage-network'])
         Route::get('network', NetworkStatsController::class)->name('network');
         Route::get('trends', NetworkTrendsController::class)->name('trends');
         Route::get('pharmacies', RegisteredPharmaciesController::class)->name('pharmacies');
-        Route::get('insurers', ComingSoonController::class)->name('insurers');
+        Route::get('insurers', [InsurerManagementController::class, 'index'])->name('insurers');
+        Route::post('insurers', [InsurerManagementController::class, 'store'])->name('insurers.store');
+        Route::patch('insurers/{insurer}', [InsurerManagementController::class, 'update'])->name('insurers.update');
+        Route::patch('threshold', [InsurerManagementController::class, 'updateThreshold'])->name('threshold.update');
         Route::get('csv-exports', ComingSoonController::class)->name('csv-exports');
     });
 

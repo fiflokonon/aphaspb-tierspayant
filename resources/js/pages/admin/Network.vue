@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
@@ -133,8 +133,17 @@ const reloadIndicators = () =>
             "
             unit="%"
             :tone="shareTone(summary.withinThresholdShare)"
-            :hint="`seuil de ${threshold} j`"
-        />
+        >
+            <template #hint>
+                seuil de {{ threshold }} j ·
+                <Link
+                    href="/admin/insurers"
+                    class="font-semibold text-officine"
+                >
+                    modifier
+                </Link>
+            </template>
+        </KpiCard>
     </KpiRow>
 
     <DataTable

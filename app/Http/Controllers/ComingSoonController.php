@@ -19,12 +19,6 @@ class ComingSoonController extends Controller
      * @var array<string, array{component: string, title: string, body: string, increment: string}>
      */
     protected const COPY = [
-        'admin.insurers' => [
-            'component' => 'admin/ComingSoon',
-            'title' => 'Gestion des assureurs',
-            'body' => "L'ajout, la modification et la désactivation des assureurs et courtiers, ainsi que le réglage du seuil de paiement de référence.",
-            'increment' => 'PRÉVU APRÈS LE PILOTE',
-        ],
         'admin.csv-exports' => [
             'component' => 'admin/ComingSoon',
             'title' => 'Exports CSV',
