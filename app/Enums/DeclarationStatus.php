@@ -10,6 +10,22 @@ enum DeclarationStatus: string
     case Rejected = 'rejected';
 
     /**
+     * Work out the status implied by a pair of amounts.
+     *
+     * The single source of this rule: the model applies it on save and the
+     * declaration request consults it to decide whether a delay is required.
+     * Rejected is never derived — no pair of amounts implies a refusal.
+     */
+    public static function derive(int $invoiced, int $received): self
+    {
+        if ($received === 0) {
+            return self::Unpaid;
+        }
+
+        return $received >= $invoiced ? self::Paid : self::Partial;
+    }
+
+    /**
      * Get the display label for the status.
      */
     public function label(): string

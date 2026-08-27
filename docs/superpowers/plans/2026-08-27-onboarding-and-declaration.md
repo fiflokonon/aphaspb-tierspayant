@@ -75,7 +75,7 @@ En-tête `ÉTAPE 2 SUR 2` mono 10.5px `#b07c1a`, titre 700 18px/1.25, sous-titre
   - `User::needsOnboarding(): bool` — vrai sans officine, sans profil complet, ou sans aucun assureur coché
   - `FormField` props : `label: string`, `hint?: string`, `error?: string` — emplacement par défaut pour le contrôle
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Onboarding/PharmacyProfileTest.php`:
 
@@ -199,12 +199,12 @@ test('a pharmacy route sends an un-onboarded officine to the onboarding', functi
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Onboarding/PharmacyProfileTest.php`
 Expected: FAIL — `Route [onboarding.profile] not defined.`
 
-- [ ] **Step 3: Ajouter le prédicat d'onboarding au modèle User**
+- [x] **Step 3: Ajouter le prédicat d'onboarding au modèle User**
 
 Dans `app/Models/User.php` :
 
@@ -225,11 +225,11 @@ Dans `app/Models/User.php` :
     }
 ```
 
-- [ ] **Step 4: Écrire la requête de validation**
+- [x] **Step 4: Écrire la requête de validation**
 
 `SavePharmacyProfileRequest` : `name` requis, chaîne, max 200 ; `onpb_license` nullable, chaîne, max 50, unique sur `pharmacies` en ignorant l'officine courante ; `city` requis, max 100 ; `owner_name` requis, max 200.
 
-- [ ] **Step 5: Écrire le contrôleur**
+- [x] **Step 5: Écrire le contrôleur**
 
 `PharmacyProfileController` avec `edit()` et `store()`.
 
@@ -239,11 +239,11 @@ Dans `app/Models/User.php` :
 
 Réutiliser `App\Actions\Pharmacies\CreatePharmacy` plutôt que de dupliquer la création et l'attachement : l'action existe et est déjà testée.
 
-- [ ] **Step 6: Écrire le middleware**
+- [x] **Step 6: Écrire le middleware**
 
 Create `app/Http/Middleware/EnsureOnboarded.php` — redirige vers `onboarding.profile` quand `$request->user()?->needsOnboarding()`. L'enregistrer sous l'alias `onboarded` dans `bootstrap/app.php`.
 
-- [ ] **Step 7: Déclarer les routes et brancher le callback**
+- [x] **Step 7: Déclarer les routes et brancher le callback**
 
 Ajouter le groupe onboarding sous `auth` + `can:declare-payments`, sans le middleware `onboarded` — sinon la redirection bouclerait :
 
@@ -261,7 +261,7 @@ Ajouter `onboarded` au groupe `pharmacy.` existant et au groupe `{current_pharma
 
 Dans `JoomlaCallbackController::landingFor()`, renvoyer `route('onboarding.profile')` quand `$user->needsOnboarding()`.
 
-- [ ] **Step 8: Écrire le champ de formulaire et la page**
+- [x] **Step 8: Écrire le champ de formulaire et la page**
 
 `FormField.vue` reprend le relevé de `1f` : étiquette mono 10.5px `rgba(23,33,28,.45)` `letter-spacing .05em`, contrôle `h-[46px] rounded-[10px]` blanc bordure 1.5px `rgba(23,33,28,.13)`, texte 500 13px. En erreur, la bordure passe en `--destructive` et le message s'affiche en dessous en 400 11px.
 
@@ -269,7 +269,7 @@ Dans `JoomlaCallbackController::landingFor()`, renvoyer `route('onboarding.profi
 
 L'écran n'utilise pas `ConsoleLayout` : l'officine n'a pas encore de navigation à afficher. Layout dédié, centré, colonne bornée à `max-w-[420px]`.
 
-- [ ] **Step 9: Vérifier et committer**
+- [x] **Step 9: Vérifier et committer**
 
 ```bash
 vendor/bin/pest tests/Feature/Onboarding/PharmacyProfileTest.php
@@ -296,7 +296,7 @@ git add -A && git commit -m "feat: onboarding de l'officine, étape du profil"
   - Routes `GET /onboarding/insurers` nommée `onboarding.insurers`, `POST` nommée `onboarding.insurers.store`
   - `InsurerChecklist` props : `insurers: {id, name}[]`, `modelValue: number[]`, plus un champ libre « Autre… »
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Onboarding/PharmacyInsurersTest.php`, couvrant :
 
@@ -308,28 +308,28 @@ Create `tests/Feature/Onboarding/PharmacyInsurersTest.php`, couvrant :
 - un nom libre déjà connu ne crée pas de doublon, il rattache l'assureur existant ;
 - l'étape redirige vers l'étape 1 si le profil est encore incomplet.
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Onboarding/PharmacyInsurersTest.php`
 Expected: FAIL — `Route [onboarding.insurers] not defined.`
 
-- [ ] **Step 3: Écrire la validation**
+- [x] **Step 3: Écrire la validation**
 
 `SavePharmacyInsurersRequest` : `insurers` requis sans `other`, tableau, min 1 ; `insurers.*` entier existant dans `insurers` ; `other` nullable, chaîne, max 150. Une règle `withValidator` exige au moins l'un des deux.
 
-- [ ] **Step 4: Écrire le contrôleur**
+- [x] **Step 4: Écrire le contrôleur**
 
 `edit()` redirige vers l'étape 1 si le profil est incomplet ; sinon rend `onboarding/Insurers` avec les assureurs actifs et la sélection actuelle.
 
 `store()` résout d'abord le nom libre — `Insurer::firstOrCreate(['name' => trim($other)], ['is_active' => false])` — puis `sync()` la sélection complète, et redirige vers le tableau de bord.
 
-- [ ] **Step 5: Écrire la liste cochable et la page**
+- [x] **Step 5: Écrire la liste cochable et la page**
 
 `InsurerChecklist.vue` : lignes de 44 px minimum, coche 22px, fond `rgba(31,111,74,.06)` quand cochée, filet `border-dashed` avant l'entrée « Autre… » qui déplie un champ texte. Recherche filtrant la liste en local — la liste des assureurs béninois tient largement en mémoire, une requête serveur par frappe serait du gaspillage.
 
 `onboarding/Insurers.vue` reprend la carte de droite de `1f`, même layout centré que l'étape 1, bouton vert portant le décompte : « Continuer · 3 assureurs ».
 
-- [ ] **Step 6: Vérifier et committer**
+- [x] **Step 6: Vérifier et committer**
 
 ```bash
 vendor/bin/pest tests/Feature/Onboarding
@@ -360,27 +360,27 @@ git add -A && git commit -m "feat: onboarding de l'officine, choix des assureurs
   - `DelayStepper` props : `modelValue: number | null`, `min?: number`, `max?: number`
   - `WizardProgress` props : `total: number`, `current: number`
 
-- [ ] **Step 1: Écrire le formatage**
+- [x] **Step 1: Écrire le formatage**
 
 Create `resources/js/lib/fcfa.ts`. Le XOF n'a pas de décimale : `formatFcfa` groupe les milliers par espace insécable fine (` `), comme le canvas, et `parseFcfa` ne garde que les chiffres — ce qui rend la saisie tolérante aux espaces, aux points et aux virgules collés par un copier-coller.
 
-- [ ] **Step 2: Écrire `AmountField`**
+- [x] **Step 2: Écrire `AmountField`**
 
 Champ `h-14 rounded-xl` blanc, `inputmode="numeric"` pour garder le clavier numérique ouvert du premier au dernier champ, valeur 700 22px, suffixe `FCFA`. Au focus, bordure et halo or. Le raccourci optionnel (« Tout reçu ») s'affiche à droite de l'étiquette et pose la valeur en un geste.
 
 Le champ affiche la valeur formatée mais émet un entier : `@input` passe par `parseFcfa`, `:value` par `formatFcfa`.
 
-- [ ] **Step 3: Écrire `DerivedStatusNotice`**
+- [x] **Step 3: Écrire `DerivedStatusNotice`**
 
 Carte teintée selon le statut — or partiel, vert payé, encre atténuée non payé, terre cuite rejeté. Pastille 24px, titre « Statut déduit : … », jauge `h-2` du pourcentage réglé, ligne « 69 % réglé · reste 380 000 FCFA en attente », puis l'explication. Quand `manual` est vrai, le titre devient « Statut corrigé à la main » et l'explication propose de revenir au statut calculé.
 
-- [ ] **Step 4: Écrire `DelayStepper` et `WizardProgress`**
+- [x] **Step 4: Écrire `DelayStepper` et `WizardProgress`**
 
 `DelayStepper` : boutons 32px minimum mais cible tactile de 44 px assurée par le padding, `−` et `+` par pas de 1, maintien non requis. Valeur 700 17px, unité « j ». Bornes 0 à 365. Un `<input>` masqué porte la valeur pour la soumission de formulaire.
 
 `WizardProgress` : `total` segments, les `current - 1` premiers en vert, le `current`ᵉ en or, le reste en `rgba(23,33,28,.12)` ; compteur `current/total` en mono à droite.
 
-- [ ] **Step 5: Vérifier et committer**
+- [x] **Step 5: Vérifier et committer**
 
 ```bash
 npm run build && npm run types:check && npm run lint:check
@@ -408,7 +408,7 @@ git add -A && git commit -m "feat: composants de saisie de la déclaration"
   - Route `POST /pharmacy/declare` nommée `pharmacy.declare.store`
   - `MonthlyDeclarationRun` : `nextInsurer()`, `progress(): array{current: int, total: int}`, `declarationFor(Insurer)`, `isComplete(): bool`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Pharmacy/DeclarationTest.php`, couvrant :
 
@@ -436,16 +436,16 @@ Create `tests/Feature/Pharmacy/DeclarationTest.php`, couvrant :
 - un compte admin ne peut pas atteindre l'écran ;
 - la note privée n'apparaît dans aucune réponse admin — reprise du test de confidentialité, avec une note réelle enregistrée par ce parcours.
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Pharmacy/DeclarationTest.php`
 Expected: FAIL — la route rend encore la page d'attente, pas `pharmacy/Declare`.
 
-- [ ] **Step 3: Écrire le service de parcours**
+- [x] **Step 3: Écrire le service de parcours**
 
 `MonthlyDeclarationRun` porte l'officine et la période, et répond aux questions du parcours en une requête : la liste des assureurs cochés, celles déjà déclarées, la suivante à traiter. Concentrer ces questions ici évite au contrôleur de recompter à chaque appel et rend la reprise testable sans passer par HTTP.
 
-- [ ] **Step 4: Écrire la validation**
+- [x] **Step 4: Écrire la validation**
 
 `SaveDeclarationRequest` :
 - `insurer_id` requis, entier, et **présent parmi les assureurs cochés de l'officine courante** — pas seulement existant ;
@@ -456,13 +456,13 @@ Expected: FAIL — la route rend encore la page d'attente, pas `pharmacy/Declare
 - `delay_days` requis quand le statut résultant est `paid` ou `partial`, sinon interdit ; entier entre 0 et 365 ;
 - `private_note` nullable, max 150.
 
-- [ ] **Step 5: Écrire le contrôleur**
+- [x] **Step 5: Écrire le contrôleur**
 
 `show()` construit le parcours, rend `pharmacy/DeclareDone` si complet, sinon `pharmacy/Declare` avec l'assureur courant, la déclaration existante s'il y en a une, la progression et la période.
 
 `store()` fait un `updateOrCreate` sur le quadruplet `(pharmacy, insurer, year, month)`, pose `is_status_manual` seulement si un statut explicite a été soumis, puis redirige sur `pharmacy.declare`.
 
-- [ ] **Step 6: Écrire les pages**
+- [x] **Step 6: Écrire les pages**
 
 `Declare.vue` assemble le relevé de l'artboard, dans une colonne `max-w-[430px] mx-auto` — un assureur par écran à toutes les largeurs, conformément à §7.5 : au-delà du téléphone la colonne se centre, elle ne s'étire pas. Le statut déduit se recalcule côté client à chaque frappe, pour que le pharmacien voie la conséquence immédiatement, et le serveur le recalcule à l'enregistrement — le client ne fait jamais foi.
 
@@ -470,7 +470,7 @@ Expected: FAIL — la route rend encore la page d'attente, pas `pharmacy/Declare
 
 Retirer l'entrée `pharmacy.declare` de la table de copie de `ComingSoonController`.
 
-- [ ] **Step 7: Vérifier l'incrément entier**
+- [x] **Step 7: Vérifier l'incrément entier**
 
 ```bash
 npm run build
@@ -479,7 +479,7 @@ composer ci:check
 
 Expected: `ci:check` passe en entier.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A && git commit -m "feat: écran de déclaration mensuelle avec montants"

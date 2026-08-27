@@ -12,9 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
+            // No ->after(): the column it used to follow was the password,
+            // dropped with Fortify. SQLite ignores the clause, so the stale
+            // reference passed the tests while breaking MySQL and Postgres.
             $table->foreignId('current_pharmacy_id')
                 ->nullable()
-                ->after('password')
                 ->constrained('pharmacies')
                 ->nullOnDelete();
         });

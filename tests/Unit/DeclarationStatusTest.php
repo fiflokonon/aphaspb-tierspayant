@@ -28,3 +28,10 @@ test('every status has a French label', function () {
         expect($status->label())->not->toBeEmpty();
     }
 });
+
+test('the derivation is the single source of the rule', function () {
+    expect(DeclarationStatus::derive(1_000, 0))->toBe(DeclarationStatus::Unpaid)
+        ->and(DeclarationStatus::derive(1_000, 1_000))->toBe(DeclarationStatus::Paid)
+        ->and(DeclarationStatus::derive(1_000, 400))->toBe(DeclarationStatus::Partial)
+        ->and(DeclarationStatus::derive(0, 0))->toBe(DeclarationStatus::Unpaid);
+});

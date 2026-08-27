@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Onboarding\PharmacyInsurersController;
 use App\Http\Controllers\Onboarding\PharmacyProfileController;
 use App\Http\Controllers\Pharmacies\PharmacyInvitationController;
+use App\Http\Controllers\Pharmacy\DeclarationController;
 use App\Http\Middleware\EnsurePharmacyMembership;
 use Illuminate\Support\Facades\Route;
 
@@ -42,7 +43,8 @@ Route::middleware(['auth', 'can:declare-payments', 'onboarded'])
     ->prefix('pharmacy')
     ->name('pharmacy.')
     ->group(function () {
-        Route::get('declare', ComingSoonController::class)->name('declare');
+        Route::get('declare', [DeclarationController::class, 'show'])->name('declare');
+        Route::post('declare', [DeclarationController::class, 'store'])->name('declare.store');
         Route::get('history', ComingSoonController::class)->name('history');
         Route::get('insurers', ComingSoonController::class)->name('insurers');
     });

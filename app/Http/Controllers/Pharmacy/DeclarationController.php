@@ -1,0 +1,125 @@
+<?php
+
+namespace App\Http\Controllers\Pharmacy;
+
+use App\Data\Period;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Pharmacy\SaveDeclarationRequest;
+use App\Models\Declaration;
+use App\Services\Declarations\MonthlyDeclarationRun;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+/**
+ * Screen 3a — one insurer at a time, two amounts, a derived status.
+ *
+ * The round is rebuilt from stored declarations on every request rather than
+ * held in a session, so an officine interrupted mid-round simply comes back.
+ */
+class DeclarationController extends Controller
+{
+    public function show(Request $request): Response
+    {
+        $pharmacy = $request->user()->currentPharmacy;
+        $period = $this->period($request);
+        $run = new MonthlyDeclarationRun($pharmacy, $period);
+
+        $insurer = $request->integer('insurer') !== 0
+            ? $run->insurer($request->integer('insurer'))
+            : $run->nextInsurer();
+
+        if ($insurer === null) {
+            return Inertia::render('pharmacy/DeclareDone', [
+                'declared' => $run->declaredCount(),
+                'period' => $this->periodPayload($period),
+                'dashboardUrl' => route('dashboard', ['current_pharmacy' => $pharmacy->slug]),
+            ]);
+        }
+
+        $declaration = $run->declarationFor($insurer);
+
+        return Inertia::render('pharmacy/Declare', [
+            'insurer' => $insurer->only(['id', 'name']),
+            'progress' => $run->progressFor($insurer),
+            'period' => $this->periodPayload($period),
+            'declaration' => $declaration?->only([
+                'amount_invoiced',
+                'amount_received',
+                'status',
+                'is_status_manual',
+                'delay_days',
+                'private_note',
+            ]),
+        ]);
+    }
+
+    public function store(SaveDeclarationRequest $request): RedirectResponse
+    {
+        $pharmacy = $request->user()->currentPharmacy;
+
+        Declaration::query()->updateOrCreate(
+            [
+                'pharmacy_id' => $pharmacy->id,
+                'insurer_id' => $request->integer('insurer_id'),
+                'period_year' => $request->integer('period_year'),
+                'period_month' => $request->integer('period_month'),
+            ],
+            [
+                'amount_invoiced' => $request->integer('amount_invoiced'),
+                'amount_received' => $request->integer('amount_received'),
+                'status' => $request->resolvedStatus(),
+                'is_status_manual' => $request->isStatusManual(),
+                'delay_days' => $request->input('delay_days') === null || $request->input('delay_days') === ''
+                    ? null
+                    : $request->integer('delay_days'),
+                'private_note' => $request->input('private_note') ?: null,
+            ],
+        );
+
+        // Carry the period only when catching up on a past month: without it
+        // each save would bounce back to the current month.
+        $year = $request->integer('period_year');
+        $month = $request->integer('period_month');
+        $isCurrentMonth = $year === now()->year && $month === now()->month;
+
+        return to_route('pharmacy.declare', $isCurrentMonth ? [] : [
+            'year' => $year,
+            'month' => $month,
+        ]);
+    }
+
+    /**
+     * The month being declared: the current one unless the officine picked
+     * another to catch up on.
+     */
+    protected function period(Request $request): Period
+    {
+        $year = $request->integer('year');
+        $month = $request->integer('month');
+
+        if ($year === 0 || $month < 1 || $month > 12) {
+            return new Period(now()->year, now()->month);
+        }
+
+        return new Period($year, $month);
+    }
+
+    /**
+     * @return array{year: int, month: int, label: string}
+     */
+    protected function periodPayload(Period $period): array
+    {
+        $months = [
+            1 => 'JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN',
+            'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE',
+        ];
+
+        return [
+            'year' => $period->year,
+            'month' => $period->month,
+            'label' => $months[$period->month].' '.$period->year,
+        ];
+    }
+}

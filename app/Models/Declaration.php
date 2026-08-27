@@ -91,13 +91,7 @@ class Declaration extends Model
      */
     public function deriveStatus(): DeclarationStatus
     {
-        if ($this->amount_received === 0) {
-            return DeclarationStatus::Unpaid;
-        }
-
-        return $this->amount_received >= $this->amount_invoiced
-            ? DeclarationStatus::Paid
-            : DeclarationStatus::Partial;
+        return DeclarationStatus::derive($this->amount_invoiced, $this->amount_received);
     }
 
     /**

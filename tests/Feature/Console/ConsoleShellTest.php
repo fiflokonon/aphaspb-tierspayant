@@ -44,7 +44,7 @@ test('the anonymity notice states the threshold and the masked count', function 
 
 test('a pharmacy gets the pharmacy shell, without space or notice', function () {
     $this->actingAs(User::factory()->create())
-        ->get(route('pharmacy.declare'))
+        ->get(route('pharmacy.history'))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('pharmacy/ComingSoon')
