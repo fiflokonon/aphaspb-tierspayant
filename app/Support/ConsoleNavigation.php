@@ -124,8 +124,8 @@ class ConsoleNavigation
         return [[
             'tone' => 'gold',
             'title' => 'Encours à relancer',
-            'body' => number_format($outstanding, 0, ',', ' ').' FCFA'
-                .($old > 0 ? ', dont '.number_format($old, 0, ',', ' ').' au-delà de 60 jours' : ''),
+            'body' => Fcfa::format($outstanding).' FCFA'
+                .($old > 0 ? ', dont '.Fcfa::format($old).' au-delà de 60 jours' : ''),
         ]];
     }
 

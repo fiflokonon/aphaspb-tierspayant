@@ -4,6 +4,7 @@ use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
+use App\Support\Fcfa;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia;
 
@@ -94,7 +95,7 @@ test('the sidebar notice carries the outstanding to chase', function () {
 
             expect($notices)->toHaveCount(1)
                 ->and($notices[0]['title'])->toBe('Encours à relancer')
-                ->and($notices[0]['body'])->toContain('800 000');
+                ->and($notices[0]['body'])->toContain(Fcfa::format(800_000));
         });
 });
 

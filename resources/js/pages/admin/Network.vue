@@ -154,7 +154,7 @@ const reloadIndicators = () =>
                 :template="TEMPLATE"
                 :label="indicator.insurerName"
                 :span="5"
-                :explanation="`${indicator.declaringPharmacies} officines déclarantes — affichage à partir de ${indicator.required}, pour garantir l'anonymat`"
+                :explanation="`${indicator.declaringPharmacies} officine${indicator.declaringPharmacies > 1 ? 's' : ''} déclarante${indicator.declaringPharmacies > 1 ? 's' : ''} — affichage à partir de ${indicator.required}, pour garantir l'anonymat`"
             />
             <DataTableRow
                 v-else

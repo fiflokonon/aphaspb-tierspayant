@@ -162,7 +162,7 @@ const series = computed(() =>
                 :template="TEMPLATE"
                 :label="row.insurerName"
                 :span="4"
-                :explanation="`${row.declaringPharmacies} officines déclarantes — les montants s'agrègent à partir de ${row.required}`"
+                :explanation="`${row.declaringPharmacies} officine${row.declaringPharmacies > 1 ? 's' : ''} déclarante${row.declaringPharmacies > 1 ? 's' : ''} — les montants s'agrègent à partir de ${row.required}`"
             />
             <DataTableRow v-else :template="TEMPLATE">
                 <div>{{ row.insurerName }}</div>

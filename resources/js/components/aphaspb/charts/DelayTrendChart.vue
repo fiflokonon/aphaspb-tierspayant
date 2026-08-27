@@ -10,15 +10,23 @@ const props = defineProps<{
     threshold: number;
 }>();
 
-const COLORS = [
-    'var(--officine)',
-    'var(--gold-mid)',
-    'var(--terracotta)',
-    'var(--officine-dark)',
-    'var(--gold-dark)',
-];
+/**
+ * The palette is deliberately narrow — green, gold, terracotta. Past three
+ * series colour alone stops separating them, so the fourth onward reuse the
+ * same three colours with a dashed stroke.
+ */
+const COLORS = ['var(--officine)', 'var(--gold-mid)', 'var(--terracotta)'];
 
-/** Every month any series covers, in order. */
+const SOLID_LIMIT = COLORS.length;
+
+type Row = {
+    index: number;
+    label: string;
+    network: number | null;
+    threshold: number;
+    [series: string]: number | string | null;
+};
+
 const months = computed(() => {
     const keys = new Set<string>(Object.keys(props.network));
 
@@ -28,15 +36,6 @@ const months = computed(() => {
 
     return [...keys].sort();
 });
-
-type Row = {
-    index: number;
-    label: string;
-    network: number | null;
-    threshold: number;
-    /** One entry per series, keyed s0, s1, … */
-    [series: string]: number | string | null;
-};
 
 const data = computed<Row[]>(() =>
     months.value.map((key, index) => {
@@ -55,19 +54,37 @@ const data = computed<Row[]>(() =>
     }),
 );
 
-const accessors = computed(() => [
-    ...props.series.map(
-        (_, position) => (row: Row) => row[`s${position}`] as number | null,
-    ),
-    (row: Row) => row.network as number | null,
-    (row: Row) => row.threshold as number,
-]);
+const isDashed = (position: number) => position >= SOLID_LIMIT;
 
-const colors = computed(() => [
-    ...props.series.map((_, position) => COLORS[position % COLORS.length]),
-    'rgb(23 33 28 / 0.35)',
-    'rgb(23 33 28 / 0.22)',
-]);
+const colorFor = (position: number) => COLORS[position % COLORS.length];
+
+/**
+ * One VisLine per stroke pattern.
+ *
+ * lineDashArray is a single value per component, not a per-series array: giving
+ * it an array dashes every line in that component. Splitting the series across
+ * layers is what actually lets some read solid and others dashed.
+ */
+const solid = computed(() =>
+    props.series
+        .map((_, position) => position)
+        .filter((position) => !isDashed(position)),
+);
+
+const dashed = computed(() =>
+    props.series
+        .map((_, position) => position)
+        .filter((position) => isDashed(position)),
+);
+
+const accessorsFor = (positions: number[]) =>
+    positions.map(
+        (position) => (row: Row) => row[`s${position}`] as number | null,
+    );
+
+const colorsFor = (positions: number[]) => positions.map(colorFor);
+
+const x = (row: Row) => row.index;
 </script>
 
 <template>
@@ -79,21 +96,33 @@ const colors = computed(() => [
                 class="flex items-center gap-2"
             >
                 <span
-                    class="h-[3px] w-4 rounded-full"
-                    :style="{ background: COLORS[position % COLORS.length] }"
+                    class="h-[3px] w-5 rounded-full"
+                    :style="{
+                        background: colorFor(position),
+                        opacity: isDashed(position) ? 0.6 : 1,
+                    }"
                 />
                 <span class="text-[11px] font-medium text-ink/60">
                     {{ one.name }}
                 </span>
             </div>
+
             <div class="flex items-center gap-2">
-                <span class="h-[3px] w-4 rounded-full bg-ink/[0.35]" />
+                <span
+                    class="h-[3px] w-5 rounded-full bg-ink/[0.4] opacity-70"
+                />
                 <span class="text-[11px] font-medium text-ink/60">
                     Moyenne réseau
                 </span>
             </div>
-            <div class="ml-auto font-mono text-[10px] text-ink/[0.45]">
-                SEUIL {{ props.threshold }} JOURS
+
+            <div class="flex items-center gap-2">
+                <span
+                    class="h-[3px] w-5 rounded-full bg-ink/[0.38] opacity-60"
+                />
+                <span class="font-mono text-[10px] text-ink/[0.5]">
+                    SEUIL {{ props.threshold }} JOURS
+                </span>
             </div>
         </div>
 
@@ -102,12 +131,37 @@ const colors = computed(() => [
             :height="220"
             class="mt-3 [--vis-axis-tick-label-color:rgb(23_33_28_/_0.45)] [--vis-axis-tick-label-font-size:10px]"
         >
+            <!-- The reference lines go underneath the measurements. -->
             <VisLine
-                :x="(row: Row) => row.index"
-                :y="accessors"
-                :color="colors"
+                :x="x"
+                :y="(row: Row) => row.threshold"
+                color="rgb(23 33 28 / 0.30)"
+                :line-dash-array="[2, 3]"
+                :line-width="1.5"
+            />
+            <VisLine
+                :x="x"
+                :y="(row: Row) => row.network"
+                color="rgb(23 33 28 / 0.42)"
+                :line-dash-array="[7, 4]"
+                :line-width="1.5"
+            />
+            <VisLine
+                v-if="solid.length"
+                :x="x"
+                :y="accessorsFor(solid)"
+                :color="colorsFor(solid)"
                 :line-width="2"
             />
+            <VisLine
+                v-if="dashed.length"
+                :x="x"
+                :y="accessorsFor(dashed)"
+                :color="colorsFor(dashed)"
+                :line-dash-array="[6, 4]"
+                :line-width="2"
+            />
+
             <VisAxis
                 type="x"
                 :tick-format="(index: number) => data[index]?.label ?? ''"

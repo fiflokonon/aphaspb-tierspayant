@@ -6,7 +6,12 @@ defineProps<{
 </script>
 
 <template>
-    <div class="flex items-center gap-[10px]">
+    <!--
+        flex-1 on the root, not only on the track: without it the component
+        shrinks to its content and the segments collapse to zero width, leaving
+        the counter sitting against the close button.
+    -->
+    <div class="flex flex-1 items-center gap-[10px]">
         <div class="flex flex-1 gap-1">
             <div
                 v-for="step in total"

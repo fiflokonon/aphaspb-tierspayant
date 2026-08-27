@@ -284,14 +284,19 @@ multi-séries avec le seuil de 30 jours en repère pointillé), sur `@unovis/vue
   Deux champs de montant, statut déduit affiché et corrigeable, pas-à-pas de délai,
   note privée repliée. Rappel de confidentialité en pied d'écran.
 
-  **Responsive, pas mobile uniquement.** Le canvas présente cet artboard à 390 px
-  parce que c'est le cas d'usage le plus contraint — une déclaration entre deux
-  clients, sur un écran de 5 pouces — mais l'écran doit fonctionner à toutes les
-  largeurs. Au-delà de la largeur du téléphone, le parcours reste un assureur par
-  écran et se centre dans une colonne bornée plutôt que de s'étirer : les cibles
-  tactiles de 44 px, les gros champs de montant et le pas-à-pas de délai gardent
-  leur taille, ce qui les rend simplement confortables à la souris. Ne pas dériver
-  vers une seconde mise en page au-dessus d'un point de rupture.
+  **Responsive, et le grand écran a droit à sa propre mise en page.** Le canvas
+  présente cet artboard à 390 px parce que c'est le cas d'usage le plus contraint
+  — une déclaration entre deux clients, sur un écran de 5 pouces. Une colonne de
+  430 px centrée dans un écran de 1900 se lit comme un ruban abandonné : le
+  périmètre autorise donc explicitement une composition distincte au-dessus de
+  `lg`.
+
+  Ce qui ne change pas : **un assureur par écran**, le même ordre de lecture, les
+  cibles tactiles de 44 px et les gros champs de montant. Ce qui change : la paire
+  se scinde en deux colonnes dans une carte bornée à ~920 px — ce que l'on saisit
+  à gauche, ce que cela signifie à droite (statut déduit, délai, action). La croix
+  de sortie devient un lien « Reprendre plus tard », la barre latérale de
+  navigation restant disponible.
 - **`3b` parcours des paiements (officine, desktop)** — quatre KPI (facturé sur
   12 mois, taux de recouvrement, délai moyen, encours à relancer avec ancienneté),
   barres facturé/encaissé mois par mois, courbe du délai avec seuil, puis
