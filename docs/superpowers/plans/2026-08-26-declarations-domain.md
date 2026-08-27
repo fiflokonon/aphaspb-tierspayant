@@ -50,7 +50,7 @@ Ce plan est **exclusivement backend**. Aucune route, aucun contrôleur, aucun é
   - `InsurerFactory`, avec état `inactive()`
   - `InsurerSeeder`, idempotent
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Declarations/InsurerTest.php`:
 
@@ -111,12 +111,12 @@ test('the seeder loads the Benin insurers and can run twice', function () {
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Declarations/InsurerTest.php`
 Expected: FAIL — `Class "App\Models\Insurer" not found`
 
-- [ ] **Step 3: Créer la migration**
+- [x] **Step 3: Créer la migration**
 
 Create `database/migrations/2026_02_01_000001_create_insurers_table.php`:
 
@@ -154,7 +154,7 @@ return new class extends Migration
 };
 ```
 
-- [ ] **Step 4: Créer le modèle**
+- [x] **Step 4: Créer le modèle**
 
 Create `app/Models/Insurer.php`:
 
@@ -232,7 +232,7 @@ class Insurer extends Model
 
 Note : la relation `declarations()` et l'import `HasMany` référencent un modèle créé en tâche 2. Si l'exécution est strictement séquentielle, ajouter cette méthode à la fin de la tâche 2 plutôt qu'ici.
 
-- [ ] **Step 5: Ajouter la relation côté Pharmacy**
+- [x] **Step 5: Ajouter la relation côté Pharmacy**
 
 Dans `app/Models/Pharmacy.php`, ajouter :
 
@@ -248,7 +248,7 @@ Dans `app/Models/Pharmacy.php`, ajouter :
     }
 ```
 
-- [ ] **Step 6: Créer la factory**
+- [x] **Step 6: Créer la factory**
 
 Create `database/factories/InsurerFactory.php`:
 
@@ -290,7 +290,7 @@ class InsurerFactory extends Factory
 }
 ```
 
-- [ ] **Step 7: Créer le seeder**
+- [x] **Step 7: Créer le seeder**
 
 Create `database/seeders/InsurerSeeder.php`:
 
@@ -330,12 +330,12 @@ class InsurerSeeder extends Seeder
 
 Dans `database/seeders/DatabaseSeeder.php`, appeler `$this->call(InsurerSeeder::class);`.
 
-- [ ] **Step 8: Lancer le test pour vérifier qu'il passe**
+- [x] **Step 8: Lancer le test pour vérifier qu'il passe**
 
 Run: `vendor/bin/pest tests/Feature/Declarations/InsurerTest.php`
 Expected: PASS, 6 tests
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -367,7 +367,7 @@ git commit -m "feat: assureurs et rattachement des officines"
   - `DeclarationFactory` avec états `paid()`, `partial()`, `unpaid()`, `rejected()`
   - `Pharmacy::declarations()`, `Insurer::declarations()`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Declarations/DeclarationTest.php`:
 
@@ -503,12 +503,12 @@ test('a private note is capped at 150 characters', function () {
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Declarations/DeclarationTest.php`
 Expected: FAIL — `Class "App\Enums\DeclarationStatus" not found`
 
-- [ ] **Step 3: Créer l'énumération de statut**
+- [x] **Step 3: Créer l'énumération de statut**
 
 Create `app/Enums/DeclarationStatus.php`:
 
@@ -550,7 +550,7 @@ enum DeclarationStatus: string
 }
 ```
 
-- [ ] **Step 4: Créer la migration**
+- [x] **Step 4: Créer la migration**
 
 Create `database/migrations/2026_02_01_000002_create_declarations_table.php`:
 
@@ -593,7 +593,7 @@ return new class extends Migration
 
 L'index secondaire sert les agrégats de la tâche 4, qui groupent par assureur sur une période.
 
-- [ ] **Step 5: Créer le modèle**
+- [x] **Step 5: Créer le modèle**
 
 Create `app/Models/Declaration.php`:
 
@@ -757,7 +757,7 @@ class Declaration extends Model
 }
 ```
 
-- [ ] **Step 6: Créer la factory**
+- [x] **Step 6: Créer la factory**
 
 Create `database/factories/DeclarationFactory.php`:
 
@@ -846,7 +846,7 @@ class DeclarationFactory extends Factory
 }
 ```
 
-- [ ] **Step 7: Ajouter les relations inverses**
+- [x] **Step 7: Ajouter les relations inverses**
 
 Dans `app/Models/Pharmacy.php` et `app/Models/Insurer.php` :
 
@@ -860,12 +860,12 @@ Dans `app/Models/Pharmacy.php` et `app/Models/Insurer.php` :
     }
 ```
 
-- [ ] **Step 8: Lancer le test pour vérifier qu'il passe**
+- [x] **Step 8: Lancer le test pour vérifier qu'il passe**
 
 Run: `vendor/bin/pest tests/Feature/Declarations/DeclarationTest.php`
 Expected: PASS, 11 tests
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -893,7 +893,7 @@ git commit -m "feat: déclarations mensuelles avec montants et statut déduit"
   - `SettingsRepository::anonymityMinPharmacies(): int` (défaut 5)
   - `SettingsRepository::set(string $key, int|string $value): void` — vide le cache
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 Create `tests/Feature/Declarations/DeclarablePeriodTest.php`:
 
@@ -965,12 +965,12 @@ test('writing a setting clears the cached read', function () {
 });
 ```
 
-- [ ] **Step 2: Lancer les tests pour vérifier qu'ils échouent**
+- [x] **Step 2: Lancer les tests pour vérifier qu'ils échouent**
 
 Run: `vendor/bin/pest tests/Feature/Declarations/DeclarablePeriodTest.php tests/Feature/SettingsRepositoryTest.php`
 Expected: FAIL — les classes `DeclarablePeriod` et `SettingsRepository` n'existent pas.
 
-- [ ] **Step 3: Créer la règle de période**
+- [x] **Step 3: Créer la règle de période**
 
 Create `app/Rules/DeclarablePeriod.php`:
 
@@ -1036,7 +1036,7 @@ class DeclarablePeriod implements ValidationRule
 }
 ```
 
-- [ ] **Step 4: Créer la table et le modèle de réglages**
+- [x] **Step 4: Créer la table et le modèle de réglages**
 
 Create `database/migrations/2026_02_01_000003_create_settings_table.php`:
 
@@ -1090,7 +1090,7 @@ class Setting extends Model
 }
 ```
 
-- [ ] **Step 5: Créer le dépôt de réglages**
+- [x] **Step 5: Créer le dépôt de réglages**
 
 Create `app/Services/Settings/SettingsRepository.php`:
 
@@ -1159,12 +1159,12 @@ class SettingsRepository
 }
 ```
 
-- [ ] **Step 6: Lancer les tests pour vérifier qu'ils passent**
+- [x] **Step 6: Lancer les tests pour vérifier qu'ils passent**
 
 Run: `vendor/bin/pest tests/Feature/Declarations/DeclarablePeriodTest.php tests/Feature/SettingsRepositoryTest.php`
 Expected: PASS, 8 tests
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -1195,7 +1195,7 @@ Cette tâche porte la règle de confidentialité de tout le projet. C'est le seu
   - `NetworkStatsService::delayTrend(int $months): array` — une entrée par assureur au-dessus du seuil, plus la moyenne réseau
   - `NetworkStatsService::aggregatedAmounts(Period $from, Period $to): array`
 
-- [ ] **Step 1: Écrire le test du seuil d'anonymat — le test qui compte le plus**
+- [x] **Step 1: Écrire le test du seuil d'anonymat — le test qui compte le plus**
 
 Create `tests/Feature/Network/AnonymityThresholdTest.php`:
 
@@ -1326,7 +1326,7 @@ test('no aggregate exposes anything traceable to one pharmacy', function () {
 });
 ```
 
-- [ ] **Step 2: Écrire le test des indicateurs**
+- [x] **Step 2: Écrire le test des indicateurs**
 
 Create `tests/Feature/Network/NetworkStatsServiceTest.php`:
 
@@ -1461,12 +1461,12 @@ test('the aggregation runs in a bounded number of queries', function () {
 
 Le dernier test est le garde-fou contre le N+1 : deux requêtes, quel que soit le nombre d'assureurs — une pour les agrégats groupés, une pour les noms d'assureurs.
 
-- [ ] **Step 3: Lancer les tests pour vérifier qu'ils échouent**
+- [x] **Step 3: Lancer les tests pour vérifier qu'ils échouent**
 
 Run: `vendor/bin/pest tests/Feature/Network`
 Expected: FAIL — `Class "App\Data\Period" not found`
 
-- [ ] **Step 4: Créer les DTO**
+- [x] **Step 4: Créer les DTO**
 
 Create `app/Data/Period.php`:
 
@@ -1570,7 +1570,7 @@ readonly class InsurerIndicators
 }
 ```
 
-- [ ] **Step 5: Créer le service**
+- [x] **Step 5: Créer le service**
 
 Create `app/Services/Network/NetworkStatsService.php`:
 
@@ -1774,12 +1774,12 @@ class NetworkStatsService
 
 Note d'implémentation : `->settledOnly()` dans `delayTrend()` n'existe pas — remplacer par `->settled()`, le scope de la tâche 2. Corriger à l'écriture.
 
-- [ ] **Step 6: Lancer les tests pour vérifier qu'ils passent**
+- [x] **Step 6: Lancer les tests pour vérifier qu'ils passent**
 
 Run: `vendor/bin/pest tests/Feature/Network`
 Expected: PASS, 12 tests. Si le test de comptage de requêtes échoue avec plus de 2 requêtes, une boucle interroge la base par assureur : la corriger, ne pas relever la borne.
 
-- [ ] **Step 7: Vérifier l'ensemble**
+- [x] **Step 7: Vérifier l'ensemble**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -1789,7 +1789,7 @@ vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
 Expected: suite verte, phpstan 0 erreur.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A
