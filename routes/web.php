@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\JoomlaCallbackController;
 use App\Http\Controllers\Auth\LoginRedirectController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\ComingSoonController;
+use App\Http\Controllers\Dev\LocalLoginController;
 use App\Http\Controllers\Onboarding\PharmacyInsurersController;
 use App\Http\Controllers\Onboarding\PharmacyProfileController;
 use App\Http\Controllers\Pharmacies\PharmacyInvitationController;
@@ -63,3 +64,20 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__.'/settings.php';
+
+/*
+|--------------------------------------------------------------------------
+| Local development only
+|--------------------------------------------------------------------------
+|
+| A side door that opens a session without Joomla, so the screens can be
+| looked at before the CMS plugin exists. Registered only when the
+| application is local: in production these routes are absent from the
+| router, not merely guarded. tests/Feature/Dev/LocalLoginTest.php asserts
+| that absence.
+|
+*/
+
+if (app()->isLocal()) {
+    Route::get('dev/login/{profile}', LocalLoginController::class)->name('dev.login');
+}
