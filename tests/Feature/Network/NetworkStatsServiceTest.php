@@ -1,5 +1,7 @@
 <?php
 
+use App\Data\InsufficientData;
+use App\Data\InsurerAmounts;
 use App\Data\InsurerIndicators;
 use App\Data\Period;
 use App\Enums\DeclarationStatus;
@@ -8,6 +10,7 @@ use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Services\Network\NetworkStatsService;
 use App\Services\Settings\SettingsRepository;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
@@ -133,4 +136,76 @@ test('the aggregation costs two queries whatever the number of insurers', functi
     // One grouped aggregate, one lookup of insurer names. Eight insurers, or
     // eight hundred, must not change this number.
     expect(DB::getQueryLog())->toHaveCount(2);
+});
+
+test('the network weighted delay differs from the plain average', function () {
+    recordForDistinctPharmacies($this->insurer, [
+        ['amount_invoiced' => 100_000, 'amount_received' => 100_000, 'delay_days' => 10],
+        ['amount_invoiced' => 900_000, 'amount_received' => 900_000, 'delay_days' => 100],
+        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 10],
+        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 10],
+        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 10],
+    ]);
+
+    $summary = $this->service->networkSummary(new Period(2026, 8), new Period(2026, 8));
+
+    // Plain average: 28. Weighted by the money actually paid: 91.
+    expect($summary['averageDelayDays'])->toBe(28.0)
+        ->and($summary['weightedDelayDays'])->toBe(91.0);
+});
+
+test('the network outstanding beyond ninety days counts only old enough months', function () {
+    $this->travelTo(CarbonImmutable::create(2026, 8, 15));
+
+    recordForDistinctPharmacies($this->insurer, [
+        ['amount_invoiced' => 300_000, 'amount_received' => 0, 'delay_days' => null],
+    ]);
+
+    Declaration::factory()->create([
+        'pharmacy_id' => Pharmacy::factory(),
+        'insurer_id' => $this->insurer->id,
+        'period_year' => 2026,
+        'period_month' => 3,
+        'amount_invoiced' => 700_000,
+        'amount_received' => 0,
+        'delay_days' => null,
+    ]);
+
+    $summary = $this->service->networkSummary(new Period(2026, 1), new Period(2026, 8));
+
+    expect($summary['outstandingBeyond90'])->toBe(700_000);
+});
+
+test('the aggregated amounts per insurer honour the anonymity threshold', function () {
+    $shown = Insurer::factory()->create(['name' => 'Assez de declarants']);
+    $hidden = Insurer::factory()->create(['name' => 'Trop peu']);
+
+    foreach (range(1, 5) as $i) {
+        Declaration::factory()->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $shown->id,
+            'period_year' => 2026,
+            'period_month' => 8,
+            'amount_invoiced' => 1_000_000,
+            'amount_received' => 700_000,
+            'delay_days' => 30,
+        ]);
+    }
+
+    foreach (range(1, 3) as $i) {
+        Declaration::factory()->paid()->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $hidden->id,
+            'period_year' => 2026,
+            'period_month' => 8,
+        ]);
+    }
+
+    $rows = $this->service->aggregatedByInsurer(new Period(2026, 8), new Period(2026, 8));
+
+    expect($rows[$shown->id])->toBeInstanceOf(InsurerAmounts::class)
+        ->and($rows[$shown->id]->invoiced)->toBe(5_000_000)
+        ->and($rows[$shown->id]->outstanding)->toBe(1_500_000)
+        ->and($rows[$shown->id]->recoveryRate)->toBe(70.0)
+        ->and($rows[$hidden->id])->toBeInstanceOf(InsufficientData::class);
 });

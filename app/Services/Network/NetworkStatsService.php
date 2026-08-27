@@ -3,6 +3,7 @@
 namespace App\Services\Network;
 
 use App\Data\InsufficientData;
+use App\Data\InsurerAmounts;
 use App\Data\InsurerIndicators;
 use App\Data\Period;
 use App\Enums\DeclarationStatus;
@@ -67,7 +68,7 @@ class NetworkStatsService
             $declaring = (int) $row->declaring_pharmacies;
             $insurerId = (int) $row->insurer_id;
 
-            if ($declaring < $minimum) {
+            if (! $this->isSufficient($declaring, $minimum)) {
                 $indicators[$insurerId] = new InsufficientData(
                     declaringPharmacies: $declaring,
                     required: $minimum,
@@ -175,7 +176,7 @@ class NetworkStatsService
      * the distinct pharmacy count cannot be summed across insurers because one
      * officine declares to several.
      *
-     * @return array{declaringPharmacies: int, averageDelayDays: float|null, withinThresholdShare: float|null, rejectionRate: float|null, declarations: int}
+     * @return array{declaringPharmacies: int, declarations: int, averageDelayDays: float|null, weightedDelayDays: float|null, withinThresholdShare: float|null, rejectionRate: float|null, outstandingBeyond90: int}
      */
     public function networkSummary(Period $from, Period $to, ?string $city = null): array
     {
@@ -191,18 +192,117 @@ class NetworkStatsService
                 [$threshold],
             )
             ->selectRaw("SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected")
+            ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days * amount_received ELSE 0 END) as delay_weighted")
+            ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN amount_received ELSE 0 END) as delay_basis")
             ->first();
 
         $total = (int) ($row->total ?? 0);
         $settled = (int) ($row->settled ?? 0);
+        $basis = (int) ($row->delay_basis ?? 0);
 
         return [
             'declaringPharmacies' => (int) ($row->declaring_pharmacies ?? 0),
             'declarations' => $total,
             'averageDelayDays' => $settled > 0 ? round((int) $row->delay_total / $settled, 1) : null,
+            'weightedDelayDays' => $basis > 0 ? round((int) $row->delay_weighted / $basis, 1) : null,
             'withinThresholdShare' => $settled > 0 ? round((int) $row->within_threshold / $settled * 100, 1) : null,
             'rejectionRate' => $total > 0 ? round((int) $row->rejected / $total * 100, 1) : null,
+            'outstandingBeyond90' => $this->outstandingBeyond($from, $to, $city, 90),
         ];
+    }
+
+    /**
+     * Aggregated amounts per insurer, under the same anonymity threshold.
+     *
+     * A second per-insurer aggregation is a second place the rule could be
+     * forgotten, so the decision is delegated to isSufficient() — the one
+     * method both paths consult.
+     *
+     * @return array<int, InsurerAmounts|InsufficientData> keyed by insurer id
+     */
+    public function aggregatedByInsurer(Period $from, Period $to, ?string $city = null): array
+    {
+        $minimum = $this->settings->anonymityMinPharmacies();
+
+        $rows = $this->baseQuery($from, $to, $city)
+            ->select('insurer_id')
+            ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
+            ->selectRaw('SUM(amount_invoiced) as invoiced')
+            ->selectRaw('SUM(amount_received) as received')
+            ->groupBy('insurer_id')
+            ->get();
+
+        $names = Insurer::query()
+            ->whereIn('id', $rows->pluck('insurer_id'))
+            ->pluck('name', 'id');
+
+        $amounts = [];
+
+        foreach ($rows as $row) {
+            $insurerId = (int) $row->insurer_id;
+            $declaring = (int) $row->declaring_pharmacies;
+
+            if (! $this->isSufficient($declaring, $minimum)) {
+                $amounts[$insurerId] = new InsufficientData($declaring, $minimum);
+
+                continue;
+            }
+
+            $invoiced = (int) $row->invoiced;
+            $received = (int) $row->received;
+
+            $amounts[$insurerId] = new InsurerAmounts(
+                insurerName: (string) $names[$insurerId],
+                declaringPharmacies: $declaring,
+                invoiced: $invoiced,
+                received: $received,
+                outstanding: max(0, $invoiced - $received),
+                recoveryRate: $invoiced > 0 ? round($received / $invoiced * 100, 1) : null,
+            );
+        }
+
+        return $amounts;
+    }
+
+    /**
+     * How much of the network's outstanding balance is older than $days.
+     *
+     * Age is counted from the end of the declared month, as on the officine
+     * side: the CDC stores no invoice date.
+     */
+    public function outstandingBeyond(Period $from, Period $to, ?string $city, int $days): int
+    {
+        $rows = $this->baseQuery($from, $to, $city)
+            ->whereRaw('amount_invoiced > amount_received')
+            ->select('period_year', 'period_month')
+            ->selectRaw('SUM(amount_invoiced - amount_received) as outstanding')
+            ->groupBy('period_year', 'period_month')
+            ->get();
+
+        $today = now()->startOfDay();
+        $total = 0;
+
+        foreach ($rows as $row) {
+            $age = (int) now()
+                ->setDate((int) $row->period_year, (int) $row->period_month, 1)
+                ->endOfMonth()
+                ->startOfDay()
+                ->diffInDays($today, absolute: false);
+
+            if ($age > $days) {
+                $total += (int) $row->outstanding;
+            }
+        }
+
+        return $total;
+    }
+
+    /**
+     * The single place that decides whether an insurer's figures may be shown.
+     */
+    protected function isSufficient(int $declaringPharmacies, int $minimum): bool
+    {
+        return $declaringPharmacies >= $minimum;
     }
 
     /**
