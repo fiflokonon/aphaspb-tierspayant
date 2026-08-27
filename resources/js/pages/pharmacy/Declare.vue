@@ -2,7 +2,7 @@
 import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import AmountField from '@/components/aphaspb/AmountField.vue';
-import DelayStepper from '@/components/aphaspb/DelayStepper.vue';
+import DateField from '@/components/aphaspb/DateField.vue';
 import DerivedStatusNotice from '@/components/aphaspb/DerivedStatusNotice.vue';
 import WizardProgress from '@/components/aphaspb/WizardProgress.vue';
 import { formatFcfa } from '@/lib/fcfa';
@@ -13,14 +13,17 @@ type Declaration = {
     amount_received: number;
     status: DeclarationStatus;
     is_status_manual: boolean;
+    invoice_deposited_on: string | null;
+    paid_on: string | null;
     delay_days: number | null;
     private_note: string | null;
 };
 
 const props = defineProps<{
-    insurer: { id: number; name: string };
+    insurer: { id: number; name: string; standardDelayDays: number };
     progress: { current: number; total: number };
     period: { year: number; month: number; label: string };
+    dateBounds: { earliest: string; latest: string };
     declaration: Declaration | null;
 }>();
 
@@ -29,7 +32,10 @@ setLayoutProps({ focus: true });
 
 const invoiced = ref(props.declaration?.amount_invoiced ?? 0);
 const received = ref(props.declaration?.amount_received ?? 0);
-const delay = ref<number | null>(props.declaration?.delay_days ?? null);
+const depositedOn = ref<string | null>(
+    props.declaration?.invoice_deposited_on ?? null,
+);
+const paidOn = ref<string | null>(props.declaration?.paid_on ?? null);
 const note = ref(props.declaration?.private_note ?? '');
 const noteOpen = ref(!!props.declaration?.private_note);
 const rejected = ref(props.declaration?.status === 'rejected');
@@ -78,6 +84,29 @@ const outstanding = computed(() =>
 
 const carriesDelay = computed(
     () => status.value === 'paid' || status.value === 'partial',
+);
+
+/**
+ * Mirrors Declaration::deriveDelayDays(). The delay is no longer typed in: it
+ * is the distance between the two dates, and the server recomputes it on save.
+ */
+const delay = computed<number | null>(() => {
+    if (depositedOn.value === null || paidOn.value === null) {
+        return null;
+    }
+
+    const from = Date.parse(depositedOn.value);
+    const to = Date.parse(paidOn.value);
+
+    if (Number.isNaN(from) || Number.isNaN(to) || to < from) {
+        return null;
+    }
+
+    return Math.round((to - from) / 86_400_000);
+});
+
+const beyondStandardDelay = computed(
+    () => delay.value !== null && delay.value > props.insurer.standardDelayDays,
 );
 
 const isLast = computed(() => props.progress.current >= props.progress.total);
@@ -173,6 +202,34 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                         />
                     </div>
 
+                    <!--
+                        The two dates sit with the amounts rather than in the
+                        summary panel: they are typed, not deduced. What is
+                        deduced from them — the delay — is what appears on the
+                        right, beside the status it belongs with.
+                    -->
+                    <div class="mt-3 flex flex-col gap-3 sm:flex-row">
+                        <DateField
+                            v-model="depositedOn"
+                            class="flex-1"
+                            label="DÉPÔT DE LA FACTURE"
+                            name="invoice_deposited_on"
+                            :min="dateBounds.earliest"
+                            :max="dateBounds.latest"
+                            :error="errors.invoice_deposited_on"
+                        />
+                        <DateField
+                            v-if="carriesDelay"
+                            v-model="paidOn"
+                            class="flex-1"
+                            label="DATE DE PAIEMENT"
+                            name="paid_on"
+                            :min="depositedOn ?? dateBounds.earliest"
+                            :max="dateBounds.latest"
+                            :error="errors.paid_on"
+                        />
+                    </div>
+
                     <button
                         type="button"
                         class="mt-4 text-[11.5px] font-semibold text-ink/60 underline decoration-ink/20 underline-offset-4 transition-colors hover:text-ink"
@@ -246,13 +303,49 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                         :manual="rejected"
                     />
 
-                    <DelayStepper
+                    <div
                         v-if="carriesDelay && !exceedsInvoiced"
-                        v-model="delay"
-                        name="delay_days"
-                        hint="Compté depuis le dépôt de la facture."
-                        :error="errors.delay_days"
-                    />
+                        class="rounded-xl border border-ink/[0.11] bg-card px-[15px] py-[14px]"
+                    >
+                        <div class="flex items-center gap-[10px]">
+                            <div
+                                class="text-[12.5px]/[1.3] font-semibold text-ink"
+                            >
+                                Délai de paiement
+                            </div>
+                            <div
+                                class="ml-auto text-[17px]/none font-bold"
+                                :class="
+                                    beyondStandardDelay
+                                        ? 'text-terracotta-dark'
+                                        : 'text-ink'
+                                "
+                            >
+                                {{ delay ?? '—'
+                                }}<span
+                                    class="text-[11px] font-medium text-ink/50"
+                                >
+                                    j</span
+                                >
+                            </div>
+                        </div>
+                        <p class="mt-[10px] text-[11px]/[1.45] text-ink/[0.45]">
+                            <template v-if="delay === null">
+                                Renseignez les deux dates : le délai s'en
+                                déduit.
+                            </template>
+                            <template v-else-if="beyondStandardDelay">
+                                Au-delà des
+                                {{ insurer.standardDelayDays }} jours retenus
+                                pour {{ insurer.name }}.
+                            </template>
+                            <template v-else>
+                                Dans les
+                                {{ insurer.standardDelayDays }} jours retenus
+                                pour {{ insurer.name }}.
+                            </template>
+                        </p>
+                    </div>
 
                     <p
                         v-if="errors.period || errors.insurer_id"
@@ -262,7 +355,7 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                     </p>
 
                     <!--
-                        No mt-auto: with no delay stepper to show the panel is
+                        No mt-auto: with no delay card to show the panel is
                         short, and pinning the button to the bottom of a
                         stretched column opens a hole between it and the summary
                         it belongs to.

@@ -9,21 +9,26 @@ type Row = {
     id: number;
     name: string;
     isActive: boolean;
+    standardDelayDays: number;
     pharmacies: number;
 };
 
-const props = defineProps<{
+defineProps<{
     insurers: Row[];
-    threshold: number;
     anonymityMinimum: number;
 }>();
 
-const TEMPLATE = '2.2fr 1fr 1fr 1.2fr';
-const COLUMNS = ['ASSUREUR', 'OFFICINES (n)', 'ÉTAT', 'ACTION'];
+const TEMPLATE = '2fr .8fr 1.1fr .9fr 1.2fr';
+const COLUMNS = [
+    'ASSUREUR',
+    'OFFICINES (n)',
+    'DÉLAI STANDARD',
+    'ÉTAT',
+    'ACTION',
+];
 
 const editing = ref<number | null>(null);
 const draft = ref('');
-const threshold = ref(props.threshold);
 
 function startEditing(row: Row) {
     editing.value = row.id;
@@ -92,6 +97,40 @@ function startEditing(row: Row) {
 
             <div class="font-medium text-ink/60">{{ row.pharmacies }}</div>
 
+            <!--
+                Typed, not stepped: an admin transcribing a convention knows the
+                figure and should be able to write it. Saved on change, so the
+                row carries no button of its own.
+            -->
+            <div>
+                <Form
+                    :action="`/admin/insurers/${row.id}`"
+                    method="patch"
+                    #default="{ submit, processing, errors }"
+                >
+                    <div class="flex items-center gap-[6px]">
+                        <input
+                            :value="row.standardDelayDays"
+                            name="standard_delay_days"
+                            type="number"
+                            min="1"
+                            max="365"
+                            :disabled="processing"
+                            :aria-label="`Délai standard de ${row.name} en jours`"
+                            class="h-8 w-16 rounded-md border-[1.5px] border-ink/[0.13] bg-card px-2 text-xs outline-none focus:border-gold-mid/[0.55] disabled:opacity-60"
+                            @change="submit"
+                        />
+                        <span class="text-[11px] text-ink/50">j</span>
+                    </div>
+                    <p
+                        v-if="errors.standard_delay_days"
+                        class="mt-1 text-[10.5px]/[1.3] text-terracotta-dark"
+                    >
+                        {{ errors.standard_delay_days }}
+                    </p>
+                </Form>
+            </div>
+
             <div>
                 <span
                     v-if="row.isActive"
@@ -156,6 +195,15 @@ function startEditing(row: Row) {
                     aria-label="Nom du nouvel assureur"
                     class="h-[42px] min-w-0 flex-1 rounded-[10px] border-[1.5px] border-ink/[0.13] bg-card px-3 text-[13px] outline-none focus:border-gold-mid/[0.55]"
                 />
+                <input
+                    name="standard_delay_days"
+                    type="number"
+                    min="1"
+                    max="365"
+                    value="30"
+                    aria-label="Délai standard en jours"
+                    class="h-[42px] w-full shrink-0 rounded-[10px] border-[1.5px] border-ink/[0.13] bg-card px-3 text-[13px] outline-none focus:border-gold-mid/[0.55] sm:w-20"
+                />
                 <button
                     type="submit"
                     :disabled="processing"
@@ -174,41 +222,15 @@ function startEditing(row: Row) {
 
         <div class="rounded-[11px] border border-border bg-card p-4">
             <div class="text-[12.5px] font-bold text-ink">
-                Seuil de paiement de référence
+                Le délai est propre à chaque assureur
             </div>
-            <p class="mt-1 text-[11px]/[1.4] text-ink/50">
-                Sert au calcul de la part réglée « dans les délais ».
+            <p class="mt-1 text-[11px]/[1.45] text-ink/50">
+                La part réglée « dans les délais » compare chaque déclaration au
+                délai inscrit sur la ligne de son assureur, et non plus à un
+                seuil unique pour tout le réseau. Un assureur créé depuis une
+                officine démarre à 30 jours, à corriger ici dès que la
+                convention est connue.
             </p>
-            <Form
-                action="/admin/threshold"
-                method="patch"
-                class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center"
-                #default="{ errors, processing }"
-            >
-                <input
-                    v-model="threshold"
-                    name="payment_delay_threshold_days"
-                    type="number"
-                    min="1"
-                    max="365"
-                    aria-label="Seuil de paiement en jours"
-                    class="h-[42px] w-full rounded-[10px] border-[1.5px] border-ink/[0.13] bg-card px-3 text-[13px] outline-none focus:border-gold-mid/[0.55] sm:w-24"
-                />
-                <span class="text-[12px] text-ink/60">jours</span>
-                <button
-                    type="submit"
-                    :disabled="processing"
-                    class="h-[42px] shrink-0 rounded-[10px] bg-primary px-4 text-[12.5px] font-bold text-primary-foreground disabled:opacity-60 sm:ml-auto"
-                >
-                    Enregistrer
-                </button>
-                <p
-                    v-if="errors.payment_delay_threshold_days"
-                    class="text-[11px]/[1.4] text-terracotta-dark"
-                >
-                    {{ errors.payment_delay_threshold_days }}
-                </p>
-            </Form>
 
             <p
                 class="mt-4 border-t border-ink/[0.08] pt-3 text-[11px]/[1.45] text-ink/50"

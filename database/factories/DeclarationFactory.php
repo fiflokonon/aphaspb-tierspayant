@@ -6,6 +6,7 @@ use App\Enums\DeclarationStatus;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -34,6 +35,34 @@ class DeclarationFactory extends Factory
             'delay_days' => fake()->numberBetween(8, 95),
             'private_note' => null,
         ];
+    }
+
+    /**
+     * Turn the requested delay back into the pair of dates that produces it.
+     *
+     * Tests and the demo seeder describe a declaration by its delay, which is
+     * the readable unit; the model derives that delay from the deposit and
+     * payment dates. Rather than make every caller compute a pair, the factory
+     * anchors one on the declared month — unless the caller gave dates itself.
+     */
+    public function configure(): static
+    {
+        return $this->afterMaking(function (Declaration $declaration) {
+            if ($declaration->invoice_deposited_on !== null) {
+                return;
+            }
+
+            $deposited = CarbonImmutable::create(
+                $declaration->period_year,
+                $declaration->period_month,
+                1,
+            )->endOfMonth()->startOfDay();
+
+            $declaration->invoice_deposited_on = $deposited;
+            $declaration->paid_on = $declaration->delay_days === null
+                ? null
+                : $deposited->addDays($declaration->delay_days);
+        });
     }
 
     /**

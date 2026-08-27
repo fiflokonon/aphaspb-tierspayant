@@ -80,6 +80,39 @@ test('the within threshold share counts settled declarations under 30 days', fun
     expect($indicators->withinThresholdShare)->toBe(60.0);
 });
 
+test('the within threshold share is judged against the insurer own standard delay', function () {
+    $this->insurer->update(['standard_delay_days' => 60]);
+
+    recordForDistinctPharmacies($this->insurer, [
+        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 10],
+        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 30],
+        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 31],
+        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 90],
+        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 5],
+    ]);
+
+    $indicators = $this->service->perInsurer(new Period(2026, 8), new Period(2026, 8))[$this->insurer->id];
+
+    // The same five delays that give 60 % against thirty days give 80 % here.
+    expect($indicators->withinThresholdShare)->toBe(80.0)
+        ->and($indicators->standardDelayDays)->toBe(60);
+});
+
+test('the network within threshold share honours each insurer own standard delay', function () {
+    $lenient = Insurer::factory()->create(['standard_delay_days' => 90]);
+
+    recordForDistinctPharmacies($this->insurer, [
+        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 45],
+    ]);
+    recordForDistinctPharmacies($lenient, [
+        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 45],
+    ]);
+
+    // Forty-five days: late for the thirty-day insurer, on time for the other.
+    expect($this->service->networkSummary(new Period(2026, 8), new Period(2026, 8))['withinThresholdShare'])
+        ->toBe(50.0);
+});
+
 test('amounts are summed and the outstanding balance derived', function () {
     recordForDistinctPharmacies($this->insurer, [
         ['amount_invoiced' => 1_000_000, 'amount_received' => 1_000_000, 'delay_days' => 12],
@@ -125,8 +158,7 @@ test('the aggregation costs two queries whatever the number of insurers', functi
     );
 
     // Warm the settings cache first: this test guards against an N+1 over
-    // insurers, not against the two threshold reads that precede it.
-    app(SettingsRepository::class)->paymentDelayThresholdDays();
+    // insurers, not against the anonymity read that precedes it.
     app(SettingsRepository::class)->anonymityMinPharmacies();
 
     DB::enableQueryLog();

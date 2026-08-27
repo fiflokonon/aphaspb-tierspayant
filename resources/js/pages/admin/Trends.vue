@@ -41,6 +41,7 @@ const props = defineProps<{
         outstandingBeyond90: number;
     };
     amounts: AmountRow[];
+    /** The mean of the agreed delays: no single one governs the network. */
     threshold: number;
     city: string | null;
     window: number;
@@ -122,7 +123,7 @@ const series = computed(() =>
             :value="summary.weightedDelayDays?.toLocaleString('fr-FR') ?? '—'"
             unit="jours"
             :tone="delayTone(summary.weightedDelayDays)"
-            :hint="`seuil de référence ${threshold} j`"
+            :hint="`délai standard moyen ${threshold} j`"
         />
     </KpiRow>
 
@@ -131,8 +132,9 @@ const series = computed(() =>
             Évolution du délai de paiement par assureur
         </div>
         <p class="mt-1 text-[11px]/[1.4] text-ink/50">
-            Délai moyen pondéré par les montants, en jours · assureurs au-dessus
-            du seuil de {{ threshold }} jours d'anonymat.
+            Délai moyen pondéré par les montants, en jours · ligne de référence
+            à {{ threshold }} j, la moyenne des délais standard des assureurs ·
+            un assureur n'apparaît qu'à partir de 5 officines déclarantes.
         </p>
 
         <Deferred data="trend">

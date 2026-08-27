@@ -10,7 +10,6 @@ use App\Http\Resources\InsurerIndicatorsResource;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Services\Network\NetworkStatsService;
-use App\Services\Settings\SettingsRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -24,10 +23,8 @@ use Inertia\Response;
  */
 class NetworkStatsController extends Controller
 {
-    public function __construct(
-        protected NetworkStatsService $stats,
-        protected SettingsRepository $settings,
-    ) {
+    public function __construct(protected NetworkStatsService $stats)
+    {
         //
     }
 
@@ -43,7 +40,6 @@ class NetworkStatsController extends Controller
         return Inertia::render('admin/Network', [
             'indicators' => $this->sorted($entries, $names),
             'summary' => $this->stats->networkSummary($from, $to, $city),
-            'threshold' => $this->settings->paymentDelayThresholdDays(),
             'period' => $this->periodLabel($from),
             'city' => $city,
             'cities' => Pharmacy::query()

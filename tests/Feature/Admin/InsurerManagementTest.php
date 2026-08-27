@@ -33,6 +33,7 @@ test('the list shows active and inactive insurers with their officine count', fu
             expect($page->toArray()['component'])->toBe('admin/Insurers')
                 ->and($rows[$active->id]['pharmacies'])->toBe(3)
                 ->and($rows[$active->id]['isActive'])->toBeTrue()
+                ->and($rows[$active->id]['standardDelayDays'])->toBe(30)
                 ->and($rows[$inactive->id]['isActive'])->toBeFalse();
         });
 });
@@ -128,36 +129,56 @@ test('an insurer created by an officine arrives inactive and can be approved her
     expect($created->fresh()->is_active)->toBeTrue();
 });
 
-test('the payment threshold can be changed and screen 2a reflects it', function () {
+test('the standard delay of an insurer can be changed and screen 2a reflects it', function () {
+    $insurer = Insurer::factory()->create();
+
+    foreach (range(1, 5) as $i) {
+        Declaration::factory()->paid()->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => 8,
+        ]);
+    }
+
     $this->actingAs($this->admin)
-        ->patch(route('admin.threshold.update'), ['payment_delay_threshold_days' => 45])
+        ->patch(route('admin.insurers.update', $insurer), ['standard_delay_days' => 45])
         ->assertRedirect();
 
-    expect(app(SettingsRepository::class)->paymentDelayThresholdDays())->toBe(45);
+    expect($insurer->fresh()->standard_delay_days)->toBe(45);
 
     $this->actingAs($this->admin)
         ->get(route('admin.network'))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('threshold', 45));
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('indicators.0.standardDelayDays', 45),
+        );
 });
 
-test('a threshold outside one to three hundred sixty five is refused', function () {
+test('a standard delay outside one to three hundred sixty five is refused', function () {
+    $insurer = Insurer::factory()->create();
+
     foreach ([0, 366, -5, 'beaucoup'] as $value) {
         $this->actingAs($this->admin)
-            ->patch(route('admin.threshold.update'), ['payment_delay_threshold_days' => $value])
-            ->assertSessionHasErrors('payment_delay_threshold_days');
+            ->patch(route('admin.insurers.update', $insurer), ['standard_delay_days' => $value])
+            ->assertSessionHasErrors('standard_delay_days');
     }
+
+    expect($insurer->fresh()->standard_delay_days)->toBe(30);
+});
+
+test('renaming an insurer leaves its standard delay alone', function () {
+    $insurer = Insurer::factory()->create(['standard_delay_days' => 45]);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.insurers.update', $insurer), ['name' => 'Nouveau nom']);
+
+    expect($insurer->fresh()->standard_delay_days)->toBe(45);
 });
 
 test('no route can write the anonymity threshold', function () {
     $settings = app(SettingsRepository::class);
 
     expect($settings->anonymityMinPharmacies())->toBe(5);
-
-    // Both update routes are tried with the key smuggled in.
-    $this->actingAs($this->admin)->patch(route('admin.threshold.update'), [
-        'payment_delay_threshold_days' => 30,
-        'anonymity_min_pharmacies' => 1,
-    ]);
 
     $insurer = Insurer::factory()->create();
 
@@ -176,5 +197,4 @@ test('a pharmacy account cannot manage insurers', function () {
     $this->actingAs($pharmacyUser)->get(route('admin.insurers'))->assertForbidden();
     $this->actingAs($pharmacyUser)->post(route('admin.insurers.store'), ['name' => 'X'])->assertForbidden();
     $this->actingAs($pharmacyUser)->patch(route('admin.insurers.update', $insurer), ['name' => 'X'])->assertForbidden();
-    $this->actingAs($pharmacyUser)->patch(route('admin.threshold.update'), ['payment_delay_threshold_days' => 10])->assertForbidden();
 });

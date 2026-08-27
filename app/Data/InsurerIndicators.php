@@ -17,6 +17,8 @@ readonly class InsurerIndicators
         public ?float $averageDelayDays,
         /** Weighted by the amounts actually received — what screen 3c states. */
         public ?float $weightedDelayDays,
+        /** The delay the APhaSPB records for this insurer, in days. */
+        public int $standardDelayDays,
         public ?float $withinThresholdShare,
         public ?float $rejectionRate,
         public ?float $unpaidRate,

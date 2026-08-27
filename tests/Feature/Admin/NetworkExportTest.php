@@ -83,7 +83,10 @@ test('an insurer above the threshold gets a full row', function () {
     $cells = explode(';', trim($line));
 
     expect($cells[1])->toBe('5')
-        ->and($cells)->toHaveCount(12)
+        // The delay the share « sous seuil » is judged against travels with it,
+        // otherwise the file states a percentage against an unstated rule.
+        ->and($cells[5])->toBe('30')
+        ->and($cells)->toHaveCount(13)
         ->and($line)->toContain('5000000');
 });
 

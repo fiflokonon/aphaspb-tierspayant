@@ -18,9 +18,12 @@ class SaveInsurerRequest extends FormRequest
     {
         $insurer = $this->route('insurer');
 
+        // The management screen edits one field at a time, each in its own
+        // small form: a rename must not have to resend the delay, nor the
+        // reverse. Absent means unchanged, never « reset to the default ».
         return [
             'name' => [
-                'required',
+                $insurer instanceof Insurer ? 'sometimes' : 'required',
                 'string',
                 'max:150',
                 $insurer instanceof Insurer
@@ -28,6 +31,7 @@ class SaveInsurerRequest extends FormRequest
                     : Rule::unique(Insurer::class, 'name'),
             ],
             'is_active' => ['sometimes', 'boolean'],
+            'standard_delay_days' => ['sometimes', 'integer', 'min:1', 'max:365'],
         ];
     }
 
@@ -39,6 +43,9 @@ class SaveInsurerRequest extends FormRequest
         return [
             'name.required' => "Le nom de l'assureur est obligatoire.",
             'name.unique' => 'Un assureur porte déjà ce nom.',
+            'standard_delay_days.integer' => 'Le délai standard se compte en jours entiers.',
+            'standard_delay_days.min' => 'Le délai standard doit valoir au moins 1 jour.',
+            'standard_delay_days.max' => 'Le délai standard ne peut pas dépasser 365 jours.',
         ];
     }
 }

@@ -87,7 +87,10 @@ test('the network KPIs summarise the whole period', function () {
             ->where('summary.declaringPharmacies', 10)
             ->where('summary.averageDelayDays', 40)
             ->where('summary.withinThresholdShare', 50)
-            ->where('threshold', 30),
+            // Each row carries the delay agreed with its own insurer: the
+            // screen has no single network-wide threshold to state any more.
+            ->where('indicators.0.standardDelayDays', 30)
+            ->missing('threshold'),
         );
 });
 

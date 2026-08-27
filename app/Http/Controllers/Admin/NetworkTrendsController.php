@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\InsurerAmountsResource;
 use App\Models\Insurer;
 use App\Services\Network\NetworkStatsService;
-use App\Services\Settings\SettingsRepository;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,18 +15,17 @@ use Inertia\Response;
  * Screen 3c — how insurer delays move over a year, and what the network is owed.
  *
  * This is the advocacy view: the outstanding balance puts a figure on the
- * damage, and the twelve-month curve shows the trend against the reference
- * threshold. Still no individual amount: aggregation starts at five officines.
+ * damage, and the twelve-month curve shows the trend against the average of the
+ * agreed delays. Still no individual amount: aggregation starts at five
+ * officines.
  */
 class NetworkTrendsController extends Controller
 {
     /** The window the canvas shows. */
     protected const MONTHS = 12;
 
-    public function __construct(
-        protected NetworkStatsService $stats,
-        protected SettingsRepository $settings,
-    ) {
+    public function __construct(protected NetworkStatsService $stats)
+    {
         //
     }
 
@@ -39,7 +37,7 @@ class NetworkTrendsController extends Controller
         return Inertia::render('admin/Trends', [
             'summary' => $this->summary($from, $to, $city),
             'amounts' => $this->amounts($from, $to, $city),
-            'threshold' => $this->settings->paymentDelayThresholdDays(),
+            'threshold' => $this->stats->averageStandardDelayDays(),
             'city' => $city,
             'window' => self::MONTHS,
 

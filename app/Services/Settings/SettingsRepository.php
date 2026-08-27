@@ -6,33 +6,25 @@ use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * Read and write the two thresholds the APhaSPB admin controls.
+ * Read and write the settings the APhaSPB admin controls.
  *
  * Cached because every aggregate query reads them, and invalidated on write so
- * a threshold change takes effect on the next request rather than at the end of
- * the cache window.
+ * a change takes effect on the next request rather than at the end of the cache
+ * window.
+ *
+ * The payment delay is deliberately absent: it is agreed insurer by insurer and
+ * lives on the insurers table, not as one network-wide number.
  */
 class SettingsRepository
 {
-    public const PAYMENT_DELAY_THRESHOLD_DAYS = 'payment_delay_threshold_days';
-
     public const ANONYMITY_MIN_PHARMACIES = 'anonymity_min_pharmacies';
 
     /**
      * @var array<string, int>
      */
     protected const DEFAULTS = [
-        self::PAYMENT_DELAY_THRESHOLD_DAYS => 30,
         self::ANONYMITY_MIN_PHARMACIES => 5,
     ];
-
-    /**
-     * The regulatory reference the network is measured against, in days.
-     */
-    public function paymentDelayThresholdDays(): int
-    {
-        return $this->integer(self::PAYMENT_DELAY_THRESHOLD_DAYS);
-    }
 
     /**
      * How many declaring pharmacies an insurer needs before its figures show.

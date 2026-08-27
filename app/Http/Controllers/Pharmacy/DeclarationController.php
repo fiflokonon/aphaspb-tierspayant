@@ -41,17 +41,29 @@ class DeclarationController extends Controller
         $declaration = $run->declarationFor($insurer);
 
         return Inertia::render('pharmacy/Declare', [
-            'insurer' => $insurer->only(['id', 'name']),
+            'insurer' => [
+                'id' => $insurer->id,
+                'name' => $insurer->name,
+                'standardDelayDays' => $insurer->standard_delay_days,
+            ],
             'progress' => $run->progressFor($insurer),
             'period' => $this->periodPayload($period),
-            'declaration' => $declaration?->only([
-                'amount_invoiced',
-                'amount_received',
-                'status',
-                'is_status_manual',
-                'delay_days',
-                'private_note',
-            ]),
+            // The two date fields are bounded by the same span the request
+            // validates, so the browser refuses what the server would refuse.
+            'dateBounds' => [
+                'earliest' => sprintf('%04d-%02d-01', $period->year, $period->month),
+                'latest' => now()->toDateString(),
+            ],
+            'declaration' => $declaration === null ? null : [
+                'amount_invoiced' => $declaration->amount_invoiced,
+                'amount_received' => $declaration->amount_received,
+                'status' => $declaration->status,
+                'is_status_manual' => $declaration->is_status_manual,
+                'invoice_deposited_on' => $declaration->invoice_deposited_on?->toDateString(),
+                'paid_on' => $declaration->paid_on?->toDateString(),
+                'delay_days' => $declaration->delay_days,
+                'private_note' => $declaration->private_note,
+            ],
         ]);
     }
 
@@ -71,9 +83,10 @@ class DeclarationController extends Controller
                 'amount_received' => $request->integer('amount_received'),
                 'status' => $request->resolvedStatus(),
                 'is_status_manual' => $request->isStatusManual(),
-                'delay_days' => $request->input('delay_days') === null || $request->input('delay_days') === ''
-                    ? null
-                    : $request->integer('delay_days'),
+                // The delay is not stored from here: the model derives it from
+                // this pair, so the client has no say over it.
+                'invoice_deposited_on' => $request->date('invoice_deposited_on'),
+                'paid_on' => $request->date('paid_on'),
                 'private_note' => $request->input('private_note') ?: null,
             ],
         );

@@ -67,6 +67,43 @@ test('a manual correction is not overwritten by the derivation', function () {
     expect($declaration->fresh()->status)->toBe(DeclarationStatus::Unpaid);
 });
 
+test('the delay is derived from the two dates, whatever was passed', function () {
+    $declaration = Declaration::factory()->create([
+        'amount_invoiced' => 500_000,
+        'amount_received' => 500_000,
+        'invoice_deposited_on' => '2026-08-03',
+        'paid_on' => '2026-09-15',
+        'delay_days' => 1,
+    ]);
+
+    expect($declaration->delay_days)->toBe(43);
+});
+
+test('a declaration with no payment date carries no delay', function () {
+    $declaration = Declaration::factory()->create([
+        'amount_invoiced' => 500_000,
+        'amount_received' => 0,
+        'invoice_deposited_on' => '2026-08-03',
+        'paid_on' => null,
+        'delay_days' => 30,
+    ]);
+
+    expect($declaration->delay_days)->toBeNull();
+});
+
+test('correcting a date recomputes the delay', function () {
+    $declaration = Declaration::factory()->create([
+        'amount_invoiced' => 500_000,
+        'amount_received' => 500_000,
+        'invoice_deposited_on' => '2026-08-03',
+        'paid_on' => '2026-08-13',
+    ]);
+
+    $declaration->update(['paid_on' => '2026-08-23']);
+
+    expect($declaration->fresh()->delay_days)->toBe(20);
+});
+
 test('the outstanding amount is derived, never stored', function () {
     expect(Schema::hasColumn('declarations', 'amount_outstanding'))->toBeFalse();
 });

@@ -26,6 +26,15 @@ use Illuminate\Support\Facades\DB;
  */
 class NetworkStatsService
 {
+    /**
+     * Count settled declarations paid within their own insurer's standard delay.
+     *
+     * A constant rather than a method: selectRaw() takes a literal string, and
+     * this fragment is shared by the per-insurer and network aggregates, which
+     * must never drift into judging the same delay by two different rules.
+     */
+    protected const WITHIN_STANDARD_DELAY_SUM = "SUM(CASE WHEN status IN ('paid', 'partial') AND delay_days <= insurers.standard_delay_days THEN 1 ELSE 0 END) as within_threshold";
+
     public function __construct(protected SettingsRepository $settings)
     {
         //
@@ -38,26 +47,22 @@ class NetworkStatsService
      */
     public function perInsurer(Period $from, Period $to, ?string $city = null): array
     {
-        $threshold = $this->settings->paymentDelayThresholdDays();
         $minimum = $this->settings->anonymityMinPharmacies();
 
-        $rows = $this->baseQuery($from, $to, $city)
-            ->select('insurer_id')
+        $rows = $this->withStandardDelay($this->baseQuery($from, $to, $city))
+            ->select('insurer_id', 'insurers.standard_delay_days')
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(amount_invoiced) as amount_invoiced')
             ->selectRaw('SUM(amount_received) as amount_received')
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN 1 ELSE 0 END) as settled")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days ELSE 0 END) as delay_total")
-            ->selectRaw(
-                "SUM(CASE WHEN status IN ('paid', 'partial') AND delay_days <= ? THEN 1 ELSE 0 END) as within_threshold",
-                [$threshold],
-            )
+            ->selectRaw(self::WITHIN_STANDARD_DELAY_SUM)
             ->selectRaw("SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected")
             ->selectRaw("SUM(CASE WHEN status = 'unpaid' THEN 1 ELSE 0 END) as unpaid")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days * amount_received ELSE 0 END) as delay_weighted")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN amount_received ELSE 0 END) as delay_basis")
-            ->groupBy('insurer_id')
+            ->groupBy('insurer_id', 'insurers.standard_delay_days')
             ->get();
 
         $names = Insurer::query()
@@ -91,6 +96,7 @@ class NetworkStatsService
                 declarations: $total,
                 averageDelayDays: $settled > 0 ? round((int) $row->delay_total / $settled, 1) : null,
                 weightedDelayDays: $basis > 0 ? round((int) $row->delay_weighted / $basis, 1) : null,
+                standardDelayDays: (int) $row->standard_delay_days,
                 withinThresholdShare: $settled > 0 ? round((int) $row->within_threshold / $settled * 100, 1) : null,
                 rejectionRate: $total > 0 ? round((int) $row->rejected / $total * 100, 1) : null,
                 unpaidRate: $total > 0 ? round((int) $row->unpaid / $total * 100, 1) : null,
@@ -169,7 +175,7 @@ class NetworkStatsService
         return [
             'insurers' => $insurers,
             'network' => $network,
-            'threshold' => $this->settings->paymentDelayThresholdDays(),
+            'threshold' => $this->averageStandardDelayDays(),
         ];
     }
 
@@ -185,17 +191,12 @@ class NetworkStatsService
      */
     public function networkSummary(Period $from, Period $to, ?string $city = null): array
     {
-        $threshold = $this->settings->paymentDelayThresholdDays();
-
-        $row = $this->baseQuery($from, $to, $city)
+        $row = $this->withStandardDelay($this->baseQuery($from, $to, $city))
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('COUNT(*) as total')
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN 1 ELSE 0 END) as settled")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days ELSE 0 END) as delay_total")
-            ->selectRaw(
-                "SUM(CASE WHEN status IN ('paid', 'partial') AND delay_days <= ? THEN 1 ELSE 0 END) as within_threshold",
-                [$threshold],
-            )
+            ->selectRaw(self::WITHIN_STANDARD_DELAY_SUM)
             ->selectRaw("SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days * amount_received ELSE 0 END) as delay_weighted")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN amount_received ELSE 0 END) as delay_basis")
@@ -338,6 +339,30 @@ class NetworkStatsService
     /**
      * Build the shared filter: period range, optional city.
      */
+    /**
+     * The reference line the twelve-month curve is read against.
+     *
+     * With a delay agreed insurer by insurer, no single number is the network's
+     * threshold any more. The average of what the APhaSPB records is the
+     * honest stand-in, and the screens label it as such.
+     */
+    public function averageStandardDelayDays(): int
+    {
+        $average = Insurer::query()->active()->avg('standard_delay_days');
+
+        return $average === null
+            ? Insurer::DEFAULT_STANDARD_DELAY_DAYS
+            : (int) round((float) $average);
+    }
+
+    /**
+     * Join the insurer so its own standard delay can be compared in SQL.
+     */
+    protected function withStandardDelay(Builder $query): Builder
+    {
+        return $query->join('insurers', 'insurers.id', '=', 'declarations.insurer_id');
+    }
+
     protected function baseQuery(Period $from, Period $to, ?string $city = null): Builder
     {
         return DB::table('declarations')

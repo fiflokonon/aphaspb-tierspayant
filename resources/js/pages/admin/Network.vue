@@ -19,6 +19,7 @@ type Indicator = {
     declaringPharmacies: number;
     required: number | null;
     averageDelayDays: number | null;
+    standardDelayDays: number | null;
     withinThresholdShare: number | null;
     rejectionRate: number | null;
     unpaidRate: number | null;
@@ -35,7 +36,6 @@ type Summary = {
 const props = defineProps<{
     indicators: Indicator[];
     summary: Summary;
-    threshold: number;
     period: string;
     city: string | null;
     cities: string[];
@@ -47,14 +47,41 @@ const COLUMNS = [
     'ASSUREUR',
     'OFFICINES (n)',
     'DÉLAI MOYEN',
-    `≤ ${props.threshold} J`,
+    'DANS LES DÉLAIS',
     'REJET',
     'NON PAYÉ',
 ];
 
-/** A delay past twice the threshold is what the canvas paints as alarming. */
+/**
+ * What the network KPIs are read against: the mean of the agreed delays.
+ *
+ * Stated as such in the card's hint — an average of rules is not a rule.
+ */
+const networkStandard = computed(() => {
+    const agreed = props.indicators
+        .map((indicator) => indicator.standardDelayDays)
+        .filter((days): days is number => days !== null);
+
+    return agreed.length === 0
+        ? 30
+        : Math.round(
+              agreed.reduce((total, days) => total + days, 0) / agreed.length,
+          );
+});
+
+/**
+ * The delay each row is judged against: the one agreed with that insurer.
+ *
+ * There is no network-wide threshold any more, so a row that somehow arrives
+ * without its own delay falls back to the network average rather than to a
+ * constant nobody set.
+ */
+const standardFor = (indicator: Indicator): number =>
+    indicator.standardDelayDays ?? networkStandard.value;
+
+/** A delay past twice the agreed one is what the canvas paints as alarming. */
 const isAlarming = (indicator: Indicator): boolean =>
-    (indicator.averageDelayDays ?? 0) > props.threshold * 2;
+    (indicator.averageDelayDays ?? 0) > standardFor(indicator) * 2;
 
 const shareTone = (share: number | null): KpiTone => {
     if (share === null) {
@@ -68,16 +95,16 @@ const shareTone = (share: number | null): KpiTone => {
     return share >= 20 ? 'warn' : 'bad';
 };
 
-const delayTone = (days: number | null): KpiTone => {
+const delayTone = (days: number | null, standard: number): KpiTone => {
     if (days === null) {
         return 'neutral';
     }
 
-    if (days <= props.threshold) {
+    if (days <= standard) {
         return 'good';
     }
 
-    return days <= props.threshold * 2 ? 'warn' : 'bad';
+    return days <= standard * 2 ? 'warn' : 'bad';
 };
 
 const percent = (value: number | null): string =>
@@ -123,11 +150,11 @@ const reloadIndicators = () =>
             label="DÉLAI MOYEN RÉSEAU"
             :value="summary.averageDelayDays?.toLocaleString('fr-FR') ?? '—'"
             unit="jours"
-            :tone="delayTone(summary.averageDelayDays)"
+            :tone="delayTone(summary.averageDelayDays, networkStandard)"
             hint="statuts payés et partiels confondus"
         />
         <KpiCard
-            :label="`PAYÉ ≤ ${threshold} JOURS`"
+            label="PAYÉ DANS LES DÉLAIS"
             :value="
                 summary.withinThresholdShare?.toLocaleString('fr-FR') ?? '—'
             "
@@ -135,7 +162,7 @@ const reloadIndicators = () =>
             :tone="shareTone(summary.withinThresholdShare)"
         >
             <template #hint>
-                seuil de {{ threshold }} j ·
+                selon le délai retenu pour chaque assureur ·
                 <Link
                     href="/admin/insurers"
                     class="font-semibold text-officine"
@@ -174,14 +201,26 @@ const reloadIndicators = () =>
                 <div class="font-medium text-ink/60">
                     {{ indicator.declaringPharmacies }}
                 </div>
-                <div
-                    :class="
-                        delayTone(indicator.averageDelayDays) === 'bad'
-                            ? 'text-terracotta-dark'
-                            : ''
-                    "
-                >
-                    {{ days(indicator.averageDelayDays) }}
+                <div>
+                    <div
+                        :class="
+                            delayTone(
+                                indicator.averageDelayDays,
+                                standardFor(indicator),
+                            ) === 'bad'
+                                ? 'text-terracotta-dark'
+                                : ''
+                        "
+                    >
+                        {{ days(indicator.averageDelayDays) }}
+                    </div>
+                    <!--
+                        The rule beside the figure: without it the colour of
+                        this cell reads as a verdict with no stated basis.
+                    -->
+                    <div class="text-[10.5px] text-ink/45">
+                        standard {{ days(indicator.standardDelayDays) }}
+                    </div>
                 </div>
                 <ProgressMiniBar
                     :share="indicator.withinThresholdShare ?? 0"

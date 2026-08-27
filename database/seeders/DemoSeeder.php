@@ -49,19 +49,21 @@ class DemoSeeder extends Seeder
     ];
 
     /**
-     * Per insurer: base delay in days, monthly drift, rejection rate, and how
-     * many officines declare to it. The last figure is what decides whether
-     * the insurer clears the anonymity threshold.
+     * Per insurer: the delay agreed with the APhaSPB, the delay actually
+     * observed, its monthly drift, the rejection rate, and how many officines
+     * declare to it. The last figure is what decides whether the insurer clears
+     * the anonymity threshold; the gap between « standard » and « delay » is
+     * what the screens are there to show.
      *
-     * @var array<string, array{delay: int, drift: float, rejection: float, pharmacies: int}>
+     * @var array<string, array{standard: int, delay: int, drift: float, rejection: float, pharmacies: int}>
      */
     protected const PROFILES = [
-        'NSIA Assurances' => ['delay' => 26, 'drift' => 0.2, 'rejection' => 0.04, 'pharmacies' => 24],
-        'SUNU Assurances' => ['delay' => 38, 'drift' => 0.6, 'rejection' => 0.08, 'pharmacies' => 21],
-        "L'Africaine des Assurances" => ['delay' => 58, 'drift' => 1.8, 'rejection' => 0.19, 'pharmacies' => 16],
-        'Sanlam Assurances' => ['delay' => 47, 'drift' => 0.4, 'rejection' => 0.06, 'pharmacies' => 11],
-        'Atlantique Assurances' => ['delay' => 40, 'drift' => 0.3, 'rejection' => 0.05, 'pharmacies' => 3],
-        'Courtier — Ascoma Bénin' => ['delay' => 35, 'drift' => 0.1, 'rejection' => 0.03, 'pharmacies' => 1],
+        'NSIA Assurances' => ['standard' => 30, 'delay' => 26, 'drift' => 0.2, 'rejection' => 0.04, 'pharmacies' => 24],
+        'SUNU Assurances' => ['standard' => 30, 'delay' => 38, 'drift' => 0.6, 'rejection' => 0.08, 'pharmacies' => 21],
+        "L'Africaine des Assurances" => ['standard' => 45, 'delay' => 58, 'drift' => 1.8, 'rejection' => 0.19, 'pharmacies' => 16],
+        'Sanlam Assurances' => ['standard' => 30, 'delay' => 47, 'drift' => 0.4, 'rejection' => 0.06, 'pharmacies' => 11],
+        'Atlantique Assurances' => ['standard' => 60, 'delay' => 40, 'drift' => 0.3, 'rejection' => 0.05, 'pharmacies' => 3],
+        'Courtier — Ascoma Bénin' => ['standard' => 30, 'delay' => 35, 'drift' => 0.1, 'rejection' => 0.03, 'pharmacies' => 1],
     ];
 
     public function run(): void
@@ -79,6 +81,8 @@ class DemoSeeder extends Seeder
             if ($insurer === null) {
                 continue;
             }
+
+            $insurer->update(['standard_delay_days' => $profile['standard']]);
 
             $declaring = $pharmacies->take($profile['pharmacies']);
 
@@ -157,7 +161,7 @@ class DemoSeeder extends Seeder
     /**
      * Twelve months of declarations shaped by the insurer's profile.
      *
-     * @param  array{delay: int, drift: float, rejection: float, pharmacies: int}  $profile
+     * @param  array{standard: int, delay: int, drift: float, rejection: float, pharmacies: int}  $profile
      */
     protected function declareTwelveMonths(
         Pharmacy $pharmacy,
@@ -184,6 +188,10 @@ class DemoSeeder extends Seeder
 
             [$received, $status, $manual] = $this->outcome($invoiced, $profile['rejection'], $back);
 
+            // The monthly invoice is filed at the end of the month it covers —
+            // never in the future for the month currently running.
+            $deposited = $month->copy()->endOfMonth()->startOfDay()->min(now()->startOfDay());
+
             Declaration::query()->updateOrCreate(
                 [
                     'pharmacy_id' => $pharmacy->id,
@@ -196,7 +204,10 @@ class DemoSeeder extends Seeder
                     'amount_received' => $received,
                     'status' => $status,
                     'is_status_manual' => $manual,
-                    'delay_days' => $status->isSettled() ? max(1, $delay) : null,
+                    'invoice_deposited_on' => $deposited,
+                    'paid_on' => $status->isSettled()
+                        ? $deposited->copy()->addDays(max(1, $delay))
+                        : null,
                     'private_note' => $status === DeclarationStatus::Rejected
                         ? 'motif absence ordonnance'
                         : null,

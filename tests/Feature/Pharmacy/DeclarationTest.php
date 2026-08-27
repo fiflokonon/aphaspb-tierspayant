@@ -50,7 +50,8 @@ function declarationPayload(Insurer $insurer, array $overrides = []): array
         'period_month' => 8,
         'amount_invoiced' => 1_240_000,
         'amount_received' => 860_000,
-        'delay_days' => 52,
+        'invoice_deposited_on' => '2026-08-01',
+        'paid_on' => '2026-08-12',
         ...$overrides,
     ];
 }
@@ -190,25 +191,70 @@ test('a negative or non numeric amount is refused', function () {
         ->assertSessionHasErrors('amount_invoiced');
 });
 
-test('a delay is required when something was received', function () {
+test('both dates are required when something was received', function () {
     [$user, $insurers] = officineWith(1);
 
     $this->actingAs($user)
         ->post(route('pharmacy.declare.store'), declarationPayload($insurers[0], [
-            'delay_days' => null,
+            'invoice_deposited_on' => null,
+            'paid_on' => null,
         ]))
-        ->assertSessionHasErrors('delay_days');
+        ->assertSessionHasErrors(['invoice_deposited_on', 'paid_on']);
 });
 
-test('a delay is refused when nothing was received', function () {
+test('the delay is computed from the two dates, never submitted', function () {
+    [$user, $insurers] = officineWith(1);
+
+    $this->actingAs($user)->post(route('pharmacy.declare.store'), declarationPayload($insurers[0], [
+        'invoice_deposited_on' => '2026-08-02',
+        'paid_on' => '2026-08-13',
+        // Smuggled in: the client has no say over the delay any more.
+        'delay_days' => 3,
+    ]));
+
+    expect(Declaration::query()->sole()->delay_days)->toBe(11);
+});
+
+test('a payment date before the deposit date is refused', function () {
+    [$user, $insurers] = officineWith(1);
+
+    $this->actingAs($user)
+        ->post(route('pharmacy.declare.store'), declarationPayload($insurers[0], [
+            'invoice_deposited_on' => '2026-08-10',
+            'paid_on' => '2026-08-02',
+        ]))
+        ->assertSessionHasErrors('paid_on');
+});
+
+test('a date in the future is refused', function () {
+    [$user, $insurers] = officineWith(1);
+
+    $this->actingAs($user)
+        ->post(route('pharmacy.declare.store'), declarationPayload($insurers[0], [
+            'paid_on' => '2026-08-16',
+        ]))
+        ->assertSessionHasErrors('paid_on');
+});
+
+test('a deposit date before the declared month is refused', function () {
+    [$user, $insurers] = officineWith(1);
+
+    $this->actingAs($user)
+        ->post(route('pharmacy.declare.store'), declarationPayload($insurers[0], [
+            'invoice_deposited_on' => '2026-07-31',
+            'paid_on' => '2026-08-05',
+        ]))
+        ->assertSessionHasErrors('invoice_deposited_on');
+});
+
+test('a payment date is refused when nothing was received', function () {
     [$user, $insurers] = officineWith(1);
 
     $this->actingAs($user)
         ->post(route('pharmacy.declare.store'), declarationPayload($insurers[0], [
             'amount_received' => 0,
-            'delay_days' => 30,
         ]))
-        ->assertSessionHasErrors('delay_days');
+        ->assertSessionHasErrors('paid_on');
 });
 
 test('choosing rejected explicitly is kept and survives a resave', function () {
@@ -216,7 +262,7 @@ test('choosing rejected explicitly is kept and survives a resave', function () {
 
     $this->actingAs($user)->post(route('pharmacy.declare.store'), declarationPayload($insurers[0], [
         'amount_received' => 0,
-        'delay_days' => null,
+        'paid_on' => null,
         'status' => 'rejected',
     ]));
 
@@ -246,7 +292,7 @@ test('declaring the same insurer twice updates instead of duplicating', function
     $this->actingAs($user)->post(route('pharmacy.declare.store'), declarationPayload($insurers[0]));
     $this->actingAs($user->fresh())->post(route('pharmacy.declare.store'), declarationPayload($insurers[0], [
         'amount_received' => 1_240_000,
-        'delay_days' => 20,
+        'paid_on' => '2026-08-14',
     ]));
 
     expect(Declaration::query()->count())->toBe(1)

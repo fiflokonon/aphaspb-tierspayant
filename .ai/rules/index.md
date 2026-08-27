@@ -4,6 +4,8 @@ Before planning or editing, find the row whose globs match the file's path and r
 
 | Applies to | Rule file |
 | --- | --- |
+| resources/js/components/aphaspb/** | .ai/rules/aphaspb.md |
 | package.json, ** | .ai/rules/general.md |
 | resources/js/** | .ai/rules/js.md |
+| app/Models/Declaration.php | .ai/rules/models.md |
 | tests/** | .ai/rules/tests.md |

@@ -39,7 +39,23 @@ class SaveDeclarationRequest extends FormRequest
             'amount_invoiced' => ['required', 'integer', 'min:0'],
             'amount_received' => ['required', 'integer', 'min:0', 'lte:amount_invoiced'],
             'status' => ['nullable', new Enum(DeclarationStatus::class)],
-            'delay_days' => ['nullable', 'integer', 'min:0', 'max:365'],
+            // A monthly invoice cannot be filed before the month it covers, and
+            // neither date can be in the future. The pair is required or
+            // forbidden depending on the status: see withValidator().
+            'invoice_deposited_on' => [
+                'nullable',
+                'date',
+                'before_or_equal:today',
+                ...($this->declaredMonthStart() === null
+                    ? []
+                    : ['after_or_equal:'.$this->declaredMonthStart()]),
+            ],
+            'paid_on' => [
+                'nullable',
+                'date',
+                'before_or_equal:today',
+                'after_or_equal:invoice_deposited_on',
+            ],
             'private_note' => ['nullable', 'string', 'max:150'],
         ];
     }
@@ -58,7 +74,25 @@ class SaveDeclarationRequest extends FormRequest
     }
 
     /**
-     * A delay only exists where a payment did.
+     * The first day of the declared month, or null when the pair is unusable.
+     *
+     * Only used to bound the deposit date; DeclarablePeriod judges the period
+     * itself, and a nonsensical pair must not raise a second, confusing error.
+     */
+    public function declaredMonthStart(): ?string
+    {
+        $year = $this->integer('period_year');
+        $month = $this->integer('period_month');
+
+        if ($year < 2000 || $month < 1 || $month > 12) {
+            return null;
+        }
+
+        return sprintf('%04d-%02d-01', $year, $month);
+    }
+
+    /**
+     * The dates only exist where a payment did.
      *
      * The condition consults DeclarationStatus::derive(), the same rule the
      * model applies on save, so the two can never drift apart.
@@ -71,14 +105,23 @@ class SaveDeclarationRequest extends FormRequest
             }
 
             $status = $this->resolvedStatus();
-            $delay = $this->input('delay_days');
+            $deposited = $this->input('invoice_deposited_on');
+            $paid = $this->input('paid_on');
 
-            if ($status->isSettled() && ($delay === null || $delay === '')) {
-                $validator->errors()->add('delay_days', 'Indiquez le délai de paiement en jours.');
+            if ($status->isSettled()) {
+                if ($deposited === null || $deposited === '') {
+                    $validator->errors()->add('invoice_deposited_on', 'Indiquez la date de dépôt de la facture.');
+                }
+
+                if ($paid === null || $paid === '') {
+                    $validator->errors()->add('paid_on', 'Indiquez la date de paiement.');
+                }
+
+                return;
             }
 
-            if (! $status->isSettled() && $delay !== null && $delay !== '') {
-                $validator->errors()->add('delay_days', "Un délai n'a de sens que si un paiement a été reçu.");
+            if ($paid !== null && $paid !== '') {
+                $validator->errors()->add('paid_on', "Une date de paiement n'a de sens que si un paiement a été reçu.");
             }
         });
     }
@@ -125,6 +168,10 @@ class SaveDeclarationRequest extends FormRequest
         return [
             'insurer_id.exists' => 'Cet assureur ne fait pas partie de ceux que vous avez cochés.',
             'amount_received.lte' => 'Le montant reçu ne peut pas dépasser le montant facturé.',
+            'invoice_deposited_on.before_or_equal' => 'La date de dépôt ne peut pas être dans le futur.',
+            'invoice_deposited_on.after_or_equal' => 'La facture ne peut pas avoir été déposée avant le mois déclaré.',
+            'paid_on.before_or_equal' => 'La date de paiement ne peut pas être dans le futur.',
+            'paid_on.after_or_equal' => 'Le paiement ne peut pas précéder le dépôt de la facture.',
         ];
     }
 
