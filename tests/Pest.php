@@ -3,6 +3,7 @@
 use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /*
@@ -47,6 +48,23 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/**
+ * The Inertia props of a response, as searchable JSON with accents intact.
+ *
+ * Asserting confidentiality against the raw HTML is unsound: Inertia
+ * json_encodes the props, which escapes every non-ASCII character, so
+ * `not->toContain('note privée')` never matches and the assertion passes
+ * whatever leaked. JSON_UNESCAPED_UNICODE restores the accents so the search
+ * means what it reads.
+ */
+function inertiaPropsJson(TestResponse $response): string
+{
+    /** @var array<string, mixed> $page */
+    $page = $response->viewData('page');
+
+    return json_encode($page['props'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+}
 
 /**
  * Generate — once per process — an RSA keypair standing in for Joomla's.

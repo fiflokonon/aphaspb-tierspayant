@@ -298,13 +298,15 @@ test('a private note recorded here never reaches the admin space', function () {
     [$user, $insurers] = officineWith(1);
 
     $this->actingAs($user)->post(route('pharmacy.declare.store'), declarationPayload($insurers[0], [
-        'private_note' => 'motif absence ordonnance',
+        'private_note' => 'motif absence ordonnance accentuée',
     ]));
 
-    $body = $this->actingAs(User::factory()->networkAdmin()->create())
-        ->get(route('admin.network'))
-        ->getContent();
+    $props = inertiaPropsJson(
+        $this->actingAs(User::factory()->networkAdmin()->create())
+            ->get(route('admin.network')),
+    );
 
-    expect($body)->not->toContain('motif absence ordonnance')
-        ->and($body)->not->toContain('"private_note"');
+    expect($props)->not->toContain('motif absence ordonnance accentuée')
+        ->and($props)->not->toContain('private_note')
+        ->and($props)->not->toContain('privateNote');
 });

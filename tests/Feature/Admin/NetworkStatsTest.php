@@ -111,19 +111,26 @@ test('the network screen never exposes a private note or a pharmacy identity', f
             'insurer_id' => $insurer->id,
             'period_year' => now()->year,
             'period_month' => now()->month,
-            'private_note' => 'note privee a ne jamais divulguer',
+            'private_note' => 'note privée à ne jamais divulguer',
         ]);
     }
 
-    $body = $this->actingAs(User::factory()->networkAdmin()->create())
-        ->get(route('admin.network'))
-        ->getContent();
+    // Asserted on the decoded props: the raw body json-escapes every accent,
+    // so searching it for an accented officine name or note passes to no
+    // effect. tests/Pest.php explains the trap in full.
+    $props = inertiaPropsJson(
+        $this->actingAs(User::factory()->networkAdmin()->create())
+            ->get(route('admin.network')),
+    );
 
-    expect($body)->not->toContain('note privee')
-        ->and($body)->not->toContain('private_note')
-        ->and($body)->not->toContain('"pharmacy_id"');
+    expect($props)->not->toContain('note privée à ne jamais divulguer')
+        ->and($props)->not->toContain('private_note')
+        ->and($props)->not->toContain('privateNote')
+        // The quoted key, not the bare word: « current_pharmacy_id » is a
+        // legitimate field of the signed-in user and contains the substring.
+        ->and($props)->not->toContain('"pharmacy_id"');
 
     foreach ($pharmacies as $pharmacy) {
-        expect($body)->not->toContain($pharmacy->name);
+        expect($props)->not->toContain($pharmacy->name);
     }
 });

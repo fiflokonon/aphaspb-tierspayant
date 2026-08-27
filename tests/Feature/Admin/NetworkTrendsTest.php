@@ -102,20 +102,24 @@ test('the trends screen exposes no private note and no officine identity', funct
             'amount_invoiced' => 1_000_000,
             'amount_received' => 500_000,
             'delay_days' => 50,
-            'private_note' => 'note privee a ne jamais divulguer',
+            'private_note' => 'note privée à ne jamais divulguer',
         ]);
     }
 
-    $body = $this->actingAs(User::factory()->networkAdmin()->create())
-        ->get(route('admin.trends'))
-        ->getContent();
+    $props = inertiaPropsJson(
+        $this->actingAs(User::factory()->networkAdmin()->create())
+            ->get(route('admin.trends')),
+    );
 
-    expect($body)->not->toContain('note privee')
-        ->and($body)->not->toContain('"private_note"')
-        ->and($body)->not->toContain('"pharmacy_id"');
+    expect($props)->not->toContain('note privée à ne jamais divulguer')
+        ->and($props)->not->toContain('private_note')
+        ->and($props)->not->toContain('privateNote')
+        // The quoted key, not the bare word: « current_pharmacy_id » is a
+        // legitimate field of the signed-in user and contains the substring.
+        ->and($props)->not->toContain('"pharmacy_id"');
 
     foreach ($pharmacies as $pharmacy) {
-        expect($body)->not->toContain($pharmacy->name);
+        expect($props)->not->toContain($pharmacy->name);
     }
 });
 
