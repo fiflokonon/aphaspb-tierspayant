@@ -19,7 +19,7 @@ test('the list carries the identity the CDC allows', function () {
         ->get(route('admin.pharmacies'))
         ->assertOk()
         ->assertInertia(function (AssertableInertia $page) {
-            $rows = collect($page->toArray()['props']['pharmacies']);
+            $rows = collect($page->toArray()['props']['pharmacies']['data']);
             $row = $rows->firstWhere('name', 'Pharmacie Le Bon Secours');
 
             expect($page->toArray()['component'])->toBe('admin/Pharmacies')
@@ -51,7 +51,7 @@ test('the list exposes no declaration data whatsoever', function () {
             // Asserted on the decoded props, not the raw HTML: Inertia
             // json_encodes them, which escapes every accent, so a body search
             // for « Témoin » or « privée » silently never matches.
-            $rows = collect($props['pharmacies']);
+            $rows = collect($props['pharmacies']['data']);
             $row = $rows->firstWhere('name', 'Pharmacie Témoin');
 
             expect($row)->not->toBeNull()
@@ -87,7 +87,7 @@ test('the city filter narrows the list', function () {
     $this->actingAs(User::factory()->networkAdmin()->create())
         ->get(route('admin.pharmacies', ['city' => 'Cotonou']))
         ->assertInertia(function (AssertableInertia $page) {
-            $names = collect($page->toArray()['props']['pharmacies'])->pluck('name');
+            $names = collect($page->toArray()['props']['pharmacies']['data'])->pluck('name');
 
             expect($names)->toContain('Ici')->and($names)->not->toContain('Ailleurs');
         });
@@ -100,7 +100,7 @@ test('the search narrows the list by name', function () {
     $this->actingAs(User::factory()->networkAdmin()->create())
         ->get(route('admin.pharmacies', ['search' => 'Port']))
         ->assertInertia(function (AssertableInertia $page) {
-            $names = collect($page->toArray()['props']['pharmacies'])->pluck('name');
+            $names = collect($page->toArray()['props']['pharmacies']['data'])->pluck('name');
 
             expect($names)->toContain('Pharmacie du Port')
                 ->and($names)->not->toContain('Pharmacie des Collines');
@@ -114,7 +114,7 @@ test('deleted officines do not appear', function () {
     $this->actingAs(User::factory()->networkAdmin()->create())
         ->get(route('admin.pharmacies'))
         ->assertInertia(function (AssertableInertia $page) {
-            $names = collect($page->toArray()['props']['pharmacies'])->pluck('name');
+            $names = collect($page->toArray()['props']['pharmacies']['data'])->pluck('name');
 
             expect($names)->toContain('Encore là')->and($names)->not->toContain('Partie');
         });
@@ -138,4 +138,28 @@ test('a pharmacy account cannot reach the registered list', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('admin.pharmacies'))
         ->assertForbidden();
+});
+
+test('the registered list is paginated', function () {
+    Pharmacy::factory()->count(60)->create();
+
+    $this->actingAs(User::factory()->networkAdmin()->notOnboarded()->create())
+        ->get(route('admin.pharmacies'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('pharmacies.data', 50)
+            ->where('pharmacies.last_page', 2)
+            ->where('pharmacies.total', 60),
+        );
+});
+
+test('a search survives pagination and narrows the total', function () {
+    Pharmacy::factory()->count(60)->create(['city' => 'Cotonou']);
+    Pharmacy::factory()->create(['name' => 'Pharmacie Unique', 'city' => 'Parakou']);
+
+    $this->actingAs(User::factory()->networkAdmin()->notOnboarded()->create())
+        ->get(route('admin.pharmacies', ['search' => 'Unique', 'page' => 1]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pharmacies.total', 1)
+            ->where('filters.search', 'Unique'),
+        );
 });

@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
+import Pagination from '@/components/aphaspb/Pagination.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 
 type Row = {
@@ -14,8 +15,17 @@ type Row = {
     registeredAt: string | null;
 };
 
+type Paginated<T> = {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+    total: number;
+};
+
 const props = defineProps<{
-    pharmacies: Row[];
+    pharmacies: Paginated<Row>;
     total: number;
     cities: string[];
     filters: { city: string | null; search: string | null };
@@ -32,30 +42,31 @@ const cityOptions = computed(() => [
     ...props.cities.map((one) => ({ value: one, label: one })),
 ]);
 
+function reload(page: number) {
+    router.get(
+        '/admin/pharmacies',
+        { city: city.value, search: search.value || null, page },
+        {
+            only: ['pharmacies', 'filters'],
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
+}
+
 let timer: ReturnType<typeof setTimeout> | undefined;
 
-watch([city, search], ([nextCity, nextSearch]) => {
+// Debounced, and back to page one: the search fires on every keystroke, and a
+// narrowed list rarely still has the page the reader was on.
+watch([city, search], () => {
     clearTimeout(timer);
-
-    // Debounced: the search fires on every keystroke, and reloading the list
-    // per character would be noise on the wire for no gain.
-    timer = setTimeout(() => {
-        router.get(
-            '/admin/pharmacies',
-            { city: nextCity, search: nextSearch || null },
-            {
-                only: ['pharmacies', 'filters'],
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }, 250);
+    timer = setTimeout(() => reload(1), 250);
 });
 
 const footer = computed(
     () =>
-        `${props.pharmacies.length} sur ${props.total} officine${props.total > 1 ? 's' : ''} inscrite${props.total > 1 ? 's' : ''} · cette liste ne donne accès à aucune déclaration ni à aucun montant`,
+        `${props.pharmacies.total} officine${props.pharmacies.total > 1 ? 's' : ''} sur ${props.total} inscrite${props.total > 1 ? 's' : ''} · cette liste ne donne accès à aucune déclaration ni à aucun montant`,
 );
 </script>
 
@@ -89,7 +100,7 @@ const footer = computed(
         :footer="footer"
     >
         <DataTableRow
-            v-for="row in pharmacies"
+            v-for="row in pharmacies.data"
             :key="row.id"
             :template="TEMPLATE"
         >
@@ -104,10 +115,20 @@ const footer = computed(
         </DataTableRow>
 
         <div
-            v-if="!pharmacies.length"
+            v-if="!pharmacies.data.length"
             class="border-t border-ink/[0.06] px-4 py-8 text-center text-[12.5px] text-ink/50"
         >
             Aucune officine pour ce filtre.
         </div>
     </DataTable>
+
+    <Pagination
+        :page="pharmacies.current_page"
+        :last-page="pharmacies.last_page"
+        :from="pharmacies.from"
+        :to="pharmacies.to"
+        :total="pharmacies.total"
+        noun="officine"
+        @update:page="reload"
+    />
 </template>

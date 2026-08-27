@@ -23,6 +23,8 @@ use Inertia\Response;
  */
 class RegisteredPharmaciesController extends Controller
 {
+    protected const PER_PAGE = 50;
+
     public function __invoke(Request $request): Response
     {
         $city = $request->string('city')->value() ?: null;
@@ -35,8 +37,9 @@ class RegisteredPharmaciesController extends Controller
                 ['%'.mb_strtolower($search).'%'],
             ))
             ->orderBy('name')
-            ->get(['id', 'name', 'city', 'onpb_license', 'created_at'])
-            ->map(fn (Pharmacy $pharmacy) => [
+            ->paginate(self::PER_PAGE, ['id', 'name', 'city', 'onpb_license', 'created_at'])
+            ->withQueryString()
+            ->through(fn (Pharmacy $pharmacy) => [
                 'id' => $pharmacy->id,
                 'name' => $pharmacy->name,
                 'city' => $pharmacy->city,

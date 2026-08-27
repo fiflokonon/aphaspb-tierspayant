@@ -19,6 +19,8 @@ use Inertia\Response;
  */
 class DeclarationHistoryController extends Controller
 {
+    protected const PER_PAGE = 20;
+
     public function __invoke(Request $request): Response
     {
         $pharmacy = $request->user()->currentPharmacy;
@@ -56,8 +58,12 @@ class DeclarationHistoryController extends Controller
             ->orderByDesc('period_year')
             ->orderByDesc('period_month')
             ->orderBy('insurer_id')
-            ->get()
-            ->map(fn (Declaration $declaration) => [
+            // Seven insurers over several years runs into the hundreds, so the
+            // register is paged. withQueryString keeps the two filters on every
+            // page link instead of silently widening the list on page two.
+            ->paginate(self::PER_PAGE)
+            ->withQueryString()
+            ->through(fn (Declaration $declaration) => [
                 'id' => $declaration->id,
                 'insurerName' => $declaration->insurer->name,
                 'year' => $declaration->period_year,

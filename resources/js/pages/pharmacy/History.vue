@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
+import Pagination from '@/components/aphaspb/Pagination.vue';
 import StatusChip from '@/components/aphaspb/StatusChip.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 import type { DeclarationStatus } from '@/types/aphaspb';
@@ -24,8 +25,17 @@ type Row = {
     editUrl: string;
 };
 
+type Paginated<T> = {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+    total: number;
+};
+
 const props = defineProps<{
-    declarations: Row[];
+    declarations: Paginated<Row>;
     insurers: { id: number; name: string }[];
     years: number[];
     filters: { insurer: number | null; year: number | null };
@@ -58,11 +68,11 @@ const yearOptions = computed(() => [
 const insurer = ref<number | null>(props.filters.insurer);
 const year = ref<number | null>(props.filters.year);
 
-/** Filters reload only the list, never the whole page. */
-watch([insurer, year], ([nextInsurer, nextYear]) => {
+/** Filters and paging both reload only the list, never the whole page. */
+function reload(page: number) {
     router.get(
         '/pharmacy/history',
-        { insurer: nextInsurer, year: nextYear },
+        { insurer: insurer.value, year: year.value, page },
         {
             only: ['declarations', 'filters'],
             preserveState: true,
@@ -70,11 +80,15 @@ watch([insurer, year], ([nextInsurer, nextYear]) => {
             replace: true,
         },
     );
-});
+}
+
+// Changing a filter returns to page one: staying on page seven of a list that
+// now holds four rows would show an empty table.
+watch([insurer, year], () => reload(1));
 
 const footer = computed(
     () =>
-        `${props.declarations.length} déclaration${props.declarations.length > 1 ? 's' : ''} · l'export CSV est réservé à l'APhaSPB`,
+        `${props.declarations.total} déclaration${props.declarations.total > 1 ? 's' : ''} · l'export CSV est réservé à l'APhaSPB`,
 );
 </script>
 
@@ -103,7 +117,7 @@ const footer = computed(
         :footer="footer"
     >
         <DataTableRow
-            v-for="row in declarations"
+            v-for="row in declarations.data"
             :key="row.id"
             :template="TEMPLATE"
         >
@@ -139,12 +153,22 @@ const footer = computed(
         </DataTableRow>
 
         <div
-            v-if="!declarations.length"
+            v-if="!declarations.data.length"
             class="border-t border-ink/[0.06] px-4 py-8 text-center text-[12.5px] text-ink/50"
         >
             Aucune déclaration pour ce filtre.
         </div>
     </DataTable>
+
+    <Pagination
+        :page="declarations.current_page"
+        :last-page="declarations.last_page"
+        :from="declarations.from"
+        :to="declarations.to"
+        :total="declarations.total"
+        noun="déclaration"
+        @update:page="reload"
+    />
 
     <p class="mt-3 text-[11px]/[1.45] text-ink/[0.45]">
         Vos notes privées n'apparaissent que sur cet écran. L'APhaSPB ne les
