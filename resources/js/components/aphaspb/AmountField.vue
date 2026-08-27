@@ -40,8 +40,13 @@ function onInput(event: Event) {
             class="mt-[7px] flex h-14 items-center gap-2 rounded-xl border-[1.5px] bg-card px-[14px] transition-shadow focus-within:border-gold-mid/[0.55] focus-within:shadow-[0_0_0_3px_rgb(217_163_37_/_0.13)]"
             :class="error ? 'border-terracotta' : 'border-ink/[0.13]'"
         >
+            <!--
+                The visible field shows « 50 000 » but carries no name: it is
+                the hidden one that is submitted, with the digits alone.
+                Submitting the formatted string made every amount fail the
+                integer rule, on a field the eye reads as a number.
+            -->
             <input
-                :name="name"
                 :value="displayed"
                 type="text"
                 inputmode="numeric"
@@ -53,6 +58,7 @@ function onInput(event: Event) {
             <span class="font-mono text-xs font-semibold text-ink/[0.45]">
                 FCFA
             </span>
+            <input :name="name" type="hidden" :value="model" />
         </div>
 
         <p v-if="error" class="mt-[5px] text-[11px]/[1.4] text-terracotta-dark">
