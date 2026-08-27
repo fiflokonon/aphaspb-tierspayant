@@ -144,8 +144,10 @@ officine n'est jamais un espace personnel.
 
 ### 5.2 `insurers` et `pharmacy_insurer`
 
-`insurers` : `id`, `name`, `is_active` (défaut vrai). `pharmacy_insurer` : clé
-primaire composite `(pharmacy_id, insurer_id)`, aucune colonne supplémentaire.
+`insurers` : `id`, `name`, `is_active` (défaut vrai). Table pivot
+`insurer_pharmacy` : clé primaire composite `(pharmacy_id, insurer_id)`, aucune
+colonne supplémentaire. Le nom suit la convention alphabétique de Laravel, et non
+le `pharmacy_insurer` initialement écrit ici.
 
 Un seeder crée les assureurs et courtiers du Bénin nommés dans le canvas et le CDC :
 SUNU Assurances, NSIA Assurances, L'Africaine des Assurances, Sanlam Assurances,

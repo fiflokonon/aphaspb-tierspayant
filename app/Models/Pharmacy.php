@@ -98,6 +98,16 @@ class Pharmacy extends Model
     }
 
     /**
+     * Get the insurers this pharmacy works with.
+     *
+     * @return BelongsToMany<Insurer, $this>
+     */
+    public function insurers(): BelongsToMany
+    {
+        return $this->belongsToMany(Insurer::class);
+    }
+
+    /**
      * Determine whether the pharmacy knows who and where it is.
      *
      * The onboarding flow gates on this: a pharmacy created from a Joomla
