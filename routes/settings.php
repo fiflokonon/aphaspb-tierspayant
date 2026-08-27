@@ -15,8 +15,6 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('settings/appearance', 'settings/Appearance')->name('appearance.edit');
-
     Route::get('settings/pharmacies', [PharmacyController::class, 'index'])->name('pharmacies.index');
     Route::post('settings/pharmacies', [PharmacyController::class, 'store'])->name('pharmacies.store');
 

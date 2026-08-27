@@ -12,8 +12,17 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
             fonts: [
-                bunny('Instrument Sans', {
-                    weights: [400, 500, 600],
+                bunny('Plus Jakarta Sans', {
+                    variable: '--font-sans',
+                    weights: [400, 500, 600, 700, 800],
+                }),
+                bunny('JetBrains Mono', {
+                    variable: '--font-mono',
+                    weights: [400, 600, 700],
+                }),
+                bunny('Instrument Serif', {
+                    variable: '--font-serif',
+                    weights: [400],
                 }),
             ],
         }),
