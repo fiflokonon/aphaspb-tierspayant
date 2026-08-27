@@ -5,7 +5,7 @@ import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
-import TeamSwitcher from '@/components/TeamSwitcher.vue';
+import PharmacySwitcher from '@/components/PharmacySwitcher.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -52,7 +52,7 @@ const auth = computed(() => page.props.auth);
 const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
 const dashboardUrl = computed(() =>
-    page.props.currentTeam ? dashboard(page.props.currentTeam.slug).url : '/',
+    page.props.currentPharmacy ? dashboard(page.props.currentPharmacy.slug).url : '/',
 );
 
 const activeItemStyles =
@@ -271,7 +271,7 @@ const rightNavItems: NavItem[] = [
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    <TeamSwitcher :in-header="true" />
+                    <PharmacySwitcher :in-header="true" />
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import TeamInvitationController from '@/actions/App/Http/Controllers/Teams/TeamInvitationController';
+import PharmacyInvitationController from '@/actions/App/Http/Controllers/Pharmacies/PharmacyInvitationController';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -22,14 +22,14 @@ const open = ref(true);
 const processingCode = ref<string | null>(null);
 
 const acceptInvitation = (invitation: DashboardInvitation) => {
-    router.visit(TeamInvitationController.accept(invitation), {
+    router.visit(PharmacyInvitationController.accept(invitation), {
         onStart: () => (processingCode.value = invitation.code),
         onFinish: () => (processingCode.value = null),
     });
 };
 
 const declineInvitation = (invitation: DashboardInvitation) => {
-    router.visit(TeamInvitationController.decline(invitation), {
+    router.visit(PharmacyInvitationController.decline(invitation), {
         onStart: () => (processingCode.value = invitation.code),
         onFinish: () => (processingCode.value = null),
         onSuccess: () => {
@@ -45,9 +45,9 @@ const declineInvitation = (invitation: DashboardInvitation) => {
     <Dialog v-model:open="open">
         <DialogContent data-test="pending-invitations-modal">
             <DialogHeader>
-                <DialogTitle>Pending team invitations</DialogTitle>
+                <DialogTitle>Pending pharmacy invitations</DialogTitle>
                 <DialogDescription>
-                    Accept or decline the teams you have been invited to join.
+                    Accept or decline the pharmacies you have been invited to join.
                 </DialogDescription>
             </DialogHeader>
 
@@ -59,10 +59,10 @@ const declineInvitation = (invitation: DashboardInvitation) => {
                     class="rounded-lg border p-4"
                 >
                     <div class="space-y-1">
-                        <p class="font-medium">{{ invitation.team.name }}</p>
+                        <p class="font-medium">{{ invitation.pharmacy.name }}</p>
                         <p class="text-sm text-muted-foreground">
                             {{ invitation.inviterName }} invited you to join
-                            this team.
+                            this pharmacy.
                         </p>
                     </div>
 

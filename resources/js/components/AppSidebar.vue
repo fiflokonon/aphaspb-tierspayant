@@ -6,7 +6,7 @@ import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
-import TeamSwitcher from '@/components/TeamSwitcher.vue';
+import PharmacySwitcher from '@/components/PharmacySwitcher.vue';
 import {
     Sidebar,
     SidebarContent,
@@ -22,7 +22,7 @@ import type { NavItem } from '@/types';
 const page = usePage();
 
 const dashboardUrl = computed(() =>
-    page.props.currentTeam ? dashboard(page.props.currentTeam.slug).url : '/',
+    page.props.currentPharmacy ? dashboard(page.props.currentPharmacy.slug).url : '/',
 );
 
 const mainNavItems = computed<NavItem[]>(() => [
@@ -61,7 +61,7 @@ const footerNavItems: NavItem[] = [
             </SidebarMenu>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <TeamSwitcher />
+                    <PharmacySwitcher />
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarHeader>

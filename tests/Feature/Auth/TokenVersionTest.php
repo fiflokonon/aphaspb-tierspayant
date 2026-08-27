@@ -27,7 +27,7 @@ test('a session survives when Joomla reports the same token version', function (
 
     $this->actingAs($this->user)
         ->withSession(['joomla.token_version_checked_at' => now()->subHour()->timestamp])
-        ->get(route('dashboard', ['current_team' => $this->user->currentTeam->slug]))
+        ->get(route('dashboard', ['current_pharmacy' => $this->user->currentPharmacy->slug]))
         ->assertOk();
 
     $this->assertAuthenticated();
@@ -38,7 +38,7 @@ test('a bumped token version destroys the session', function () {
 
     $this->actingAs($this->user)
         ->withSession(['joomla.token_version_checked_at' => now()->subHour()->timestamp])
-        ->get(route('dashboard', ['current_team' => $this->user->currentTeam->slug]))
+        ->get(route('dashboard', ['current_pharmacy' => $this->user->currentPharmacy->slug]))
         ->assertRedirect('/');
 
     $this->assertGuest();
@@ -49,7 +49,7 @@ test('the check is skipped inside the recheck window', function () {
 
     $this->actingAs($this->user)
         ->withSession(['joomla.token_version_checked_at' => now()->timestamp])
-        ->get(route('dashboard', ['current_team' => $this->user->currentTeam->slug]))
+        ->get(route('dashboard', ['current_pharmacy' => $this->user->currentPharmacy->slug]))
         ->assertOk();
 
     Http::assertNothingSent();
@@ -60,7 +60,7 @@ test('an unreachable Joomla leaves the session alone', function () {
 
     $this->actingAs($this->user)
         ->withSession(['joomla.token_version_checked_at' => now()->subHour()->timestamp])
-        ->get(route('dashboard', ['current_team' => $this->user->currentTeam->slug]))
+        ->get(route('dashboard', ['current_pharmacy' => $this->user->currentPharmacy->slug]))
         ->assertOk();
 
     $this->assertAuthenticated();

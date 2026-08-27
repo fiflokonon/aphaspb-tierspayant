@@ -15,13 +15,13 @@ import {
 } from '@/components/ui/sidebar';
 import UserInfo from '@/components/UserInfo.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
-import type { Team } from '@/types';
+import type { Pharmacy } from '@/types';
 
 const page = usePage();
 const user = page.props.auth.user;
 const { isMobile, state } = useSidebar();
 
-const currentTeam = computed(() => page.props.currentTeam as Team | null);
+const currentPharmacy = computed(() => page.props.currentPharmacy as Pharmacy | null);
 </script>
 
 <template>
@@ -34,7 +34,7 @@ const currentTeam = computed(() => page.props.currentTeam as Team | null);
                         class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                         data-test="sidebar-menu-button"
                     >
-                        <UserInfo :user="user" :team="currentTeam" />
+                        <UserInfo :user="user" :pharmacy="currentPharmacy" />
                         <ChevronsUpDown class="ml-auto size-4" />
                     </SidebarMenuButton>
                 </DropdownMenuTrigger>

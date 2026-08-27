@@ -21,11 +21,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { store as storeInvitation } from '@/routes/teams/invitations';
-import type { RoleOption, Team } from '@/types';
+import { store as storeInvitation } from '@/routes/pharmacies/invitations';
+import type { RoleOption, Pharmacy } from '@/types';
 
 type Props = {
-    team: Team;
+    pharmacy: Pharmacy;
     availableRoles: RoleOption[];
     open: boolean;
 };
@@ -53,15 +53,15 @@ function handleOpenChange(value: boolean) {
         <DialogContent>
             <Form
                 :key="formKey"
-                v-bind="storeInvitation.form(props.team.slug)"
+                v-bind="storeInvitation.form(props.pharmacy.slug)"
                 class="space-y-6"
                 v-slot="{ errors, processing }"
                 @success="emit('update:open', false)"
             >
                 <DialogHeader>
-                    <DialogTitle>Invite a team member</DialogTitle>
+                    <DialogTitle>Invite a pharmacy member</DialogTitle>
                     <DialogDescription>
-                        Send an invitation to join this team.
+                        Send an invitation to join this pharmacy.
                     </DialogDescription>
                 </DialogHeader>
 

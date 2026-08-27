@@ -1,10 +1,10 @@
 <?php
 
+use App\Http\Controllers\Pharmacies\PharmacyController;
+use App\Http\Controllers\Pharmacies\PharmacyInvitationController;
+use App\Http\Controllers\Pharmacies\PharmacyMemberController;
 use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\Teams\TeamController;
-use App\Http\Controllers\Teams\TeamInvitationController;
-use App\Http\Controllers\Teams\TeamMemberController;
-use App\Http\Middleware\EnsureTeamMembership;
+use App\Http\Middleware\EnsurePharmacyMembership;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -17,20 +17,20 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('settings/appearance', 'settings/Appearance')->name('appearance.edit');
 
-    Route::get('settings/teams', [TeamController::class, 'index'])->name('teams.index');
-    Route::post('settings/teams', [TeamController::class, 'store'])->name('teams.store');
+    Route::get('settings/pharmacies', [PharmacyController::class, 'index'])->name('pharmacies.index');
+    Route::post('settings/pharmacies', [PharmacyController::class, 'store'])->name('pharmacies.store');
 
-    Route::middleware(EnsureTeamMembership::class)->group(function () {
-        Route::get('settings/teams/{team}', [TeamController::class, 'edit'])->name('teams.edit');
-        Route::patch('settings/teams/{team}', [TeamController::class, 'update'])->name('teams.update');
-        Route::delete('settings/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
-        Route::post('settings/teams/{team}/switch', [TeamController::class, 'switch'])->name('teams.switch');
-        Route::delete('settings/teams/{team}/leave', [TeamController::class, 'leave'])->name('teams.leave');
+    Route::middleware(EnsurePharmacyMembership::class)->group(function () {
+        Route::get('settings/pharmacies/{pharmacy}', [PharmacyController::class, 'edit'])->name('pharmacies.edit');
+        Route::patch('settings/pharmacies/{pharmacy}', [PharmacyController::class, 'update'])->name('pharmacies.update');
+        Route::delete('settings/pharmacies/{pharmacy}', [PharmacyController::class, 'destroy'])->name('pharmacies.destroy');
+        Route::post('settings/pharmacies/{pharmacy}/switch', [PharmacyController::class, 'switch'])->name('pharmacies.switch');
+        Route::delete('settings/pharmacies/{pharmacy}/leave', [PharmacyController::class, 'leave'])->name('pharmacies.leave');
 
-        Route::patch('settings/teams/{team}/members/{user}', [TeamMemberController::class, 'update'])->name('teams.members.update');
-        Route::delete('settings/teams/{team}/members/{user}', [TeamMemberController::class, 'destroy'])->name('teams.members.destroy');
+        Route::patch('settings/pharmacies/{pharmacy}/members/{user}', [PharmacyMemberController::class, 'update'])->name('pharmacies.members.update');
+        Route::delete('settings/pharmacies/{pharmacy}/members/{user}', [PharmacyMemberController::class, 'destroy'])->name('pharmacies.members.destroy');
 
-        Route::post('settings/teams/{team}/invitations', [TeamInvitationController::class, 'store'])->name('teams.invitations.store');
-        Route::delete('settings/teams/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])->name('teams.invitations.destroy');
+        Route::post('settings/pharmacies/{pharmacy}/invitations', [PharmacyInvitationController::class, 'store'])->name('pharmacies.invitations.store');
+        Route::delete('settings/pharmacies/{pharmacy}/invitations/{invitation}', [PharmacyInvitationController::class, 'destroy'])->name('pharmacies.invitations.destroy');
     });
 });

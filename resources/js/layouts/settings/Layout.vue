@@ -6,8 +6,8 @@ import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
+import { index as pharmacies } from '@/routes/pharmacies';
 import { edit as editProfile } from '@/routes/profile';
-import { index as teams } from '@/routes/teams';
 import type { NavItem } from '@/types';
 
 const sidebarNavItems: NavItem[] = [
@@ -16,8 +16,8 @@ const sidebarNavItems: NavItem[] = [
         href: editProfile(),
     },
     {
-        title: 'Teams',
-        href: teams(),
+        title: 'Pharmacies',
+        href: pharmacies(),
     },
     {
         title: 'Appearance',

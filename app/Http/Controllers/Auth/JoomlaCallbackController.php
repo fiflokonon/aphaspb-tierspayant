@@ -81,8 +81,8 @@ class JoomlaCallbackController extends Controller
             return '/';
         }
 
-        return $user->currentTeam
-            ? route('dashboard', ['current_team' => $user->currentTeam->slug])
+        return $user->currentPharmacy
+            ? route('dashboard', ['current_pharmacy' => $user->currentPharmacy->slug])
             : '/';
     }
 }

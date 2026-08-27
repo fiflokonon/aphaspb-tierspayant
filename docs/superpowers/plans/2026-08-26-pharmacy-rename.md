@@ -17,7 +17,7 @@
 - La table `users` n'a pas de colonne de mot de passe et n'en gagne pas.
 - Après toute modification PHP : `vendor/bin/pint --dirty --format agent`.
 - `npm install` / `npm uninstall` sont cassés dans ce dépôt (cf. `.ai/rules/general.md`). Aucune tâche de ce plan n'en a besoin.
-- `npm run types:check` compte **5 erreurs préexistantes** de la famille `.form()` (décalage Wayfinder 0.1.21). Le critère est « pas d'erreur nouvelle », pas « zéro erreur ».
+- Régénérer les routes avec **`npm run build`**, jamais avec `php artisan wayfinder:generate` seul : la commande artisan ignore `formVariants: true` de `vite.config.ts` et casse les cinq appels `.form()` (cf. `.ai/rules/js.md`). Critère : `npm run types:check` à **zéro** erreur.
 - L'application n'est pas déployée : on modifie les migrations d'origine plutôt que d'en empiler des correctives.
 
 ## Écart assumé par rapport à la spec
@@ -57,6 +57,10 @@ Un renommage partiel ne compile pas : cette tâche est atomique et se valide en 
 | `database/migrations/2026_01_27_000001_create_teams_table.php` | `..._create_pharmacies_table.php` |
 | `database/migrations/2026_01_27_000002_add_current_team_id_to_users_table.php` | `..._add_current_pharmacy_id_to_users_table.php` |
 | `tests/Feature/Teams/` | `tests/Feature/Pharmacies/` |
+| `tests/.../TeamTest.php` | `PharmacyTest.php` |
+| `tests/.../TeamMemberTest.php` | `PharmacyMemberTest.php` |
+| `tests/.../TeamInvitationTest.php` | `PharmacyInvitationTest.php` |
+| `tests/.../PruneExpiredTeamInvitationsTest.php` | `PruneExpiredPharmacyInvitationsTest.php` |
 | `resources/js/pages/teams/` | `resources/js/pages/pharmacies/` |
 | `resources/js/components/TeamSwitcher.vue` | `PharmacySwitcher.vue` |
 | `resources/js/components/CreateTeamModal.vue` | `CreatePharmacyModal.vue` |
@@ -77,12 +81,12 @@ Un renommage partiel ne compile pas : cette tâche est atomique et se valide en 
   - Paramètres de route `current_pharmacy` et `pharmacy` ; noms de route `pharmacies.*`
   - Props Inertia partagées `currentPharmacy` et `pharmacies`
 
-- [ ] **Step 1: Enregistrer l'état de référence de la suite**
+- [x] **Step 1: Enregistrer l'état de référence de la suite**
 
 Run: `php artisan test --compact`
 Expected: PASS, **105 tests, 287 assertions**. C'est le chiffre que la tâche doit reproduire à l'identique. S'il diffère, arrêter : l'arbre n'est pas propre.
 
-- [ ] **Step 2: Renommer les fichiers et dossiers**
+- [x] **Step 2: Renommer les fichiers et dossiers**
 
 L'ordre importe : les dossiers d'abord, sinon les chemins de fichiers changent sous les pieds.
 
@@ -133,7 +137,7 @@ git mv resources/js/components/TeamInvitationAlert.vue resources/js/components/P
 git mv resources/js/types/teams.ts resources/js/types/pharmacies.ts
 ```
 
-- [ ] **Step 3: Substituer les identifiants dans le contenu**
+- [x] **Step 3: Substituer les identifiants dans le contenu**
 
 L'ordre est **critique** : du plus spécifique au plus général, sinon `TeamPermissions` devient `PharmacyPermission` + `s`. Les dossiers générés par Wayfinder (`resources/js/actions`, `resources/js/routes`) sont exclus : ils seront régénérés.
 
@@ -221,7 +225,7 @@ print(f'{changed} fichiers modifiés')
 PY
 ```
 
-- [ ] **Step 4: Vérifier qu'aucun résidu ni aucune malformation ne subsiste**
+- [x] **Step 4: Vérifier qu'aucun résidu ni aucune malformation ne subsiste**
 
 ```bash
 grep -rniE 'team' app database routes tests resources/js/components resources/js/pages resources/js/layouts resources/js/types config bootstrap --include=*.php --include=*.vue --include=*.ts
@@ -230,17 +234,19 @@ grep -rnE 'Pharmacys|pharmacys|Pharmaciess|pharmaciess|PharmacyPharmacy' app dat
 
 Expected: **aucune sortie** pour les deux commandes. La première attrape un identifiant oublié, la seconde une substitution qui s'est appliquée deux fois ou a mal pluralisé.
 
-- [ ] **Step 5: Régénérer les fonctions de route et lancer la suite**
+- [x] **Step 5: Régénérer les fonctions de route et lancer la suite**
 
 ```bash
 vendor/bin/pint --dirty --format agent
-php artisan wayfinder:generate
+npm run build
 php artisan test --compact
 ```
 
+`npm run build` et non `php artisan wayfinder:generate` : il régénère les routes *avec* les variantes `.form` et rafraîchit le manifeste Vite, dont les tests de page ont besoin après le renommage du dossier `pages/teams`.
+
 Expected: PASS, **105 tests, 287 assertions** — exactement le chiffre de l'étape 1. Un test en moins signifie un fichier de test non renommé ; un test en échec signifie un identifiant mal substitué.
 
-- [ ] **Step 6: Vérifier le front et l'analyse statique**
+- [x] **Step 6: Vérifier le front et l'analyse statique**
 
 ```bash
 vendor/bin/phpstan analyse --memory-limit=1G --no-progress
@@ -249,9 +255,9 @@ npm run types:check
 npm run build
 ```
 
-Expected: phpstan 0 erreur ; lint propre ; `types:check` exactement **5** erreurs, toutes de la famille `.form()` ; build réussi. Toute erreur `TS2307 Cannot find module` signale un import Vue pointant sur un fichier renommé.
+Expected: phpstan 0 erreur ; lint propre ; `types:check` **0 erreur** ; build réussi. Toute erreur `TS2307 Cannot find module` signale un import Vue pointant sur un fichier renommé.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A
@@ -285,7 +291,7 @@ Seul changement de comportement du plan. Une officine n'est jamais un espace per
   - `UserPharmacy` sans propriété `isPersonal`
   - `PharmacyFactory` sans état `personal()`
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 Create `tests/Feature/Pharmacies/PharmacyProfileTest.php`:
 
@@ -323,12 +329,12 @@ test('a profile is complete once the city and the owner are known', function () 
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Pharmacies/PharmacyProfileTest.php`
 Expected: FAIL — les colonnes `onpb_license`, `city` et `owner_name` n'existent pas et `hasCompleteProfile()` est indéfinie.
 
-- [ ] **Step 3: Réécrire la migration**
+- [x] **Step 3: Réécrire la migration**
 
 Dans `database/migrations/2026_01_27_000001_create_pharmacies_table.php`, remplacer le bloc `pharmacies` :
 
@@ -345,7 +351,7 @@ Dans `database/migrations/2026_01_27_000001_create_pharmacies_table.php`, rempla
         });
 ```
 
-- [ ] **Step 4: Mettre le modèle à jour**
+- [x] **Step 4: Mettre le modèle à jour**
 
 Dans `app/Models/Pharmacy.php` : retirer `is_personal` de l'attribut `#[Fillable]` et du bloc `@property`, y ajouter `onpb_license`, `city` et `owner_name`, puis ajouter :
 
@@ -362,7 +368,7 @@ Dans `app/Models/Pharmacy.php` : retirer `is_personal` de l'attribut `#[Fillable
     }
 ```
 
-- [ ] **Step 5: Retirer la notion d'espace personnel**
+- [x] **Step 5: Retirer la notion d'espace personnel**
 
 - `app/Concerns/HasPharmacies.php` : supprimer la méthode `personalPharmacy()`.
 - `app/Data/UserPharmacy.php` : supprimer la propriété promue `bool $isPersonal`.
@@ -374,7 +380,7 @@ Dans `app/Models/Pharmacy.php` : retirer `is_personal` de l'attribut `#[Fillable
 grep -rn 'isPersonal\|is_personal\|personalPharmacy' app database resources/js tests --include=*.php --include=*.vue --include=*.ts
 ```
 
-- [ ] **Step 6: Mettre les factories à jour**
+- [x] **Step 6: Mettre les factories à jour**
 
 Dans `database/factories/PharmacyFactory.php` : supprimer l'état `personal()`, et donner à `definition()` des valeurs métier :
 
@@ -397,13 +403,13 @@ Dans `database/factories/PharmacyFactory.php` : supprimer l'état `personal()`, 
 
 Dans `database/factories/UserFactory.php`, `configure()` : remplacer `Pharmacy::factory()->personal()->create([...])` par `Pharmacy::factory()->create()`, et retirer le `'name' => $user->name."'s Team"` qui n'a plus de sens — la factory nomme désormais l'officine elle-même.
 
-- [ ] **Step 7: Corriger les tests que le changement casse**
+- [x] **Step 7: Corriger les tests que le changement casse**
 
 Run: `php artisan test --compact`
 
 Les tests de `tests/Feature/Pharmacies/PharmacyTest.php` qui s'appuient sur `personal()` ou sur `isPersonal` doivent être adaptés : une officine créée est simplement une officine. Ne pas supprimer de test — les réécrire pour qu'ils vérifient le même comportement d'appartenance sans la notion d'espace personnel. Si un test ne teste *que* l'espace personnel, il perd son objet : le retirer et le signaler dans le rapport final.
 
-- [ ] **Step 8: Vérifier**
+- [x] **Step 8: Vérifier**
 
 ```bash
 vendor/bin/pint --dirty --format agent
@@ -413,9 +419,9 @@ npm run types:check
 npm run build
 ```
 
-Expected: suite verte, phpstan 0 erreur, `types:check` toujours 5 erreurs préexistantes, build réussi.
+Expected: suite verte, phpstan 0 erreur, `types:check` à zéro erreur, build réussi.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add -A

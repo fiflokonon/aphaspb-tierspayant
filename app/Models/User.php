@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Concerns\HasTeams;
+use App\Concerns\HasPharmacies;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -19,19 +19,19 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $email_verified_at
  * @property list<int>|null $joomla_groups
  * @property int $token_version
- * @property int|null $current_team_id
+ * @property int|null $current_pharmacy_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Team|null $currentTeam
- * @property-read Collection<int, Team> $ownedTeams
- * @property-read Collection<int, Membership> $teamMemberships
- * @property-read Collection<int, Team> $teams
+ * @property-read Pharmacy|null $currentPharmacy
+ * @property-read Collection<int, Pharmacy> $ownedPharmacies
+ * @property-read Collection<int, Membership> $pharmacyMemberships
+ * @property-read Collection<int, Pharmacy> $pharmacies
  */
-#[Fillable(['joomla_user_id', 'name', 'email', 'joomla_groups', 'token_version', 'current_team_id'])]
+#[Fillable(['joomla_user_id', 'name', 'email', 'joomla_groups', 'token_version', 'current_pharmacy_id'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasTeams, Notifiable;
+    use HasFactory, HasPharmacies, Notifiable;
 
     /**
      * Joomla owns the credentials, so this application has no remember token.
