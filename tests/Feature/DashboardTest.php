@@ -6,6 +6,10 @@ use App\Models\PharmacyInvitation;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
+// The dashboard is gated by the declare-payments ability, which reads the
+// Joomla group ids from configuration.
+beforeEach(fn () => useJoomlaTestKeys());
+
 test('guests are redirected to the login page', function () {
     $user = User::factory()->create();
     $pharmacy = $user->currentPharmacy;
@@ -44,7 +48,7 @@ test('dashboard includes pending invitations for the authenticated user', functi
 
     $response->assertOk();
     $response->assertInertia(fn (Assert $page) => $page
-        ->component('Dashboard')
+        ->component('pharmacy/Dashboard')
         ->has('pendingInvitations', 1)
         ->where('pendingInvitations.0.code', $invitation->code)
         ->where('pendingInvitations.0.inviterName', 'Taylor Otwell')
@@ -73,7 +77,7 @@ test('dashboard does not include accepted invitations', function () {
 
     $response->assertOk();
     $response->assertInertia(fn (Assert $page) => $page
-        ->component('Dashboard')
+        ->component('pharmacy/Dashboard')
         ->has('pendingInvitations', 0),
     );
 });
@@ -97,7 +101,7 @@ test('dashboard excludes expired invitations without deleting them', function ()
 
     $response->assertOk();
     $response->assertInertia(fn (Assert $page) => $page
-        ->component('Dashboard')
+        ->component('pharmacy/Dashboard')
         ->has('pendingInvitations', 0),
     );
 
@@ -125,7 +129,7 @@ test('dashboard does not include or delete other users invitations', function ()
 
     $response->assertOk();
     $response->assertInertia(fn (Assert $page) => $page
-        ->component('Dashboard')
+        ->component('pharmacy/Dashboard')
         ->has('pendingInvitations', 0),
     );
 

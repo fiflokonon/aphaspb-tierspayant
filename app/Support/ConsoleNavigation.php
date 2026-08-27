@@ -2,8 +2,10 @@
 
 namespace App\Support;
 
+use App\Models\Pharmacy;
 use App\Models\User;
 use App\Services\Network\NetworkStatsService;
+use App\Services\Pharmacy\PharmacyStatsService;
 use App\Services\Settings\SettingsRepository;
 use Illuminate\Support\Facades\Gate;
 
@@ -22,6 +24,7 @@ class ConsoleNavigation
     public function __construct(
         protected SettingsRepository $settings,
         protected NetworkStatsService $stats,
+        protected PharmacyStatsService $pharmacyStats,
     ) {
         //
     }
@@ -98,8 +101,31 @@ class ConsoleNavigation
         return [
             'space' => null,
             'nav' => $this->items($currentPath, $definitions),
-            'notices' => [],
+            'notices' => $pharmacy === null ? [] : $this->chaseNotice($pharmacy),
         ];
+    }
+
+    /**
+     * The outstanding balance worth chasing, or nothing when all is settled.
+     *
+     * @return list<Notice>
+     */
+    protected function chaseNotice(Pharmacy $pharmacy): array
+    {
+        $outstanding = $this->pharmacyStats->summary($pharmacy, 12)['outstanding'];
+
+        if ($outstanding === 0) {
+            return [];
+        }
+
+        $old = $this->pharmacyStats->outstandingBeyond($pharmacy, 60);
+
+        return [[
+            'tone' => 'gold',
+            'title' => 'Encours à relancer',
+            'body' => number_format($outstanding, 0, ',', ' ').' FCFA'
+                .($old > 0 ? ', dont '.number_format($old, 0, ',', ' ').' au-delà de 60 jours' : ''),
+        ]];
     }
 
     /**

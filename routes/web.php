@@ -5,11 +5,11 @@ use App\Http\Controllers\Auth\JoomlaCallbackController;
 use App\Http\Controllers\Auth\LoginRedirectController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\ComingSoonController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Onboarding\PharmacyInsurersController;
 use App\Http\Controllers\Onboarding\PharmacyProfileController;
 use App\Http\Controllers\Pharmacies\PharmacyInvitationController;
 use App\Http\Controllers\Pharmacy\DeclarationController;
+use App\Http\Controllers\Pharmacy\PaymentJourneyController;
 use App\Http\Middleware\EnsurePharmacyMembership;
 use Illuminate\Support\Facades\Route;
 
@@ -50,9 +50,9 @@ Route::middleware(['auth', 'can:declare-payments', 'onboarded'])
     });
 
 Route::prefix('{current_pharmacy}')
-    ->middleware(['auth', 'verified', 'onboarded', EnsurePharmacyMembership::class])
+    ->middleware(['auth', 'verified', 'can:declare-payments', 'onboarded', EnsurePharmacyMembership::class])
     ->group(function () {
-        Route::get('dashboard', DashboardController::class)->name('dashboard');
+        Route::get('dashboard', PaymentJourneyController::class)->name('dashboard');
     });
 
 Route::middleware(['auth'])->group(function () {
