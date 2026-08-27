@@ -11,8 +11,13 @@ defineProps<{
 </script>
 
 <template>
+    <!--
+        The canvas draws this rail at 212px on a 1040px artboard and offers no
+        reduced version. Below lg it becomes a band across the top rather than a
+        drawer: the same elements, restacked, with no new interaction to learn.
+    -->
     <aside
-        class="flex w-[212px] shrink-0 flex-col bg-ink px-[14px] py-[18px] text-white"
+        class="flex w-full shrink-0 flex-col bg-ink px-[14px] py-[18px] text-white lg:w-[212px]"
     >
         <div class="flex items-center gap-[9px]">
             <img
@@ -21,22 +26,30 @@ defineProps<{
                 class="size-6 rounded-full bg-white p-[2px]"
             />
             <div class="text-xs font-bold">APhaSPB</div>
+            <div
+                v-if="space"
+                class="ml-auto font-mono text-[9.5px] font-semibold tracking-[0.06em] text-gold lg:hidden"
+            >
+                {{ space }}
+            </div>
         </div>
 
         <div
             v-if="space"
-            class="mt-[6px] font-mono text-[9.5px] font-semibold tracking-[0.06em] text-gold"
+            class="mt-[6px] hidden font-mono text-[9.5px] font-semibold tracking-[0.06em] text-gold lg:block"
         >
             {{ space }}
         </div>
 
-        <nav class="mt-5 flex flex-col gap-[3px]">
+        <nav
+            class="-mx-[14px] mt-4 flex gap-[3px] overflow-x-auto px-[14px] lg:mx-0 lg:mt-5 lg:flex-col lg:overflow-visible lg:px-0"
+        >
             <Link
                 v-for="item in nav"
                 :key="item.href"
                 :href="item.href"
                 prefetch
-                class="rounded-lg px-[11px] py-[10px] text-[12.5px] transition-colors"
+                class="flex min-h-[44px] shrink-0 items-center rounded-lg px-[11px] py-[10px] text-[12.5px] whitespace-nowrap transition-colors"
                 :class="
                     item.active
                         ? 'bg-white/[0.12] font-semibold text-white'
@@ -47,7 +60,10 @@ defineProps<{
             </Link>
         </nav>
 
-        <div v-if="notices.length" class="mt-7 flex flex-col gap-[14px]">
+        <div
+            v-if="notices.length"
+            class="mt-4 grid gap-[14px] sm:grid-cols-2 lg:mt-7 lg:grid-cols-1"
+        >
             <ConsoleSidebarNotice
                 v-for="notice in notices"
                 :key="notice.title"

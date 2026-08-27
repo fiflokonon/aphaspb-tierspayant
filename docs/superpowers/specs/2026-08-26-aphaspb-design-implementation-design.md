@@ -17,7 +17,7 @@ pas-à-pas de délai, quatrième KPI admin, tableau des montants agrégés).
 
 - L'authentification Joomla côté Laravel, complète et testée.
 - La coquille console partagée, reprise de `1c` et `2a`.
-- Quatre écrans : `3a` déclaration mobile avec montants, `3b` parcours des paiements
+- Quatre écrans : `3a` déclaration avec montants, `3b` parcours des paiements
   de l'officine sur 12 mois, `3c` admin évolution des délais et encours réseau,
   `2a` admin indicateurs par assureur.
 - L'onboarding métier de l'officine (issu de l'étape 2 de `1f`).
@@ -280,9 +280,18 @@ multi-séries avec le seuil de 30 jours en repère pointillé), sur `@unovis/vue
 
 ### 7.4 Écrans
 
-- **`3a` déclaration (mobile)** — parcours guidé, un assureur par écran, progression
-  `3/7`. Deux champs de montant, statut déduit affiché et corrigeable, pas-à-pas de
-  délai, note privée repliée. Rappel de confidentialité en pied d'écran.
+- **`3a` déclaration** — parcours guidé, un assureur par écran, progression `3/7`.
+  Deux champs de montant, statut déduit affiché et corrigeable, pas-à-pas de délai,
+  note privée repliée. Rappel de confidentialité en pied d'écran.
+
+  **Responsive, pas mobile uniquement.** Le canvas présente cet artboard à 390 px
+  parce que c'est le cas d'usage le plus contraint — une déclaration entre deux
+  clients, sur un écran de 5 pouces — mais l'écran doit fonctionner à toutes les
+  largeurs. Au-delà de la largeur du téléphone, le parcours reste un assureur par
+  écran et se centre dans une colonne bornée plutôt que de s'étirer : les cibles
+  tactiles de 44 px, les gros champs de montant et le pas-à-pas de délai gardent
+  leur taille, ce qui les rend simplement confortables à la souris. Ne pas dériver
+  vers une seconde mise en page au-dessus d'un point de rupture.
 - **`3b` parcours des paiements (officine, desktop)** — quatre KPI (facturé sur
   12 mois, taux de recouvrement, délai moyen, encours à relancer avec ancienneté),
   barres facturé/encaissé mois par mois, courbe du délai avec seuil, puis
@@ -298,7 +307,25 @@ multi-séries avec le seuil de 30 jours en repère pointillé), sur `@unovis/vue
   l'APhaSPB exportera : trois KPI, tableau triable (officines, délai moyen, ≤ 30 j
   avec mini-barres, rejet, non payé), rappel permanent du seuil d'anonymat.
 
-### 7.5 Conventions appliquées
+### 7.5 Tous les écrans sont responsive
+
+Le canvas fixe une largeur par artboard — 390 px pour la déclaration, 1040 px pour
+les tableaux de bord — parce qu'un artboard doit bien choisir une largeur. Ce ne
+sont **pas** des cibles d'appareil : aucun écran n'est réservé au téléphone ni au
+bureau.
+
+- La déclaration `3a` est dessinée dans le cas le plus contraint mais doit servir
+  aux deux : un assureur par écran à toutes les largeurs, centré dans une colonne
+  bornée au-delà du téléphone. Voir §7.4.
+- Les écrans à coquille — `2a`, `3b`, `3c` — sont dessinés au bureau et doivent
+  rester utilisables en dessous : la barre latérale se replie, les cartes KPI
+  passent de trois colonnes à une, et les tableaux larges défilent
+  **horizontalement dans leur propre conteneur**. Le corps de page ne défile
+  jamais latéralement.
+- Les cibles tactiles de 44 px relevées sur le canvas s'appliquent partout, pas
+  seulement sous un point de rupture.
+
+### 7.6 Conventions appliquées
 
 Deferred props sur les deux graphiques, avec squelette pulsé. `prefetch` sur les
 `<Link>` de navigation principale. Rechargements partiels sur les filtres de
