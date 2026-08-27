@@ -37,12 +37,6 @@ class ComingSoonController extends Controller
             'body' => 'Export des statistiques agrégées par assureur, pour les notes de plaidoyer. Jamais de données individuelles.',
             'increment' => 'PRÉVU EN V1.1',
         ],
-        'pharmacy.history' => [
-            'component' => 'pharmacy/ComingSoon',
-            'title' => 'Historique',
-            'body' => 'Vos déclarations mois par mois, filtrables par assureur et par année, avec vos montants et vos notes privées.',
-            'increment' => 'INCRÉMENT SUIVANT',
-        ],
         'pharmacy.insurers' => [
             'component' => 'pharmacy/ComingSoon',
             'title' => 'Mes assureurs',
