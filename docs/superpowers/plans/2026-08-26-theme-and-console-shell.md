@@ -68,7 +68,7 @@ Opacités relevées, à conserver telles quelles : bordures de carte `rgba(23,33
   - `--font-sans` Plus Jakarta Sans, `--font-mono` JetBrains Mono, `--font-serif` Instrument Serif
   - `/logo-aphaspb.webp`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Le thème est du CSS, donc non testable par Pest. Ce qui l'est : que la mécanique d'apparence a bien disparu, et que le logo est servi.
 
@@ -98,18 +98,18 @@ test('the logo is published', function () {
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/ThemeTest.php`
 Expected: FAIL — les quatre tests échouent, la route et la classe existent encore.
 
-- [ ] **Step 3: Publier le logo**
+- [x] **Step 3: Publier le logo**
 
 ```bash
 cp "/home/fifonsi/Téléchargements/APHASB/APhaSPB sans fond_-8ea887e5.webp" public/logo-aphaspb.webp
 ```
 
-- [ ] **Step 4: Repeindre les jetons**
+- [x] **Step 4: Repeindre les jetons**
 
 Dans `resources/css/app.css`, remplacer le bloc `:root` par la palette du canvas et **supprimer intégralement le bloc `.dark`**, ainsi que la ligne `@custom-variant dark (&:is(.dark *));` en haut du fichier :
 
@@ -207,7 +207,7 @@ Enfin, la bordure par défaut de la couche `base` passe du gris Tailwind à la b
 }
 ```
 
-- [ ] **Step 5: Charger les trois fontes**
+- [x] **Step 5: Charger les trois fontes**
 
 Dans `vite.config.ts`, remplacer le bloc `fonts` du plugin `laravel` :
 
@@ -230,7 +230,7 @@ Dans `vite.config.ts`, remplacer le bloc `fonts` du plugin `laravel` :
 
 Les graisses viennent du canvas : 800 pour les valeurs de KPI, 700 pour les titres, 600 pour les libellés capitales, 500 pour le texte inactif, 400 pour le corps. JetBrains Mono ne sert qu'aux chiffres, aux étiquettes capitales et aux libellés d'axes ; Instrument Serif aux titres éditoriaux de `3c`.
 
-- [ ] **Step 6: Nettoyer la vue racine**
+- [x] **Step 6: Nettoyer la vue racine**
 
 Replace `resources/views/app.blade.php`:
 
@@ -265,7 +265,7 @@ Replace `resources/views/app.blade.php`:
 </html>
 ```
 
-- [ ] **Step 7: Retirer la mécanique d'apparence**
+- [x] **Step 7: Retirer la mécanique d'apparence**
 
 ```bash
 git rm app/Http/Middleware/HandleAppearance.php \
@@ -288,7 +288,7 @@ grep -rn 'appearance\|Appearance\|initializeTheme\|dark:' resources/js app route
 
 Les variantes `dark:` restantes dans les composants `ui/` sont inertes une fois le `@custom-variant` retiré, mais elles mentent sur l'intention. Les retirer des composants que la coquille utilise réellement ; laisser les autres, pour ne pas réécrire 22 primitives dans une tâche de thème.
 
-- [ ] **Step 8: Lancer le test et vérifier le rendu**
+- [x] **Step 8: Lancer le test et vérifier le rendu**
 
 ```bash
 vendor/bin/pest tests/Feature/ThemeTest.php
@@ -297,7 +297,7 @@ npm run build
 
 Expected: PASS, 4 tests ; build réussi et les trois fontes présentes dans le manifeste de fontes.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 vendor/bin/pint --format agent
@@ -329,7 +329,7 @@ git commit -m "feat: palette, fontes et logo APhaSPB, sans thème sombre"
   - `ConsoleHeader` props : `eyebrow: string`, `title: string` — plus deux emplacements nommés, `filters` et `action`
   - `AdminLayout` et `PharmacyLayout`, résolus par nom de page dans `app.ts`
 
-- [ ] **Step 1: Déclarer les types**
+- [x] **Step 1: Déclarer les types**
 
 Create `resources/js/types/console.ts`:
 
@@ -349,7 +349,7 @@ export type ConsoleNotice = {
 };
 ```
 
-- [ ] **Step 2: Écrire la carte de rappel**
+- [x] **Step 2: Écrire la carte de rappel**
 
 Create `resources/js/layouts/console/ConsoleSidebarNotice.vue`:
 
@@ -388,7 +388,7 @@ const isGold = props.tone === 'gold';
 </template>
 ```
 
-- [ ] **Step 3: Écrire la barre latérale**
+- [x] **Step 3: Écrire la barre latérale**
 
 Create `resources/js/layouts/console/ConsoleSidebar.vue`:
 
@@ -455,7 +455,7 @@ defineProps<{
 </template>
 ```
 
-- [ ] **Step 4: Écrire le bandeau de titre**
+- [x] **Step 4: Écrire le bandeau de titre**
 
 Create `resources/js/layouts/console/ConsoleHeader.vue`:
 
@@ -487,7 +487,7 @@ defineProps<{
 </template>
 ```
 
-- [ ] **Step 5: Écrire la coquille**
+- [x] **Step 5: Écrire la coquille**
 
 Create `resources/js/layouts/console/ConsoleLayout.vue`:
 
@@ -517,7 +517,7 @@ defineProps<{
 </template>
 ```
 
-- [ ] **Step 6: Écrire les deux layouts de profil**
+- [x] **Step 6: Écrire les deux layouts de profil**
 
 `AdminLayout.vue` et `PharmacyLayout.vue` calculent leur navigation et leurs rappels depuis les props partagées, puis remplissent `ConsoleLayout`. La navigation vient des artboards `2a` et `1c` :
 
@@ -571,7 +571,7 @@ const notices = computed<ConsoleNotice[]>(() => [
 
 Le composable `useCurrentUrl` existe déjà dans `resources/js/composables/` — le réutiliser plutôt qu'en écrire un.
 
-- [ ] **Step 7: Router les layouts par nom de page**
+- [x] **Step 7: Router les layouts par nom de page**
 
 Dans `resources/js/app.ts`, remplacer le `switch` de résolution de layout :
 
@@ -595,7 +595,7 @@ Dans `resources/js/app.ts`, remplacer le `switch` de résolution de layout :
 
 `AppLayout` et `SettingsLayout` restent pour les pages de réglages et d'officines héritées du starter kit : les remplacer sort du périmètre de cet incrément.
 
-- [ ] **Step 8: Vérifier**
+- [x] **Step 8: Vérifier**
 
 ```bash
 npm run build
@@ -605,7 +605,7 @@ npm run lint:check
 
 Expected: build réussi, aucune erreur de types, lint propre. Les layouts ne sont pas encore rendus par une page : la tâche 4 les branche.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 npm run format
@@ -641,7 +641,7 @@ git commit -m "feat: coquille console partagée par les deux profils"
   - `DataTableRow` props : `template: string`, `tone?: 'default' | 'alert' | 'muted'`
   - `InsufficientDataRow` props : `template: string`, `label: string`, `explanation: string`, `span: number`
 
-- [ ] **Step 1: Déclarer les types**
+- [x] **Step 1: Déclarer les types**
 
 Create `resources/js/types/aphaspb.ts`:
 
@@ -663,7 +663,7 @@ export const kpiToneFill: Record<KpiTone, string> = {
 };
 ```
 
-- [ ] **Step 2: Écrire la carte de KPI**
+- [x] **Step 2: Écrire la carte de KPI**
 
 Create `resources/js/components/aphaspb/KpiCard.vue`:
 
@@ -724,7 +724,7 @@ const props = withDefaults(
 
 Les valeurs `28px`, `10.5px`, `9px`, `11px` et `5px` viennent des artboards. Elles sortent de l'échelle Tailwind à dessein : les reproduire au pixel est ce qui distingue la coquille du canvas d'une carte shadcn générique.
 
-- [ ] **Step 3: Écrire les composants restants**
+- [x] **Step 3: Écrire les composants restants**
 
 Chacun reprend les mesures relevées en tête de plan :
 
@@ -737,7 +737,7 @@ Chacun reprend les mesures relevées en tête de plan :
 - `DataTableRow.vue` : `grid gap-[14px] px-4 py-3 border-t border-ink/[0.06] items-center text-xs font-semibold text-ink`, fond `bg-terracotta/[0.04]` en tonalité `alert`, `bg-cream-state` en `muted`.
 - `InsufficientDataRow.vue` : ligne `muted` dont la première cellule porte le nom de l'assureur en `text-ink/50`, et dont la seconde s'étend sur `span` colonnes avec le cartouche `DONNÉES INSUFFISANTES` (`font-mono text-[10px] font-semibold text-ink/[0.55] bg-ink/[0.07] px-2 py-[5px] rounded-[5px]`) suivi de l'explication en `text-[11px] text-ink/50`.
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 ```bash
 npm run build
@@ -747,7 +747,7 @@ npm run lint:check
 
 Expected: build réussi, types et lint propres.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 npm run format
@@ -774,7 +774,7 @@ git commit -m "feat: composants de la coquille APhaSPB"
   - Prop partagée `anonymityNotice: string` — « 5 pharmacies minimum · 2 assureurs masqués ce trimestre. »
   - Page `admin/Network`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Admin/NetworkStatsTest.php`:
 
@@ -875,12 +875,12 @@ test('the network screen never exposes a private note or a pharmacy identity', f
 
 Le dernier test est celui que le plan 2B avait explicitement laissé dû : la même garantie, vérifiée cette fois au niveau de la route.
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Admin/NetworkStatsTest.php`
 Expected: FAIL — `Route [admin.network] not defined.`
 
-- [ ] **Step 3: Écrire la ressource de sérialisation**
+- [x] **Step 3: Écrire la ressource de sérialisation**
 
 Une seule forme sérialisée pour les deux cas, avec un drapeau `sufficient` que la page lit pour choisir entre une ligne de données et une ligne d'état. Cela évite au front de deviner le type par la présence d'un champ.
 
@@ -904,11 +904,11 @@ Create `app/Http/Resources/InsurerIndicatorsResource.php` — une méthode stati
 
 `InsufficientData` ne porte pas le nom de l'assureur — le contrôleur le résout depuis `Insurer::pluck('name', 'id')`, en une requête, pas une par ligne.
 
-- [ ] **Step 4: Écrire le contrôleur**
+- [x] **Step 4: Écrire le contrôleur**
 
 `NetworkStatsController::__invoke()` : autorise via `Gate::authorize('manage-network')`, lit la période depuis la requête (trimestre courant par défaut, validé), appelle `perInsurer()`, trie par délai moyen croissant en plaçant les lignes insuffisantes en fin, et rend `admin/Network` avec `indicators`, `period`, `cities` (villes distinctes des officines, pour le filtre) et `threshold`.
 
-- [ ] **Step 5: Partager le rappel du seuil**
+- [x] **Step 5: Partager le rappel du seuil**
 
 Dans `HandleInertiaRequests::share()`, ajouter une prop paresseuse `anonymityNotice`, calculée seulement pour un compte admin :
 
@@ -920,7 +920,7 @@ Dans `HandleInertiaRequests::share()`, ajouter une prop paresseuse `anonymityNot
 
 Le corps compte les assureurs masqués sur la période courante et rend « 5 pharmacies minimum · 2 assureurs masqués ce trimestre. » Il passe par `NetworkStatsService`, pas par une requête directe.
 
-- [ ] **Step 6: Déclarer la route**
+- [x] **Step 6: Déclarer la route**
 
 Dans `routes/web.php` :
 
@@ -933,13 +933,13 @@ Route::middleware(['auth', 'can:manage-network'])
     });
 ```
 
-- [ ] **Step 7: Écrire la page**
+- [x] **Step 7: Écrire la page**
 
 `resources/js/pages/admin/Network.vue` assemble `ConsoleHeader` (eyebrow « RÉSEAU DES OFFICINES · BÉNIN », titre de période), `KpiRow` à trois cartes (officines déclarantes avec jauge, délai moyen réseau en tonalité `warn`, payé ≤ seuil en tonalité `good` avec le lien « modifier »), puis `DataTable` avec les six colonnes de l'artboard et le gabarit `1.7fr 1fr .9fr 1fr .8fr .9fr`. Chaque ligne est un `DataTableRow` en tonalité `alert` quand le délai dépasse le double du seuil, ou un `InsufficientDataRow` quand `sufficient` est faux. Le pied reprend « N assureurs actifs · N déclarations agrégées ».
 
 Filtres de période et de ville en `FilterChip`, appliqués par **rechargement partiel** — `router.reload({ only: ['indicators'] })` — jamais par rechargement complet des props.
 
-- [ ] **Step 8: Lancer les tests et construire**
+- [x] **Step 8: Lancer les tests et construire**
 
 ```bash
 vendor/bin/pest tests/Feature/Admin/NetworkStatsTest.php
@@ -948,7 +948,7 @@ npm run build
 
 Expected: PASS, 5 tests ; build réussi.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 vendor/bin/pint --format agent
@@ -973,7 +973,7 @@ Les quatre entrées de menu admin et les quatre entrées officine qui ne sont pa
 - Consumes: la coquille de la tâche 2
 - Produces: routes nommées `admin.pharmacies`, `admin.insurers`, `admin.exports`, et côté officine `pharmacy.declare`, `pharmacy.history`, `pharmacy.insurers` — toutes rendant une page d'attente
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 Create `tests/Feature/Admin/ComingSoonTest.php`:
 
@@ -997,20 +997,20 @@ test('a pharmacy account cannot reach the admin waiting pages', function () {
 });
 ```
 
-- [ ] **Step 2: Lancer le test pour vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test pour vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Admin/ComingSoonTest.php`
 Expected: FAIL — `Route [admin.pharmacies] not defined.`
 
-- [ ] **Step 3: Écrire le composant d'attente**
+- [x] **Step 3: Écrire le composant d'attente**
 
 `ComingSoon.vue` reprend la carte du canvas : titre en `text-[22px] font-bold text-ink`, explication en `text-[13px]/[1.5] text-ink/60`, et le cartouche `font-mono text-[10px] tracking-[0.04em]` portant l'incrément prévu. Ton calme et explicite, comme la ligne « données insuffisantes » : une page d'attente n'est pas une erreur.
 
-- [ ] **Step 4: Déclarer les routes et brancher la navigation**
+- [x] **Step 4: Déclarer les routes et brancher la navigation**
 
 Ajouter les routes au groupe `admin.` de la tâche 4 et un groupe `pharmacy.` équivalent sous `auth` + `can:declare-payments`. Remplacer les `href: '#'` des deux layouts par les URLs Wayfinder correspondantes.
 
-- [ ] **Step 5: Vérifier l'ensemble de l'incrément**
+- [x] **Step 5: Vérifier l'ensemble de l'incrément**
 
 ```bash
 npm run build
@@ -1019,7 +1019,7 @@ composer ci:check
 
 Expected: `ci:check` passe en entier — Prettier, `vue-tsc`, Pint, PHPStan 0 erreur, toute la suite verte.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A

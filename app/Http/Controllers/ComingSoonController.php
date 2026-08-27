@@ -19,12 +19,6 @@ class ComingSoonController extends Controller
      * @var array<string, array{component: string, title: string, body: string, increment: string}>
      */
     protected const COPY = [
-        'admin.network' => [
-            'component' => 'admin/ComingSoon',
-            'title' => 'Statistiques réseau',
-            'body' => 'Les indicateurs agrégés par assureur : délai moyen de paiement, part réglée sous le seuil, taux de rejet et de non-paiement.',
-            'increment' => 'EN COURS',
-        ],
         'admin.pharmacies' => [
             'component' => 'admin/ComingSoon',
             'title' => 'Pharmacies inscrites',

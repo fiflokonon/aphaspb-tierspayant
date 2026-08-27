@@ -168,6 +168,44 @@ class NetworkStatsService
     }
 
     /**
+     * Network-wide delay indicators over a period.
+     *
+     * Not derivable from perInsurer(): averaging per-insurer averages would
+     * weight a two-declaration insurer like a two-hundred-declaration one, and
+     * the distinct pharmacy count cannot be summed across insurers because one
+     * officine declares to several.
+     *
+     * @return array{declaringPharmacies: int, averageDelayDays: float|null, withinThresholdShare: float|null, rejectionRate: float|null, declarations: int}
+     */
+    public function networkSummary(Period $from, Period $to, ?string $city = null): array
+    {
+        $threshold = $this->settings->paymentDelayThresholdDays();
+
+        $row = $this->baseQuery($from, $to, $city)
+            ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN 1 ELSE 0 END) as settled")
+            ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days ELSE 0 END) as delay_total")
+            ->selectRaw(
+                "SUM(CASE WHEN status IN ('paid', 'partial') AND delay_days <= ? THEN 1 ELSE 0 END) as within_threshold",
+                [$threshold],
+            )
+            ->selectRaw("SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected")
+            ->first();
+
+        $total = (int) ($row->total ?? 0);
+        $settled = (int) ($row->settled ?? 0);
+
+        return [
+            'declaringPharmacies' => (int) ($row->declaring_pharmacies ?? 0),
+            'declarations' => $total,
+            'averageDelayDays' => $settled > 0 ? round((int) $row->delay_total / $settled, 1) : null,
+            'withinThresholdShare' => $settled > 0 ? round((int) $row->within_threshold / $settled * 100, 1) : null,
+            'rejectionRate' => $total > 0 ? round((int) $row->rejected / $total * 100, 1) : null,
+        ];
+    }
+
+    /**
      * Network-wide totals over a period, in FCFA and as shares.
      *
      * @return array{invoiced: int, received: int, outstanding: int, recovery_rate: float|null, declaring_pharmacies: int}
