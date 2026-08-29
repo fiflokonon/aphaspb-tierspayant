@@ -2,86 +2,67 @@
 import { Form, Head, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import Heading from '@/components/Heading.vue';
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { edit } from '@/routes/profile';
-
-defineOptions({
-    layout: {
-        breadcrumbs: [
-            {
-                title: 'Profile settings',
-                href: edit(),
-            },
-        ],
-    },
-});
+import FormField from '@/components/aphaspb/FormField.vue';
+import TextInput from '@/components/aphaspb/TextInput.vue';
+import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 </script>
 
 <template>
-    <Head title="Profile settings" />
+    <Head title="Profil & réglages" />
 
-    <h1 class="sr-only">Profile settings</h1>
+    <ConsoleHeader eyebrow="MON COMPTE" title="Profil & réglages" />
 
-    <div class="flex flex-col space-y-6">
-        <Heading
-            variant="small"
-            title="Profile"
-            description="Update your name and email address"
-        />
+    <div
+        class="mt-5 max-w-[560px] rounded-[11px] border border-border bg-card p-4"
+    >
+        <div class="text-[12.5px] font-bold text-ink">Identité</div>
+        <p class="mt-1 text-[11px]/[1.4] text-ink/[0.45]">
+            Ces informations vous identifient auprès de l'APhaSPB.
+        </p>
 
         <Form
             v-bind="ProfileController.update.form()"
-            class="space-y-6"
-            v-slot="{ errors, processing }"
+            class="mt-4 flex flex-col gap-[11px]"
+            #default="{ errors, processing }"
         >
-            <div class="grid gap-2">
-                <Label for="name">Name</Label>
-                <Input
-                    id="name"
-                    class="mt-1 block w-full"
+            <FormField label="NOM" :error="errors.name">
+                <TextInput
                     name="name"
-                    :default-value="user.name"
-                    required
-                    autocomplete="name"
-                    placeholder="Full name"
+                    :model-value="user.name"
+                    :invalid="!!errors.name"
+                    placeholder="Nom et prénom"
                 />
-                <InputError class="mt-2" :message="errors.name" />
-            </div>
+            </FormField>
 
-            <div class="grid gap-2">
-                <Label for="email">Email address</Label>
-                <Input
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
+            <FormField label="ADRESSE E-MAIL" :error="errors.email">
+                <TextInput
                     name="email"
-                    :default-value="user.email"
-                    required
-                    autocomplete="username"
-                    placeholder="Email address"
+                    type="email"
+                    :model-value="user.email"
+                    :invalid="!!errors.email"
+                    placeholder="vous@exemple.bj"
                 />
-                <InputError class="mt-2" :message="errors.email" />
-            </div>
+            </FormField>
 
-            <div v-if="page.props.mustVerifyEmail && !user.email_verified_at">
-                <p class="-mt-4 text-sm text-muted-foreground">
-                    Your email address is unverified. Verification is handled by
-                    your Joomla account, not here.
-                </p>
-            </div>
+            <p
+                v-if="page.props.mustVerifyEmail && !user.email_verified_at"
+                class="text-[11px]/[1.5] text-ink/[0.45]"
+            >
+                Votre adresse n'est pas vérifiée. La vérification est assurée
+                par votre compte Joomla, pas ici.
+            </p>
 
-            <div class="flex items-center gap-4">
-                <Button :disabled="processing" data-test="update-profile-button"
-                    >Save</Button
-                >
-            </div>
+            <button
+                type="submit"
+                :disabled="processing"
+                class="mt-[6px] flex h-[46px] items-center justify-center self-start rounded-[10px] bg-primary px-5 text-[12.5px] font-bold text-primary-foreground transition-opacity disabled:opacity-60"
+                data-test="update-profile-button"
+            >
+                {{ processing ? 'Enregistrement…' : 'Enregistrer' }}
+            </button>
         </Form>
     </div>
 </template>
