@@ -179,3 +179,33 @@ test('changing a filter on the trends screen refetches the deferred curve', func
     expect($props)->toHaveKey('trend')
         ->and((float) $props['trend']['network']['2026-08'])->toBe(10.0);
 });
+
+test('the download serves a workbook when the xlsx format is asked for', function () {
+    declareInCity($this->insurer, 'Cotonou', 8);
+
+    $response = $this->actingAs($this->admin)
+        ->get(route('admin.csv-exports.download', [
+            'format' => 'xlsx',
+            'city' => 'Cotonou',
+            'period' => StatsPeriod::CurrentQuarter->value,
+        ]))
+        ->assertOk()
+        ->assertHeader(
+            'content-type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+
+    expect($response->headers->get('content-disposition'))
+        ->toContain('aphaspb-reseau-2026-09.xlsx');
+});
+
+test('the download stays a csv by default and for an unknown format', function () {
+    declareInCity($this->insurer, 'Cotonou', 8);
+
+    foreach ([[], ['format' => 'pdf']] as $query) {
+        $this->actingAs($this->admin)
+            ->get(route('admin.csv-exports.download', $query))
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
+});

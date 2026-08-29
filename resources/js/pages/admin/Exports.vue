@@ -22,16 +22,19 @@ const cityOptions = computed(() => [
     ...props.cities.map((one) => ({ value: one, label: one })),
 ]);
 
-/** The link carries the filters, so the file matches the screen above it. */
-const href = computed(() => {
-    const query = new URLSearchParams({ period: period.value });
+/** Each link carries the filters, so the file matches the screen above it. */
+const hrefFor = (format: 'csv' | 'xlsx') => {
+    const query = new URLSearchParams({ period: period.value, format });
 
     if (city.value) {
         query.set('city', city.value);
     }
 
     return `${props.downloadUrl}?${query.toString()}`;
-});
+};
+
+const csvHref = computed(() => hrefFor('csv'));
+const xlsxHref = computed(() => hrefFor('xlsx'));
 
 function reload() {
     router.get(
@@ -75,21 +78,30 @@ watch([period, city], reload);
             <p class="mt-2 text-[13px]/[1.5] text-ink/60">
                 {{ periodLabel
                 }}{{ city ? ` · ${city}` : ' · toutes les villes' }}, une ligne
-                par assureur. Destiné aux notes de plaidoyer : séparateur
-                point-virgule, décimales à la virgule, encodage UTF-8 avec BOM
-                pour qu'Excel conserve les accents.
+                par assureur. Le classeur Excel porte des cellules numériques,
+                donc une colonne s'additionne sans conversion. Le CSV reste là
+                pour un réimport : séparateur point-virgule, décimales à la
+                virgule, UTF-8 avec BOM pour les accents.
             </p>
 
             <!--
-                A plain anchor, not an Inertia Link: this is a file download, and
+                Plain anchors, not Inertia Links: these are file downloads, and
                 Inertia would try to interpret the response as a page visit.
             -->
-            <a
-                :href="href"
-                class="mt-4 inline-flex h-[42px] items-center justify-center rounded-[10px] bg-primary px-4 text-[12.5px] font-bold text-primary-foreground"
-            >
-                Télécharger le CSV
-            </a>
+            <div class="mt-4 flex flex-wrap gap-2">
+                <a
+                    :href="xlsxHref"
+                    class="inline-flex h-[42px] items-center justify-center rounded-[10px] bg-primary px-4 text-[12.5px] font-bold text-primary-foreground"
+                >
+                    Télécharger le classeur Excel
+                </a>
+                <a
+                    :href="csvHref"
+                    class="inline-flex h-[42px] items-center justify-center rounded-[10px] border border-input bg-card px-4 text-[12.5px] font-bold text-ink transition-colors hover:bg-cream-header"
+                >
+                    Télécharger le CSV
+                </a>
+            </div>
 
             <div class="mt-5 border-t border-ink/[0.08] pt-4">
                 <div
