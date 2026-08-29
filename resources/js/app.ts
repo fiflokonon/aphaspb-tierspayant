@@ -1,9 +1,6 @@
 import { createInertiaApp } from '@inertiajs/vue3';
-import AdminLayout from '@/layouts/AdminLayout.vue';
-import AppLayout from '@/layouts/AppLayout.vue';
+import ConsoleShellLayout from '@/layouts/ConsoleShellLayout.vue';
 import OnboardingLayout from '@/layouts/OnboardingLayout.vue';
-import PharmacyLayout from '@/layouts/PharmacyLayout.vue';
-import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -16,15 +13,10 @@ createInertiaApp({
                 return null;
             case name.startsWith('onboarding/'):
                 return OnboardingLayout;
-            case name.startsWith('admin/'):
-                return AdminLayout;
-            case name.startsWith('pharmacy/'):
-                return PharmacyLayout;
-            case name.startsWith('settings/'):
-            case name.startsWith('pharmacies/'):
-                return [AppLayout, SettingsLayout];
+            // Every other page runs the console shell: admin or officine, the
+            // difference lives entirely in the descriptor the server builds.
             default:
-                return AppLayout;
+                return ConsoleShellLayout;
         }
     },
     progress: {
