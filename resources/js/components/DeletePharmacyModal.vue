@@ -55,27 +55,27 @@ const handleOpenChange = (nextOpen: boolean) => {
                 @success="handleOpenChange(false)"
             >
                 <DialogHeader>
-                    <DialogTitle>Are you sure?</DialogTitle>
+                    <DialogTitle>Supprimer cette officine ?</DialogTitle>
                     <DialogDescription>
-                        This action cannot be undone. This will permanently
-                        delete the pharmacy
-                        <strong>"{{ props.pharmacy.name }}"</strong>.
+                        Cette action est irréversible. L'officine
+                        <strong>« {{ props.pharmacy.name }} »</strong> et ses
+                        déclarations seront définitivement supprimées.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div class="space-y-4 py-4">
                     <div class="grid gap-2">
                         <Label for="confirmation-name">
-                            Type
-                            <strong>"{{ props.pharmacy.name }}"</strong> to
-                            confirm
+                            Saisissez
+                            <strong>« {{ props.pharmacy.name }} »</strong> pour
+                            confirmer
                         </Label>
                         <Input
                             id="confirmation-name"
                             name="name"
                             data-test="delete-pharmacy-name"
                             v-model="confirmationName"
-                            placeholder="Enter pharmacy name"
+                            placeholder="Nom de l'officine"
                             autocomplete="off"
                         />
                         <InputError :message="errors.name" />
@@ -84,7 +84,7 @@ const handleOpenChange = (nextOpen: boolean) => {
 
                 <DialogFooter class="gap-2">
                     <DialogClose as-child>
-                        <Button variant="secondary"> Cancel </Button>
+                        <Button variant="secondary"> Annuler </Button>
                     </DialogClose>
 
                     <Button
@@ -93,7 +93,7 @@ const handleOpenChange = (nextOpen: boolean) => {
                         type="submit"
                         :disabled="!canDeletePharmacy || processing"
                     >
-                        Delete pharmacy
+                        Supprimer l'officine
                     </Button>
                 </DialogFooter>
             </Form>

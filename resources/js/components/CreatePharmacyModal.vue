@@ -43,19 +43,19 @@ function handleOpenChange(value: boolean) {
                 @success="open = false"
             >
                 <DialogHeader>
-                    <DialogTitle>Create a new pharmacy</DialogTitle>
+                    <DialogTitle>Nouvelle officine</DialogTitle>
                     <DialogDescription>
-                        Create a new pharmacy to collaborate with others.
+                        Créez une officine pour y travailler à plusieurs.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div class="grid gap-2">
-                    <Label for="name">Pharmacy name</Label>
+                    <Label for="name">Nom de l'officine</Label>
                     <Input
                         id="name"
                         name="name"
                         data-test="create-pharmacy-name"
-                        placeholder="My pharmacy"
+                        placeholder="Pharmacie Le Bon Secours"
                         required
                     />
                     <InputError :message="errors.name" />
@@ -63,7 +63,7 @@ function handleOpenChange(value: boolean) {
 
                 <DialogFooter class="gap-2">
                     <DialogClose as-child>
-                        <Button variant="secondary"> Cancel </Button>
+                        <Button variant="secondary"> Annuler </Button>
                     </DialogClose>
 
                     <Button
@@ -71,7 +71,7 @@ function handleOpenChange(value: boolean) {
                         data-test="create-pharmacy-submit"
                         :disabled="processing"
                     >
-                        Create pharmacy
+                        Créer l'officine
                     </Button>
                 </DialogFooter>
             </Form>
