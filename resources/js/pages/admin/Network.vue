@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
-import FilterChip from '@/components/aphaspb/FilterChip.vue';
+import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import InsufficientDataRow from '@/components/aphaspb/InsufficientDataRow.vue';
 import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
@@ -37,6 +37,8 @@ const props = defineProps<{
     indicators: Indicator[];
     summary: Summary;
     period: string;
+    periodLabel: string;
+    periods: { value: string; label: string }[];
     city: string | null;
     cities: string[];
 }>();
@@ -118,20 +120,45 @@ const footer = computed(
         `${props.indicators.length} assureurs · ${props.summary.declarations.toLocaleString('fr-FR')} déclarations agrégées · évolution mensuelle en préparation`,
 );
 
+const period = ref(props.period);
+const city = ref(props.city);
+
+const cityOptions = computed(() => [
+    { value: null, label: 'Toutes les villes' },
+    ...props.cities.map((one) => ({ value: one, label: one })),
+]);
+
 /** Filters reload only the props they affect, never the whole page. */
-const reloadIndicators = () =>
-    router.reload({ only: ['indicators', 'summary'] });
+function reload() {
+    router.get(
+        '/admin/network',
+        { period: period.value, city: city.value },
+        {
+            only: ['indicators', 'summary', 'period', 'periodLabel', 'city'],
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
+}
+
+watch([period, city], reload);
 </script>
 
 <template>
     <Head title="Statistiques réseau" />
 
-    <ConsoleHeader eyebrow="RÉSEAU DES OFFICINES · BÉNIN" :title="period">
+    <ConsoleHeader eyebrow="RÉSEAU DES OFFICINES · BÉNIN" :title="periodLabel">
         <template #filters>
-            <FilterChip :label="period" @click="reloadIndicators" />
-            <FilterChip
-                :label="city ?? 'Toutes les villes'"
-                @click="reloadIndicators"
+            <FilterSelect
+                v-model="period"
+                :options="periods"
+                aria-label="Filtrer par période"
+            />
+            <FilterSelect
+                v-model="city"
+                :options="cityOptions"
+                aria-label="Filtrer par ville"
             />
         </template>
         <template #action>
@@ -179,11 +206,6 @@ const reloadIndicators = () =>
         :template="TEMPLATE"
         :footer="footer"
     >
-        <template #filters>
-            <FilterChip label="Trier : délai moyen" size="compact" />
-            <FilterChip label="Actifs uniquement" size="compact" />
-        </template>
-
         <template v-for="indicator in indicators" :key="indicator.insurerId">
             <InsufficientDataRow
                 v-if="!indicator.sufficient"

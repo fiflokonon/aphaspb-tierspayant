@@ -1,18 +1,71 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
+import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 
-defineProps<{
+const props = defineProps<{
     downloadUrl: string;
     columns: string[];
-    window: number;
+    period: string;
+    periodLabel: string;
+    periods: { value: string; label: string }[];
+    city: string | null;
+    cities: string[];
 }>();
+
+const period = ref(props.period);
+const city = ref(props.city);
+
+const cityOptions = computed(() => [
+    { value: null, label: 'Toutes les villes' },
+    ...props.cities.map((one) => ({ value: one, label: one })),
+]);
+
+/** The link carries the filters, so the file matches the screen above it. */
+const href = computed(() => {
+    const query = new URLSearchParams({ period: period.value });
+
+    if (city.value) {
+        query.set('city', city.value);
+    }
+
+    return `${props.downloadUrl}?${query.toString()}`;
+});
+
+function reload() {
+    router.get(
+        '/admin/csv-exports',
+        { period: period.value, city: city.value },
+        {
+            only: ['period', 'periodLabel', 'city'],
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
+}
+
+watch([period, city], reload);
 </script>
 
 <template>
     <Head title="Exports CSV" />
 
-    <ConsoleHeader eyebrow="RÉSEAU DES OFFICINES · BÉNIN" title="Exports CSV" />
+    <ConsoleHeader eyebrow="RÉSEAU DES OFFICINES · BÉNIN" title="Exports CSV">
+        <template #filters>
+            <FilterSelect
+                v-model="period"
+                :options="periods"
+                aria-label="Filtrer par période"
+            />
+            <FilterSelect
+                v-model="city"
+                :options="cityOptions"
+                aria-label="Filtrer par ville"
+            />
+        </template>
+    </ConsoleHeader>
 
     <div class="mt-5 max-w-[680px]">
         <div class="rounded-[11px] border border-border bg-card p-5">
@@ -20,10 +73,11 @@ defineProps<{
                 Statistiques agrégées par assureur
             </div>
             <p class="mt-2 text-[13px]/[1.5] text-ink/60">
-                Les {{ window }} derniers mois, une ligne par assureur. Destiné
-                aux notes de plaidoyer : séparateur point-virgule, décimales à
-                la virgule, encodage UTF-8 avec BOM pour qu'Excel conserve les
-                accents.
+                {{ periodLabel
+                }}{{ city ? ` · ${city}` : ' · toutes les villes' }}, une ligne
+                par assureur. Destiné aux notes de plaidoyer : séparateur
+                point-virgule, décimales à la virgule, encodage UTF-8 avec BOM
+                pour qu'Excel conserve les accents.
             </p>
 
             <!--
@@ -31,7 +85,7 @@ defineProps<{
                 Inertia would try to interpret the response as a page visit.
             -->
             <a
-                :href="downloadUrl"
+                :href="href"
                 class="mt-4 inline-flex h-[42px] items-center justify-center rounded-[10px] bg-primary px-4 text-[12.5px] font-bold text-primary-foreground"
             >
                 Télécharger le CSV

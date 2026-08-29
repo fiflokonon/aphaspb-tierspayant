@@ -131,16 +131,14 @@ class NetworkStatsService
      *
      * @return array{insurers: array<int, array{name: string, points: array<string, float>}>, network: array<string, float>, threshold: int}
      */
-    public function delayTrend(int $months): array
+    public function delayTrend(Period $from, Period $to, ?string $city = null): array
     {
-        [$from, $to] = Period::lastMonths($months);
-
         $eligible = array_keys(array_filter(
-            $this->perInsurer($from, $to),
+            $this->perInsurer($from, $to, $city),
             fn (InsurerIndicators|InsufficientData $entry): bool => $entry instanceof InsurerIndicators,
         ));
 
-        $rows = $this->baseQuery($from, $to)
+        $rows = $this->baseQuery($from, $to, $city)
             ->whereIn('insurer_id', $eligible)
             ->whereIn('status', DeclarationStatus::settledValues())
             ->select('insurer_id', 'period_year', 'period_month')
@@ -316,9 +314,9 @@ class NetworkStatsService
      *
      * @return array{invoiced: int, received: int, outstanding: int, recoveryRate: float|null, declaringPharmacies: int}
      */
-    public function aggregatedAmounts(Period $from, Period $to): array
+    public function aggregatedAmounts(Period $from, Period $to, ?string $city = null): array
     {
-        $row = $this->baseQuery($from, $to)
+        $row = $this->baseQuery($from, $to, $city)
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('SUM(amount_invoiced) as invoiced')
             ->selectRaw('SUM(amount_received) as received')

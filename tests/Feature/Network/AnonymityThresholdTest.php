@@ -92,7 +92,7 @@ test('an insufficient insurer is absent from the delay trend', function () {
     declareFrom($shown, 5);
     declareFrom($hidden, 2);
 
-    $trend = $this->service->delayTrend(12);
+    $trend = $this->service->delayTrend(...Period::lastMonths(12));
 
     expect($trend['insurers'])->toHaveKey($shown->id)
         ->and($trend['insurers'])->not->toHaveKey($hidden->id);
@@ -116,7 +116,7 @@ test('no aggregate exposes anything traceable to one pharmacy', function () {
 
     $serialised = json_encode([
         $this->service->perInsurer($this->from, $this->to),
-        $this->service->delayTrend(12),
+        $this->service->delayTrend(...Period::lastMonths(12)),
         $this->service->aggregatedAmounts($this->from, $this->to),
     ], JSON_THROW_ON_ERROR);
 

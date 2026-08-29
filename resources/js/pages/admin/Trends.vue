@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Deferred, Head } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Deferred, Head, router } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
 import DelayTrendChart from '@/components/aphaspb/charts/DelayTrendChart.vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
-import FilterChip from '@/components/aphaspb/FilterChip.vue';
+import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import InsufficientDataRow from '@/components/aphaspb/InsufficientDataRow.vue';
 import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
@@ -43,8 +43,11 @@ const props = defineProps<{
     amounts: AmountRow[];
     /** The mean of the agreed delays: no single one governs the network. */
     threshold: number;
+    period: string;
+    periodLabel: string;
+    periods: { value: string; label: string }[];
     city: string | null;
-    window: number;
+    cities: string[];
     trend?: Trend;
 }>();
 
@@ -77,6 +80,40 @@ const share = (value: number): string =>
         ? '—'
         : `${Math.round((value / props.summary.invoiced) * 100)} %`;
 
+const period = ref(props.period);
+const city = ref(props.city);
+
+const cityOptions = computed(() => [
+    { value: null, label: 'Toutes les villes' },
+    ...props.cities.map((one) => ({ value: one, label: one })),
+]);
+
+/**
+ * The curve is a deferred prop, so it has to be named in `only` for the partial
+ * reload to fetch it again — otherwise the KPIs move and the chart does not.
+ */
+function reload() {
+    router.get(
+        '/admin/trends',
+        { period: period.value, city: city.value },
+        {
+            only: [
+                'summary',
+                'amounts',
+                'trend',
+                'period',
+                'periodLabel',
+                'city',
+            ],
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
+}
+
+watch([period, city], reload);
+
 const series = computed(() =>
     Object.values(props.trend?.insurers ?? {}).map((one) => ({
         name: one.name,
@@ -88,12 +125,18 @@ const series = computed(() =>
 <template>
     <Head title="Évolution du réseau" />
 
-    <ConsoleHeader
-        eyebrow="RÉSEAU DES OFFICINES · BÉNIN"
-        :title="`${window} derniers mois`"
-    >
+    <ConsoleHeader eyebrow="RÉSEAU DES OFFICINES · BÉNIN" :title="periodLabel">
         <template #filters>
-            <FilterChip :label="city ?? 'Toutes les villes'" />
+            <FilterSelect
+                v-model="period"
+                :options="periods"
+                aria-label="Filtrer par période"
+            />
+            <FilterSelect
+                v-model="city"
+                :options="cityOptions"
+                aria-label="Filtrer par ville"
+            />
         </template>
     </ConsoleHeader>
 

@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Data\Period;
+use App\Enums\StatsPeriod;
 use App\Http\Controllers\Controller;
+use App\Models\Pharmacy;
 use App\Services\Network\NetworkCsvExport;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,26 +20,36 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class NetworkExportController extends Controller
 {
-    protected const MONTHS = 12;
+    /** The window the file covers, until the admin picks otherwise. */
+    protected const DEFAULT_PERIOD = StatsPeriod::LastTwelveMonths;
 
     public function __construct(protected NetworkCsvExport $export)
     {
         //
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $city = $request->string('city')->value() ?: null;
+        $period = StatsPeriod::fromRequest($request->string('period')->value(), self::DEFAULT_PERIOD);
+
         return Inertia::render('admin/Exports', [
             'downloadUrl' => route('admin.csv-exports.download', absolute: false),
             'columns' => NetworkCsvExport::COLUMNS,
-            'window' => self::MONTHS,
+            'period' => $period->value,
+            'periodLabel' => $period->describe(),
+            'periods' => StatsPeriod::options(),
+            'city' => $city,
+            'cities' => Pharmacy::filterableCities(),
         ]);
     }
 
     public function download(Request $request): StreamedResponse
     {
         $city = $request->string('city')->value() ?: null;
-        [$from, $to] = Period::lastMonths(self::MONTHS);
+        $period = StatsPeriod::fromRequest($request->string('period')->value(), self::DEFAULT_PERIOD);
+
+        [$from, $to] = $period->bounds();
 
         $filename = sprintf(
             'aphaspb-reseau-%04d-%02d.csv',

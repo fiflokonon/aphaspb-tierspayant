@@ -57,6 +57,23 @@ class Pharmacy extends Model
     /**
      * Get the pharmacy owner.
      */
+    /**
+     * The cities the admin screens can filter on, alphabetically.
+     *
+     * @return list<string>
+     */
+    public static function filterableCities(): array
+    {
+        // array_values(), not the collection's: PHPStan cannot prove
+        // Collection::pluck()->all() yields a list.
+        return array_values(self::query()
+            ->whereNotNull('city')
+            ->distinct()
+            ->orderBy('city')
+            ->pluck('city')
+            ->all());
+    }
+
     public function owner(): ?Model
     {
         return $this->members()

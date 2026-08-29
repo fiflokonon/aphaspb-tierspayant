@@ -36,6 +36,22 @@ function recordForDistinctPharmacies(Insurer $insurer, array $declarations): voi
     }
 }
 
+/**
+ * Record one paid declaration per pharmacy in a given month.
+ */
+function recordForDistinctPharmaciesIn(Insurer $insurer, int $year, int $month, int $count): void
+{
+    foreach (range(1, $count) as $i) {
+        Declaration::factory()->paid()->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $insurer->id,
+            'period_year' => $year,
+            'period_month' => $month,
+            'delay_days' => 30,
+        ]);
+    }
+}
+
 test('the average delay ignores unpaid and rejected declarations', function () {
     recordForDistinctPharmacies($this->insurer, [
         ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 20],
@@ -143,6 +159,61 @@ test('the city filter narrows the aggregate to one city', function () {
     $indicators = $this->service->perInsurer(new Period(2026, 8), new Period(2026, 8), 'Cotonou')[$this->insurer->id];
 
     expect($indicators->declaringPharmacies)->toBe(5);
+});
+
+test('the network totals narrow to one city like every other aggregate', function () {
+    foreach (['Cotonou', 'Parakou'] as $city) {
+        Declaration::factory()->create([
+            'pharmacy_id' => Pharmacy::factory()->create(['city' => $city]),
+            'insurer_id' => $this->insurer->id,
+            'period_year' => 2026,
+            'period_month' => 8,
+            'amount_invoiced' => 1_000_000,
+            'amount_received' => 400_000,
+            'delay_days' => 20,
+        ]);
+    }
+
+    $totals = $this->service->aggregatedAmounts(new Period(2026, 8), new Period(2026, 8), 'Cotonou');
+
+    expect($totals['invoiced'])->toBe(1_000_000)
+        ->and($totals['declaringPharmacies'])->toBe(1);
+});
+
+test('the delay curve follows the bounds it is handed', function () {
+    foreach ([[2026, 8], [2026, 2]] as [$year, $month]) {
+        recordForDistinctPharmaciesIn($this->insurer, $year, $month, 5);
+    }
+
+    // A month without declarations carries no point — the chart fills the gaps.
+    expect(array_keys($this->service->delayTrend(new Period(2026, 1), new Period(2026, 8))['network']))
+        ->toBe(['2026-02', '2026-08'])
+        ->and(array_keys($this->service->delayTrend(new Period(2026, 7), new Period(2026, 8))['network']))
+        ->toBe(['2026-08']);
+});
+
+test('the delay curve narrows to one city', function () {
+    foreach (range(1, 5) as $i) {
+        Declaration::factory()->paid()->create([
+            'pharmacy_id' => Pharmacy::factory()->create(['city' => 'Cotonou']),
+            'insurer_id' => $this->insurer->id,
+            'period_year' => 2026,
+            'period_month' => 8,
+            'delay_days' => 10,
+        ]);
+    }
+
+    Declaration::factory()->paid()->create([
+        'pharmacy_id' => Pharmacy::factory()->create(['city' => 'Parakou']),
+        'insurer_id' => $this->insurer->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+        'delay_days' => 200,
+    ]);
+
+    $trend = $this->service->delayTrend(new Period(2026, 8), new Period(2026, 8), 'Cotonou');
+
+    expect($trend['network']['2026-08'])->toBe(10.0);
 });
 
 test('the aggregation costs two queries whatever the number of insurers', function () {
