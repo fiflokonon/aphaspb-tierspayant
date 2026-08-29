@@ -1,32 +1,24 @@
 <script setup lang="ts">
-import { Form, Head, router } from '@inertiajs/vue3';
-import { ChevronDown, Mail, UserPlus, X } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { Form, Head, Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import DataTable from '@/components/aphaspb/DataTable.vue';
+import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
+import FormField from '@/components/aphaspb/FormField.vue';
+import TextInput from '@/components/aphaspb/TextInput.vue';
 import CancelInvitationModal from '@/components/CancelInvitationModal.vue';
 import DeletePharmacyModal from '@/components/DeletePharmacyModal.vue';
-import Heading from '@/components/Heading.vue';
-import InputError from '@/components/InputError.vue';
 import InviteMemberModal from '@/components/InviteMemberModal.vue';
 import RemoveMemberModal from '@/components/RemoveMemberModal.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useInitials } from '@/composables/useInitials';
-import { edit, index, update } from '@/routes/pharmacies';
+import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
+import { index, update } from '@/routes/pharmacies';
 import { update as updateMember } from '@/routes/pharmacies/members';
 import type {
     RoleOption,
@@ -46,20 +38,11 @@ type Props = {
 
 const props = defineProps<Props>();
 
-defineOptions({
-    layout: (props: { pharmacy: Pharmacy }) => ({
-        breadcrumbs: [
-            {
-                title: 'Pharmacies',
-                href: index(),
-            },
-            {
-                title: props.pharmacy.name,
-                href: edit(props.pharmacy.slug),
-            },
-        ],
-    }),
-});
+const MEMBERS_TEMPLATE = '2fr 1.2fr 1.2fr';
+const MEMBERS_COLUMNS = ['MEMBRE', 'RÔLE', 'ACTIONS'];
+
+const INVITATIONS_TEMPLATE = '2fr 1.2fr 1fr 1fr';
+const INVITATIONS_COLUMNS = ['E-MAIL', 'RÔLE', 'ENVOYÉE LE', 'ACTIONS'];
 
 const { getInitials } = useInitials();
 
@@ -70,11 +53,7 @@ const memberToRemove = ref<PharmacyMember | null>(null);
 const cancelInvitationDialogOpen = ref(false);
 const invitationToCancel = ref<PharmacyInvitation | null>(null);
 
-const pageTitle = computed(() =>
-    props.permissions.canUpdatePharmacy
-        ? `Edit ${props.pharmacy.name}`
-        : `View ${props.pharmacy.name}`,
-);
+const sentOn = (iso: string) => new Date(iso).toLocaleDateString('fr-FR');
 
 const updateMemberRole = (member: PharmacyMember, newRole: string) => {
     router.visit(updateMember([props.pharmacy.slug, member.id]), {
@@ -95,243 +74,195 @@ const confirmCancelInvitation = (invitation: PharmacyInvitation) => {
 </script>
 
 <template>
-    <Head :title="pageTitle" />
+    <Head :title="pharmacy.name" />
 
-    <h1 class="sr-only">{{ pageTitle }}</h1>
+    <ConsoleHeader eyebrow="MON COMPTE" :title="pharmacy.name" />
 
-    <div class="flex flex-col space-y-10">
-        <!-- Pharmacy Name Section -->
-        <div v-if="permissions.canUpdatePharmacy" class="space-y-6">
-            <Heading
-                variant="small"
-                title="Pharmacy settings"
-                description="Update your pharmacy name and settings"
-            />
+    <Link
+        :href="index()"
+        class="mt-2 inline-flex min-h-[44px] items-center text-[11.5px] font-semibold text-ink/[0.55] transition-colors hover:text-ink"
+    >
+        ← Mes officines
+    </Link>
 
-            <Form
-                v-bind="update.form(pharmacy.slug)"
-                class="space-y-6"
-                v-slot="{ errors, processing }"
-            >
-                <div class="grid gap-2">
-                    <Label for="name">Pharmacy name</Label>
-                    <Input
-                        id="name"
-                        name="name"
-                        data-test="pharmacy-name-input"
-                        :default-value="pharmacy.name"
-                        required
-                    />
-                    <InputError :message="errors.name" />
-                </div>
+    <div
+        v-if="permissions.canUpdatePharmacy"
+        class="mt-1 max-w-[560px] rounded-[11px] border border-border bg-card p-4"
+    >
+        <div class="text-[12.5px] font-bold text-ink">Officine</div>
+        <p class="mt-1 text-[11px]/[1.4] text-ink/[0.45]">
+            Le nom affiché à vos membres et dans vos déclarations.
+        </p>
 
-                <div class="flex items-center gap-4">
-                    <Button
-                        type="submit"
-                        data-test="pharmacy-save-button"
-                        :disabled="processing"
-                    >
-                        Save
-                    </Button>
-                </div>
-            </Form>
-        </div>
-
-        <div v-else class="space-y-6">
-            <Heading variant="small" :title="pharmacy.name" />
-        </div>
-
-        <!-- Members Section -->
-        <div class="space-y-6">
-            <div class="flex items-center justify-between">
-                <Heading
-                    variant="small"
-                    title="Pharmacy members"
-                    :description="
-                        permissions.canCreateInvitation
-                            ? 'Manage who belongs to this pharmacy'
-                            : ''
-                    "
+        <Form
+            v-bind="update.form(pharmacy.slug)"
+            class="mt-4 flex flex-col gap-[11px]"
+            #default="{ errors, processing }"
+        >
+            <FormField label="NOM DE L'OFFICINE" :error="errors.name">
+                <TextInput
+                    name="name"
+                    data-test="pharmacy-name-input"
+                    :model-value="pharmacy.name"
+                    :invalid="!!errors.name"
+                    placeholder="Pharmacie Le Bon Secours"
                 />
+            </FormField>
 
-                <Button
-                    v-if="permissions.canCreateInvitation"
-                    data-test="invite-member-button"
-                    @click="inviteDialogOpen = true"
-                >
-                    <UserPlus /> Invite member
-                </Button>
-            </div>
-
-            <div class="space-y-3">
-                <div
-                    v-for="member in members"
-                    :key="member.id"
-                    data-test="member-row"
-                    class="flex items-center justify-between rounded-lg border p-4"
-                >
-                    <div class="flex items-center gap-4">
-                        <Avatar class="h-10 w-10">
-                            <AvatarImage
-                                v-if="member.avatar"
-                                :src="member.avatar"
-                                :alt="member.name"
-                            />
-                            <AvatarFallback>{{
-                                getInitials(member.name)
-                            }}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <div class="font-medium">
-                                {{ member.name }}
-                            </div>
-                            <div class="text-sm text-muted-foreground">
-                                {{ member.email }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <DropdownMenu
-                            v-if="
-                                member.role !== 'owner' &&
-                                permissions.canUpdateMember
-                            "
-                        >
-                            <DropdownMenuTrigger as-child>
-                                <Button
-                                    data-test="member-role-trigger"
-                                    variant="outline"
-                                    size="sm"
-                                >
-                                    {{ member.role_label }}
-                                    <ChevronDown
-                                        class="ml-2 h-4 w-4 opacity-50"
-                                    />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem
-                                    v-for="role in availableRoles"
-                                    :key="role.value"
-                                    data-test="member-role-option"
-                                    @click="
-                                        updateMemberRole(member, role.value)
-                                    "
-                                >
-                                    {{ role.label }}
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <Badge v-else variant="secondary">
-                            {{ member.role_label }}
-                        </Badge>
-
-                        <TooltipProvider
-                            v-if="
-                                member.role !== 'owner' &&
-                                permissions.canRemoveMember
-                            "
-                        >
-                            <Tooltip>
-                                <TooltipTrigger as-child>
-                                    <Button
-                                        data-test="member-remove-button"
-                                        variant="ghost"
-                                        size="sm"
-                                        @click="confirmRemoveMember(member)"
-                                    >
-                                        <X class="h-4 w-4" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Remove member</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pending Invitations Section -->
-        <div v-if="invitations.length > 0" class="space-y-6">
-            <Heading
-                variant="small"
-                title="Pending invitations"
-                description="Invitations that haven't been accepted yet"
-            />
-
-            <div class="space-y-3">
-                <div
-                    v-for="invitation in invitations"
-                    :key="invitation.code"
-                    data-test="invitation-row"
-                    class="flex items-center justify-between rounded-lg border p-4"
-                >
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="flex h-10 w-10 items-center justify-center rounded-full bg-muted"
-                        >
-                            <Mail class="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                            <div class="font-medium">
-                                {{ invitation.email }}
-                            </div>
-                            <div class="text-sm text-muted-foreground">
-                                {{ invitation.role_label }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <TooltipProvider v-if="permissions.canCancelInvitation">
-                        <Tooltip>
-                            <TooltipTrigger as-child>
-                                <Button
-                                    data-test="invitation-cancel-button"
-                                    variant="ghost"
-                                    size="sm"
-                                    @click="confirmCancelInvitation(invitation)"
-                                >
-                                    <X class="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Cancel invitation</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-            </div>
-        </div>
-
-        <!-- Danger Zone -->
-        <div v-if="permissions.canDeletePharmacy" class="space-y-6">
-            <Heading
-                variant="small"
-                title="Delete pharmacy"
-                description="Permanently delete your pharmacy"
-            />
-            <div
-                class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
+            <button
+                type="submit"
+                data-test="pharmacy-save-button"
+                :disabled="processing"
+                class="mt-[6px] flex h-[46px] items-center justify-center self-start rounded-[10px] bg-primary px-5 text-[12.5px] font-bold text-primary-foreground transition-opacity disabled:opacity-60"
             >
-                <div
-                    class="relative space-y-0.5 text-red-600 dark:text-red-100"
-                >
-                    <p class="font-medium">Warning</p>
-                    <p class="text-sm">
-                        Please proceed with caution, this cannot be undone.
-                    </p>
+                {{ processing ? 'Enregistrement…' : 'Enregistrer' }}
+            </button>
+        </Form>
+    </div>
+
+    <DataTable
+        title="Membres"
+        :columns="MEMBERS_COLUMNS"
+        :template="MEMBERS_TEMPLATE"
+    >
+        <template #filters>
+            <button
+                v-if="permissions.canCreateInvitation"
+                type="button"
+                data-test="invite-member-button"
+                class="flex h-[34px] items-center rounded-lg border border-ink/[0.13] px-3 text-[11.5px] font-semibold text-ink transition-colors hover:bg-ink/[0.04]"
+                @click="inviteDialogOpen = true"
+            >
+                + Inviter un membre
+            </button>
+        </template>
+
+        <DataTableRow
+            v-for="member in members"
+            :key="member.id"
+            :template="MEMBERS_TEMPLATE"
+            data-test="member-row"
+        >
+            <div class="flex min-w-0 items-center gap-2">
+                <Avatar class="size-7 shrink-0">
+                    <AvatarImage
+                        v-if="member.avatar"
+                        :src="member.avatar"
+                        :alt="member.name"
+                    />
+                    <AvatarFallback class="text-[10px]">
+                        {{ getInitials(member.name) }}
+                    </AvatarFallback>
+                </Avatar>
+                <div class="min-w-0">
+                    <div class="truncate">{{ member.name }}</div>
+                    <div
+                        class="truncate text-[11px] font-medium text-ink/[0.45]"
+                    >
+                        {{ member.email }}
+                    </div>
                 </div>
-                <Button
-                    data-test="delete-pharmacy-button"
-                    variant="destructive"
-                    @click="deleteDialogOpen = true"
-                    >Delete pharmacy</Button
-                >
             </div>
+
+            <div class="font-medium text-ink/60">{{ member.role_label }}</div>
+
+            <div class="flex flex-wrap items-center gap-3 text-[11.5px]">
+                <DropdownMenu
+                    v-if="
+                        member.role !== 'owner' && permissions.canUpdateMember
+                    "
+                >
+                    <DropdownMenuTrigger as-child>
+                        <button
+                            type="button"
+                            data-test="member-role-trigger"
+                            class="flex h-[30px] items-center gap-1 rounded-lg border border-ink/[0.13] px-[9px] text-[11.5px] font-semibold text-ink transition-colors hover:bg-ink/[0.04]"
+                        >
+                            Changer de rôle
+                            <span class="opacity-50" aria-hidden="true">▾</span>
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem
+                            v-for="role in availableRoles"
+                            :key="role.value"
+                            data-test="member-role-option"
+                            @click="updateMemberRole(member, role.value)"
+                        >
+                            {{ role.label }}
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
+                <button
+                    v-if="
+                        member.role !== 'owner' && permissions.canRemoveMember
+                    "
+                    type="button"
+                    data-test="member-remove-button"
+                    class="font-semibold text-terracotta-dark underline underline-offset-2 hover:text-terracotta"
+                    @click="confirmRemoveMember(member)"
+                >
+                    Retirer
+                </button>
+            </div>
+        </DataTableRow>
+    </DataTable>
+
+    <DataTable
+        v-if="invitations.length > 0"
+        title="Invitations en attente"
+        :columns="INVITATIONS_COLUMNS"
+        :template="INVITATIONS_TEMPLATE"
+        footer="Une invitation non acceptée expire automatiquement."
+    >
+        <DataTableRow
+            v-for="invitation in invitations"
+            :key="invitation.code"
+            :template="INVITATIONS_TEMPLATE"
+            data-test="invitation-row"
+        >
+            <div class="truncate">{{ invitation.email }}</div>
+            <div class="font-medium text-ink/60">
+                {{ invitation.role_label }}
+            </div>
+            <div class="font-mono text-[11px] text-ink/60">
+                {{ sentOn(invitation.created_at) }}
+            </div>
+            <div class="text-[11.5px]">
+                <button
+                    v-if="permissions.canCancelInvitation"
+                    type="button"
+                    data-test="invitation-cancel-button"
+                    class="font-semibold text-terracotta-dark underline underline-offset-2 hover:text-terracotta"
+                    @click="confirmCancelInvitation(invitation)"
+                >
+                    Annuler
+                </button>
+            </div>
+        </DataTableRow>
+    </DataTable>
+
+    <div
+        v-if="permissions.canDeletePharmacy"
+        class="mt-[22px] max-w-[560px] rounded-[11px] border border-terracotta/[0.35] bg-card p-4"
+    >
+        <div class="text-[12.5px] font-bold text-terracotta-dark">
+            Supprimer l'officine
         </div>
+        <p class="mt-1 text-[11px]/[1.4] text-ink/[0.45]">
+            L'officine et ses déclarations disparaissent définitivement. Cette
+            action est irréversible.
+        </p>
+
+        <button
+            type="button"
+            data-test="delete-pharmacy-button"
+            class="mt-3 flex h-[42px] items-center rounded-[10px] bg-terracotta-dark px-4 text-[12.5px] font-bold text-white transition-opacity hover:opacity-90"
+            @click="deleteDialogOpen = true"
+        >
+            Supprimer l'officine
+        </button>
     </div>
 
     <InviteMemberModal
