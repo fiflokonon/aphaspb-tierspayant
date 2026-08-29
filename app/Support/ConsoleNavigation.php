@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Gate;
  *
  * @phpstan-type NavItem array{label: string, href: string, active: bool}
  * @phpstan-type Notice array{tone: string, title: string, body: string}
- * @phpstan-type Account array{name: string, logoutHref: string}
+ * @phpstan-type Account array{name: string, logoutHref: string, pharmacies: list<SwitchablePharmacy>}
+ * @phpstan-type SwitchablePharmacy array{name: string, slug: string, switchHref: string, current: bool}
  */
 class ConsoleNavigation
 {
@@ -44,17 +45,19 @@ class ConsoleNavigation
         $shell = match (true) {
             Gate::forUser($user)->allows('manage-network') => $this->admin($currentPath),
             Gate::forUser($user)->allows('declare-payments') => $this->pharmacy($user, $currentPath),
-            default => null,
+            // No space, but still a session to leave: a bare shell, so the rail
+            // renders its account footer and nothing else.
+            default => ['space' => null, 'nav' => [], 'notices' => []],
         };
 
         // Attached here rather than in each shell: the way out of a session
         // does not depend on which space the user landed in, and onboarding —
         // which renders no navigation at all — needs it just as much.
-        return $shell === null ? null : [...$shell, 'account' => $this->account($user)];
+        return [...$shell, 'account' => $this->account($user)];
     }
 
     /**
-     * The signed-in identity and its way out.
+     * The signed-in identity, the officines it can move between, and its way out.
      *
      * Server-built like the navigation, for the same reason: the shell renders
      * what it is handed and never resolves a route name itself.
@@ -66,7 +69,34 @@ class ConsoleNavigation
         return [
             'name' => $user->name,
             'logoutHref' => route('auth.logout', absolute: false),
+            'pharmacies' => $this->switchablePharmacies($user),
         ];
+    }
+
+    /**
+     * The officines this user may move between, the current one included.
+     *
+     * Empty below two: a titulaire with a single officine has nothing to
+     * choose, and an empty list is what tells the rail to omit the block.
+     *
+     * @return list<SwitchablePharmacy>
+     */
+    protected function switchablePharmacies(User $user): array
+    {
+        $pharmacies = $user->pharmacies()
+            ->orderBy('pharmacies.name')
+            ->get(['pharmacies.id', 'pharmacies.name', 'pharmacies.slug']);
+
+        if ($pharmacies->count() < 2) {
+            return [];
+        }
+
+        return array_values($pharmacies->map(fn (Pharmacy $pharmacy) => [
+            'name' => $pharmacy->name,
+            'slug' => $pharmacy->slug,
+            'switchHref' => route('pharmacies.switch', ['pharmacy' => $pharmacy->slug], absolute: false),
+            'current' => $user->isCurrentPharmacy($pharmacy),
+        ])->all());
     }
 
     /**

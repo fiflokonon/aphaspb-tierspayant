@@ -12,7 +12,15 @@ export type ConsoleNotice = {
     body: string;
 };
 
+export type ConsoleSwitchablePharmacy = {
+    name: string;
+    slug: string;
+    switchHref: string;
+    current: boolean;
+};
+
 export type ConsoleAccount = {
     name: string;
     logoutHref: string;
+    pharmacies: ConsoleSwitchablePharmacy[];
 };
