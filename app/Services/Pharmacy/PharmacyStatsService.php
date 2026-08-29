@@ -142,31 +142,70 @@ class PharmacyStatsService
     }
 
     /**
-     * Which insurers owe the most, descending, ticked-but-settled ones included.
+     * Which insurers owe the most, descending, settled ones included.
+     *
+     * A projection of recoveryByInsurer() rather than its own query: two blocks
+     * of the dashboard show the same balance, and they must never disagree.
      *
      * @return list<array{insurerName: string, outstanding: int}>
      */
-    public function outstandingByInsurer(Pharmacy $pharmacy): array
+    public function outstandingByInsurer(Pharmacy $pharmacy, int $months): array
     {
-        $rows = DB::table('declarations')
+        return array_map(
+            fn (array $line) => [
+                'insurerName' => $line['insurerName'],
+                'outstanding' => $line['outstanding'],
+            ],
+            $this->recoveryByInsurer($pharmacy, $months),
+        );
+    }
+
+    /**
+     * Invoiced, collected and the rate between them, insurer by insurer.
+     *
+     * The global rate says the officine collects 62 %; this says which insurer
+     * carries the gap. Same window as summary(), so the two agree on screen.
+     *
+     * @return list<array{insurerId: int, insurerName: string, invoiced: int, received: int, outstanding: int, recoveryRate: float|null}>
+     */
+    public function recoveryByInsurer(Pharmacy $pharmacy, int $months): array
+    {
+        $rows = $this->window($pharmacy, $months)
             ->join('insurers', 'insurers.id', '=', 'declarations.insurer_id')
-            ->where('declarations.pharmacy_id', $pharmacy->id)
             ->select('insurers.id', 'insurers.name')
-            ->selectRaw('SUM(amount_invoiced - amount_received) as outstanding')
+            ->selectRaw('SUM(amount_invoiced) as invoiced')
+            ->selectRaw('SUM(amount_received) as received')
             ->groupBy('insurers.id', 'insurers.name')
             ->get();
 
-        $owed = $rows->mapWithKeys(fn (object $row) => [
-            (int) $row->id => ['insurerName' => (string) $row->name, 'outstanding' => max(0, (int) $row->outstanding)],
-        ]);
+        $lines = $rows->mapWithKeys(function (object $row): array {
+            $invoiced = (int) $row->invoiced;
+            $received = (int) $row->received;
 
-        // A ticked insurer with nothing due still belongs in the list, marked
-        // as settled: its absence would read as "not declared yet".
+            return [(int) $row->id => [
+                'insurerId' => (int) $row->id,
+                'insurerName' => (string) $row->name,
+                'invoiced' => $invoiced,
+                'received' => $received,
+                'outstanding' => max(0, $invoiced - $received),
+                'recoveryRate' => $invoiced > 0 ? round($received / $invoiced * 100, 1) : null,
+            ]];
+        });
+
+        // A ticked insurer with nothing declared still belongs in the list: its
+        // absence would read as "not declared yet".
         foreach ($pharmacy->insurers()->get(['insurers.id', 'insurers.name']) as $insurer) {
-            $owed[$insurer->id] ??= ['insurerName' => $insurer->name, 'outstanding' => 0];
+            $lines[$insurer->id] ??= [
+                'insurerId' => (int) $insurer->id,
+                'insurerName' => (string) $insurer->name,
+                'invoiced' => 0,
+                'received' => 0,
+                'outstanding' => 0,
+                'recoveryRate' => null,
+            ];
         }
 
-        return array_values($owed->sortByDesc('outstanding')->all());
+        return array_values($lines->sortByDesc('outstanding')->all());
     }
 
     /**

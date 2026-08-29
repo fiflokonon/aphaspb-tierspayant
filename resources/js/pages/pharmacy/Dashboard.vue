@@ -2,6 +2,8 @@
 import { Deferred, Head } from '@inertiajs/vue3';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
 import InvoicedVsCollectedChart from '@/components/aphaspb/charts/InvoicedVsCollectedChart.vue';
+import DataTable from '@/components/aphaspb/DataTable.vue';
+import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
 import PrimaryAction from '@/components/aphaspb/PrimaryAction.vue';
@@ -10,6 +12,15 @@ import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 import { formatMillions } from '@/lib/millions';
 import type { DashboardInvitation } from '@/types';
 import type { KpiTone } from '@/types/aphaspb';
+
+type RecoveryRow = {
+    insurerId: number;
+    insurerName: string;
+    invoiced: number;
+    received: number;
+    outstanding: number;
+    recoveryRate: number | null;
+};
 
 type JourneyPoint = {
     key: string;
@@ -34,6 +45,7 @@ const props = defineProps<{
     };
     ageing: { label: string; amount: number }[];
     owed: { insurerName: string; outstanding: number }[];
+    recovery: RecoveryRow[];
     declareUrl: string;
     journey?: JourneyPoint[];
     pendingInvitations?: DashboardInvitation[];
@@ -54,6 +66,15 @@ const delayTone = (days: number | null): KpiTone => {
 
     return days <= 30 ? 'good' : days <= 60 ? 'warn' : 'bad';
 };
+
+const RECOVERY_TEMPLATE = '1.9fr 1fr 1fr 1fr .9fr';
+const RECOVERY_COLUMNS = [
+    'ASSUREUR',
+    'FACTURÉ',
+    'ENCAISSÉ',
+    'RESTE DÛ',
+    'TAUX',
+];
 
 const eyebrow = [props.pharmacyName, props.city]
     .filter(Boolean)
@@ -191,4 +212,49 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </div>
         </div>
     </div>
+
+    <DataTable
+        title="Recouvrement par assureur"
+        :columns="RECOVERY_COLUMNS"
+        :template="RECOVERY_TEMPLATE"
+        footer="Sur les 12 derniers mois. Un assureur coché sans déclaration reste listé, sans taux."
+    >
+        <DataTableRow
+            v-for="row in recovery"
+            :key="row.insurerId"
+            :template="RECOVERY_TEMPLATE"
+        >
+            <div>{{ row.insurerName }}</div>
+            <div>{{ formatMillions(row.invoiced) }}</div>
+            <div>{{ formatMillions(row.received) }}</div>
+            <div
+                :class="
+                    row.outstanding === 0
+                        ? 'text-officine'
+                        : 'text-terracotta-dark'
+                "
+            >
+                {{
+                    row.outstanding === 0
+                        ? 'À JOUR'
+                        : formatMillions(row.outstanding)
+                }}
+            </div>
+            <div
+                :class="
+                    row.recoveryRate === null
+                        ? 'text-ink/40'
+                        : row.recoveryRate < 60
+                          ? 'text-terracotta-dark'
+                          : 'text-officine'
+                "
+            >
+                {{
+                    row.recoveryRate === null
+                        ? '—'
+                        : `${row.recoveryRate.toLocaleString('fr-FR')} %`
+                }}
+            </div>
+        </DataTableRow>
+    </DataTable>
 </template>
