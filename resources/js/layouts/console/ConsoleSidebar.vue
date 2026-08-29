@@ -22,8 +22,15 @@ defineProps<{
         reduced version. Below lg it becomes a band across the top rather than a
         drawer: the same elements, restacked, with no new interaction to learn.
     -->
+    <!--
+        lg:h-screen + lg:sticky rather than letting the rail stretch: as a plain
+        flex child it grows to the height of the document, and mt-auto then pins
+        the account footer to the bottom of the *page* instead of the viewport —
+        600px below the fold on the dashboard. One viewport tall, with its own
+        overflow, keeps the way out of the session always in sight.
+    -->
     <aside
-        class="flex w-full shrink-0 flex-col bg-ink px-[14px] py-[18px] text-white lg:w-[212px]"
+        class="flex w-full shrink-0 flex-col bg-ink px-[14px] py-[18px] text-white lg:sticky lg:top-0 lg:h-screen lg:w-[212px] lg:overflow-y-auto"
     >
         <div class="flex items-center gap-[9px]">
             <img
