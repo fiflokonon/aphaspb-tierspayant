@@ -41,6 +41,23 @@ test('only active insurers are offered', function () {
         });
 });
 
+test('an insurer already tied to the officine is offered even when retired', function () {
+    // Reachable by revisiting the step after onboarding: the count under the
+    // button reads the selection, so an unlisted tie showed as a phantom.
+    $user = userAwaitingInsurers();
+    $retired = Insurer::factory()->inactive()->create();
+
+    $user->currentPharmacy->insurers()->attach($retired->id);
+
+    $this->actingAs($user)
+        ->get(route('onboarding.insurers'))
+        ->assertInertia(function (AssertableInertia $page) use ($retired) {
+            $offered = collect($page->toArray()['props']['insurers'])->pluck('id');
+
+            expect($offered)->toContain($retired->id);
+        });
+});
+
 test('ticking insurers attaches them and finishes the onboarding', function () {
     $user = userAwaitingInsurers();
     $insurers = Insurer::factory()->count(3)->create();

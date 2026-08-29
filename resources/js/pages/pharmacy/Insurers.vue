@@ -4,10 +4,16 @@ import { computed, ref } from 'vue';
 import InsurerChecklist from '@/components/aphaspb/InsurerChecklist.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 
+type Insurer = {
+    id: number;
+    name: string;
+    isActive: boolean;
+    declarations: number;
+};
+
 const props = defineProps<{
-    insurers: { id: number; name: string }[];
+    insurers: Insurer[];
     selected: number[];
-    withDeclarations: number[];
 }>();
 
 const selected = ref<number[]>([...props.selected]);
@@ -17,8 +23,14 @@ const count = computed(
     () => selected.value.length + (other.value.trim() ? 1 : 0),
 );
 
+/** Insurers being untied that carry a history — the only untying worth a word. */
 const losing = computed(() =>
-    props.withDeclarations.filter((id) => !selected.value.includes(id)),
+    props.insurers.filter(
+        (insurer) =>
+            insurer.declarations > 0 &&
+            props.selected.includes(insurer.id) &&
+            !selected.value.includes(insurer.id),
+    ),
 );
 </script>
 
@@ -38,7 +50,6 @@ const losing = computed(() =>
                 v-model:selected="selected"
                 v-model:other="other"
                 :insurers="insurers"
-                :with-declarations="withDeclarations"
             >
                 <template #heading>
                     <h1 class="text-[18px]/[1.25] font-bold text-ink">

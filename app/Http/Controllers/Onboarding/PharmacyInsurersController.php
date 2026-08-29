@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Onboarding;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Onboarding\SavePharmacyInsurersRequest;
 use App\Models\Insurer;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,13 +29,23 @@ class PharmacyInsurersController extends Controller
             return to_route('onboarding.profile');
         }
 
+        $linked = $pharmacy->insurers()->pluck('insurers.id');
+
         return Inertia::render('onboarding/Insurers', [
+            // Active, plus anything already tied — reachable by revisiting this
+            // step. An unlisted tie still counts under the button, so filtering
+            // on active alone showed a phantom insurer.
             'insurers' => Insurer::query()
-                ->active()
+                ->where(fn (Builder $query) => $query->active()->orWhereIn('id', $linked))
                 ->orderBy('name')
-                ->get(['id', 'name'])
+                ->get(['id', 'name', 'is_active'])
+                ->map(fn (Insurer $insurer): array => [
+                    'id' => $insurer->id,
+                    'name' => $insurer->name,
+                    'isActive' => $insurer->is_active,
+                ])
                 ->all(),
-            'selected' => $pharmacy->insurers()->pluck('insurers.id')->all(),
+            'selected' => $linked->all(),
         ]);
     }
 

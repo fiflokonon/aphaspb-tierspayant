@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 import InsurerChecklist from '@/components/aphaspb/InsurerChecklist.vue';
 
 const props = defineProps<{
-    insurers: { id: number; name: string }[];
+    insurers: { id: number; name: string; isActive: boolean }[];
     selected: number[];
 }>();
 
