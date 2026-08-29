@@ -106,6 +106,10 @@ class PharmacyController extends Controller
 
     /**
      * Switch the user's current pharmacy.
+     *
+     * Lands on the new officine's dashboard rather than back(): only the
+     * dashboard carries {current_pharmacy} in its path, so returning to the
+     * previous URL would re-render the officine the user just left.
      */
     public function switch(Request $request, Pharmacy $pharmacy): RedirectResponse
     {
@@ -113,7 +117,7 @@ class PharmacyController extends Controller
 
         $request->user()->switchPharmacy($pharmacy);
 
-        return back();
+        return to_route('dashboard', ['current_pharmacy' => $pharmacy->slug]);
     }
 
     /**
