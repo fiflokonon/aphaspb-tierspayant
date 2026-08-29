@@ -233,7 +233,7 @@ test('members can leave non personal pharmacies', function () {
         ->delete(route('pharmacies.leave', $pharmacy));
 
     $response->assertRedirect(route('pharmacies.index'));
-    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => "You left the pharmacy \"{$pharmacy->name}\""]);
+    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => "Vous avez quitté l'officine « {$pharmacy->name} »"]);
 
     expect($member->fresh()->belongsToPharmacy($pharmacy))->toBeFalse();
 });

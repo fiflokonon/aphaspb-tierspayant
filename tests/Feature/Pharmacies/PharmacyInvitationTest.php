@@ -5,6 +5,7 @@ use App\Models\Pharmacy;
 use App\Models\PharmacyInvitation;
 use App\Models\User;
 use App\Notifications\Pharmacies\PharmacyInvitation as PharmacyInvitationNotification;
+use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Notification;
 
 test('pharmacy invitations can be created', function () {
@@ -47,7 +48,7 @@ test('invitation email for existing users uses login route', function () {
     $mail = (new PharmacyInvitationNotification($invitation))->toMail($invitedUser);
 
     expect($mail->actionUrl)->toBe(route('login', ['invitation' => $invitation->code]));
-    $this->assertStringContainsString('dashboard', implode(' ', $mail->introLines));
+    $this->assertStringContainsString('tableau de bord', implode(' ', $mail->introLines));
 });
 
 test('invitation email for unknown users uses login route', function () {
@@ -64,8 +65,29 @@ test('invitation email for unknown users uses login route', function () {
 
     $mail = (new PharmacyInvitationNotification($invitation))->toMail((object) []);
 
-    expect($mail->actionUrl)->toBe(route('login', ['invitation' => $invitation->code]));
-    $this->assertStringContainsString('log in', strtolower(implode(' ', $mail->introLines)));
+    expect($mail->actionUrl)->toBe(route('login', ['invitation' => $invitation->code]))
+        // The invitation lands in a real inbox: it is written in the language
+        // the whole application speaks.
+        ->and($mail->subject)->toBe("Vous êtes invité à rejoindre {$pharmacy->name}")
+        ->and($mail->actionText)->toBe('Se connecter');
+
+    $this->assertStringContainsString('vous invite à rejoindre', implode(' ', $mail->introLines));
+});
+
+test('the invitation email is French down to the framework wrapper', function () {
+    // lang/fr.json also carries the keys Laravel's own mail template resolves.
+    // They are matched verbatim — a typo in one silently falls back to English,
+    // and the subcopy key spans two lines, which is where that happens.
+    $invitation = PharmacyInvitation::factory()->create();
+
+    $message = (new PharmacyInvitationNotification($invitation))->toMail((object) []);
+    $rendered = (string) app(Markdown::class)->render($message->markdown, $message->data());
+
+    expect($rendered)->toContain('Bonjour')
+        ->and($rendered)->toContain('Cordialement')
+        ->and($rendered)->toContain('Si le bouton')
+        ->and($rendered)->not->toContain('Regards,')
+        ->and($rendered)->not->toContain('trouble clicking');
 });
 
 test('pharmacy invitations can be created by admins', function () {
@@ -190,7 +212,7 @@ test('pharmacy invitations can be accepted', function () {
         ->post(route('invitations.accept', $invitation));
 
     $response->assertRedirect(route('dashboard'));
-    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Invitation accepted.']);
+    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Invitation acceptée.']);
 
     expect($invitedUser->fresh()->belongsToPharmacy($pharmacy))->toBeTrue();
     expect($invitation->fresh()->accepted_at)->not->toBeNull();

@@ -69,7 +69,7 @@ class PharmacyInsurersController extends Controller
 
         $pharmacy->insurers()->sync(array_unique($ids));
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Vos assureurs sont enregistrés.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Your insurers have been saved.')]);
 
         return to_route('pharmacy.insurers');
     }
