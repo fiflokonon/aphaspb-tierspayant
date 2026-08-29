@@ -11,3 +11,8 @@ export type ConsoleNotice = {
     title: string;
     body: string;
 };
+
+export type ConsoleAccount = {
+    name: string;
+    logoutHref: string;
+};

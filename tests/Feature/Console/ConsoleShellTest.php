@@ -16,6 +16,7 @@ test('an admin gets the admin shell with its space and both notices', function (
             ->where('console.space', 'ESPACE ADMIN')
             ->has('console.nav', 6)
             ->has('console.notices', 2)
+            ->has('console.account')
             ->where('console.notices.0.title', 'Vue anonymisée')
             ->where('console.notices.1.title', "Seuil d'affichage"),
         );
@@ -56,6 +57,29 @@ test('a pharmacy gets the pharmacy shell, without space or notice', function () 
             ->where('console.space', null)
             ->has('console.nav', 5)
             ->has('console.notices', 0),
+        );
+});
+
+test('the shell carries the account name and the logout route', function () {
+    $user = User::factory()->create(['name' => 'Awa Hounkpatin']);
+
+    $this->actingAs($user)
+        ->get(route('dashboard', ['current_pharmacy' => $user->currentPharmacy->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('console.account.name', 'Awa Hounkpatin')
+            ->where('console.account.logoutHref', '/auth/logout'),
+        );
+});
+
+test('a user still onboarding can reach the logout route too', function () {
+    // The step where being stuck costs the most: no officine, so no console
+    // navigation, and until now no way out of the session either.
+    $this->actingAs(User::factory()->notOnboarded()->create())
+        ->get(route('onboarding.profile'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('console.account.logoutHref', '/auth/logout'),
         );
 });
 

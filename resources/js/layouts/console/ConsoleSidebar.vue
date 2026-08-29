@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import type { ConsoleNavItem, ConsoleNotice } from '@/types/console';
+import type {
+    ConsoleAccount,
+    ConsoleNavItem,
+    ConsoleNotice,
+} from '@/types/console';
+import ConsoleAccountFooter from './ConsoleAccountFooter.vue';
 import ConsoleSidebarNotice from './ConsoleSidebarNotice.vue';
 
 defineProps<{
     space: string | null;
     nav: ConsoleNavItem[];
     notices: ConsoleNotice[];
+    account: ConsoleAccount | null;
 }>();
 </script>
 
@@ -71,6 +77,7 @@ defineProps<{
             />
         </div>
 
-        <div class="mt-auto" />
+        <ConsoleAccountFooter v-if="account" :account="account" />
+        <div v-else class="mt-auto" />
     </aside>
 </template>

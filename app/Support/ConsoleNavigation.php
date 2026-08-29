@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Gate;
  *
  * @phpstan-type NavItem array{label: string, href: string, active: bool}
  * @phpstan-type Notice array{tone: string, title: string, body: string}
+ * @phpstan-type Account array{name: string, logoutHref: string}
  */
 class ConsoleNavigation
 {
@@ -32,7 +33,7 @@ class ConsoleNavigation
     /**
      * The shell descriptor for whichever profile the user belongs to.
      *
-     * @return array{space: string|null, nav: list<NavItem>, notices: list<Notice>}|null
+     * @return array{space: string|null, nav: list<NavItem>, notices: list<Notice>, account: Account}|null
      */
     public function forUser(?User $user, string $currentPath): ?array
     {
@@ -40,15 +41,32 @@ class ConsoleNavigation
             return null;
         }
 
-        if (Gate::forUser($user)->allows('manage-network')) {
-            return $this->admin($currentPath);
-        }
+        $shell = match (true) {
+            Gate::forUser($user)->allows('manage-network') => $this->admin($currentPath),
+            Gate::forUser($user)->allows('declare-payments') => $this->pharmacy($user, $currentPath),
+            default => null,
+        };
 
-        if (Gate::forUser($user)->allows('declare-payments')) {
-            return $this->pharmacy($user, $currentPath);
-        }
+        // Attached here rather than in each shell: the way out of a session
+        // does not depend on which space the user landed in, and onboarding —
+        // which renders no navigation at all — needs it just as much.
+        return $shell === null ? null : [...$shell, 'account' => $this->account($user)];
+    }
 
-        return null;
+    /**
+     * The signed-in identity and its way out.
+     *
+     * Server-built like the navigation, for the same reason: the shell renders
+     * what it is handed and never resolves a route name itself.
+     *
+     * @return Account
+     */
+    protected function account(User $user): array
+    {
+        return [
+            'name' => $user->name,
+            'logoutHref' => route('auth.logout', absolute: false),
+        ];
     }
 
     /**
