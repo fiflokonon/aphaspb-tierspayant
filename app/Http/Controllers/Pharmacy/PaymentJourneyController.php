@@ -35,7 +35,8 @@ class PaymentJourneyController extends Controller
             'city' => $pharmacy->city,
             'summary' => $this->stats->summary($pharmacy, self::MONTHS),
             'ageing' => $this->stats->ageingBuckets($pharmacy),
-            'owed' => $this->stats->outstandingByInsurer($pharmacy),
+            'owed' => $this->stats->outstandingByInsurer($pharmacy, self::MONTHS),
+            'recovery' => $this->stats->recoveryByInsurer($pharmacy, self::MONTHS),
             'declareUrl' => route('pharmacy.declare'),
             'pendingInvitations' => $this->pendingInvitations($request),
 

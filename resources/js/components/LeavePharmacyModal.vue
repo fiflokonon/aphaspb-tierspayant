@@ -43,17 +43,16 @@ const leavePharmacy = () => {
     <Dialog :open="props.open" @update:open="emit('update:open', $event)">
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Leave pharmacy</DialogTitle>
+                <DialogTitle>Quitter l'officine</DialogTitle>
                 <DialogDescription>
-                    Are you sure you want to leave
-                    <strong>{{ props.pharmacy?.name }}</strong
-                    >?
+                    Voulez-vous vraiment quitter
+                    <strong>{{ props.pharmacy?.name }}</strong> ?
                 </DialogDescription>
             </DialogHeader>
 
             <DialogFooter class="gap-2">
                 <DialogClose as-child>
-                    <Button variant="secondary"> Cancel </Button>
+                    <Button variant="secondary"> Annuler </Button>
                 </DialogClose>
 
                 <Button
@@ -62,7 +61,7 @@ const leavePharmacy = () => {
                     :disabled="processing"
                     @click="leavePharmacy"
                 >
-                    Leave pharmacy
+                    Quitter l'officine
                 </Button>
             </DialogFooter>
         </DialogContent>

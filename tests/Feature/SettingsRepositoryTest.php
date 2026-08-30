@@ -4,15 +4,8 @@ use App\Services\Settings\SettingsRepository;
 
 beforeEach(fn () => $this->settings = app(SettingsRepository::class));
 
-test('the thresholds fall back to the values the CDC sets', function () {
-    expect($this->settings->paymentDelayThresholdDays())->toBe(30)
-        ->and($this->settings->anonymityMinPharmacies())->toBe(5);
-});
-
-test('a stored value overrides the default', function () {
-    $this->settings->set('payment_delay_threshold_days', 45);
-
-    expect($this->settings->paymentDelayThresholdDays())->toBe(45);
+test('the anonymity threshold falls back to the value the CDC sets', function () {
+    expect($this->settings->anonymityMinPharmacies())->toBe(5);
 });
 
 test('writing a setting clears the cached read', function () {
@@ -21,4 +14,9 @@ test('writing a setting clears the cached read', function () {
     $this->settings->set('anonymity_min_pharmacies', 8);
 
     expect($this->settings->anonymityMinPharmacies())->toBe(8);
+});
+
+test('the payment delay threshold is no longer a global setting', function () {
+    expect(defined(SettingsRepository::class.'::PAYMENT_DELAY_THRESHOLD_DAYS'))->toBeFalse()
+        ->and(method_exists($this->settings, 'paymentDelayThresholdDays'))->toBeFalse();
 });

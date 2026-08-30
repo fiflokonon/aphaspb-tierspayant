@@ -74,25 +74,17 @@ const footer = computed(
     <Head title="Pharmacies inscrites" />
 
     <div class="pharmacies-page">
-
-
         <ConsoleHeader
             eyebrow="RÉSEAU DES OFFICINES · BÉNIN"
             title="Pharmacies inscrites"
             class="pharmacies-header"
         >
-
             <template #filters>
-
                 <div class="header-filters">
-
                     <!-- RECHERCHE -->
 
                     <div class="search-box">
-
-                        <span class="search-icon" aria-hidden="true">
-                            ⌕
-                        </span>
+                        <span class="search-icon" aria-hidden="true"> ⌕ </span>
 
                         <input
                             v-model="search"
@@ -111,16 +103,10 @@ const footer = computed(
                         >
                             ×
                         </button>
-
                     </div>
 
-
                     <div class="city-filter">
-
-                        <span
-                            class="city-filter-icon"
-                            aria-hidden="true"
-                        >
+                        <span class="city-filter-icon" aria-hidden="true">
                             ◉
                         </span>
 
@@ -129,67 +115,39 @@ const footer = computed(
                             :options="cityOptions"
                             aria-label="Filtrer par ville"
                         />
-
                     </div>
-
                 </div>
-
             </template>
-
         </ConsoleHeader>
 
-
         <section class="pharmacies-intro">
-
             <div class="intro-content">
-
                 <div class="intro-icon">
-
-                    <span>
-                        +
-                    </span>
-
+                    <span> + </span>
                 </div>
-
 
                 <div class="intro-text">
+                    <span class="intro-eyebrow"> RÉSEAU DES OFFICINES </span>
 
-                    <span class="intro-eyebrow">
-                        RÉSEAU DES OFFICINES
-                    </span>
-
-                    <h1>
-                        Pharmacies inscrites
-                    </h1>
+                    <h1>Pharmacies inscrites</h1>
 
                     <p>
-                        Consultez les officines enregistrées dans le réseau
-                        et retrouvez rapidement leurs informations
+                        Consultez les officines enregistrées dans le réseau et
+                        retrouvez rapidement leurs informations
                         d'identification.
                     </p>
-
                 </div>
-
             </div>
-
 
             <div class="network-status">
-
                 <span class="status-dot"></span>
 
-                <span>
-                    Réseau actif
-                </span>
-
+                <span> Réseau actif </span>
             </div>
-
         </section>
 
-
         <section class="pharmacies-section">
-
             <div class="section-top-line"></div>
-
 
             <DataTable
                 title="Officines du réseau"
@@ -198,111 +156,62 @@ const footer = computed(
                 :footer="footer"
                 class="pharmacies-table"
             >
-
-            
-
                 <DataTableRow
                     v-for="row in pharmacies.data"
                     :key="row.id"
                     :template="TEMPLATE"
                     class="pharmacy-row"
                 >
-
-
                     <div class="pharmacy-name-cell">
-
                         <div class="pharmacy-avatar">
-
-                            {{
-                                row.name
-                                    ?.charAt(0)
-                                    ?.toUpperCase()
-                            }}
-
+                            {{ row.name?.charAt(0)?.toUpperCase() }}
                         </div>
 
-
                         <div class="pharmacy-name-content">
-
-                            <div
-                                class="pharmacy-name"
-                                :title="row.name"
-                            >
+                            <div class="pharmacy-name" :title="row.name">
                                 {{ row.name }}
                             </div>
 
                             <span class="pharmacy-status">
-
                                 <span class="mini-status-dot"></span>
 
                                 Officine inscrite
-
                             </span>
-
                         </div>
-
                     </div>
 
-
                     <div class="city-cell">
-
-                        <span class="city-marker">
-                            ●
-                        </span>
+                        <span class="city-marker"> ● </span>
 
                         <span>
                             {{ row.city ?? '—' }}
                         </span>
-
                     </div>
 
-
-
-
                     <div class="license-cell">
-
-                        <span class="license-icon">
-                            #
-                        </span>
+                        <span class="license-icon"> # </span>
 
                         <span>
                             {{ row.onpbLicense ?? '—' }}
                         </span>
-
                     </div>
 
-
                     <div class="date-cell">
-
-                        <span class="date-icon">
-                            ◷
-                        </span>
+                        <span class="date-icon"> ◷ </span>
 
                         <span>
                             {{ row.registeredAt ?? '—' }}
                         </span>
-
                     </div>
-
                 </DataTableRow>
 
+                <div v-if="!pharmacies.data.length" class="empty-state">
+                    <div class="empty-icon">⌕</div>
 
-                <div
-                    v-if="!pharmacies.data.length"
-                    class="empty-state"
-                >
-
-                    <div class="empty-icon">
-                        ⌕
-                    </div>
-
-                    <div class="empty-title">
-                        Aucune officine trouvée
-                    </div>
+                    <div class="empty-title">Aucune officine trouvée</div>
 
                     <p>
-                        Aucune officine ne correspond aux critères
-                        sélectionnés.
+                        Aucune officine ne correspond aux critères sélectionnés.
                     </p>
 
                     <button
@@ -316,16 +225,11 @@ const footer = computed(
                     >
                         Réinitialiser les filtres
                     </button>
-
                 </div>
-
             </DataTable>
-
         </section>
 
-
         <div class="pagination-wrapper">
-
             <Pagination
                 :page="pharmacies.current_page"
                 :last-page="pharmacies.last_page"
@@ -335,44 +239,35 @@ const footer = computed(
                 noun="officine"
                 @update:page="reload"
             />
-
         </div>
 
         <div class="pharmacies-footnote">
-
-            <div class="footnote-icon">
-                i
-            </div>
+            <div class="footnote-icon">i</div>
 
             <p>
                 Les informations affichées correspondent aux officines
                 actuellement enregistrées dans le réseau.
             </p>
-
         </div>
-
     </div>
 </template>
 
-
 <style scoped>
-
 .pharmacies-page {
+    --apha-primary: #008f83;
+    --apha-primary-dark: #006f68;
+    --apha-primary-soft: #e8f6f3;
 
-    --apha-primary: #008F83;
-    --apha-primary-dark: #006F68;
-    --apha-primary-soft: #E8F6F3;
-
-    --apha-gold: #D7A33D;
-    --apha-gold-soft: #FFF8E9;
+    --apha-gold: #d7a33d;
+    --apha-gold-soft: #fff8e9;
 
     --apha-ink: #243333;
     --apha-muted: #788585;
-    --apha-light: #A2ADAD;
+    --apha-light: #a2adad;
 
-    --apha-border: #E7ECEB;
+    --apha-border: #e7eceb;
 
-    --apha-background: #F7F9F9;
+    --apha-background: #f7f9f9;
 
     position: relative;
 
@@ -380,10 +275,7 @@ const footer = computed(
 
     min-height: 100vh;
 
-    padding:
-        0
-        10px
-        60px;
+    padding: 0 10px 60px;
 
     /* background:
         radial-gradient(
@@ -391,1452 +283,852 @@ const footer = computed(
             rgba(0, 143, 131, .045),
             transparent 28%
         ); */
-
 }
-
-
 
 .pharmacies-header {
+    position: relative;
 
-    position:
-        relative;
-
-    z-index:
-        5;
-
+    z-index: 5;
 }
-
 
 .header-filters {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
-
-    gap:
-        8px;
-
+    gap: 8px;
 }
 
-
-
 .search-box {
+    position: relative;
 
-    position:
-        relative;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    width: 250px;
 
-    width:
-        250px;
+    height: 42px;
 
-    height:
-        42px;
+    border: 1px solid var(--apha-border);
 
-    border:
-        1px solid
-        var(--apha-border);
+    border-radius: 10px;
 
-    border-radius:
-        10px;
-
-    background:
-        #FFFFFF;
+    background: #ffffff;
 
     /* box-shadow:
         0 3px 10px
         rgba(35, 70, 68, .025); */
 
     transition:
-        border-color .2s ease,
-        box-shadow .2s ease;
-
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
-
 .search-box:focus-within {
-
-    border-color:
-        rgba(0, 143, 131, .35);
+    border-color: rgba(0, 143, 131, 0.35);
 
     /* box-shadow:
         0 0 0 3px
         rgba(0, 143, 131, .07); */
-
 }
-
 
 .search-icon {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    width: 38px;
 
-    width:
-        38px;
+    flex-shrink: 0;
 
-    flex-shrink:
-        0;
+    color: var(--apha-muted);
 
-    color:
-        var(--apha-muted);
+    font-size: 18px;
 
-    font-size:
-        18px;
-
-    line-height:
-        1;
-
+    line-height: 1;
 }
-
 
 .search-input {
+    width: 100%;
 
-    width:
-        100%;
+    height: 100%;
 
-    height:
-        100%;
+    padding: 0 34px 0 0;
 
-    padding:
-        0
-        34px
-        0
-        0;
+    border: none;
 
-    border:
-        none;
+    outline: none;
 
-    outline:
-        none;
+    background: transparent;
 
-    background:
-        transparent;
+    color: var(--apha-ink);
 
-    color:
-        var(--apha-ink);
+    font-size: 11px;
 
-    font-size:
-        11px;
-
-    font-weight:
-        550;
-
+    font-weight: 550;
 }
-
 
 .search-input::placeholder {
+    color: rgba(36, 51, 51, 0.38);
 
-    color:
-        rgba(36, 51, 51, .38);
-
-    font-weight:
-        450;
-
+    font-weight: 450;
 }
-
 
 .search-input::-webkit-search-cancel-button {
-
-    display:
-        none;
-
+    display: none;
 }
-
 
 .clear-search {
+    position: absolute;
 
-    position:
-        absolute;
+    right: 9px;
 
-    right:
-        9px;
+    top: 50%;
 
-    top:
-        50%;
+    width: 21px;
 
-    width:
-        21px;
+    height: 21px;
 
-    height:
-        21px;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    transform: translateY(-50%);
 
-    transform:
-        translateY(-50%);
+    border: none;
 
-    border:
-        none;
+    border-radius: 50%;
 
-    border-radius:
-        50%;
+    background: #f1f4f3;
 
-    background:
-        #F1F4F3;
+    color: var(--apha-muted);
 
-    color:
-        var(--apha-muted);
+    font-size: 14px;
 
-    font-size:
-        14px;
-
-    cursor:
-        pointer;
+    cursor: pointer;
 
     transition:
-        background .2s ease,
-        color .2s ease;
-
+        background 0.2s ease,
+        color 0.2s ease;
 }
-
 
 .clear-search:hover {
+    background: var(--apha-primary-soft);
 
-    background:
-        var(--apha-primary-soft);
-
-    color:
-        var(--apha-primary-dark);
-
+    color: var(--apha-primary-dark);
 }
-
-
-
 
 .city-filter {
+    position: relative;
 
-    position:
-        relative;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    height: 42px;
 
-    height:
-        42px;
+    border: 1px solid var(--apha-border);
 
-    border:
-        1px solid
-        var(--apha-border);
+    border-radius: 10px;
 
-    border-radius:
-        10px;
+    background: #ffffff;
 
-    background:
-        #FFFFFF;
-
-    overflow:
-        hidden;
-
+    overflow: hidden;
 }
-
 
 .city-filter-icon {
+    position: absolute;
 
-    position:
-        absolute;
+    left: 11px;
 
-    left:
-        11px;
+    z-index: 2;
 
-    z-index:
-        2;
+    color: var(--apha-primary);
 
-    color:
-        var(--apha-primary);
+    font-size: 8px;
 
-    font-size:
-        8px;
-
-    pointer-events:
-        none;
-
+    pointer-events: none;
 }
-
 
 .city-filter :deep(select) {
+    height: 100%;
 
-    height:
-        100%;
+    min-width: 155px;
 
-    min-width:
-        155px;
+    padding-left: 26px;
 
-    padding-left:
-        26px;
+    padding-right: 32px;
 
-    padding-right:
-        32px;
+    border: none;
 
-    border:
-        none;
+    outline: none;
 
-    outline:
-        none;
+    background: transparent;
 
-    background:
-        transparent;
+    color: var(--apha-ink);
 
-    color:
-        var(--apha-ink);
+    font-size: 10.5px;
 
-    font-size:
-        10.5px;
-
-    font-weight:
-        650;
-
+    font-weight: 650;
 }
 
-
-
 .pharmacies-intro {
+    position: relative;
 
-    position:
-        relative;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: space-between;
 
-    justify-content:
-        space-between;
+    gap: 25px;
 
-    gap:
-        25px;
+    margin: 16px 0 22px;
 
-    margin:
-        16px
-        0
-        22px;
+    padding: 22px 25px;
 
-    padding:
-        22px
-        25px;
+    border: 1px solid var(--apha-border);
 
-    border:
-        1px solid
-        var(--apha-border);
+    border-radius: 18px;
 
-    border-radius:
-        18px;
-
-    background:
-        linear-gradient(
-            110deg,
-            #FFFFFF 0%,
-            #F8FCFB 100%
-        );
+    background: linear-gradient(110deg, #ffffff 0%, #f8fcfb 100%);
 
     /* box-shadow:
         0 8px 30px
         rgba(35, 70, 68, .035); */
 
-    overflow:
-        hidden;
+    overflow: hidden;
 
-    animation:
-        fadeUp .5s ease both;
-
+    animation: fadeUp 0.5s ease both;
 }
-
 
 .pharmacies-intro::after {
+    content: '';
 
-    content:
-        "";
+    position: absolute;
 
-    position:
-        absolute;
+    right: -70px;
 
-    right:
-        -70px;
+    top: -90px;
 
-    top:
-        -90px;
+    width: 220px;
 
-    width:
-        220px;
+    height: 220px;
 
-    height:
-        220px;
+    border-radius: 50%;
 
-    border-radius:
-        50%;
+    background: radial-gradient(
+        circle,
+        rgba(0, 143, 131, 0.09),
+        transparent 68%
+    );
 
-    background:
-        radial-gradient(
-            circle,
-            rgba(0, 143, 131, .09),
-            transparent 68%
-        );
-
-    pointer-events:
-        none;
-
+    pointer-events: none;
 }
-
 
 .intro-content {
+    position: relative;
 
-    position:
-        relative;
+    z-index: 1;
 
-    z-index:
-        1;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
-
-    gap:
-        15px;
-
+    gap: 15px;
 }
-
 
 .intro-icon {
+    width: 48px;
 
-    width:
-        48px;
+    height: 48px;
 
-    height:
-        48px;
+    flex-shrink: 0;
 
-    flex-shrink:
-        0;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    border-radius: 14px;
 
-    border-radius:
-        14px;
+    background: linear-gradient(
+        135deg,
+        var(--apha-primary),
+        var(--apha-primary-dark)
+    );
 
-    background:
-        linear-gradient(
-            135deg,
-            var(--apha-primary),
-            var(--apha-primary-dark)
-        );
+    color: #ffffff;
 
-    color:
-        #FFFFFF;
-
-    box-shadow:
-        0 8px 18px
-        rgba(0, 143, 131, .18);
-
+    box-shadow: 0 8px 18px rgba(0, 143, 131, 0.18);
 }
-
 
 .intro-icon span {
+    font-size: 24px;
 
-    font-size:
-        24px;
+    font-weight: 400;
 
-    font-weight:
-        400;
-
-    line-height:
-        1;
-
+    line-height: 1;
 }
-
 
 .intro-text {
+    display: flex;
 
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
+    flex-direction: column;
 }
-
 
 .intro-eyebrow {
+    margin-bottom: 3px;
 
-    margin-bottom:
-        3px;
+    color: var(--apha-primary);
 
-    color:
-        var(--apha-primary);
+    font-size: 8.5px;
 
-    font-size:
-        8.5px;
+    font-weight: 850;
 
-    font-weight:
-        850;
-
-    letter-spacing:
-        .14em;
-
+    letter-spacing: 0.14em;
 }
-
 
 .intro-text h1 {
+    margin: 0;
 
-    margin:
-        0;
+    color: var(--apha-ink);
 
-    color:
-        var(--apha-ink);
+    font-size: 20px;
 
-    font-size:
-        20px;
+    font-weight: 800;
 
-    font-weight:
-        800;
-
-    letter-spacing:
-        -.025em;
-
+    letter-spacing: -0.025em;
 }
-
 
 .intro-text p {
+    max-width: 750px;
 
-    max-width:
-        750px;
+    margin-top: 4px;
 
-    margin-top:
-        4px;
+    color: var(--apha-muted);
 
-    color:
-        var(--apha-muted);
+    font-size: 10.5px;
 
-    font-size:
-        10.5px;
-
-    line-height:
-        1.55;
-
+    line-height: 1.55;
 }
-
-
-
 
 .network-status {
+    position: relative;
 
-    position:
-        relative;
+    z-index: 2;
 
-    z-index:
-        2;
+    display: inline-flex;
 
-    display:
-        inline-flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 7px;
 
-    gap:
-        7px;
+    padding: 8px 11px;
 
-    padding:
-        8px
-        11px;
+    border: 1px solid rgba(0, 143, 131, 0.08);
 
-    border:
-        1px solid
-        rgba(0, 143, 131, .08);
+    border-radius: 30px;
 
-    border-radius:
-        30px;
+    background: var(--apha-primary-soft);
 
-    background:
-        var(--apha-primary-soft);
+    color: var(--apha-primary-dark);
 
-    color:
-        var(--apha-primary-dark);
+    font-size: 9px;
 
-    font-size:
-        9px;
+    font-weight: 700;
 
-    font-weight:
-        700;
-
-    white-space:
-        nowrap;
-
+    white-space: nowrap;
 }
-
 
 .status-dot {
+    width: 7px;
 
-    width:
-        7px;
+    height: 7px;
 
-    height:
-        7px;
+    border-radius: 50%;
 
-    border-radius:
-        50%;
+    background: var(--apha-primary);
 
-    background:
-        var(--apha-primary);
-
-    box-shadow:
-        0 0 0 4px
-        rgba(0, 143, 131, .07);
-
+    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.07);
 }
-
-
 
 .pharmacies-section {
+    position: relative;
 
-    position:
-        relative;
+    width: 100%;
 
-    width:
-        100%;
+    overflow: hidden;
 
-    overflow:
-        hidden;
+    padding: 4px;
 
-    padding:
-        4px;
+    border: 1px solid var(--apha-border);
 
-    border:
-        1px solid
-        var(--apha-border);
+    border-radius: 18px;
 
-    border-radius:
-        18px;
+    background: #ffffff;
 
-    background:
-        #FFFFFF;
+    box-shadow: 0 8px 30px rgba(35, 70, 68, 0.035);
 
-    box-shadow:
-        0 8px 30px
-        rgba(35, 70, 68, .035);
-
-    animation:
-        fadeUp .6s ease .05s both;
-
+    animation: fadeUp 0.6s ease 0.05s both;
 }
-
 
 .section-top-line {
+    position: absolute;
 
-    position:
-        absolute;
+    left: 0;
 
-    left:
-        0;
+    top: 0;
 
-    top:
-        0;
+    width: 100%;
 
-    width:
-        100%;
+    height: 3px;
 
-    height:
-        3px;
+    background: linear-gradient(
+        90deg,
+        var(--apha-primary),
+        #35a799,
+        var(--apha-gold)
+    );
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--apha-primary),
-            #35A799,
-            var(--apha-gold)
-        );
-
-    opacity:
-        .9;
-
+    opacity: 0.9;
 }
-
 
 .pharmacies-table {
-
-    border-radius:
-        14px;
-
+    border-radius: 14px;
 }
-
-
-
 
 .pharmacy-name-cell {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 10px;
 
-    gap:
-        10px;
-
-    min-width:
-        180px;
-
+    min-width: 180px;
 }
-
 
 .pharmacy-avatar {
+    width: 34px;
 
-    width:
-        34px;
+    height: 34px;
 
-    height:
-        34px;
+    flex-shrink: 0;
 
-    flex-shrink:
-        0;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    border: 1px solid rgba(0, 143, 131, 0.08);
 
-    border:
-        1px solid
-        rgba(0, 143, 131, .08);
+    border-radius: 10px;
 
-    border-radius:
-        10px;
+    background: linear-gradient(135deg, #e6f6f2, #f3faf8);
 
-    background:
-        linear-gradient(
-            135deg,
-            #E6F6F2,
-            #F3FAF8
-        );
+    color: var(--apha-primary-dark);
 
-    color:
-        var(--apha-primary-dark);
+    font-size: 11px;
 
-    font-size:
-        11px;
-
-    font-weight:
-        850;
+    font-weight: 850;
 
     transition:
-        transform .25s ease,
-        box-shadow .25s ease;
-
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
 }
-
 
 .pharmacy-row:hover .pharmacy-avatar {
+    transform: scale(1.06);
 
-    transform:
-        scale(1.06);
-
-    box-shadow:
-        0 5px 12px
-        rgba(0, 143, 131, .10);
-
+    box-shadow: 0 5px 12px rgba(0, 143, 131, 0.1);
 }
-
 
 .pharmacy-name-content {
+    min-width: 0;
 
-    min-width:
-        0;
+    display: flex;
 
-    display:
-        flex;
+    flex-direction: column;
 
-    flex-direction:
-        column;
-
-    gap:
-        3px;
-
+    gap: 3px;
 }
-
 
 .pharmacy-name {
+    max-width: 100%;
 
-    max-width:
-        100%;
+    overflow: hidden;
 
-    overflow:
-        hidden;
+    color: var(--apha-ink);
 
-    color:
-        var(--apha-ink);
+    font-size: 11.5px;
 
-    font-size:
-        11.5px;
+    font-weight: 700;
 
-    font-weight:
-        700;
+    text-overflow: ellipsis;
 
-    text-overflow:
-        ellipsis;
-
-    white-space:
-        nowrap;
-
+    white-space: nowrap;
 }
-
 
 .pharmacy-status {
+    display: inline-flex;
 
-    display:
-        inline-flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 4px;
 
-    gap:
-        4px;
+    color: var(--apha-light);
 
-    color:
-        var(--apha-light);
+    font-size: 8px;
 
-    font-size:
-        8px;
-
-    font-weight:
-        550;
-
+    font-weight: 550;
 }
-
 
 .mini-status-dot {
+    width: 5px;
 
-    width:
-        5px;
+    height: 5px;
 
-    height:
-        5px;
+    border-radius: 50%;
 
-    border-radius:
-        50%;
-
-    background:
-        var(--apha-primary);
-
+    background: var(--apha-primary);
 }
-
-
-
 
 .city-cell {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 7px;
 
-    gap:
-        7px;
+    color: rgba(36, 51, 51, 0.62);
 
-    color:
-        rgba(36, 51, 51, .62);
+    font-size: 11px;
 
-    font-size:
-        11px;
-
-    font-weight:
-        550;
-
+    font-weight: 550;
 }
-
 
 .city-marker {
+    color: var(--apha-primary);
 
-    color:
-        var(--apha-primary);
-
-    font-size:
-        7px;
-
+    font-size: 7px;
 }
-
-
 
 .license-cell {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 7px;
 
-    gap:
-        7px;
-
-    color:
-        rgba(36, 51, 51, .62);
+    color: rgba(36, 51, 51, 0.62);
 
     font-family:
-        ui-monospace,
-        SFMono-Regular,
-        Menlo,
-        Monaco,
-        Consolas,
-        monospace;
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    font-size:
-        10px;
-
+    font-size: 10px;
 }
-
 
 .license-icon {
+    width: 20px;
 
-    width:
-        20px;
+    height: 20px;
 
-    height:
-        20px;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    border-radius: 6px;
 
-    border-radius:
-        6px;
+    background: #f4f7f6;
 
-    background:
-        #F4F7F6;
+    color: var(--apha-muted);
 
-    color:
-        var(--apha-muted);
+    font-size: 9px;
 
-    font-size:
-        9px;
-
-    font-weight:
-        800;
-
+    font-weight: 800;
 }
-
-
 
 .date-cell {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 7px;
 
-    gap:
-        7px;
+    color: rgba(36, 51, 51, 0.6);
 
-    color:
-        rgba(36, 51, 51, .60);
+    font-size: 10.5px;
 
-    font-size:
-        10.5px;
-
-    font-weight:
-        550;
-
+    font-weight: 550;
 }
-
 
 .date-icon {
+    color: var(--apha-primary);
 
-    color:
-        var(--apha-primary);
-
-    font-size:
-        13px;
-
+    font-size: 13px;
 }
-
-
 
 .empty-state {
+    display: flex;
 
-    display:
-        flex;
+    flex-direction: column;
 
-    flex-direction:
-        column;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    min-height: 220px;
 
-    min-height:
-        220px;
+    padding: 35px 20px;
 
-    padding:
-        35px
-        20px;
+    border-top: 1px solid rgba(36, 51, 51, 0.06);
 
-    border-top:
-        1px solid
-        rgba(36, 51, 51, .06);
-
-    text-align:
-        center;
-
+    text-align: center;
 }
-
 
 .empty-icon {
+    width: 46px;
 
-    width:
-        46px;
+    height: 46px;
 
-    height:
-        46px;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    margin-bottom: 11px;
 
-    margin-bottom:
-        11px;
+    border: 1px solid rgba(0, 143, 131, 0.08);
 
-    border:
-        1px solid
-        rgba(0, 143, 131, .08);
+    border-radius: 14px;
 
-    border-radius:
-        14px;
+    background: var(--apha-primary-soft);
 
-    background:
-        var(--apha-primary-soft);
+    color: var(--apha-primary);
 
-    color:
-        var(--apha-primary);
-
-    font-size:
-        20px;
-
+    font-size: 20px;
 }
-
 
 .empty-title {
+    color: var(--apha-ink);
 
-    color:
-        var(--apha-ink);
+    font-size: 13px;
 
-    font-size:
-        13px;
-
-    font-weight:
-        750;
-
+    font-weight: 750;
 }
-
 
 .empty-state p {
+    max-width: 360px;
 
-    max-width:
-        360px;
+    margin: 5px 0 13px;
 
-    margin:
-        5px
-        0
-        13px;
+    color: var(--apha-muted);
 
-    color:
-        var(--apha-muted);
+    font-size: 10px;
 
-    font-size:
-        10px;
-
-    line-height:
-        1.5;
-
+    line-height: 1.5;
 }
-
 
 .empty-reset {
+    height: 34px;
 
-    height:
-        34px;
+    padding: 0 13px;
 
-    padding:
-        0
-        13px;
+    border: 1px solid rgba(0, 143, 131, 0.15);
 
-    border:
-        1px solid
-        rgba(0, 143, 131, .15);
+    border-radius: 8px;
 
-    border-radius:
-        8px;
+    background: #ffffff;
 
-    background:
-        #FFFFFF;
+    color: var(--apha-primary-dark);
 
-    color:
-        var(--apha-primary-dark);
+    font-size: 9px;
 
-    font-size:
-        9px;
+    font-weight: 700;
 
-    font-weight:
-        700;
-
-    cursor:
-        pointer;
+    cursor: pointer;
 
     transition:
-        background .2s ease,
-        border-color .2s ease;
-
+        background 0.2s ease,
+        border-color 0.2s ease;
 }
-
 
 .empty-reset:hover {
+    border-color: rgba(0, 143, 131, 0.3);
 
-    border-color:
-        rgba(0, 143, 131, .30);
-
-    background:
-        var(--apha-primary-soft);
-
+    background: var(--apha-primary-soft);
 }
-
-
 
 .pagination-wrapper {
+    margin-top: 14px;
 
-    margin-top:
-        14px;
-
-    padding:
-        0
-        2px;
-
+    padding: 0 2px;
 }
-
-
 
 .pharmacies-footnote {
+    display: flex;
 
-    display:
-        flex;
+    align-items: flex-start;
 
-    align-items:
-        flex-start;
+    gap: 9px;
 
-    gap:
-        9px;
+    margin-top: 13px;
 
-    margin-top:
-        13px;
+    padding: 11px 14px;
 
-    padding:
-        11px
-        14px;
+    border: 1px solid rgba(0, 143, 131, 0.07);
 
-    border:
-        1px solid
-        rgba(0, 143, 131, .07);
+    border-radius: 11px;
 
-    border-radius:
-        11px;
-
-    background:
-        rgba(0, 143, 131, .025);
-
+    background: rgba(0, 143, 131, 0.025);
 }
-
 
 .footnote-icon {
+    width: 18px;
 
-    width:
-        18px;
+    height: 18px;
 
-    height:
-        18px;
+    flex-shrink: 0;
 
-    flex-shrink:
-        0;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    border-radius: 50%;
 
-    border-radius:
-        50%;
+    background: var(--apha-primary);
 
-    background:
-        var(--apha-primary);
+    color: #ffffff;
 
-    color:
-        #FFFFFF;
+    font-size: 9px;
 
-    font-size:
-        9px;
-
-    font-weight:
-        850;
-
+    font-weight: 850;
 }
-
 
 .pharmacies-footnote p {
+    margin: 0;
 
-    margin:
-        0;
+    color: var(--apha-muted);
 
-    color:
-        var(--apha-muted);
+    font-size: 9px;
 
-    font-size:
-        9px;
-
-    line-height:
-        1.5;
-
+    line-height: 1.5;
 }
 
-
-
-
 @keyframes fadeUp {
-
     from {
+        opacity: 0;
 
-        opacity:
-            0;
-
-        transform:
-            translateY(10px);
-
+        transform: translateY(10px);
     }
 
     to {
+        opacity: 1;
 
-        opacity:
-            1;
-
-        transform:
-            translateY(0);
-
+        transform: translateY(0);
     }
-
 }
-
-
 
 @media (max-width: 1000px) {
-
     .pharmacies-page {
+        padding-left: 6px;
 
-        padding-left:
-            6px;
-
-        padding-right:
-            6px;
-
+        padding-right: 6px;
     }
-
 
     .header-filters {
-
-        flex-wrap:
-            wrap;
-
+        flex-wrap: wrap;
     }
-
 
     .search-box {
-
-        width:
-            220px;
-
+        width: 220px;
     }
-
 }
 
-
-
-
 @media (max-width: 760px) {
-
     .pharmacies-page {
-
-        padding:
-            0
-            4px
-            50px;
-
+        padding: 0 4px 50px;
     }
-
 
     .pharmacies-intro {
+        align-items: flex-start;
 
-        align-items:
-            flex-start;
+        flex-direction: column;
 
-        flex-direction:
-            column;
+        margin-top: 10px;
 
-        margin-top:
-            10px;
+        padding: 17px;
 
-        padding:
-            17px;
-
-        border-radius:
-            15px;
-
+        border-radius: 15px;
     }
-
 
     .intro-content {
-
-        align-items:
-            flex-start;
-
+        align-items: flex-start;
     }
-
 
     .intro-icon {
+        width: 41px;
 
-        width:
-            41px;
+        height: 41px;
 
-        height:
-            41px;
-
-        border-radius:
-            11px;
-
+        border-radius: 11px;
     }
-
 
     .intro-text h1 {
-
-        font-size:
-            17px;
-
+        font-size: 17px;
     }
-
 
     .intro-text p {
-
-        font-size:
-            9.5px;
-
+        font-size: 9.5px;
     }
-
 
     .network-status {
+        width: 100%;
 
-        width:
-            100%;
-
-        justify-content:
-            center;
-
+        justify-content: center;
     }
-
 
     /* HEADER FILTERS */
 
     .header-filters {
+        width: 100%;
 
-        width:
-            100%;
+        flex-direction: column;
 
-        flex-direction:
-            column;
-
-        align-items:
-            stretch;
-
+        align-items: stretch;
     }
-
 
     .search-box {
-
-        width:
-            100%;
-
+        width: 100%;
     }
-
 
     .city-filter {
-
-        width:
-            100%;
-
+        width: 100%;
     }
-
 
     .city-filter :deep(select) {
-
-        width:
-            100%;
-
+        width: 100%;
     }
-
 
     /* TABLE */
 
     .pharmacies-section {
+        border-radius: 15px;
 
-        border-radius:
-            15px;
-
-        padding:
-            2px;
-
+        padding: 2px;
     }
-
 
     /*
        Le tableau reste scrollable horizontalement
@@ -1844,101 +1136,54 @@ const footer = computed(
     */
 
     .pharmacies-table {
-
-        overflow-x:
-            auto;
-
+        overflow-x: auto;
     }
-
 
     .pharmacies-footnote {
-
-        margin-top:
-            10px;
-
+        margin-top: 10px;
     }
-
 }
 
-
-
 @media (max-width: 480px) {
-
     .pharmacy-name-cell {
-
-        min-width:
-            160px;
-
+        min-width: 160px;
     }
-
 
     .pharmacy-avatar {
+        width: 31px;
 
-        width:
-            31px;
+        height: 31px;
 
-        height:
-            31px;
-
-        border-radius:
-            9px;
-
+        border-radius: 9px;
     }
-
 
     .pharmacy-name {
-
-        font-size:
-            10.5px;
-
+        font-size: 10.5px;
     }
-
 
     .city-cell,
     .date-cell {
-
-        font-size:
-            9.5px;
-
+        font-size: 9.5px;
     }
-
 
     .license-cell {
-
-        font-size:
-            9px;
-
+        font-size: 9px;
     }
-
 
     .empty-state {
-
-        min-height:
-            190px;
-
+        min-height: 190px;
     }
-
 }
 
-
-
 @media (prefers-reduced-motion: reduce) {
-
     .pharmacies-page *,
     .pharmacies-page *::before,
     .pharmacies-page *::after {
+        animation-duration: 0.01ms !important;
 
-        animation-duration:
-            .01ms !important;
+        animation-iteration-count: 1 !important;
 
-        animation-iteration-count:
-            1 !important;
-
-        transition-duration:
-            .01ms !important;
-
+        transition-duration: 0.01ms !important;
     }
-
 }
-
 </style>

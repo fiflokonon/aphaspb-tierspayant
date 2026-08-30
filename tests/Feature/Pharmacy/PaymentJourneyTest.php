@@ -45,6 +45,34 @@ test('the officine sees its own payment KPIs', function () {
         );
 });
 
+test('the dashboard carries the recovery rate of each insurer', function () {
+    $user = User::factory()->create();
+
+    // The factory ticks exactly one insurer, so the table holds one row.
+    $insurer = $user->currentPharmacy->insurers()->sole();
+
+    Declaration::factory()->create([
+        'pharmacy_id' => $user->currentPharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+        'amount_invoiced' => 1_000_000,
+        'amount_received' => 480_000,
+        'delay_days' => 50,
+    ]);
+
+    $this->actingAs($user)
+        ->get(dashboardUrlFor($user))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('recovery', 1)
+            ->where('recovery.0.insurerName', $insurer->name)
+            ->where('recovery.0.invoiced', 1_000_000)
+            ->where('recovery.0.received', 480_000)
+            ->where('recovery.0.outstanding', 520_000)
+            ->where('recovery.0.recoveryRate', 48),
+        );
+});
+
 test('the payment journey is a deferred prop', function () {
     $user = User::factory()->create();
 

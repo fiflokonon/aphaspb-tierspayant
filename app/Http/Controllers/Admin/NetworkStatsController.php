@@ -4,13 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Data\InsufficientData;
 use App\Data\InsurerIndicators;
-use App\Data\Period;
+use App\Enums\StatsPeriod;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\InsurerIndicatorsResource;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Services\Network\NetworkStatsService;
-use App\Services\Settings\SettingsRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -24,18 +23,20 @@ use Inertia\Response;
  */
 class NetworkStatsController extends Controller
 {
-    public function __construct(
-        protected NetworkStatsService $stats,
-        protected SettingsRepository $settings,
-    ) {
+    /** What the screen shows until the admin picks otherwise. */
+    protected const DEFAULT_PERIOD = StatsPeriod::CurrentQuarter;
+
+    public function __construct(protected NetworkStatsService $stats)
+    {
         //
     }
 
     public function __invoke(Request $request): Response
     {
         $city = $request->string('city')->value() ?: null;
+        $period = StatsPeriod::fromRequest($request->string('period')->value(), self::DEFAULT_PERIOD);
 
-        [$from, $to] = Period::currentQuarter();
+        [$from, $to] = $period->bounds();
 
         $entries = $this->stats->perInsurer($from, $to, $city);
         $names = Insurer::query()->whereIn('id', array_keys($entries))->pluck('name', 'id');
@@ -43,15 +44,11 @@ class NetworkStatsController extends Controller
         return Inertia::render('admin/Network', [
             'indicators' => $this->sorted($entries, $names),
             'summary' => $this->stats->networkSummary($from, $to, $city),
-            'threshold' => $this->settings->paymentDelayThresholdDays(),
-            'period' => $this->periodLabel($from),
+            'period' => $period->value,
+            'periodLabel' => $period->describe(),
+            'periods' => StatsPeriod::options(),
             'city' => $city,
-            'cities' => Pharmacy::query()
-                ->whereNotNull('city')
-                ->distinct()
-                ->orderBy('city')
-                ->pluck('city')
-                ->all(),
+            'cities' => Pharmacy::filterableCities(),
         ]);
     }
 
@@ -83,16 +80,5 @@ class NetworkStatsController extends Controller
         });
 
         return $rows;
-    }
-
-    /**
-     * Render the quarter the way the canvas does: « 3ᵉ trimestre 2026 ».
-     */
-    protected function periodLabel(Period $from): string
-    {
-        $quarter = intdiv($from->month - 1, 3) + 1;
-        $suffix = $quarter === 1 ? 'er' : 'e';
-
-        return "{$quarter}{$suffix} trimestre {$from->year}";
     }
 }

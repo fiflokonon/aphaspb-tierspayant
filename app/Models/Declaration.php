@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DeclarationStatus;
+use Carbon\CarbonImmutable;
 use Database\Factories\DeclarationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -23,6 +24,8 @@ use Illuminate\Support\Carbon;
  * @property int $amount_received
  * @property DeclarationStatus $status
  * @property bool $is_status_manual
+ * @property CarbonImmutable|null $invoice_deposited_on
+ * @property CarbonImmutable|null $paid_on
  * @property int|null $delay_days
  * @property string|null $private_note
  * @property Carbon|null $created_at
@@ -40,6 +43,8 @@ use Illuminate\Support\Carbon;
     'amount_received',
     'status',
     'is_status_manual',
+    'invoice_deposited_on',
+    'paid_on',
     'delay_days',
     'private_note',
 ])]
@@ -64,6 +69,8 @@ class Declaration extends Model
             if (! $declaration->is_status_manual) {
                 $declaration->status = $declaration->deriveStatus();
             }
+
+            $declaration->delay_days = $declaration->deriveDelayDays();
         });
     }
 
@@ -77,6 +84,8 @@ class Declaration extends Model
         return [
             'status' => DeclarationStatus::class,
             'is_status_manual' => 'boolean',
+            'invoice_deposited_on' => 'immutable_date',
+            'paid_on' => 'immutable_date',
             'amount_invoiced' => 'integer',
             'amount_received' => 'integer',
             'delay_days' => 'integer',
@@ -92,6 +101,22 @@ class Declaration extends Model
     public function deriveStatus(): DeclarationStatus
     {
         return DeclarationStatus::derive($this->amount_invoiced, $this->amount_received);
+    }
+
+    /**
+     * How long the insurer took to pay, counted from the deposit of the invoice.
+     *
+     * Stored rather than computed on read, because every network aggregate sums
+     * and averages it in SQL. The two dates remain the only source of truth:
+     * this column is recomputed on every save and never accepted from a form.
+     */
+    public function deriveDelayDays(): ?int
+    {
+        if ($this->invoice_deposited_on === null || $this->paid_on === null) {
+            return null;
+        }
+
+        return (int) $this->invoice_deposited_on->diffInDays($this->paid_on);
     }
 
     /**

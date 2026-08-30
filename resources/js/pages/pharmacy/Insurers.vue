@@ -4,10 +4,16 @@ import { computed, ref } from 'vue';
 import InsurerChecklist from '@/components/aphaspb/InsurerChecklist.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 
+type Insurer = {
+    id: number;
+    name: string;
+    isActive: boolean;
+    declarations: number;
+};
+
 const props = defineProps<{
-    insurers: { id: number; name: string }[];
+    insurers: Insurer[];
     selected: number[];
-    withDeclarations: number[];
 }>();
 
 const selected = ref<number[]>([...props.selected]);
@@ -17,18 +23,21 @@ const count = computed(
     () => selected.value.length + (other.value.trim() ? 1 : 0),
 );
 
+/** Insurers being untied that carry a history — the only untying worth a word. */
 const losing = computed(() =>
-    props.withDeclarations.filter((id) => !selected.value.includes(id)),
+    props.insurers.filter(
+        (insurer) =>
+            insurer.declarations > 0 &&
+            props.selected.includes(insurer.id) &&
+            !selected.value.includes(insurer.id),
+    ),
 );
 </script>
-
-
 
 <template>
     <Head title="Mes assureurs" />
 
     <div class="insurers-page">
-  
         <ConsoleHeader
             eyebrow="MON OFFICINE"
             title="Mes assureurs"
@@ -44,13 +53,9 @@ const losing = computed(() =>
                 </div>
 
                 <div class="intro-text">
-                    <span class="intro-label">
-                        CONFIGURATION DU RÉSEAU
-                    </span>
+                    <span class="intro-label"> CONFIGURATION DU RÉSEAU </span>
 
-                    <h1>
-                        Vos assureurs partenaires
-                    </h1>
+                    <h1>Vos assureurs partenaires</h1>
 
                     <p>
                         Sélectionnez les assureurs avec lesquels votre officine
@@ -66,7 +71,6 @@ const losing = computed(() =>
             </div>
         </section>
 
-  
         <div class="insurers-layout">
             <Form
                 action="/pharmacy/insurers"
@@ -74,24 +78,18 @@ const losing = computed(() =>
                 class="insurers-card"
                 #default="{ errors, processing }"
             >
-             
                 <div class="card-top-line"></div>
 
-    
                 <div class="card-header">
                     <div>
-                        <span class="card-eyebrow">
-                            ASSUREURS
-                        </span>
+                        <span class="card-eyebrow"> ASSUREURS </span>
 
-                        <h2>
-                            Avec quels assureurs travaillez-vous ?
-                        </h2>
+                        <h2>Avec quels assureurs travaillez-vous ?</h2>
 
                         <p>
                             Ce sont les assureurs qui vous seront proposés
-                            chaque mois. Vous pouvez modifier cette sélection
-                            à tout moment.
+                            chaque mois. Vous pouvez modifier cette sélection à
+                            tout moment.
                         </p>
                     </div>
 
@@ -111,54 +109,39 @@ const losing = computed(() =>
                         v-model:selected="selected"
                         v-model:other="other"
                         :insurers="insurers"
-                        :with-declarations="withDeclarations"
                     >
                         <template #heading>
-                  
                             <div class="checklist-heading">
                                 <span class="checklist-dot"></span>
 
-                                <span>
-                                    Sélectionnez vos assureurs
-                                </span>
+                                <span> Sélectionnez vos assureurs </span>
                             </div>
                         </template>
                     </InsurerChecklist>
                 </div>
 
-           
                 <div class="form-footer">
-               
-                    <div
-                        v-if="errors.insurers"
-                        class="message message-error"
-                    >
-                        <div class="message-icon">
-                            !
-                        </div>
+                    <div v-if="errors.insurers" class="message message-error">
+                        <div class="message-icon">!</div>
 
                         <p>
                             {{ errors.insurers }}
                         </p>
                     </div>
 
-  
                     <div
                         v-else-if="losing.length"
                         class="message message-warning"
                     >
-                        <div class="message-icon">
-                            i
-                        </div>
+                        <div class="message-icon">i</div>
 
                         <p>
                             {{ losing.length }} assureur{{
                                 losing.length > 1 ? 's' : ''
                             }}
                             {{ losing.length > 1 ? 'perdront' : 'perdra' }}
-                            sa place dans la déclaration mensuelle.
-                            Vos déclarations passées restent dans votre
-                            historique.
+                            sa place dans la déclaration mensuelle. Vos
+                            déclarations passées restent dans votre historique.
                         </p>
                     </div>
 
@@ -167,9 +150,7 @@ const losing = computed(() =>
                         :disabled="processing || count === 0"
                         class="save-button"
                     >
-                        <span class="save-icon">
-                            ✓
-                        </span>
+                        <span class="save-icon"> ✓ </span>
 
                         <span>
                             Enregistrer · {{ count }} assureur{{
@@ -177,9 +158,7 @@ const losing = computed(() =>
                             }}
                         </span>
 
-                        <span class="save-arrow">
-                            →
-                        </span>
+                        <span class="save-arrow"> → </span>
                     </button>
 
                     <p class="form-hint">
@@ -190,23 +169,17 @@ const losing = computed(() =>
             </Form>
 
             <aside class="info-card">
-                <div class="info-icon">
-                    ✓
-                </div>
+                <div class="info-icon">✓</div>
 
                 <div>
-                    <span class="info-label">
-                        À RETENIR
-                    </span>
+                    <span class="info-label"> À RETENIR </span>
 
-                    <h3>
-                        Une sélection simple
-                    </h3>
+                    <h3>Une sélection simple</h3>
 
                     <p>
                         Vous pouvez ajouter ou retirer un assureur à tout
-                        moment. Les déclarations déjà enregistrées ne seront
-                        pas modifiées.
+                        moment. Les déclarations déjà enregistrées ne seront pas
+                        modifiées.
                     </p>
                 </div>
 
@@ -214,9 +187,7 @@ const losing = computed(() =>
 
                 <div class="info-status">
                     <span class="status-dot"></span>
-                    <span>
-                        Vos données restent dans votre espace
-                    </span>
+                    <span> Vos données restent dans votre espace </span>
                 </div>
             </aside>
         </div>
@@ -224,7 +195,6 @@ const losing = computed(() =>
 </template>
 
 <style>
-
 .insurers-page {
     --apha-primary: #008f83;
     --apha-primary-dark: #006f68;
@@ -259,14 +229,10 @@ const losing = computed(() =>
     animation: pageAppear 0.5s ease both;
 }
 
-
-
 .insurers-header {
     position: relative;
     z-index: 2;
 }
-
-
 
 .insurers-intro {
     position: relative;
@@ -287,12 +253,7 @@ const losing = computed(() =>
     border: 1px solid var(--apha-border);
     border-radius: 18px;
 
-    background:
-        linear-gradient(
-            110deg,
-            #ffffff 0%,
-            #f9fcfb 100%
-        );
+    background: linear-gradient(110deg, #ffffff 0%, #f9fcfb 100%);
 
     /* box-shadow:
         0 8px 30px rgba(35, 70, 68, 0.035); */
@@ -311,12 +272,11 @@ const losing = computed(() =>
 
     border-radius: 50%;
 
-    background:
-        radial-gradient(
-            circle,
-            rgba(0, 143, 131, 0.09),
-            transparent 68%
-        );
+    background: radial-gradient(
+        circle,
+        rgba(0, 143, 131, 0.09),
+        transparent 68%
+    );
 
     pointer-events: none;
 }
@@ -345,15 +305,13 @@ const losing = computed(() =>
 
     color: #ffffff;
 
-    background:
-        linear-gradient(
-            135deg,
-            var(--apha-primary),
-            var(--apha-primary-dark)
-        );
+    background: linear-gradient(
+        135deg,
+        var(--apha-primary),
+        var(--apha-primary-dark)
+    );
 
-    box-shadow:
-        0 8px 20px rgba(0, 143, 131, 0.18);
+    box-shadow: 0 8px 20px rgba(0, 143, 131, 0.18);
 
     animation: iconFloat 3s ease-in-out infinite;
 }
@@ -430,13 +388,10 @@ const losing = computed(() =>
 
     background: var(--apha-primary);
 
-    box-shadow:
-        0 0 0 4px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
 
     animation: statusPulse 2.2s infinite;
 }
-
-
 
 .insurers-layout {
     display: grid;
@@ -450,7 +405,6 @@ const losing = computed(() =>
     gap: 18px;
 }
 
-
 .insurers-card {
     position: relative;
 
@@ -461,8 +415,7 @@ const losing = computed(() =>
 
     background: #ffffff;
 
-    box-shadow:
-        0 8px 30px rgba(35, 70, 68, 0.035);
+    box-shadow: 0 8px 30px rgba(35, 70, 68, 0.035);
 
     animation: cardAppear 0.6s ease both;
 }
@@ -476,17 +429,15 @@ const losing = computed(() =>
     width: 100%;
     height: 3px;
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--apha-primary),
-            #35a799,
-            var(--apha-gold)
-        );
+    background: linear-gradient(
+        90deg,
+        var(--apha-primary),
+        #35a799,
+        var(--apha-gold)
+    );
 
     opacity: 0.9;
 }
-
 
 .card-header {
     display: flex;
@@ -559,8 +510,7 @@ const losing = computed(() =>
 .selection-counter:hover {
     transform: translateY(-2px);
 
-    box-shadow:
-        0 7px 16px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 7px 16px rgba(0, 143, 131, 0.08);
 }
 
 .counter-number {
@@ -584,16 +534,10 @@ const losing = computed(() =>
     letter-spacing: 0.06em;
 }
 
-
 .checklist-container {
     padding: 4px 5px;
 
-    background:
-        linear-gradient(
-            180deg,
-            #ffffff 0%,
-            #fcfdfd 100%
-        );
+    background: linear-gradient(180deg, #ffffff 0%, #fcfdfd 100%);
 }
 
 .checklist-heading {
@@ -621,26 +565,16 @@ const losing = computed(() =>
 
     background: var(--apha-gold);
 
-    box-shadow:
-        0 0 0 4px var(--apha-gold-soft);
+    box-shadow: 0 0 0 4px var(--apha-gold-soft);
 }
-
-
 
 .form-footer {
     padding: 18px 24px 21px;
 
     border-top: 1px solid var(--apha-border);
 
-    background:
-        linear-gradient(
-            180deg,
-            #fbfcfc 0%,
-            #f8faf9 100%
-        );
+    background: linear-gradient(180deg, #fbfcfc 0%, #f8faf9 100%);
 }
-
-
 
 .message {
     display: flex;
@@ -704,8 +638,6 @@ const losing = computed(() =>
     color: white;
 }
 
-
-
 .save-button {
     position: relative;
 
@@ -723,12 +655,11 @@ const losing = computed(() =>
     border: 0;
     border-radius: 12px;
 
-    background:
-        linear-gradient(
-            135deg,
-            var(--apha-primary),
-            var(--apha-primary-dark)
-        );
+    background: linear-gradient(
+        135deg,
+        var(--apha-primary),
+        var(--apha-primary-dark)
+    );
 
     color: #ffffff;
 
@@ -737,8 +668,7 @@ const losing = computed(() =>
 
     cursor: pointer;
 
-    box-shadow:
-        0 7px 18px rgba(0, 143, 131, 0.16);
+    box-shadow: 0 7px 18px rgba(0, 143, 131, 0.16);
 
     transition:
         transform 0.25s ease,
@@ -747,7 +677,7 @@ const losing = computed(() =>
 }
 
 .save-button::before {
-    content: "";
+    content: '';
 
     position: absolute;
 
@@ -757,13 +687,12 @@ const losing = computed(() =>
     width: 60%;
     height: 100%;
 
-    background:
-        linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.12),
-            transparent
-        );
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.12),
+        transparent
+    );
 
     transition: left 0.55s ease;
 }
@@ -771,8 +700,7 @@ const losing = computed(() =>
 .save-button:hover:not(:disabled) {
     transform: translateY(-2px);
 
-    box-shadow:
-        0 11px 24px rgba(0, 143, 131, 0.21);
+    box-shadow: 0 11px 24px rgba(0, 143, 131, 0.21);
 }
 
 .save-button:hover:not(:disabled)::before {
@@ -811,8 +739,7 @@ const losing = computed(() =>
 
     opacity: 0.75;
 
-    transition:
-        transform 0.25s ease;
+    transition: transform 0.25s ease;
 }
 
 .save-button:hover:not(:disabled) .save-arrow {
@@ -830,8 +757,6 @@ const losing = computed(() =>
     text-align: center;
 }
 
-
-
 .info-card {
     position: relative;
 
@@ -842,22 +767,15 @@ const losing = computed(() =>
     border: 1px solid var(--apha-border);
     border-radius: 16px;
 
-    background:
-        linear-gradient(
-            145deg,
-            #ffffff,
-            #f8fbfa
-        );
+    background: linear-gradient(145deg, #ffffff, #f8fbfa);
 
-    box-shadow:
-        0 8px 26px rgba(35, 70, 68, 0.03);
+    box-shadow: 0 8px 26px rgba(35, 70, 68, 0.03);
 
-    animation:
-        sideAppear 0.65s ease 0.1s both;
+    animation: sideAppear 0.65s ease 0.1s both;
 }
 
 .info-card::after {
-    content: "";
+    content: '';
 
     position: absolute;
 
@@ -869,12 +787,11 @@ const losing = computed(() =>
 
     border-radius: 50%;
 
-    background:
-        radial-gradient(
-            circle,
-            rgba(215, 163, 61, 0.07),
-            transparent 70%
-        );
+    background: radial-gradient(
+        circle,
+        rgba(215, 163, 61, 0.07),
+        transparent 70%
+    );
 
     pointer-events: none;
 }
@@ -933,12 +850,7 @@ const losing = computed(() =>
 
     margin: 17px 0;
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--apha-border),
-            transparent
-        );
+    background: linear-gradient(90deg, var(--apha-border), transparent);
 }
 
 .info-status {
@@ -969,11 +881,8 @@ const losing = computed(() =>
 
     background: var(--apha-primary);
 
-    box-shadow:
-        0 0 0 4px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
 }
-
-
 
 @keyframes pageAppear {
     from {
@@ -1034,22 +943,17 @@ const losing = computed(() =>
 
 @keyframes statusPulse {
     0% {
-        box-shadow:
-            0 0 0 0 rgba(0, 143, 131, 0.25);
+        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0.25);
     }
 
     70% {
-        box-shadow:
-            0 0 0 5px rgba(0, 143, 131, 0);
+        box-shadow: 0 0 0 5px rgba(0, 143, 131, 0);
     }
 
     100% {
-        box-shadow:
-            0 0 0 0 rgba(0, 143, 131, 0);
+        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0);
     }
 }
-
-
 
 @media (max-width: 900px) {
     .insurers-layout {
@@ -1179,8 +1083,6 @@ const losing = computed(() =>
         font-size: 16px;
     }
 }
-
-
 
 @media (prefers-reduced-motion: reduce) {
     .insurers-page *,

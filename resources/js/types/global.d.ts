@@ -19,7 +19,6 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
-            sidebarOpen: boolean;
             currentPharmacy: Pharmacy | null;
             pharmacies: Pharmacy[];
             [key: string]: unknown;

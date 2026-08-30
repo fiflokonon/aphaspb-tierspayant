@@ -45,10 +45,10 @@ const declineInvitation = (invitation: DashboardInvitation) => {
     <Dialog v-model:open="open">
         <DialogContent data-test="pending-invitations-modal">
             <DialogHeader>
-                <DialogTitle>Pending pharmacy invitations</DialogTitle>
+                <DialogTitle>Invitations en attente</DialogTitle>
                 <DialogDescription>
-                    Accept or decline the pharmacies you have been invited to
-                    join.
+                    Acceptez ou refusez les officines qui vous ont invité à les
+                    rejoindre.
                 </DialogDescription>
             </DialogHeader>
 
@@ -64,8 +64,8 @@ const declineInvitation = (invitation: DashboardInvitation) => {
                             {{ invitation.pharmacy.name }}
                         </p>
                         <p class="text-sm text-muted-foreground">
-                            {{ invitation.inviterName }} invited you to join
-                            this pharmacy.
+                            {{ invitation.inviterName }} vous invite à rejoindre
+                            cette officine.
                         </p>
                     </div>
 
@@ -76,7 +76,7 @@ const declineInvitation = (invitation: DashboardInvitation) => {
                             :disabled="processingCode === invitation.code"
                             @click="declineInvitation(invitation)"
                         >
-                            Decline
+                            Refuser
                         </Button>
 
                         <Button
@@ -84,7 +84,7 @@ const declineInvitation = (invitation: DashboardInvitation) => {
                             :disabled="processingCode === invitation.code"
                             @click="acceptInvitation(invitation)"
                         >
-                            Accept
+                            Accepter
                         </Button>
                     </div>
                 </div>

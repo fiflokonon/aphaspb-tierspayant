@@ -233,7 +233,7 @@ test('members can leave non personal pharmacies', function () {
         ->delete(route('pharmacies.leave', $pharmacy));
 
     $response->assertRedirect(route('pharmacies.index'));
-    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => "You left the pharmacy \"{$pharmacy->name}\""]);
+    $response->assertInertiaFlash('toast', ['type' => 'success', 'message' => "Vous avez quitté l'officine « {$pharmacy->name} »"]);
 
     expect($member->fresh()->belongsToPharmacy($pharmacy))->toBeFalse();
 });
@@ -355,11 +355,11 @@ test('users can switch pharmacies', function () {
 
     $pharmacy->members()->attach($user, ['role' => PharmacyRole::Member->value]);
 
-    $response = $this
-        ->actingAs($user)
-        ->post(route('pharmacies.switch', $pharmacy));
-
-    $response->assertRedirect();
+    $this->actingAs($user)
+        ->post(route('pharmacies.switch', $pharmacy))
+        // Not back(): only the dashboard carries {current_pharmacy} in its
+        // path, so going back would re-render the officine just left behind.
+        ->assertRedirect(route('dashboard', ['current_pharmacy' => $pharmacy->slug]));
 
     expect($user->fresh()->current_pharmacy_id)->toEqual($pharmacy->id);
 });

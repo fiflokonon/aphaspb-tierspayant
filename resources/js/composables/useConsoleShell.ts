@@ -1,18 +1,24 @@
 import { usePage } from '@inertiajs/vue3';
 import type { ComputedRef } from 'vue';
 import { computed } from 'vue';
-import type { ConsoleNavItem, ConsoleNotice } from '@/types/console';
+import type {
+    ConsoleAccount,
+    ConsoleNavItem,
+    ConsoleNotice,
+} from '@/types/console';
 
 export type ConsoleShell = {
     space: string | null;
     nav: ConsoleNavItem[];
     notices: ConsoleNotice[];
+    account: ConsoleAccount;
 };
 
 export type UseConsoleShellReturn = {
     space: ComputedRef<string | null>;
     nav: ComputedRef<ConsoleNavItem[]>;
     notices: ComputedRef<ConsoleNotice[]>;
+    account: ComputedRef<ConsoleAccount | null>;
 };
 
 /**
@@ -32,5 +38,6 @@ export function useConsoleShell(): UseConsoleShellReturn {
         space: computed(() => shell.value?.space ?? null),
         nav: computed(() => shell.value?.nav ?? []),
         notices: computed(() => shell.value?.notices ?? []),
+        account: computed(() => shell.value?.account ?? null),
     };
 }

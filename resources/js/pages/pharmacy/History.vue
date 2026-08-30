@@ -92,14 +92,10 @@ const footer = computed(
 );
 </script>
 
-
-
 <template>
     <Head title="Historique" />
 
     <div class="history-page">
- 
-        
         <ConsoleHeader
             eyebrow="MES DÉCLARATIONS"
             title="Historique"
@@ -126,7 +122,6 @@ const footer = computed(
             </template>
         </ConsoleHeader>
 
-        
         <section class="history-intro">
             <div class="intro-main">
                 <div class="intro-icon">
@@ -134,13 +129,9 @@ const footer = computed(
                 </div>
 
                 <div class="intro-text">
-                    <span class="intro-eyebrow">
-                        SUIVI ADMINISTRATIF
-                    </span>
+                    <span class="intro-eyebrow"> SUIVI ADMINISTRATIF </span>
 
-                    <h1>
-                        Vos déclarations
-                    </h1>
+                    <h1>Vos déclarations</h1>
 
                     <p>
                         Retrouvez l'ensemble de vos déclarations mensuelles,
@@ -151,9 +142,7 @@ const footer = computed(
 
             <div class="intro-badge">
                 <span class="badge-dot"></span>
-                <span>
-                    Données personnelles
-                </span>
+                <span> Données personnelles </span>
             </div>
         </section>
 
@@ -166,13 +155,9 @@ const footer = computed(
                         REGISTRE DES DÉCLARATIONS
                     </span>
 
-                    <h2>
-                        Toutes mes déclarations
-                    </h2>
+                    <h2>Toutes mes déclarations</h2>
 
-                    <p>
-                        Consultez et modifiez vos déclarations enregistrées.
-                    </p>
+                    <p>Consultez et modifiez vos déclarations enregistrées.</p>
                 </div>
 
                 <div class="declaration-count">
@@ -186,13 +171,10 @@ const footer = computed(
                 </div>
             </div>
 
-
             <div class="table-filter-bar">
                 <div class="filter-status">
                     <span class="status-indicator"></span>
-                    <span>
-                        Historique actualisé
-                    </span>
+                    <span> Historique actualisé </span>
                 </div>
 
                 <div class="filter-summary">
@@ -204,7 +186,6 @@ const footer = computed(
                 </div>
             </div>
 
- 
             <div class="history-table-wrapper">
                 <DataTable
                     title=""
@@ -222,14 +203,9 @@ const footer = computed(
                             '--row-delay': `${Math.min(index * 45, 360)}ms`,
                         }"
                     >
-                        
                         <div class="insurer-cell">
                             <div class="insurer-avatar">
-                                {{
-                                    row.insurerName
-                                        ?.charAt(0)
-                                        ?.toUpperCase()
-                                }}
+                                {{ row.insurerName?.charAt(0)?.toUpperCase() }}
                             </div>
 
                             <div class="insurer-info">
@@ -237,9 +213,7 @@ const footer = computed(
                                     {{ row.insurerName }}
                                 </span>
 
-                                <span class="insurer-label">
-                                    Assureur
-                                </span>
+                                <span class="insurer-label"> Assureur </span>
                             </div>
                         </div>
 
@@ -249,7 +223,6 @@ const footer = computed(
                             </span>
                         </div>
 
-                  
                         <div class="status-cell">
                             <StatusChip
                                 :status="row.status"
@@ -269,7 +242,6 @@ const footer = computed(
                             </span>
                         </div>
 
-                  
                         <div
                             class="amount-cell outstanding"
                             :class="
@@ -283,7 +255,6 @@ const footer = computed(
                             </span>
                         </div>
 
-                   
                         <div class="delay-cell">
                             <span
                                 v-if="row.delayDays !== null"
@@ -299,12 +270,7 @@ const footer = computed(
                                 j
                             </span>
 
-                            <span
-                                v-else
-                                class="delay-empty"
-                            >
-                                —
-                            </span>
+                            <span v-else class="delay-empty"> — </span>
                         </div>
 
                         <div class="note-cell">
@@ -317,42 +283,23 @@ const footer = computed(
                                 {{ row.privateNote }}
                             </span>
 
-                            <span
-                                v-else
-                                class="note-empty"
-                            >
-                                —
-                            </span>
+                            <span v-else class="note-empty"> — </span>
                         </div>
 
                         <div class="action-cell">
-                            <Link
-                                :href="row.editUrl"
-                                class="edit-link"
-                            >
-                                <span>
-                                    Modifier
-                                </span>
+                            <Link :href="row.editUrl" class="edit-link">
+                                <span> Modifier </span>
 
-                                <span class="edit-arrow">
-                                    →
-                                </span>
+                                <span class="edit-arrow"> → </span>
                             </Link>
                         </div>
                     </DataTableRow>
 
-                    <div
-                        v-if="!declarations.data.length"
-                        class="empty-state"
-                    >
-                        <div class="empty-icon">
-                            ◌
-                        </div>
+                    <div v-if="!declarations.data.length" class="empty-state">
+                        <div class="empty-icon">◌</div>
 
                         <div class="empty-content">
-                            <h3>
-                                Aucune déclaration trouvée
-                            </h3>
+                            <h3>Aucune déclaration trouvée</h3>
 
                             <p>
                                 Aucune déclaration ne correspond aux filtres
@@ -382,9 +329,7 @@ const footer = computed(
             </div>
 
             <div class="footnote-content">
-                <span class="footnote-title">
-                    Confidentialité
-                </span>
+                <span class="footnote-title"> Confidentialité </span>
 
                 <p>
                     Vos notes privées n'apparaissent que sur cet écran.
@@ -396,8 +341,6 @@ const footer = computed(
 </template>
 
 <style scoped>
-
-
 .history-page {
     --apha-primary: #008f83;
     --apha-primary-dark: #006f68;
@@ -434,16 +377,10 @@ const footer = computed(
         var(--apha-background); */
 }
 
-
-
-
 .history-header {
     position: relative;
     z-index: 5;
 }
-
-
-
 
 .history-filters {
     display: flex;
@@ -464,11 +401,8 @@ const footer = computed(
 .filter-wrapper:hover {
     transform: translateY(-1px);
 
-    box-shadow:
-        0 7px 18px rgba(35, 70, 68, 0.06);
+    box-shadow: 0 7px 18px rgba(35, 70, 68, 0.06);
 }
-
-
 
 .history-intro {
     position: relative;
@@ -486,28 +420,20 @@ const footer = computed(
 
     overflow: hidden;
 
-    border:
-        1px solid
-        var(--apha-border);
+    border: 1px solid var(--apha-border);
 
     border-radius: 18px;
 
-    background:
-        linear-gradient(
-            110deg,
-            #ffffff 0%,
-            #f9fcfb 100%
-        );
+    background: linear-gradient(110deg, #ffffff 0%, #f9fcfb 100%);
 
     /* box-shadow:
         0 9px 30px rgba(35, 70, 68, 0.035); */
 
-    animation:
-        historyIntroAppear 0.55s ease both;
+    animation: historyIntroAppear 0.55s ease both;
 }
 
 .history-intro::before {
-    content: "";
+    content: '';
 
     position: absolute;
 
@@ -519,18 +445,17 @@ const footer = computed(
 
     border-radius: 50%;
 
-    background:
-        radial-gradient(
-            circle,
-            rgba(0, 143, 131, 0.09),
-            transparent 68%
-        );
+    background: radial-gradient(
+        circle,
+        rgba(0, 143, 131, 0.09),
+        transparent 68%
+    );
 
     pointer-events: none;
 }
 
 .history-intro::after {
-    content: "";
+    content: '';
 
     position: absolute;
 
@@ -540,19 +465,15 @@ const footer = computed(
     width: 100%;
     height: 2px;
 
-    background:
-        linear-gradient(
-            90deg,
-            transparent,
-            rgba(0, 143, 131, 0.25),
-            transparent
-        );
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 143, 131, 0.25),
+        transparent
+    );
 
     opacity: 0.5;
 }
-
-
-
 
 .intro-main {
     position: relative;
@@ -578,18 +499,16 @@ const footer = computed(
 
     color: #ffffff;
 
-    background:
-        linear-gradient(
-            135deg,
-            var(--apha-primary),
-            var(--apha-primary-dark)
-        );
+    background: linear-gradient(
+        135deg,
+        var(--apha-primary),
+        var(--apha-primary-dark)
+    );
 
     /* box-shadow:
         0 8px 20px rgba(0, 143, 131, 0.17); */
 
-    animation:
-        iconFloat 3s ease-in-out infinite;
+    animation: iconFloat 3s ease-in-out infinite;
 }
 
 .icon-history {
@@ -635,9 +554,6 @@ const footer = computed(
     line-height: 1.45;
 }
 
-
-
-
 .intro-badge {
     position: relative;
     z-index: 2;
@@ -669,34 +585,25 @@ const footer = computed(
 
     background: var(--apha-primary);
 
-    box-shadow:
-        0 0 0 4px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
 
-    animation:
-        badgePulse 2.2s infinite;
+    animation: badgePulse 2.2s infinite;
 }
-
-
-
 
 .history-table-section {
     position: relative;
 
     overflow: hidden;
 
-    border:
-        1px solid
-        var(--apha-border);
+    border: 1px solid var(--apha-border);
 
     border-radius: 18px;
 
     background: var(--apha-card);
 
-    box-shadow:
-        0 9px 32px rgba(35, 70, 68, 0.04);
+    box-shadow: 0 9px 32px rgba(35, 70, 68, 0.04);
 
-    animation:
-        tableAppear 0.65s ease both;
+    animation: tableAppear 0.65s ease both;
 }
 
 .table-top-line {
@@ -708,17 +615,15 @@ const footer = computed(
     width: 100%;
     height: 3px;
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--apha-primary),
-            #35a799,
-            var(--apha-gold)
-        );
+    background: linear-gradient(
+        90deg,
+        var(--apha-primary),
+        #35a799,
+        var(--apha-gold)
+    );
 
     opacity: 0.9;
 }
-
 
 .table-heading {
     display: flex;
@@ -729,9 +634,7 @@ const footer = computed(
 
     padding: 22px 22px 17px;
 
-    border-bottom:
-        1px solid
-        rgba(35, 70, 68, 0.07);
+    border-bottom: 1px solid rgba(35, 70, 68, 0.07);
 }
 
 .table-kicker {
@@ -764,8 +667,6 @@ const footer = computed(
     font-size: 10.5px;
 }
 
-
-
 .declaration-count {
     display: flex;
     align-items: baseline;
@@ -774,18 +675,11 @@ const footer = computed(
 
     padding: 8px 12px;
 
-    border:
-        1px solid
-        rgba(0, 143, 131, 0.1);
+    border: 1px solid rgba(0, 143, 131, 0.1);
 
     border-radius: 11px;
 
-    background:
-        linear-gradient(
-            135deg,
-            #f5fbf9,
-            #ffffff
-        );
+    background: linear-gradient(135deg, #f5fbf9, #ffffff);
 
     white-space: nowrap;
 }
@@ -804,8 +698,6 @@ const footer = computed(
     font-weight: 600;
 }
 
-
-
 .table-filter-bar {
     display: flex;
     align-items: center;
@@ -817,12 +709,9 @@ const footer = computed(
 
     padding: 0 22px;
 
-    border-bottom:
-        1px solid
-        rgba(35, 70, 68, 0.055);
+    border-bottom: 1px solid rgba(35, 70, 68, 0.055);
 
-    background:
-        rgba(248, 251, 250, 0.65);
+    background: rgba(248, 251, 250, 0.65);
 }
 
 .filter-status {
@@ -845,8 +734,7 @@ const footer = computed(
 
     background: var(--apha-primary);
 
-    box-shadow:
-        0 0 0 3px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 0 0 3px rgba(0, 143, 131, 0.08);
 }
 
 .filter-summary {
@@ -857,17 +745,13 @@ const footer = computed(
     font-size: 9px;
 }
 
-
-
 .history-table-wrapper {
     width: 100%;
 
     overflow-x: auto;
 
     scrollbar-width: thin;
-    scrollbar-color:
-        rgba(0, 143, 131, 0.2)
-        transparent;
+    scrollbar-color: rgba(0, 143, 131, 0.2) transparent;
 }
 
 .history-table-wrapper::-webkit-scrollbar {
@@ -881,23 +765,17 @@ const footer = computed(
 .history-table-wrapper::-webkit-scrollbar-thumb {
     border-radius: 20px;
 
-    background:
-        rgba(0, 143, 131, 0.2);
+    background: rgba(0, 143, 131, 0.2);
 }
-
-
 
 .history-table {
     min-width: 1080px;
 }
 
-
 .history-row {
-    animation:
-        rowAppear 0.45s ease both;
+    animation: rowAppear 0.45s ease both;
 
-    animation-delay:
-        var(--row-delay);
+    animation-delay: var(--row-delay);
 
     transition:
         background 0.25s ease,
@@ -905,15 +783,12 @@ const footer = computed(
 }
 
 .history-row:hover {
-    background:
-        linear-gradient(
-            90deg,
-            rgba(0, 143, 131, 0.025),
-            rgba(0, 143, 131, 0.008)
-        );
+    background: linear-gradient(
+        90deg,
+        rgba(0, 143, 131, 0.025),
+        rgba(0, 143, 131, 0.008)
+    );
 }
-
-
 
 .insurer-cell {
     display: flex;
@@ -934,18 +809,11 @@ const footer = computed(
     align-items: center;
     justify-content: center;
 
-    border:
-        1px solid
-        rgba(0, 143, 131, 0.1);
+    border: 1px solid rgba(0, 143, 131, 0.1);
 
     border-radius: 10px;
 
-    background:
-        linear-gradient(
-            135deg,
-            #e5f6f2,
-            #f4faf9
-        );
+    background: linear-gradient(135deg, #e5f6f2, #f4faf9);
 
     color: var(--apha-primary-dark);
 
@@ -958,12 +826,9 @@ const footer = computed(
 }
 
 .history-row:hover .insurer-avatar {
-    transform:
-        scale(1.08)
-        rotate(2deg);
+    transform: scale(1.08) rotate(2deg);
 
-    box-shadow:
-        0 5px 13px rgba(0, 143, 131, 0.1);
+    box-shadow: 0 5px 13px rgba(0, 143, 131, 0.1);
 }
 
 .insurer-info {
@@ -993,8 +858,6 @@ const footer = computed(
     font-size: 8.5px;
 }
 
-
-
 .month-cell {
     color: var(--apha-ink);
 
@@ -1006,13 +869,9 @@ const footer = computed(
     white-space: nowrap;
 }
 
-
-
 .status-cell {
     white-space: nowrap;
 }
-
-
 
 .amount-cell {
     color: var(--apha-ink);
@@ -1030,8 +889,7 @@ const footer = computed(
 }
 
 .amount-cell.outstanding {
-    transition:
-        transform 0.2s ease;
+    transition: transform 0.2s ease;
 }
 
 .amount-cell.outstanding.has-outstanding {
@@ -1045,11 +903,8 @@ const footer = computed(
 }
 
 .history-row:hover .amount-cell.outstanding.has-outstanding {
-    transform:
-        translateX(2px);
+    transform: translateX(2px);
 }
-
-
 
 .delay-cell {
     display: flex;
@@ -1075,8 +930,6 @@ const footer = computed(
 .delay-empty {
     color: var(--apha-light);
 }
-
-
 
 .note-cell {
     max-width: 190px;
@@ -1114,8 +967,6 @@ const footer = computed(
     font-size: 10px;
 }
 
-
-
 .action-cell {
     white-space: nowrap;
 }
@@ -1149,11 +1000,9 @@ const footer = computed(
 
     color: var(--apha-primary-dark);
 
-    background:
-        var(--apha-primary-soft);
+    background: var(--apha-primary-soft);
 
-    transform:
-        translateX(1px);
+    transform: translateX(1px);
 }
 
 .edit-arrow {
@@ -1161,16 +1010,12 @@ const footer = computed(
 
     font-size: 13px;
 
-    transition:
-        transform 0.2s ease;
+    transition: transform 0.2s ease;
 }
 
 .edit-link:hover .edit-arrow {
-    transform:
-        translateX(2px);
+    transform: translateX(2px);
 }
-
-
 
 .empty-state {
     display: flex;
@@ -1181,19 +1026,11 @@ const footer = computed(
 
     padding: 45px 20px;
 
-    border-top:
-        1px solid
-        rgba(35, 70, 68, 0.055);
+    border-top: 1px solid rgba(35, 70, 68, 0.055);
 
-    background:
-        linear-gradient(
-            135deg,
-            #ffffff,
-            #f9fcfb
-        );
+    background: linear-gradient(135deg, #ffffff, #f9fcfb);
 
-    animation:
-        emptyAppear 0.5s ease both;
+    animation: emptyAppear 0.5s ease both;
 }
 
 .empty-icon {
@@ -1206,8 +1043,7 @@ const footer = computed(
 
     border-radius: 13px;
 
-    background:
-        var(--apha-primary-soft);
+    background: var(--apha-primary-soft);
 
     color: var(--apha-primary);
 
@@ -1229,17 +1065,11 @@ const footer = computed(
     font-size: 10.5px;
 }
 
-
-
-
 .history-pagination {
     margin-top: 16px;
 
-    animation:
-        paginationAppear 0.55s ease both;
+    animation: paginationAppear 0.55s ease both;
 }
-
-
 
 .history-footnote {
     display: flex;
@@ -1251,14 +1081,11 @@ const footer = computed(
 
     padding: 12px 15px;
 
-    border:
-        1px solid
-        rgba(0, 143, 131, 0.07);
+    border: 1px solid rgba(0, 143, 131, 0.07);
 
     border-radius: 12px;
 
-    background:
-        rgba(0, 143, 131, 0.035);
+    background: rgba(0, 143, 131, 0.035);
 }
 
 .footnote-icon {
@@ -1302,112 +1129,90 @@ const footer = computed(
     line-height: 1.45;
 }
 
-
-
 @keyframes historyIntroAppear {
     from {
         opacity: 0;
-        transform:
-            translateY(10px);
+        transform: translateY(10px);
     }
 
     to {
         opacity: 1;
-        transform:
-            translateY(0);
+        transform: translateY(0);
     }
 }
 
 @keyframes tableAppear {
     from {
         opacity: 0;
-        transform:
-            translateY(15px);
+        transform: translateY(15px);
     }
 
     to {
         opacity: 1;
-        transform:
-            translateY(0);
+        transform: translateY(0);
     }
 }
 
 @keyframes rowAppear {
     from {
         opacity: 0;
-        transform:
-            translateY(6px);
+        transform: translateY(6px);
     }
 
     to {
         opacity: 1;
-        transform:
-            translateY(0);
+        transform: translateY(0);
     }
 }
 
 @keyframes paginationAppear {
     from {
         opacity: 0;
-        transform:
-            translateY(7px);
+        transform: translateY(7px);
     }
 
     to {
         opacity: 1;
-        transform:
-            translateY(0);
+        transform: translateY(0);
     }
 }
 
 @keyframes emptyAppear {
     from {
         opacity: 0;
-        transform:
-            scale(0.98);
+        transform: scale(0.98);
     }
 
     to {
         opacity: 1;
-        transform:
-            scale(1);
+        transform: scale(1);
     }
 }
 
 @keyframes iconFloat {
     0%,
     100% {
-        transform:
-            translateY(0);
+        transform: translateY(0);
     }
 
     50% {
-        transform:
-            translateY(-3px);
+        transform: translateY(-3px);
     }
 }
 
 @keyframes badgePulse {
     0% {
-        box-shadow:
-            0 0 0 0
-            rgba(0, 143, 131, 0.24);
+        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0.24);
     }
 
     70% {
-        box-shadow:
-            0 0 0 5px
-            rgba(0, 143, 131, 0);
+        box-shadow: 0 0 0 5px rgba(0, 143, 131, 0);
     }
 
     100% {
-        box-shadow:
-            0 0 0 0
-            rgba(0, 143, 131, 0);
+        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0);
     }
 }
-
-
 
 @media (max-width: 900px) {
     .history-intro {
@@ -1428,7 +1233,6 @@ const footer = computed(
         align-self: flex-start;
     }
 }
-
 
 @media (max-width: 760px) {
     .history-filters {
@@ -1461,7 +1265,6 @@ const footer = computed(
         margin-bottom: 20px;
     }
 }
-
 
 @media (max-width: 640px) {
     .history-page {
@@ -1543,7 +1346,6 @@ const footer = computed(
     }
 }
 
-
 @media (max-width: 400px) {
     .intro-main {
         gap: 11px;
@@ -1568,8 +1370,6 @@ const footer = computed(
     }
 }
 
-
-
 @media (prefers-reduced-motion: reduce) {
     .history-page *,
     .history-page *::before,
@@ -1579,5 +1379,4 @@ const footer = computed(
         transition-duration: 0.01ms !important;
     }
 }
-
 </style>

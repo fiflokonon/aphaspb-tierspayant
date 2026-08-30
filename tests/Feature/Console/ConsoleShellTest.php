@@ -1,6 +1,8 @@
 <?php
 
+use App\Enums\PharmacyRole;
 use App\Models\Insurer;
+use App\Models\Pharmacy;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
@@ -16,6 +18,7 @@ test('an admin gets the admin shell with its space and both notices', function (
             ->where('console.space', 'ESPACE ADMIN')
             ->has('console.nav', 6)
             ->has('console.notices', 2)
+            ->has('console.account')
             ->where('console.notices.0.title', 'Vue anonymisée')
             ->where('console.notices.1.title', "Seuil d'affichage"),
         );
@@ -56,6 +59,72 @@ test('a pharmacy gets the pharmacy shell, without space or notice', function () 
             ->where('console.space', null)
             ->has('console.nav', 5)
             ->has('console.notices', 0),
+        );
+});
+
+test('the shell carries the account name and the logout route', function () {
+    $user = User::factory()->create(['name' => 'Awa Hounkpatin']);
+
+    $this->actingAs($user)
+        ->get(route('dashboard', ['current_pharmacy' => $user->currentPharmacy->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('console.account.name', 'Awa Hounkpatin')
+            ->where('console.account.logoutHref', '/auth/logout'),
+        );
+});
+
+test('a user still onboarding can reach the logout route too', function () {
+    // The step where being stuck costs the most: no officine, so no console
+    // navigation, and until now no way out of the session either.
+    $this->actingAs(User::factory()->notOnboarded()->create())
+        ->get(route('onboarding.profile'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('console.account.logoutHref', '/auth/logout'),
+        );
+});
+
+test('the account lists the officines to switch between, current one flagged', function () {
+    $user = User::factory()->create();
+    $second = Pharmacy::factory()->create(['name' => 'Pharmacie Zenith']);
+
+    $second->members()->attach($user, ['role' => PharmacyRole::Member->value]);
+
+    $this->actingAs($user)
+        ->get(route('dashboard', ['current_pharmacy' => $user->currentPharmacy->slug]))
+        ->assertInertia(function (AssertableInertia $page) use ($user, $second) {
+            $pharmacies = collect($page->toArray()['props']['console']['account']['pharmacies']);
+
+            expect($pharmacies)->toHaveCount(2)
+                ->and($pharmacies->firstWhere('slug', $second->slug)['switchHref'])
+                ->toBe(route('pharmacies.switch', ['pharmacy' => $second->slug], absolute: false))
+                ->and($pharmacies->where('current', true)->pluck('slug')->all())
+                ->toBe([$user->currentPharmacy->slug]);
+        });
+});
+
+test('a single officine offers nothing to switch between', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('dashboard', ['current_pharmacy' => $user->currentPharmacy->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('console.account.pharmacies', 0),
+        );
+});
+
+test('a user in no mapped group still gets a shell with a way out', function () {
+    // Neither manage-network nor declare-payments: until now this user got no
+    // console descriptor at all, and once the starter kit goes away that would
+    // leave them with no logout either.
+    $this->actingAs(User::factory()->create(['joomla_groups' => []]))
+        ->get(route('profile.edit'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('console.nav', 0)
+            ->has('console.notices', 0)
+            ->where('console.account.logoutHref', '/auth/logout'),
         );
 });
 

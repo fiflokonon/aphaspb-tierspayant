@@ -114,11 +114,97 @@ test('who owes the most is sorted descending and keeps settled insurers at zero'
     declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 500_000, 'amount_received' => 300_000, 'delay_days' => 20], $small);
     declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 400_000, 'amount_received' => 400_000, 'delay_days' => 15], $clear);
 
-    $owed = $this->stats->outstandingByInsurer($this->pharmacy);
+    $owed = $this->stats->outstandingByInsurer($this->pharmacy, 12);
 
     expect(array_column($owed, 'insurerName'))->toBe(['Grosse dette', 'Petite dette', 'À jour'])
         ->and($owed[0]['outstanding'])->toBe(1_000_000)
         ->and($owed[2]['outstanding'])->toBe(0);
+});
+
+test('who owes the most ignores declarations older than the window', function () {
+    $insurer = Insurer::factory()->create(['name' => 'Assureur']);
+
+    $this->pharmacy->insurers()->attach($insurer->id);
+
+    declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 300_000, 'amount_received' => 0, 'delay_days' => null], $insurer);
+    declareFor($this->pharmacy, 2025, 8, ['amount_invoiced' => 900_000, 'amount_received' => 0, 'delay_days' => null], $insurer);
+
+    $owed = $this->stats->outstandingByInsurer($this->pharmacy, 12);
+
+    expect($owed[0]['outstanding'])->toBe(300_000);
+});
+
+test('recovery by insurer gives the amounts and the rate of each one', function () {
+    $arch = Insurer::factory()->create(['name' => 'ARCH']);
+    $nsia = Insurer::factory()->create(['name' => 'NSIA']);
+
+    $this->pharmacy->insurers()->attach([$arch->id, $nsia->id]);
+
+    declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 1_000_000, 'amount_received' => 480_000, 'delay_days' => 50], $arch);
+    declareFor($this->pharmacy, 2026, 7, ['amount_invoiced' => 500_000, 'amount_received' => 430_000, 'delay_days' => 20], $nsia);
+
+    $recovery = collect($this->stats->recoveryByInsurer($this->pharmacy, 12))->keyBy('insurerName');
+
+    expect($recovery['ARCH']['invoiced'])->toBe(1_000_000)
+        ->and($recovery['ARCH']['received'])->toBe(480_000)
+        ->and($recovery['ARCH']['outstanding'])->toBe(520_000)
+        ->and($recovery['ARCH']['recoveryRate'])->toBe(48.0)
+        ->and($recovery['NSIA']['recoveryRate'])->toBe(86.0);
+});
+
+test('recovery by insurer keeps a ticked insurer that never declared, without a rate', function () {
+    $insurer = Insurer::factory()->create(['name' => 'Jamais déclaré']);
+
+    $this->pharmacy->insurers()->attach($insurer->id);
+
+    $recovery = $this->stats->recoveryByInsurer($this->pharmacy, 12);
+
+    expect($recovery)->toHaveCount(1)
+        ->and($recovery[0]['insurerName'])->toBe('Jamais déclaré')
+        ->and($recovery[0]['invoiced'])->toBe(0)
+        ->and($recovery[0]['recoveryRate'])->toBeNull();
+});
+
+test('recovery by insurer is sorted by outstanding descending', function () {
+    $big = Insurer::factory()->create(['name' => 'Grosse dette']);
+    $small = Insurer::factory()->create(['name' => 'Petite dette']);
+
+    $this->pharmacy->insurers()->attach([$big->id, $small->id]);
+
+    declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 1_000_000, 'amount_received' => 0, 'delay_days' => null], $big);
+    declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 500_000, 'amount_received' => 300_000, 'delay_days' => 20], $small);
+
+    expect(array_column($this->stats->recoveryByInsurer($this->pharmacy, 12), 'insurerName'))
+        ->toBe(['Grosse dette', 'Petite dette']);
+});
+
+test('recovery by insurer ignores declarations older than the window', function () {
+    $insurer = Insurer::factory()->create(['name' => 'Assureur']);
+
+    $this->pharmacy->insurers()->attach($insurer->id);
+
+    declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 400_000, 'amount_received' => 400_000, 'delay_days' => 10], $insurer);
+    declareFor($this->pharmacy, 2025, 8, ['amount_invoiced' => 900_000, 'amount_received' => 0, 'delay_days' => null], $insurer);
+
+    $recovery = $this->stats->recoveryByInsurer($this->pharmacy, 12);
+
+    expect($recovery[0]['invoiced'])->toBe(400_000)
+        ->and($recovery[0]['recoveryRate'])->toBe(100.0);
+});
+
+test('recovery by insurer never reads another officine declarations', function () {
+    $insurer = Insurer::factory()->create(['name' => 'Assureur']);
+    $other = Pharmacy::factory()->create();
+
+    $this->pharmacy->insurers()->attach($insurer->id);
+
+    declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 100_000, 'amount_received' => 100_000, 'delay_days' => 10], $insurer);
+    declareFor($other, 2026, 8, ['amount_invoiced' => 9_000_000, 'amount_received' => 0, 'delay_days' => null], $insurer);
+
+    $recovery = $this->stats->recoveryByInsurer($this->pharmacy, 12);
+
+    expect($recovery)->toHaveCount(1)
+        ->and($recovery[0]['invoiced'])->toBe(100_000);
 });
 
 test('the outstanding beyond a given age is summed', function () {

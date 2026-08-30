@@ -35,7 +35,6 @@ Route::middleware(['auth', 'can:manage-network'])
         Route::get('insurers', [InsurerManagementController::class, 'index'])->name('insurers');
         Route::post('insurers', [InsurerManagementController::class, 'store'])->name('insurers.store');
         Route::patch('insurers/{insurer}', [InsurerManagementController::class, 'update'])->name('insurers.update');
-        Route::patch('threshold', [InsurerManagementController::class, 'updateThreshold'])->name('threshold.update');
         Route::get('csv-exports', [NetworkExportController::class, 'index'])->name('csv-exports');
         Route::get('csv-exports/download', [NetworkExportController::class, 'download'])->name('csv-exports.download');
     });

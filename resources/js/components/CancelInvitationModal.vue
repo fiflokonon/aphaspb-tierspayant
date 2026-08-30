@@ -47,17 +47,18 @@ const cancelInvitation = () => {
     <Dialog :open="props.open" @update:open="emit('update:open', $event)">
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Cancel invitation</DialogTitle>
+                <DialogTitle>Annuler l'invitation</DialogTitle>
                 <DialogDescription>
-                    Are you sure you want to cancel the invitation for
-                    <strong>{{ props.invitation?.email }}</strong
-                    >?
+                    Voulez-vous vraiment annuler l'invitation envoyée à
+                    <strong>{{ props.invitation?.email }}</strong> ?
                 </DialogDescription>
             </DialogHeader>
 
             <DialogFooter class="gap-2">
                 <DialogClose as-child>
-                    <Button variant="secondary"> Keep invitation </Button>
+                    <Button variant="secondary">
+                        Conserver l'invitation
+                    </Button>
                 </DialogClose>
 
                 <Button
@@ -66,7 +67,7 @@ const cancelInvitation = () => {
                     :disabled="processing"
                     @click="cancelInvitation"
                 >
-                    Cancel invitation
+                    Annuler l'invitation
                 </Button>
             </DialogFooter>
         </DialogContent>

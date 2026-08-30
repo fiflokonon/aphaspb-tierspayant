@@ -59,35 +59,35 @@ function handleOpenChange(value: boolean) {
                 @success="emit('update:open', false)"
             >
                 <DialogHeader>
-                    <DialogTitle>Invite a pharmacy member</DialogTitle>
+                    <DialogTitle>Inviter un membre</DialogTitle>
                     <DialogDescription>
-                        Send an invitation to join this pharmacy.
+                        Envoyez une invitation à rejoindre cette officine.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div class="grid gap-4">
                     <div class="grid gap-2">
-                        <Label for="email">Email address</Label>
+                        <Label for="email">Adresse e-mail</Label>
                         <Input
                             id="email"
                             name="email"
                             data-test="invite-email"
                             type="email"
-                            placeholder="colleague@example.com"
+                            placeholder="confrere@exemple.bj"
                             required
                         />
                         <InputError :message="errors.email" />
                     </div>
 
                     <div class="grid gap-2">
-                        <Label for="role">Role</Label>
+                        <Label for="role">Rôle</Label>
                         <Select
                             v-model="inviteRole"
                             name="role"
                             data-test="invite-role"
                         >
                             <SelectTrigger class="w-full">
-                                <SelectValue placeholder="Select a role" />
+                                <SelectValue placeholder="Choisir un rôle" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem
@@ -105,7 +105,7 @@ function handleOpenChange(value: boolean) {
 
                 <DialogFooter class="gap-2">
                     <DialogClose as-child>
-                        <Button variant="secondary"> Cancel </Button>
+                        <Button variant="secondary"> Annuler </Button>
                     </DialogClose>
 
                     <Button
@@ -113,7 +113,7 @@ function handleOpenChange(value: boolean) {
                         data-test="invite-submit"
                         :disabled="processing"
                     >
-                        Send invitation
+                        Envoyer l'invitation
                     </Button>
                 </DialogFooter>
             </Form>

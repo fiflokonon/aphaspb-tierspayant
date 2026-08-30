@@ -4,7 +4,6 @@ use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
-use App\Services\Settings\SettingsRepository;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia;
 
@@ -81,12 +80,23 @@ test('the aggregated table renders sufficient and insufficient insurers alike', 
         });
 });
 
-test('the threshold comes from the settings, not a constant', function () {
-    app(SettingsRepository::class)->set('payment_delay_threshold_days', 45);
+test('the reference line averages the standard delays of the insurers', function () {
+    foreach ([20, 40] as $standard) {
+        $insurer = Insurer::factory()->create(['standard_delay_days' => $standard]);
+
+        Pharmacy::factory()->count(5)->create()->each(
+            fn (Pharmacy $pharmacy) => Declaration::factory()->paid()->create([
+                'pharmacy_id' => $pharmacy->id,
+                'insurer_id' => $insurer->id,
+                'period_year' => 2026,
+                'period_month' => 8,
+            ]),
+        );
+    }
 
     $this->actingAs(User::factory()->networkAdmin()->create())
         ->get(route('admin.trends'))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('threshold', 45));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('threshold', 30));
 });
 
 test('the trends screen exposes no private note and no officine identity', function () {

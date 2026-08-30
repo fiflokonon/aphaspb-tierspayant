@@ -13,7 +13,11 @@ enum PharmacyRole: string
      */
     public function label(): string
     {
-        return ucfirst($this->value);
+        return match ($this) {
+            self::Owner => 'Titulaire',
+            self::Admin => 'Gestionnaire',
+            self::Member => 'Membre',
+        };
     }
 
     /**

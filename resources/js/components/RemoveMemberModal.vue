@@ -44,17 +44,17 @@ const removeMember = () => {
     <Dialog :open="props.open" @update:open="emit('update:open', $event)">
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Remove pharmacy member</DialogTitle>
+                <DialogTitle>Retirer ce membre</DialogTitle>
                 <DialogDescription>
-                    Are you sure you want to remove
-                    <strong>{{ props.member?.name }}</strong> from this
-                    pharmacy?
+                    Voulez-vous vraiment retirer
+                    <strong>{{ props.member?.name }}</strong> de cette officine
+                    ?
                 </DialogDescription>
             </DialogHeader>
 
             <DialogFooter class="gap-2">
                 <DialogClose as-child>
-                    <Button variant="secondary"> Cancel </Button>
+                    <Button variant="secondary"> Annuler </Button>
                 </DialogClose>
 
                 <Button
@@ -63,7 +63,7 @@ const removeMember = () => {
                     :disabled="processing"
                     @click="removeMember"
                 >
-                    Remove member
+                    Retirer le membre
                 </Button>
             </DialogFooter>
         </DialogContent>

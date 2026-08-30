@@ -1,25 +1,18 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { Eye, LogOut, Pencil, Plus } from '@lucide/vue';
 import { ref } from 'vue';
+import DataTable from '@/components/aphaspb/DataTable.vue';
+import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import CreatePharmacyModal from '@/components/CreatePharmacyModal.vue';
-import Heading from '@/components/Heading.vue';
 import LeavePharmacyModal from '@/components/LeavePharmacyModal.vue';
-import { Button } from '@/components/ui/button';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { edit, index } from '@/routes/pharmacies';
+import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
+import { edit } from '@/routes/pharmacies';
 import type { Pharmacy } from '@/types';
 
-type Props = {
-    pharmacies: Pharmacy[];
-};
+defineProps<{ pharmacies: Pharmacy[] }>();
 
-defineProps<Props>();
+const TEMPLATE = '2fr 1fr 1.2fr';
+const COLUMNS = ['OFFICINE', 'RÔLE', 'ACTIONS'];
 
 const leavePharmacyDialogOpen = ref(false);
 const pharmacyLeaving = ref<Pharmacy | null>(null);
@@ -30,122 +23,69 @@ const openLeavePharmacyDialog = (pharmacy: Pharmacy) => {
     pharmacyLeaving.value = pharmacy;
     leavePharmacyDialogOpen.value = true;
 };
-
-defineOptions({
-    layout: {
-        breadcrumbs: [
-            {
-                title: 'Pharmacies',
-                href: index(),
-            },
-        ],
-    },
-});
 </script>
 
 <template>
-    <Head title="Pharmacies" />
+    <Head title="Mes officines" />
 
-    <h1 class="sr-only">Pharmacies</h1>
-
-    <div class="flex flex-col space-y-6">
-        <div class="flex items-center justify-between">
-            <Heading
-                variant="small"
-                title="Pharmacies"
-                description="Manage your pharmacies and pharmacy memberships"
-            />
-
+    <ConsoleHeader eyebrow="MON COMPTE" title="Mes officines">
+        <template #action>
             <CreatePharmacyModal>
-                <Button data-test="pharmacies-new-pharmacy-button">
-                    <Plus /> New pharmacy
-                </Button>
+                <button
+                    type="button"
+                    data-test="pharmacies-new-pharmacy-button"
+                    class="flex h-[42px] items-center justify-center rounded-[10px] bg-primary px-4 text-[12.5px] font-bold text-primary-foreground transition-colors hover:bg-officine-dark"
+                >
+                    + Nouvelle officine
+                </button>
             </CreatePharmacyModal>
-        </div>
+        </template>
+    </ConsoleHeader>
 
-        <div class="space-y-3">
-            <div
-                v-for="pharmacy in pharmacies"
-                :key="pharmacy.id"
-                data-test="pharmacy-row"
-                class="flex items-center justify-between gap-4 rounded-lg border p-4"
-            >
-                <div class="flex items-center gap-4">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="font-medium">{{ pharmacy.name }}</span>
-                        </div>
-                        <span class="text-sm text-muted-foreground">
-                            {{ pharmacy.roleLabel }}
-                        </span>
-                    </div>
-                </div>
-
-                <TooltipProvider>
-                    <div class="flex items-center gap-2">
-                        <Tooltip v-if="canLeavePharmacy(pharmacy)">
-                            <TooltipTrigger as-child>
-                                <Button
-                                    data-test="pharmacy-leave-button"
-                                    variant="ghost"
-                                    size="sm"
-                                    @click="openLeavePharmacyDialog(pharmacy)"
-                                >
-                                    <LogOut class="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Leave pharmacy</p>
-                            </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip v-if="pharmacy.role === 'member'">
-                            <TooltipTrigger as-child>
-                                <Button
-                                    data-test="pharmacy-view-button"
-                                    variant="ghost"
-                                    size="sm"
-                                    as-child
-                                >
-                                    <Link :href="edit(pharmacy.slug)">
-                                        <Eye class="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>View pharmacy</p>
-                            </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip v-else>
-                            <TooltipTrigger as-child>
-                                <Button
-                                    data-test="pharmacy-edit-button"
-                                    variant="ghost"
-                                    size="sm"
-                                    as-child
-                                >
-                                    <Link :href="edit(pharmacy.slug)">
-                                        <Pencil class="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Edit pharmacy</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </div>
-                </TooltipProvider>
+    <DataTable
+        title="Officines dont vous êtes membre"
+        :columns="COLUMNS"
+        :template="TEMPLATE"
+    >
+        <DataTableRow
+            v-for="pharmacy in pharmacies"
+            :key="pharmacy.id"
+            :template="TEMPLATE"
+            data-test="pharmacy-row"
+        >
+            <div class="truncate">{{ pharmacy.name }}</div>
+            <div class="font-medium text-ink/60">{{ pharmacy.roleLabel }}</div>
+            <div class="flex flex-wrap items-center gap-3 text-[11.5px]">
+                <Link
+                    :href="edit(pharmacy.slug)"
+                    :data-test="
+                        pharmacy.role === 'member'
+                            ? 'pharmacy-view-button'
+                            : 'pharmacy-edit-button'
+                    "
+                    class="font-semibold text-officine underline underline-offset-2 hover:text-officine-dark"
+                >
+                    {{ pharmacy.role === 'member' ? 'Ouvrir' : 'Modifier' }}
+                </Link>
+                <button
+                    v-if="canLeavePharmacy(pharmacy)"
+                    type="button"
+                    data-test="pharmacy-leave-button"
+                    class="font-semibold text-terracotta-dark underline underline-offset-2 hover:text-terracotta"
+                    @click="openLeavePharmacyDialog(pharmacy)"
+                >
+                    Quitter
+                </button>
             </div>
+        </DataTableRow>
 
-            <p
-                v-if="pharmacies.length === 0"
-                class="py-8 text-center text-muted-foreground"
-            >
-                You don't belong to any pharmacies yet.
-            </p>
-        </div>
-    </div>
+        <p
+            v-if="pharmacies.length === 0"
+            class="border-t border-ink/[0.06] px-4 py-8 text-center text-[12px] text-ink/[0.45]"
+        >
+            Vous n'appartenez à aucune officine pour l'instant.
+        </p>
+    </DataTable>
 
     <LeavePharmacyModal
         v-model:open="leavePharmacyDialogOpen"

@@ -2,9 +2,8 @@
 import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import AmountField from '@/components/aphaspb/AmountField.vue';
-import DelayStepper from '@/components/aphaspb/DelayStepper.vue';
+import DateField from '@/components/aphaspb/DateField.vue';
 import DerivedStatusNotice from '@/components/aphaspb/DerivedStatusNotice.vue';
-import WizardProgress from '@/components/aphaspb/WizardProgress.vue';
 import { formatFcfa } from '@/lib/fcfa';
 import type { DeclarationStatus } from '@/types/aphaspb';
 
@@ -13,14 +12,17 @@ type Declaration = {
     amount_received: number;
     status: DeclarationStatus;
     is_status_manual: boolean;
+    invoice_deposited_on: string | null;
+    paid_on: string | null;
     delay_days: number | null;
     private_note: string | null;
 };
 
 const props = defineProps<{
-    insurer: { id: number; name: string };
+    insurer: { id: number; name: string; standardDelayDays: number };
     progress: { current: number; total: number };
     period: { year: number; month: number; label: string };
+    dateBounds: { earliest: string; latest: string };
     declaration: Declaration | null;
 }>();
 
@@ -29,7 +31,10 @@ setLayoutProps({ focus: true });
 
 const invoiced = ref(props.declaration?.amount_invoiced ?? 0);
 const received = ref(props.declaration?.amount_received ?? 0);
-const delay = ref<number | null>(props.declaration?.delay_days ?? null);
+const depositedOn = ref<string | null>(
+    props.declaration?.invoice_deposited_on ?? null,
+);
+const paidOn = ref<string | null>(props.declaration?.paid_on ?? null);
 const note = ref(props.declaration?.private_note ?? '');
 const noteOpen = ref(!!props.declaration?.private_note);
 const rejected = ref(props.declaration?.status === 'rejected');
@@ -80,11 +85,31 @@ const carriesDelay = computed(
     () => status.value === 'paid' || status.value === 'partial',
 );
 
+/**
+ * Mirrors Declaration::deriveDelayDays(). The delay is no longer typed in: it
+ * is the distance between the two dates, and the server recomputes it on save.
+ */
+const delay = computed<number | null>(() => {
+    if (depositedOn.value === null || paidOn.value === null) {
+        return null;
+    }
+
+    const from = Date.parse(depositedOn.value);
+    const to = Date.parse(paidOn.value);
+
+    if (Number.isNaN(from) || Number.isNaN(to) || to < from) {
+        return null;
+    }
+
+    return Math.round((to - from) / 86_400_000);
+});
+
+const beyondStandardDelay = computed(
+    () => delay.value !== null && delay.value > props.insurer.standardDelayDays,
+);
+
 const isLast = computed(() => props.progress.current >= props.progress.total);
 </script>
-
-
-
 
 <template>
     <Head :title="`Déclarer · ${insurer.name}`" />
@@ -95,7 +120,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     /> -->
 
     <div class="declare-page">
-
         <div class="declare-header">
             <Link
                 href="/pharmacy/history"
@@ -112,38 +136,29 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
             </div>
         </div>
 
-
         <div class="declare-shell">
-
             <div class="progress-header">
-
                 <div class="progress-left">
                     <div class="progress-badge">
                         <span>{{ progress.current }}</span>
                     </div>
 
                     <div>
-                        <div class="progress-label">
-                            DÉCLARATION MENSUELLE
-                        </div>
+                        <div class="progress-label">DÉCLARATION MENSUELLE</div>
 
                         <div class="progress-title">
-                            Étape {{ progress.current }} sur {{ progress.total }}
+                            Étape {{ progress.current }} sur
+                            {{ progress.total }}
                         </div>
                     </div>
                 </div>
 
-                <Link
-                    href="/pharmacy/history"
-                    class="later-link"
-                >
+                <Link href="/pharmacy/history" class="later-link">
                     Reprendre plus tard
                     <span>↗</span>
                 </Link>
-
             </div>
 
-   
             <div class="progress-track">
                 <div
                     class="progress-value"
@@ -159,18 +174,9 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                 class="declare-form"
                 #default="{ errors, processing }"
             >
-    
-                <input
-                    type="hidden"
-                    name="insurer_id"
-                    :value="insurer.id"
-                />
+                <input type="hidden" name="insurer_id" :value="insurer.id" />
 
-                <input
-                    type="hidden"
-                    name="period_year"
-                    :value="period.year"
-                />
+                <input type="hidden" name="period_year" :value="period.year" />
 
                 <input
                     type="hidden"
@@ -186,33 +192,27 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                 />
 
                 <section class="form-panel form-panel-main">
-
                     <div class="panel-intro">
-
                         <div class="eyebrow">
-                            {{ period.label }} · {{ insurer.name.toUpperCase() }}
+                            {{ period.label }} ·
+                            {{ insurer.name.toUpperCase() }}
                         </div>
 
                         <h1>
-                            Combien avez-vous facturé,
-                            et combien avez-vous
+                            Combien avez-vous facturé, et combien avez-vous
                             <em>réellement reçu</em> ?
                         </h1>
 
                         <p class="intro-text">
-                            Déclarez les montants correspondant à ce mois.
-                            Le statut de votre règlement sera automatiquement
+                            Déclarez les montants correspondant à ce mois. Le
+                            statut de votre règlement sera automatiquement
                             calculé.
                         </p>
-
                     </div>
 
                     <div class="amounts">
-
                         <div class="amount-wrapper">
-                            <div class="amount-number">
-                                01
-                            </div>
+                            <div class="amount-number">01</div>
 
                             <AmountField
                                 v-model="invoiced"
@@ -223,9 +223,7 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                         </div>
 
                         <div class="amount-wrapper">
-                            <div class="amount-number">
-                                02
-                            </div>
+                            <div class="amount-number">02</div>
 
                             <AmountField
                                 v-model="received"
@@ -242,10 +240,37 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                                 "
                             />
                         </div>
-
                     </div>
 
-             
+                    <!--
+                        Les deux dates tiennent avec les montants plutôt que
+                        dans le panneau de synthèse : elles se saisissent, elles
+                        ne se déduisent pas. Ce qui s'en déduit — le délai —
+                        s'affiche à droite, près du statut auquel il appartient.
+                    -->
+                    <div class="dates">
+                        <DateField
+                            v-model="depositedOn"
+                            class="date-field"
+                            label="DÉPÔT DE LA FACTURE"
+                            name="invoice_deposited_on"
+                            :min="dateBounds.earliest"
+                            :max="dateBounds.latest"
+                            :error="errors.invoice_deposited_on"
+                        />
+
+                        <DateField
+                            v-if="carriesDelay"
+                            v-model="paidOn"
+                            class="date-field"
+                            label="DATE DE PAIEMENT"
+                            name="paid_on"
+                            :min="depositedOn ?? dateBounds.earliest"
+                            :max="dateBounds.latest"
+                            :error="errors.paid_on"
+                        />
+                    </div>
+
                     <button
                         type="button"
                         class="secondary-action"
@@ -263,13 +288,10 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                             }}
                         </span>
 
-                        <span class="secondary-arrow">
-                            →
-                        </span>
+                        <span class="secondary-arrow"> → </span>
                     </button>
 
                     <div class="private-note">
-
                         <button
                             type="button"
                             class="note-toggle"
@@ -279,20 +301,13 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                                 {{ noteOpen ? '−' : '+' }}
                             </span>
 
-                            <span>
-                                Note privée
-                            </span>
+                            <span> Note privée </span>
 
-                            <span class="note-description">
-                                facultative
-                            </span>
+                            <span class="note-description"> facultative </span>
                         </button>
 
                         <Transition name="note">
-                            <div
-                                v-if="noteOpen"
-                                class="note-content"
-                            >
+                            <div v-if="noteOpen" class="note-content">
                                 <textarea
                                     v-model="note"
                                     name="private_note"
@@ -303,13 +318,9 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                                 ></textarea>
 
                                 <div class="note-footer">
-                                    <span>
-                                        Cette note reste privée.
-                                    </span>
+                                    <span> Cette note reste privée. </span>
 
-                                    <span>
-                                        {{ note?.length ?? 0 }}/150
-                                    </span>
+                                    <span> {{ note?.length ?? 0 }}/150 </span>
                                 </div>
 
                                 <p
@@ -320,23 +331,15 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                                 </p>
                             </div>
                         </Transition>
-
                     </div>
-
                 </section>
 
-
                 <aside class="form-panel form-panel-summary">
-
                     <div class="summary-header">
                         <div>
-                            <span class="summary-eyebrow">
-                                APERÇU
-                            </span>
+                            <span class="summary-eyebrow"> APERÇU </span>
 
-                            <h2>
-                                Votre règlement
-                            </h2>
+                            <h2>Votre règlement</h2>
                         </div>
 
                         <div class="summary-orb">
@@ -345,41 +348,27 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                     </div>
 
                     <Transition name="fade-slide">
-                        <div
-                            v-if="exceedsInvoiced"
-                            class="error-card"
-                        >
+                        <div v-if="exceedsInvoiced" class="error-card">
                             <div class="error-top">
-                                <div class="error-icon">
-                                    !
-                                </div>
+                                <div class="error-icon">!</div>
 
                                 <div>
-                                    <strong>
-                                        Montants incompatibles
-                                    </strong>
+                                    <strong> Montants incompatibles </strong>
 
-                                    <span>
-                                        Vérification nécessaire
-                                    </span>
+                                    <span> Vérification nécessaire </span>
                                 </div>
                             </div>
 
                             <p>
                                 Vous avez saisi
                                 <strong>{{ formatFcfa(excess) }} FCFA</strong>
-                                de plus en reçu qu'en facturé.
-                                Corrigez l'un des deux montants avant
-                                de continuer.
+                                de plus en reçu qu'en facturé. Corrigez l'un des
+                                deux montants avant de continuer.
                             </p>
                         </div>
                     </Transition>
 
-                   
-                    <div
-                        v-if="!exceedsInvoiced"
-                        class="status-card"
-                    >
+                    <div v-if="!exceedsInvoiced" class="status-card">
                         <div class="status-card-glow"></div>
 
                         <DerivedStatusNotice
@@ -396,27 +385,41 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                         class="delay-card"
                     >
                         <div class="delay-card-header">
-                            <div class="delay-icon">
-                                ◷
-                            </div>
+                            <div class="delay-icon">◷</div>
 
                             <div>
-                                <strong>
-                                    Délai de règlement
-                                </strong>
+                                <strong> Délai de règlement </strong>
 
-                                <span>
-                                    Indiquez le délai constaté
-                                </span>
+                                <span> Déduit des deux dates </span>
+                            </div>
+
+                            <div
+                                class="delay-readout"
+                                :class="{ 'delay-beyond': beyondStandardDelay }"
+                            >
+                                {{ delay ?? '—'
+                                }}<span class="delay-readout-unit"> j</span>
                             </div>
                         </div>
 
-                        <DelayStepper
-                            v-model="delay"
-                            name="delay_days"
-                            hint="Compté depuis le dépôt de la facture."
-                            :error="errors.delay_days"
-                        />
+                        <p class="delay-explanation">
+                            <template v-if="delay === null">
+                                Renseignez les deux dates : le délai s'en
+                                déduit.
+                            </template>
+
+                            <template v-else-if="beyondStandardDelay">
+                                Au-delà des
+                                {{ insurer.standardDelayDays }} jours retenus
+                                pour {{ insurer.name }}.
+                            </template>
+
+                            <template v-else>
+                                Dans les
+                                {{ insurer.standardDelayDays }} jours retenus
+                                pour {{ insurer.name }}.
+                            </template>
+                        </p>
                     </div>
 
                     <p
@@ -426,9 +429,7 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                         {{ errors.period ?? errors.insurer_id }}
                     </p>
 
-                
                     <div class="submit-area">
-
                         <button
                             type="submit"
                             :disabled="processing || exceedsInvoiced"
@@ -442,9 +443,7 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                                 }}
                             </span>
 
-                            <span class="submit-arrow">
-                                →
-                            </span>
+                            <span class="submit-arrow"> → </span>
 
                             <span
                                 v-if="processing"
@@ -453,57 +452,100 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                         </button>
 
                         <div class="security-note">
-                            <span class="security-icon">
-                                ✓
-                            </span>
+                            <span class="security-icon"> ✓ </span>
 
                             <span>
-                                Vos montants restent confidentiels.
-                                Seuls les totaux réseau sont transmis.
+                                Vos montants restent confidentiels. Seuls les
+                                totaux réseau sont transmis.
                             </span>
                         </div>
-
                     </div>
-
                 </aside>
-
             </Form>
-
         </div>
-
     </div>
 </template>
 
-
 <style>
+.dates {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+
+    margin-top: 14px;
+}
+
+.date-field {
+    flex: 1;
+
+    min-width: 0;
+}
+
+@media (min-width: 640px) {
+    .dates {
+        flex-direction: row;
+    }
+}
+
+.delay-readout {
+    margin-left: auto;
+
+    font-size: 17px;
+
+    line-height: 1;
+
+    font-weight: 700;
+
+    color: var(--ink);
+}
+
+.delay-readout.delay-beyond {
+    color: var(--terracotta-dark);
+}
+
+.delay-readout-unit {
+    font-size: 11px;
+
+    font-weight: 500;
+
+    color: var(--muted);
+}
+
+.delay-explanation {
+    margin-top: 10px;
+
+    font-size: 11px;
+
+    line-height: 1.45;
+
+    color: var(--light);
+}
 
 .declare-page {
-    --primary: #008F83;
-    --primary-dark: #006F68;
-    --primary-soft: #E8F6F3;
+    --primary: #008f83;
+    --primary-dark: #006f68;
+    --primary-soft: #e8f6f3;
 
-    --gold: #D7A33D;
-    --gold-soft: #FFF8E9;
+    --gold: #d7a33d;
+    --gold-soft: #fff8e9;
 
     --ink: #243333;
     --muted: #788585;
-    --light: #A2ADAD;
+    --light: #a2adad;
 
-    --border: #E7ECEB;
-    --background: #F7F9F9;
+    --border: #e7eceb;
+    --background: #f7f9f9;
 
     position: relative;
     min-height: 100vh;
 
-
     overflow: hidden;
 }
 
-
-
-
 .declare-page::before {
-    content: "";
+    content: '';
 
     position: absolute;
 
@@ -515,13 +557,13 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     border-radius: 50%;
 
-    border: 1px solid rgba(0,143,131,.06);
+    border: 1px solid rgba(0, 143, 131, 0.06);
 
     pointer-events: none;
 }
 
 .declare-page::after {
-    content: "";
+    content: '';
 
     position: absolute;
 
@@ -533,12 +575,10 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     border-radius: 50%;
 
-    border: 1px solid rgba(215,163,61,.07);
+    border: 1px solid rgba(215, 163, 61, 0.07);
 
     pointer-events: none;
 }
-
-
 
 .declare-header {
     position: relative;
@@ -546,15 +586,12 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     max-width: 1040px;
 
-    margin:
-        0 auto
-        18px;
+    margin: 0 auto 18px;
 
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
-
 
 .back-link {
     display: inline-flex;
@@ -569,15 +606,14 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     text-decoration: none;
 
     transition:
-        color .2s ease,
-        transform .2s ease;
+        color 0.2s ease,
+        transform 0.2s ease;
 }
 
 .back-link:hover {
     color: var(--primary);
     transform: translateX(-2px);
 }
-
 
 .back-icon {
     width: 28px;
@@ -586,24 +622,21 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     display: grid;
     place-items: center;
 
-    border:
-        1px solid
-        var(--border);
+    border: 1px solid var(--border);
 
     border-radius: 9px;
 
-    background: rgba(255,255,255,.75);
+    background: rgba(255, 255, 255, 0.75);
 
     transition:
-        background .2s ease,
-        border-color .2s ease;
+        background 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .back-link:hover .back-icon {
     background: var(--primary-soft);
-    border-color: rgba(0,143,131,.18);
+    border-color: rgba(0, 143, 131, 0.18);
 }
-
 
 .header-context {
     display: flex;
@@ -615,11 +648,10 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-size: 9px;
     font-weight: 700;
 
-    letter-spacing: .12em;
+    letter-spacing: 0.12em;
 
     color: var(--light);
 }
-
 
 .header-dot {
     width: 6px;
@@ -629,13 +661,10 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     background: var(--primary);
 
-    box-shadow:
-        0 0 0 4px
-        rgba(0,143,131,.08);
+    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
 
     animation: pulse 2.3s infinite;
 }
-
 
 .declare-shell {
     position: relative;
@@ -646,11 +675,9 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     margin: 0 auto;
 
-    background: #FFFFFF;
+    background: #ffffff;
 
-    border:
-        1px solid
-        var(--border);
+    border: 1px solid var(--border);
 
     border-radius: 22px;
 
@@ -660,11 +687,8 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
         0 20px 60px
         rgba(35,70,68,.055); */
 
-    animation:
-        shellAppear .6s ease both;
+    animation: shellAppear 0.6s ease both;
 }
-
-
 
 .progress-header {
     display: flex;
@@ -673,28 +697,18 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     gap: 20px;
 
-    padding:
-        18px 24px;
+    padding: 18px 24px;
 
-    border-bottom:
-        1px solid
-        var(--border);
+    border-bottom: 1px solid var(--border);
 
-    background:
-        linear-gradient(
-            100deg,
-            #FFFFFF,
-            #FBFDFC
-        );
+    background: linear-gradient(100deg, #ffffff, #fbfdfc);
 }
-
 
 .progress-left {
     display: flex;
     align-items: center;
     gap: 11px;
 }
-
 
 .progress-badge {
     width: 34px;
@@ -705,33 +719,24 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     border-radius: 10px;
 
-    background:
-        linear-gradient(
-            135deg,
-            var(--primary),
-            var(--primary-dark)
-        );
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
 
-    color: #FFFFFF;
+    color: #ffffff;
 
     font-size: 11px;
     font-weight: 800;
 
-    box-shadow:
-        0 6px 15px
-        rgba(0,143,131,.16);
+    box-shadow: 0 6px 15px rgba(0, 143, 131, 0.16);
 }
-
 
 .progress-label {
     font-size: 8px;
     font-weight: 800;
 
-    letter-spacing: .13em;
+    letter-spacing: 0.13em;
 
     color: var(--primary);
 }
-
 
 .progress-title {
     margin-top: 3px;
@@ -741,7 +746,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     color: var(--ink);
 }
-
 
 .later-link {
     display: flex;
@@ -756,8 +760,8 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     text-decoration: none;
 
     transition:
-        color .2s ease,
-        gap .2s ease;
+        color 0.2s ease,
+        gap 0.2s ease;
 }
 
 .later-link:hover {
@@ -765,91 +769,63 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     gap: 9px;
 }
 
-
-
-
 .progress-track {
     height: 3px;
 
-    background: #EEF3F2;
+    background: #eef3f2;
 }
-
 
 .progress-value {
     height: 100%;
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--primary),
-            #35A799,
-            var(--gold)
-        );
+    background: linear-gradient(90deg, var(--primary), #35a799, var(--gold));
 
-    transition: width .5s ease;
+    transition: width 0.5s ease;
 }
-
-
 
 .declare-form {
     display: grid;
 
     grid-template-columns:
         minmax(0, 1.08fr)
-        minmax(320px, .92fr);
+        minmax(320px, 0.92fr);
 }
-
-
 
 .form-panel {
-    padding:
-        34px 34px;
+    padding: 34px 34px;
 }
-
 
 .form-panel-main {
-    background: #FFFFFF;
+    background: #ffffff;
 }
-
 
 .form-panel-summary {
     position: relative;
 
-    border-left:
-        1px solid
-        var(--border);
+    border-left: 1px solid var(--border);
 
-    background:
-        linear-gradient(
-            145deg,
-            #F9FCFB,
-            #F5F9F8
-        );
+    background: linear-gradient(145deg, #f9fcfb, #f5f9f8);
 }
-
-
 
 .eyebrow {
     display: inline-flex;
     align-items: center;
 
-    padding:
-        6px 9px;
+    padding: 6px 9px;
 
     border-radius: 7px;
 
     background: var(--gold-soft);
 
-    color: #A97819;
+    color: #a97819;
 
     font-family: monospace;
 
     font-size: 8.5px;
     font-weight: 800;
 
-    letter-spacing: .08em;
+    letter-spacing: 0.08em;
 }
-
 
 .panel-intro h1 {
     max-width: 570px;
@@ -863,9 +839,8 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     line-height: 1.12;
 
-    letter-spacing: -.035em;
+    letter-spacing: -0.035em;
 }
-
 
 .panel-intro h1 em {
     color: var(--primary);
@@ -875,9 +850,8 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     position: relative;
 }
 
-
 .panel-intro h1 em::after {
-    content: "";
+    content: '';
 
     position: absolute;
 
@@ -887,25 +861,20 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     height: 2px;
 
-    background:
-        var(--gold);
+    background: var(--gold);
 
     border-radius: 4px;
 
-    transform:
-        scaleX(.65);
+    transform: scaleX(0.65);
 
     transform-origin: left;
 
-    transition:
-        transform .3s ease;
+    transition: transform 0.3s ease;
 }
-
 
 .panel-intro:hover h1 em::after {
     transform: scaleX(1);
 }
-
 
 .intro-text {
     max-width: 510px;
@@ -919,8 +888,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     line-height: 1.55;
 }
 
-
-
 .amounts {
     display: flex;
     flex-direction: column;
@@ -930,7 +897,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     margin-top: 28px;
 }
 
-
 .amount-wrapper {
     position: relative;
 
@@ -939,7 +905,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     gap: 10px;
 }
-
 
 .amount-number {
     width: 27px;
@@ -964,20 +929,15 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-weight: 800;
 
     transition:
-        transform .25s ease,
-        background .25s ease;
+        transform 0.25s ease,
+        background 0.25s ease;
 }
-
 
 .amount-wrapper:hover .amount-number {
     transform: translateY(-2px) rotate(-3deg);
 
-    background:
-        rgba(0,143,131,.13);
+    background: rgba(0, 143, 131, 0.13);
 }
-
-
-
 
 .secondary-action {
     width: 100%;
@@ -989,17 +949,13 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     margin-top: 18px;
 
-    padding:
-        11px 13px;
+    padding: 11px 13px;
 
-    border:
-        1px solid
-        rgba(35,70,68,.08);
+    border: 1px solid rgba(35, 70, 68, 0.08);
 
     border-radius: 11px;
 
-    background:
-        #FAFCFC;
+    background: #fafcfc;
 
     color: var(--muted);
 
@@ -1011,27 +967,21 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     cursor: pointer;
 
     transition:
-        border-color .2s ease,
-        background .2s ease,
-        color .2s ease,
-        transform .2s ease;
+        border-color 0.2s ease,
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
 }
-
 
 .secondary-action:hover {
-    border-color:
-        rgba(0,143,131,.18);
+    border-color: rgba(0, 143, 131, 0.18);
 
-    background:
-        var(--primary-soft);
+    background: var(--primary-soft);
 
-    color:
-        var(--primary-dark);
+    color: var(--primary-dark);
 
-    transform:
-        translateY(-1px);
+    transform: translateY(-1px);
 }
-
 
 .secondary-icon {
     width: 23px;
@@ -1044,30 +994,24 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     background: var(--gold-soft);
 
-    color: #A97819;
+    color: #a97819;
 
     font-weight: 800;
 }
 
-
 .secondary-arrow {
     margin-left: auto;
 
-    transition:
-        transform .2s ease;
+    transition: transform 0.2s ease;
 }
-
 
 .secondary-action:hover .secondary-arrow {
     transform: translateX(3px);
 }
 
-
-
 .private-note {
     margin-top: 18px;
 }
-
 
 .note-toggle {
     display: flex;
@@ -1088,7 +1032,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     cursor: pointer;
 }
 
-
 .note-plus {
     width: 21px;
     height: 21px;
@@ -1105,7 +1048,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-size: 13px;
 }
 
-
 .note-description {
     color: var(--light);
 
@@ -1113,11 +1055,9 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-weight: 500;
 }
 
-
 .note-content {
     margin-top: 10px;
 }
-
 
 .note-textarea {
     width: 100%;
@@ -1126,16 +1066,13 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     min-height: 75px;
 
-    border:
-        1px solid
-        rgba(35,70,68,.12);
+    border: 1px solid rgba(35, 70, 68, 0.12);
 
     border-radius: 12px;
 
-    background: #FFFFFF;
+    background: #ffffff;
 
-    padding:
-        11px 12px;
+    padding: 11px 12px;
 
     color: var(--ink);
 
@@ -1146,25 +1083,19 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     outline: none;
 
     transition:
-        border-color .2s ease,
-        box-shadow .2s ease;
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 }
-
 
 .note-textarea:focus {
-    border-color:
-        rgba(0,143,131,.35);
+    border-color: rgba(0, 143, 131, 0.35);
 
-    box-shadow:
-        0 0 0 4px
-        rgba(0,143,131,.055);
+    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.055);
 }
-
 
 .note-textarea::placeholder {
-    color: #AAB5B3;
+    color: #aab5b3;
 }
-
 
 .note-footer {
     display: flex;
@@ -1177,7 +1108,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-size: 8.5px;
 }
 
-
 .field-error,
 .general-error {
     margin-top: 6px;
@@ -1187,8 +1117,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-size: 10px;
 }
 
-
-
 .summary-header {
     display: flex;
     align-items: center;
@@ -1196,7 +1124,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     margin-bottom: 22px;
 }
-
 
 .summary-eyebrow {
     display: block;
@@ -1208,9 +1135,8 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-size: 8px;
     font-weight: 800;
 
-    letter-spacing: .13em;
+    letter-spacing: 0.13em;
 }
-
 
 .summary-header h2 {
     margin-top: 4px;
@@ -1220,9 +1146,8 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-size: 19px;
     font-weight: 750;
 
-    letter-spacing: -.025em;
+    letter-spacing: -0.025em;
 }
-
 
 .summary-orb {
     width: 42px;
@@ -1240,11 +1165,8 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-size: 15px;
     font-weight: 800;
 
-    animation:
-        orbFloat 3s ease-in-out infinite;
+    animation: orbFloat 3s ease-in-out infinite;
 }
-
-
 
 .status-card {
     position: relative;
@@ -1253,19 +1175,14 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     padding: 14px;
 
-    border:
-        1px solid
-        rgba(0,143,131,.10);
+    border: 1px solid rgba(0, 143, 131, 0.1);
 
     border-radius: 14px;
 
-    background: #FFFFFF;
+    background: #ffffff;
 
-    box-shadow:
-        0 7px 20px
-        rgba(35,70,68,.035);
+    box-shadow: 0 7px 20px rgba(35, 70, 68, 0.035);
 }
-
 
 .status-card-glow {
     position: absolute;
@@ -1278,37 +1195,28 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     border-radius: 50%;
 
-    background:
-        rgba(0,143,131,.07);
+    background: rgba(0, 143, 131, 0.07);
 
     pointer-events: none;
 }
 
-
-
 .error-card {
     padding: 15px;
 
-    border:
-        1px solid
-        rgba(192,71,47,.20);
+    border: 1px solid rgba(192, 71, 47, 0.2);
 
     border-radius: 14px;
 
-    background:
-        rgba(192,71,47,.055);
+    background: rgba(192, 71, 47, 0.055);
 
-    animation:
-        errorAppear .35s ease both;
+    animation: errorAppear 0.35s ease both;
 }
-
 
 .error-top {
     display: flex;
     align-items: center;
     gap: 9px;
 }
-
 
 .error-icon {
     width: 27px;
@@ -1319,14 +1227,13 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     border-radius: 8px;
 
-    background: #C0472F;
+    background: #c0472f;
 
-    color: #FFFFFF;
+    color: #ffffff;
 
     font-size: 12px;
     font-weight: 800;
 }
-
 
 .error-top strong {
     display: block;
@@ -1335,7 +1242,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     font-size: 11px;
 }
-
 
 .error-top span {
     display: block;
@@ -1347,7 +1253,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-size: 8.5px;
 }
 
-
 .error-card p {
     margin-top: 11px;
 
@@ -1358,36 +1263,23 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     line-height: 1.5;
 }
 
-
 .error-card p strong {
-    color: #A8391F;
+    color: #a8391f;
 }
-
-
-
 
 .delay-card {
     margin-top: 12px;
 
     padding: 14px;
 
-    border:
-        1px solid
-        rgba(215,163,61,.17);
+    border: 1px solid rgba(215, 163, 61, 0.17);
 
     border-radius: 14px;
 
-    background:
-        linear-gradient(
-            135deg,
-            #FFFFFF,
-            #FFFCF5
-        );
+    background: linear-gradient(135deg, #ffffff, #fffcf5);
 
-    animation:
-        cardAppear .45s .1s ease both;
+    animation: cardAppear 0.45s 0.1s ease both;
 }
-
 
 .delay-card-header {
     display: flex;
@@ -1397,7 +1289,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     margin-bottom: 11px;
 }
-
 
 .delay-icon {
     width: 27px;
@@ -1410,11 +1301,10 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     background: var(--gold-soft);
 
-    color: #A97819;
+    color: #a97819;
 
     font-size: 13px;
 }
-
 
 .delay-card-header strong {
     display: block;
@@ -1423,7 +1313,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     font-size: 10.5px;
 }
-
 
 .delay-card-header span {
     display: block;
@@ -1435,11 +1324,9 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-size: 8.5px;
 }
 
-
 .submit-area {
     margin-top: 22px;
 }
-
 
 .submit-button {
     position: relative;
@@ -1457,14 +1344,9 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     border-radius: 13px;
 
-    background:
-        linear-gradient(
-            135deg,
-            var(--primary),
-            var(--primary-dark)
-        );
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
 
-    color: #FFFFFF;
+    color: #ffffff;
 
     font-size: 12px;
     font-weight: 800;
@@ -1473,84 +1355,64 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     overflow: hidden;
 
-    box-shadow:
-        0 9px 22px
-        rgba(0,143,131,.18);
+    box-shadow: 0 9px 22px rgba(0, 143, 131, 0.18);
 
     transition:
-        transform .25s ease,
-        box-shadow .25s ease,
-        opacity .2s ease;
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        opacity 0.2s ease;
 }
 
-
 .submit-button::before {
-    content: "";
+    content: '';
 
     position: absolute;
 
     inset: 0;
 
-    background:
-        linear-gradient(
-            110deg,
-            transparent 20%,
-            rgba(255,255,255,.18) 45%,
-            transparent 70%
-        );
+    background: linear-gradient(
+        110deg,
+        transparent 20%,
+        rgba(255, 255, 255, 0.18) 45%,
+        transparent 70%
+    );
 
-    transform:
-        translateX(-120%);
+    transform: translateX(-120%);
 
-    transition:
-        transform .65s ease;
+    transition: transform 0.65s ease;
 }
-
 
 .submit-button:hover::before {
-    transform:
-        translateX(120%);
+    transform: translateX(120%);
 }
-
 
 .submit-button:hover:not(:disabled) {
-    transform:
-        translateY(-2px);
+    transform: translateY(-2px);
 
-    box-shadow:
-        0 13px 28px
-        rgba(0,143,131,.23);
+    box-shadow: 0 13px 28px rgba(0, 143, 131, 0.23);
 }
-
 
 .submit-button:active:not(:disabled) {
-    transform:
-        translateY(0);
+    transform: translateY(0);
 }
-
 
 .submit-button:disabled {
     cursor: not-allowed;
 
-    opacity: .55;
+    opacity: 0.55;
 
     box-shadow: none;
 }
 
-
 .submit-arrow {
     font-size: 17px;
 
-    transition:
-        transform .2s ease;
+    transition: transform 0.2s ease;
 }
-
 
 .submit-button:hover .submit-arrow {
-    transform:
-        translateX(4px);
+    transform: translateX(4px);
 }
-
 
 .submit-loader {
     position: absolute;
@@ -1558,20 +1420,14 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     width: 17px;
     height: 17px;
 
-    border:
-        2px solid
-        rgba(255,255,255,.35);
+    border: 2px solid rgba(255, 255, 255, 0.35);
 
-    border-top-color:
-        #FFFFFF;
+    border-top-color: #ffffff;
 
     border-radius: 50%;
 
-    animation:
-        spin .7s linear infinite;
+    animation: spin 0.7s linear infinite;
 }
-
-
 
 .security-note {
     display: flex;
@@ -1589,7 +1445,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
     text-align: center;
 }
-
 
 .security-icon {
     width: 17px;
@@ -1610,14 +1465,12 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     font-weight: 800;
 }
 
-
-
 .note-enter-active,
 .note-leave-active {
     transition:
-        opacity .25s ease,
-        transform .25s ease,
-        max-height .25s ease;
+        opacity 0.25s ease,
+        transform 0.25s ease,
+        max-height 0.25s ease;
 }
 
 .note-enter-from,
@@ -1626,12 +1479,11 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     transform: translateY(-6px);
 }
 
-
 .fade-slide-enter-active,
 .fade-slide-leave-active {
     transition:
-        opacity .25s ease,
-        transform .25s ease;
+        opacity 0.25s ease,
+        transform 0.25s ease;
 }
 
 .fade-slide-enter-from,
@@ -1639,7 +1491,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     opacity: 0;
     transform: translateY(8px);
 }
-
 
 @keyframes shellAppear {
     from {
@@ -1653,7 +1504,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     }
 }
 
-
 @keyframes cardAppear {
     from {
         opacity: 0;
@@ -1666,11 +1516,10 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     }
 }
 
-
 @keyframes errorAppear {
     from {
         opacity: 0;
-        transform: scale(.98) translateY(5px);
+        transform: scale(0.98) translateY(5px);
     }
 
     to {
@@ -1678,7 +1527,6 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
         transform: scale(1) translateY(0);
     }
 }
-
 
 @keyframes orbFloat {
     0%,
@@ -1691,27 +1539,19 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     }
 }
 
-
 @keyframes pulse {
     0% {
-        box-shadow:
-            0 0 0 0
-            rgba(0,143,131,.25);
+        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0.25);
     }
 
     70% {
-        box-shadow:
-            0 0 0 5px
-            rgba(0,143,131,0);
+        box-shadow: 0 0 0 5px rgba(0, 143, 131, 0);
     }
 
     100% {
-        box-shadow:
-            0 0 0 0
-            rgba(0,143,131,0);
+        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0);
     }
 }
-
 
 @keyframes spin {
     to {
@@ -1719,9 +1559,7 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     }
 }
 
-
 @media (max-width: 900px) {
-
     .declare-form {
         grid-template-columns: 1fr;
     }
@@ -1729,25 +1567,17 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     .form-panel-summary {
         border-left: 0;
 
-        border-top:
-            1px solid
-            var(--border);
+        border-top: 1px solid var(--border);
     }
 
     .form-panel {
-        padding:
-            28px 26px;
+        padding: 28px 26px;
     }
 }
 
-
 @media (max-width: 640px) {
-
     .declare-page {
-        padding:
-            12px
-            12px
-            45px;
+        padding: 12px 12px 45px;
     }
 
     .declare-header {
@@ -1763,8 +1593,7 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     }
 
     .progress-header {
-        padding:
-            14px 15px;
+        padding: 14px 15px;
     }
 
     .later-link {
@@ -1772,8 +1601,7 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     }
 
     .form-panel {
-        padding:
-            23px 17px;
+        padding: 23px 17px;
     }
 
     .panel-intro h1 {
@@ -1809,14 +1637,9 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     }
 }
 
-
 @media (max-width: 420px) {
-
     .declare-page {
-        padding:
-            8px
-            8px
-            35px;
+        padding: 8px 8px 35px;
     }
 
     .progress-title {
@@ -1828,8 +1651,7 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     }
 
     .form-panel {
-        padding:
-            20px 14px;
+        padding: 20px 14px;
     }
 
     .panel-intro h1 {
@@ -1845,22 +1667,15 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     }
 }
 
-
-
 @media (prefers-reduced-motion: reduce) {
-
     .declare-page *,
     .declare-page *::before,
     .declare-page *::after {
-        animation-duration:
-            .01ms !important;
+        animation-duration: 0.01ms !important;
 
-        animation-iteration-count:
-            1 !important;
+        animation-iteration-count: 1 !important;
 
-        transition-duration:
-            .01ms !important;
+        transition-duration: 0.01ms !important;
     }
 }
-
 </style>

@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import type { ConsoleNavItem, ConsoleNotice } from '@/types/console';
+import type {
+    ConsoleAccount,
+    ConsoleNavItem,
+    ConsoleNotice,
+} from '@/types/console';
 import ConsoleSidebar from './ConsoleSidebar.vue';
 
 defineProps<{
     space?: string | null;
     nav: ConsoleNavItem[];
     notices?: ConsoleNotice[];
+    account?: ConsoleAccount | null;
     /**
      * Give the page the whole phone screen: navigation and notices step aside
      * below lg. The declaration is designed as a focused flow — burying its
@@ -25,6 +30,7 @@ defineProps<{
             :space="space ?? null"
             :nav="nav"
             :notices="notices ?? []"
+            :account="account ?? null"
             :class="focus ? 'hidden lg:flex' : ''"
         />
 
@@ -64,7 +70,6 @@ defineProps<{
     color: #243333;
 }
 
-
 /* =============================================================
    CONTENU
 ============================================================= */
@@ -76,22 +81,17 @@ defineProps<{
     min-width: 0;
     flex: 1;
 
-    padding:
-        20px
-        16px
-        28px;
+    padding: 20px 16px 28px;
 
     /*
      * Petit effet de profondeur très subtil.
      */
-    background:
-        radial-gradient(
-            circle at 100% 0%,
-            rgba(0, 143, 131, 0.025),
-            transparent 24%
-        );
+    background: radial-gradient(
+        circle at 100% 0%,
+        rgba(0, 143, 131, 0.025),
+        transparent 24%
+    );
 }
-
 
 /* =============================================================
    TABLETTE
@@ -99,13 +99,9 @@ defineProps<{
 
 @media (min-width: 640px) {
     .app-content {
-        padding:
-            24px
-            26px
-            32px;
+        padding: 24px 26px 32px;
     }
 }
-
 
 /* =============================================================
    DESKTOP
@@ -113,13 +109,9 @@ defineProps<{
 
 @media (min-width: 1024px) {
     .app-content {
-        padding:
-            26px
-            30px
-            38px;
+        padding: 26px 30px 38px;
     }
 }
-
 
 /* =============================================================
    GRAND ÉCRAN
@@ -127,13 +119,9 @@ defineProps<{
 
 @media (min-width: 1280px) {
     .app-content {
-        padding:
-            28px
-            36px
-            42px;
+        padding: 28px 36px 42px;
     }
 }
-
 
 /* =============================================================
    PETITS ÉCRANS
@@ -145,13 +133,9 @@ defineProps<{
     }
 
     .app-content {
-        padding:
-            16px
-            14px
-            28px;
+        padding: 16px 14px 28px;
     }
 }
-
 
 /* =============================================================
    ACCESSIBILITÉ

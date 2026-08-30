@@ -16,14 +16,23 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $name
  * @property bool $is_active
+ * @property int $standard_delay_days
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'is_active'])]
+#[Fillable(['name', 'is_active', 'standard_delay_days'])]
 class Insurer extends Model
 {
     /** @use HasFactory<InsurerFactory> */
     use HasFactory;
+
+    /**
+     * The payment delay an insurer starts with, in days.
+     *
+     * Matches the column default: an insurer created through the officine's
+     * free-text entry has no delay agreed yet, and this is what the CDC sets.
+     */
+    public const DEFAULT_STANDARD_DELAY_DAYS = 30;
 
     /**
      * Get the attributes that should be cast.
@@ -34,6 +43,7 @@ class Insurer extends Model
     {
         return [
             'is_active' => 'boolean',
+            'standard_delay_days' => 'integer',
         ];
     }
 

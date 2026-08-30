@@ -2,6 +2,8 @@
 import { Deferred, Head } from '@inertiajs/vue3';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
 import InvoicedVsCollectedChart from '@/components/aphaspb/charts/InvoicedVsCollectedChart.vue';
+import DataTable from '@/components/aphaspb/DataTable.vue';
+import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
 import PrimaryAction from '@/components/aphaspb/PrimaryAction.vue';
@@ -10,6 +12,15 @@ import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 import { formatMillions } from '@/lib/millions';
 import type { DashboardInvitation } from '@/types';
 import type { KpiTone } from '@/types/aphaspb';
+
+type RecoveryRow = {
+    insurerId: number;
+    insurerName: string;
+    invoiced: number;
+    received: number;
+    outstanding: number;
+    recoveryRate: number | null;
+};
 
 type JourneyPoint = {
     key: string;
@@ -34,6 +45,7 @@ const props = defineProps<{
     };
     ageing: { label: string; amount: number }[];
     owed: { insurerName: string; outstanding: number }[];
+    recovery: RecoveryRow[];
     declareUrl: string;
     journey?: JourneyPoint[];
     pendingInvitations?: DashboardInvitation[];
@@ -55,6 +67,15 @@ const delayTone = (days: number | null): KpiTone => {
     return days <= 30 ? 'good' : days <= 60 ? 'warn' : 'bad';
 };
 
+const RECOVERY_TEMPLATE = '1.9fr 1fr 1fr 1fr .9fr';
+const RECOVERY_COLUMNS = [
+    'ASSUREUR',
+    'FACTURÉ',
+    'ENCAISSÉ',
+    'RESTE DÛ',
+    'TAUX',
+];
+
 const eyebrow = [props.pharmacyName, props.city]
     .filter(Boolean)
     .join(' · ')
@@ -63,20 +84,15 @@ const eyebrow = [props.pharmacyName, props.city]
 const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 </script>
 
-
-
 <template>
     <Head title="Tableau de bord" />
 
-  
     <PendingInvitationsModal
         v-if="pendingInvitations && pendingInvitations.length > 0"
         :invitations="pendingInvitations"
     />
 
     <div class="dashboard-page">
-
-      
         <ConsoleHeader
             :eyebrow="eyebrow"
             title="Parcours des paiements"
@@ -90,49 +106,33 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </template>
         </ConsoleHeader>
 
-
         <section class="dashboard-intro">
-
             <div class="intro-left">
-
                 <div class="intro-icon">
                     <span class="intro-pulse"></span>
                     <span class="intro-symbol">↗</span>
                 </div>
 
                 <div class="intro-text">
-                    <span class="intro-label">
-                        VUE D'ENSEMBLE
-                    </span>
+                    <span class="intro-label"> VUE D'ENSEMBLE </span>
 
-                    <h1>
-                        Suivez vos paiements
-                    </h1>
+                    <h1>Suivez vos paiements</h1>
 
                     <p>
-                        Une vision claire des montants facturés,
-                        encaissés et restant dus sur votre réseau.
+                        Une vision claire des montants facturés, encaissés et
+                        restant dus sur votre réseau.
                     </p>
                 </div>
-
             </div>
 
             <div class="intro-status">
                 <span class="status-dot"></span>
-                <span>
-                    Données actualisées
-                </span>
+                <span> Données actualisées </span>
             </div>
-
         </section>
 
-        <KpiRow
-            :columns="3"
-            class="dashboard-kpis"
-        >
-
+        <KpiRow :columns="3" class="dashboard-kpis">
             <div class="dashboard-kpi-wrapper">
-
                 <div class="kpi-side-accent"></div>
 
                 <KpiCard
@@ -145,17 +145,16 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 <div class="kpi-icon">
                     <span>₣</span>
                 </div>
-
             </div>
 
-
             <div class="dashboard-kpi-wrapper">
-
                 <div class="kpi-side-accent teal"></div>
 
                 <KpiCard
                     label="TAUX DE RECOUVREMENT"
-                    :value="summary.recoveryRate?.toLocaleString('fr-FR') ?? '—'"
+                    :value="
+                        summary.recoveryRate?.toLocaleString('fr-FR') ?? '—'
+                    "
                     unit="%"
                     :tone="recoveryTone(summary.recoveryRate)"
                     :hint="`${formatMillions(summary.received)} FCFA encaissés`"
@@ -164,17 +163,17 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 <div class="kpi-icon teal">
                     <span>✓</span>
                 </div>
-
             </div>
 
-
             <div class="dashboard-kpi-wrapper">
-
                 <div class="kpi-side-accent gold"></div>
 
                 <KpiCard
                     label="VOTRE DÉLAI MOYEN"
-                    :value="summary.weightedDelayDays?.toLocaleString('fr-FR') ?? '—'"
+                    :value="
+                        summary.weightedDelayDays?.toLocaleString('fr-FR') ??
+                        '—'
+                    "
                     unit="jours"
                     :tone="delayTone(summary.weightedDelayDays)"
                     hint="pondéré par les montants reçus"
@@ -183,165 +182,113 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 <div class="kpi-icon gold">
                     <span>◷</span>
                 </div>
-
             </div>
-
         </KpiRow>
 
-
         <section class="dashboard-card journey-card">
-
             <div class="card-top-line"></div>
 
             <div class="card-header">
-
                 <div class="card-title-group">
-
                     <div class="card-icon teal">
                         <span>⌁</span>
                     </div>
 
                     <div>
-                        <h2>
-                            Parcours des paiements
-                        </h2>
+                        <h2>Parcours des paiements</h2>
 
                         <p>
-                            Facturé et encaissé, en millions de FCFA,
-                            sur les 12 derniers mois.
+                            Facturé et encaissé, en millions de FCFA, sur les 12
+                            derniers mois.
                         </p>
                     </div>
-
                 </div>
 
                 <div class="card-badge">
                     <span class="badge-dot"></span>
                     12 mois
                 </div>
-
             </div>
 
-
             <Deferred data="journey">
-
                 <template #fallback>
-                    <ChartSkeleton
-                        class="mt-5"
-                        :height="200"
-                    />
+                    <ChartSkeleton class="mt-5" :height="200" />
                 </template>
 
-                <div
-                    v-if="journey"
-                    class="chart-wrapper"
-                >
-                    <InvoicedVsCollectedChart
-                        :points="journey"
-                    />
+                <div v-if="journey" class="chart-wrapper">
+                    <InvoicedVsCollectedChart :points="journey" />
                 </div>
-
             </Deferred>
-
         </section>
 
-
         <div class="analysis-grid">
-
-
             <section class="dashboard-card analysis-card">
-
                 <div class="card-header">
-
                     <div class="card-title-group">
-
                         <div class="card-icon gold">
                             <span>◷</span>
                         </div>
 
                         <div>
-                            <h2>
-                                Encours par ancienneté
-                            </h2>
+                            <h2>Encours par ancienneté</h2>
 
                             <p>
-                                Ancienneté comptée depuis la fin
-                                du mois déclaré.
+                                Ancienneté comptée depuis la fin du mois
+                                déclaré.
                             </p>
                         </div>
-
                     </div>
-
                 </div>
 
-
                 <div class="ageing-list">
-
                     <div
                         v-for="band in ageing"
                         :key="band.label"
                         class="ageing-row"
                     >
-
                         <div class="ageing-label">
                             {{ band.label }}
                         </div>
 
                         <div class="ageing-progress">
-
                             <span
                                 class="ageing-progress-fill"
                                 :style="{
                                     width: `${ageingTotal === 0 ? 0 : (band.amount / ageingTotal) * 100}%`,
                                 }"
                             ></span>
-
                         </div>
 
                         <div class="ageing-value">
                             {{ formatMillions(band.amount) }}
                         </div>
-
                     </div>
-
                 </div>
-
             </section>
 
-
             <section class="dashboard-card analysis-card">
-
                 <div class="card-header">
-
                     <div class="card-title-group">
-
                         <div class="card-icon terracotta">
                             <span>F</span>
                         </div>
 
                         <div>
-                            <h2>
-                                Qui vous doit le plus
-                            </h2>
+                            <h2>Qui vous doit le plus</h2>
 
                             <p>
-                                Reste dû par assureur,
-                                sur les 12 derniers mois.
+                                Reste dû par assureur, sur les 12 derniers mois.
                             </p>
                         </div>
-
                     </div>
-
                 </div>
 
-
                 <div class="owed-list">
-
                     <div
                         v-for="(entry, index) in owed"
                         :key="entry.insurerName"
                         class="owed-row"
                     >
-
                         <div class="owed-rank">
                             {{ String(index + 1).padStart(2, '0') }}
                         </div>
@@ -350,53 +297,77 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                             {{ entry.insurerName }}
                         </div>
 
-                        <div
-                            v-if="entry.outstanding === 0"
-                            class="owed-status"
-                        >
-                            <span class="status-check">
-                                ✓
-                            </span>
+                        <div v-if="entry.outstanding === 0" class="owed-status">
+                            <span class="status-check"> ✓ </span>
 
                             À JOUR
                         </div>
 
-                        <div
-                            v-else
-                            class="owed-amount"
-                        >
+                        <div v-else class="owed-amount">
                             {{ formatMillions(entry.outstanding) }}
                         </div>
-
                     </div>
-
                 </div>
-
             </section>
-
         </div>
 
-
         <div class="dashboard-footnote">
-
-            <div class="footnote-icon">
-                i
-            </div>
+            <div class="footnote-icon">i</div>
 
             <p>
                 Les indicateurs sont calculés à partir des déclarations
                 transmises par les officines participantes.
             </p>
-
         </div>
-
     </div>
+
+    <DataTable
+        title="Recouvrement par assureur"
+        :columns="RECOVERY_COLUMNS"
+        :template="RECOVERY_TEMPLATE"
+        footer="Sur les 12 derniers mois. Un assureur coché sans déclaration reste listé, sans taux."
+    >
+        <DataTableRow
+            v-for="row in recovery"
+            :key="row.insurerId"
+            :template="RECOVERY_TEMPLATE"
+        >
+            <div>{{ row.insurerName }}</div>
+            <div>{{ formatMillions(row.invoiced) }}</div>
+            <div>{{ formatMillions(row.received) }}</div>
+            <div
+                :class="
+                    row.outstanding === 0
+                        ? 'text-officine'
+                        : 'text-terracotta-dark'
+                "
+            >
+                {{
+                    row.outstanding === 0
+                        ? 'À JOUR'
+                        : formatMillions(row.outstanding)
+                }}
+            </div>
+            <div
+                :class="
+                    row.recoveryRate === null
+                        ? 'text-ink/40'
+                        : row.recoveryRate < 60
+                          ? 'text-terracotta-dark'
+                          : 'text-officine'
+                "
+            >
+                {{
+                    row.recoveryRate === null
+                        ? '—'
+                        : `${row.recoveryRate.toLocaleString('fr-FR')} %`
+                }}
+            </div>
+        </DataTableRow>
+    </DataTable>
 </template>
 
-
 <style>
-
-
 .dashboard-page {
     --primary: #008f83;
     --primary-dark: #006f68;
@@ -431,14 +402,10 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         var(--background); */
 }
 
-
-
 .dashboard-header {
     position: relative;
     z-index: 5;
 }
-
-
 
 .dashboard-intro {
     position: relative;
@@ -449,17 +416,13 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     gap: 20px;
 
-    margin:
-        12px 0 22px;
+    margin: 12px 0 22px;
 
-    padding:
-        20px 22px;
+    padding: 20px 22px;
 
-    border:
-        1px solid var(--border);
+    border: 1px solid var(--border);
 
-    border-radius:
-        17px;
+    border-radius: 17px;
 
     /* background:
         linear-gradient(
@@ -473,15 +436,13 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     overflow: hidden;
 
-    animation:
-        dashboardFade .55s ease both;
+    animation: dashboardFade 0.55s ease both;
 }
-
 
 /* Halo décoratif */
 
 .dashboard-intro::after {
-    content: "";
+    content: '';
 
     position: absolute;
 
@@ -493,17 +454,14 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 50%;
 
-    background:
-        radial-gradient(
-            circle,
-            rgba(0, 143, 131, .09),
-            transparent 68%
-        );
+    background: radial-gradient(
+        circle,
+        rgba(0, 143, 131, 0.09),
+        transparent 68%
+    );
 
     pointer-events: none;
 }
-
-
 
 .intro-left {
     display: flex;
@@ -514,7 +472,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     position: relative;
     z-index: 1;
 }
-
 
 .intro-icon {
     position: relative;
@@ -532,20 +489,13 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: #ffffff;
 
-    background:
-        linear-gradient(
-            135deg,
-            var(--primary),
-            var(--primary-dark)
-        );
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
 
     /* box-shadow:
         0 9px 20px rgba(0, 143, 131, .18); */
 
-    animation:
-        iconFloat 3s ease-in-out infinite;
+    animation: iconFloat 3s ease-in-out infinite;
 }
-
 
 .intro-symbol {
     position: relative;
@@ -555,23 +505,17 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-weight: 800;
 }
 
-
 .intro-pulse {
     position: absolute;
 
     inset: 8px;
 
-    border:
-        1px solid rgba(255,255,255,.28);
+    border: 1px solid rgba(255, 255, 255, 0.28);
 
     border-radius: 10px;
 
-    animation:
-        pulseIcon 2.5s infinite;
+    animation: pulseIcon 2.5s infinite;
 }
-
-
-
 
 .intro-label {
     display: block;
@@ -581,11 +525,10 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-size: 9px;
     font-weight: 800;
 
-    letter-spacing: .13em;
+    letter-spacing: 0.13em;
 
     color: var(--primary);
 }
-
 
 .intro-text h1 {
     margin: 0;
@@ -593,11 +536,10 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-size: 19px;
     font-weight: 750;
 
-    letter-spacing: -.025em;
+    letter-spacing: -0.025em;
 
     color: var(--ink);
 }
-
 
 .intro-text p {
     margin-top: 4px;
@@ -609,8 +551,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     color: var(--muted);
 }
 
-
-
 .intro-status {
     position: relative;
     z-index: 2;
@@ -620,23 +560,19 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     gap: 7px;
 
-    padding:
-        8px 11px;
+    padding: 8px 11px;
 
     border-radius: 30px;
 
-    background:
-        var(--primary-soft);
+    background: var(--primary-soft);
 
-    color:
-        var(--primary-dark);
+    color: var(--primary-dark);
 
     font-size: 9.5px;
     font-weight: 700;
 
     white-space: nowrap;
 }
-
 
 .status-dot,
 .badge-dot {
@@ -649,19 +585,14 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     background: var(--primary);
 
-    box-shadow:
-        0 0 0 4px rgba(0, 143, 131, .08);
+    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
 
-    animation:
-        statusPulse 2.2s infinite;
+    animation: statusPulse 2.2s infinite;
 }
-
-
 
 .dashboard-kpis {
     margin-bottom: 22px;
 }
-
 
 .dashboard-kpi-wrapper {
     position: relative;
@@ -670,34 +601,26 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 16px;
 
-    animation:
-        cardAppear .55s ease both;
+    animation: cardAppear 0.55s ease both;
 
     transition:
-        transform .3s ease,
-        box-shadow .3s ease;
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
 }
-
 
 .dashboard-kpi-wrapper:nth-child(2) {
-    animation-delay: .08s;
+    animation-delay: 0.08s;
 }
-
 
 .dashboard-kpi-wrapper:nth-child(3) {
-    animation-delay: .16s;
+    animation-delay: 0.16s;
 }
-
 
 .dashboard-kpi-wrapper:hover {
-    transform:
-        translateY(-4px);
+    transform: translateY(-4px);
 
-    box-shadow:
-        0 14px 30px
-        rgba(35, 70, 68, .07);
+    box-shadow: 0 14px 30px rgba(35, 70, 68, 0.07);
 }
-
 
 .kpi-side-accent {
     position: absolute;
@@ -710,26 +633,18 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     width: 3px;
 
-    border-radius:
-        0 5px 5px 0;
+    border-radius: 0 5px 5px 0;
 
-    background:
-        var(--primary);
+    background: var(--primary);
 }
-
 
 .kpi-side-accent.teal {
-    background:
-        var(--primary);
+    background: var(--primary);
 }
-
 
 .kpi-side-accent.gold {
-    background:
-        var(--gold);
+    background: var(--gold);
 }
-
-
 
 .kpi-icon {
     position: absolute;
@@ -746,73 +661,50 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 11px;
 
-    background:
-        var(--primary-soft);
+    background: var(--primary-soft);
 
-    color:
-        var(--primary);
+    color: var(--primary);
 
     pointer-events: none;
 
-    transition:
-        transform .3s ease;
+    transition: transform 0.3s ease;
 }
-
 
 .kpi-icon.teal {
-    background:
-        var(--primary-soft);
+    background: var(--primary-soft);
 
-    color:
-        var(--primary);
+    color: var(--primary);
 }
-
 
 .kpi-icon.gold {
-    background:
-        var(--gold-soft);
+    background: var(--gold-soft);
 
-    color:
-        var(--gold);
+    color: var(--gold);
 }
-
 
 .dashboard-kpi-wrapper:hover .kpi-icon {
-    transform:
-        rotate(8deg)
-        scale(1.08);
+    transform: rotate(8deg) scale(1.08);
 }
-
-
 
 .dashboard-card {
     position: relative;
 
     background: #ffffff;
 
-    border:
-        1px solid var(--border);
+    border: 1px solid var(--border);
 
     border-radius: 17px;
 
-    box-shadow:
-        0 8px 30px
-        rgba(35, 70, 68, .035);
+    box-shadow: 0 8px 30px rgba(35, 70, 68, 0.035);
 
     overflow: hidden;
 
-    animation:
-        cardAppear .6s ease both;
+    animation: cardAppear 0.6s ease both;
 }
-
 
 .dashboard-card:hover {
-    box-shadow:
-        0 12px 32px
-        rgba(35, 70, 68, .055);
+    box-shadow: 0 12px 32px rgba(35, 70, 68, 0.055);
 }
-
-
 
 .card-top-line {
     position: absolute;
@@ -823,18 +715,10 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     width: 100%;
     height: 3px;
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--primary),
-            #35a799,
-            var(--gold)
-        );
+    background: linear-gradient(90deg, var(--primary), #35a799, var(--gold));
 
-    opacity: .9;
+    opacity: 0.9;
 }
-
-
 
 .card-header {
     display: flex;
@@ -843,10 +727,8 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     gap: 15px;
 
-    padding:
-        18px 19px 0;
+    padding: 18px 19px 0;
 }
-
 
 .card-title-group {
     display: flex;
@@ -854,7 +736,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     gap: 12px;
 }
-
 
 .card-icon {
     width: 38px;
@@ -872,24 +753,20 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-weight: 800;
 }
 
-
 .card-icon.teal {
     background: var(--primary-soft);
     color: var(--primary);
 }
-
 
 .card-icon.gold {
     background: var(--gold-soft);
     color: var(--gold);
 }
 
-
 .card-icon.terracotta {
     background: var(--terracotta-soft);
     color: var(--terracotta);
 }
-
 
 .card-header h2 {
     margin: 0;
@@ -899,7 +776,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: var(--ink);
 }
-
 
 .card-header p {
     margin-top: 3px;
@@ -911,20 +787,15 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     color: var(--muted);
 }
 
-
-
-
 .card-badge {
     display: flex;
     align-items: center;
 
     gap: 6px;
 
-    padding:
-        6px 9px;
+    padding: 6px 9px;
 
-    border:
-        1px solid var(--border);
+    border: 1px solid var(--border);
 
     border-radius: 20px;
 
@@ -936,42 +807,29 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     white-space: nowrap;
 }
 
-
-
 .journey-card {
     margin-bottom: 12px;
 }
 
-
 .chart-wrapper {
     margin-top: 17px;
 
-    padding:
-        0 17px 17px;
+    padding: 0 17px 17px;
 }
-
-
-
 
 .analysis-grid {
     display: grid;
 
-    grid-template-columns:
-        repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 
     gap: 12px;
 }
-
-
 
 .analysis-card {
     min-width: 0;
 
     padding-bottom: 16px;
 }
-
-
-
 
 .ageing-list {
     display: flex;
@@ -982,36 +840,28 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     margin-top: 18px;
 
-    padding:
-        0 18px;
+    padding: 0 18px;
 }
-
 
 .ageing-row {
     display: grid;
 
-    grid-template-columns:
-        62px minmax(0, 1fr) 78px;
+    grid-template-columns: 62px minmax(0, 1fr) 78px;
 
     align-items: center;
 
     gap: 10px;
 }
 
-
 .ageing-label {
-    font-family:
-        "JetBrains Mono",
-        monospace;
+    font-family: 'JetBrains Mono', monospace;
 
     font-size: 9.5px;
 
     font-weight: 600;
 
-    color:
-        var(--muted);
+    color: var(--muted);
 }
-
 
 .ageing-progress {
     position: relative;
@@ -1022,10 +872,8 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 20px;
 
-    background:
-        rgba(23, 33, 28, .07);
+    background: rgba(23, 33, 28, 0.07);
 }
-
 
 .ageing-progress-fill {
     display: block;
@@ -1036,30 +884,20 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: inherit;
 
-    background:
-        linear-gradient(
-            90deg,
-            #d7a33d,
-            #e6bf63
-        );
+    background: linear-gradient(90deg, #d7a33d, #e6bf63);
 
     transform-origin: left center;
 
-    animation:
-        progressAppear .9s ease both;
+    animation: progressAppear 0.9s ease both;
 
-    transition:
-        width .7s cubic-bezier(.2,.8,.2,1);
+    transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-
 
 .ageing-row:hover .ageing-progress-fill {
-    filter: brightness(.96);
+    filter: brightness(0.96);
 
-    transform:
-        scaleY(1.35);
+    transform: scaleY(1.35);
 }
-
 
 .ageing-value {
     text-align: right;
@@ -1067,10 +905,8 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-size: 10.5px;
     font-weight: 750;
 
-    color:
-        var(--ink);
+    color: var(--ink);
 }
-
 
 .owed-list {
     display: flex;
@@ -1079,10 +915,8 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     margin-top: 15px;
 
-    padding:
-        0 18px;
+    padding: 0 18px;
 }
-
 
 .owed-row {
     display: flex;
@@ -1093,41 +927,33 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     min-height: 42px;
 
-    border-bottom:
-        1px solid rgba(23, 33, 28, .055);
+    border-bottom: 1px solid rgba(23, 33, 28, 0.055);
 
     transition:
-        padding .2s ease,
-        background .2s ease;
+        padding 0.2s ease,
+        background 0.2s ease;
 }
-
 
 .owed-row:last-child {
     border-bottom: 0;
 }
 
-
 .owed-row:hover {
     padding-left: 5px;
 }
-
 
 .owed-rank {
     width: 24px;
 
     flex-shrink: 0;
 
-    font-family:
-        "JetBrains Mono",
-        monospace;
+    font-family: 'JetBrains Mono', monospace;
 
     font-size: 8.5px;
     font-weight: 700;
 
-    color:
-        var(--light);
+    color: var(--light);
 }
-
 
 .owed-name {
     min-width: 0;
@@ -1143,29 +969,23 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-size: 10.5px;
     font-weight: 650;
 
-    color:
-        var(--ink);
+    color: var(--ink);
 }
-
 
 .owed-amount {
     flex-shrink: 0;
 
-    padding:
-        5px 8px;
+    padding: 5px 8px;
 
     border-radius: 7px;
 
-    background:
-        var(--terracotta-soft);
+    background: var(--terracotta-soft);
 
-    color:
-        var(--terracotta);
+    color: var(--terracotta);
 
     font-size: 9.5px;
     font-weight: 750;
 }
-
 
 .owed-status {
     display: flex;
@@ -1176,13 +996,11 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     flex-shrink: 0;
 
-    color:
-        var(--primary);
+    color: var(--primary);
 
     font-size: 8.5px;
     font-weight: 800;
 }
-
 
 .status-check {
     width: 17px;
@@ -1194,17 +1012,12 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 50%;
 
-    background:
-        var(--primary-soft);
+    background: var(--primary-soft);
 
-    color:
-        var(--primary);
+    color: var(--primary);
 
     font-size: 9px;
 }
-
-
-
 
 .dashboard-footnote {
     display: flex;
@@ -1215,18 +1028,14 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     margin-top: 13px;
 
-    padding:
-        11px 14px;
+    padding: 11px 14px;
 
-    border:
-        1px solid rgba(0, 143, 131, .07);
+    border: 1px solid rgba(0, 143, 131, 0.07);
 
     border-radius: 12px;
 
-    background:
-        rgba(0, 143, 131, .035);
+    background: rgba(0, 143, 131, 0.035);
 }
-
 
 .footnote-icon {
     width: 18px;
@@ -1240,16 +1049,13 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 50%;
 
-    background:
-        var(--primary);
+    background: var(--primary);
 
-    color:
-        #ffffff;
+    color: #ffffff;
 
     font-size: 9px;
     font-weight: 800;
 }
-
 
 .dashboard-footnote p {
     margin: 0;
@@ -1258,11 +1064,8 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     line-height: 1.5;
 
-    color:
-        var(--muted);
+    color: var(--muted);
 }
-
-
 
 @keyframes dashboardFade {
     from {
@@ -1276,7 +1079,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 }
 
-
 @keyframes cardAppear {
     from {
         opacity: 0;
@@ -1289,7 +1091,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 }
 
-
 @keyframes iconFloat {
     0%,
     100% {
@@ -1301,42 +1102,36 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 }
 
-
 @keyframes pulseIcon {
     0% {
-        opacity: .3;
-        transform: scale(.92);
+        opacity: 0.3;
+        transform: scale(0.92);
     }
 
     50% {
-        opacity: .8;
+        opacity: 0.8;
         transform: scale(1);
     }
 
     100% {
-        opacity: .3;
-        transform: scale(.92);
+        opacity: 0.3;
+        transform: scale(0.92);
     }
 }
-
 
 @keyframes statusPulse {
     0% {
-        box-shadow:
-            0 0 0 0 rgba(0, 143, 131, .25);
+        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0.25);
     }
 
     70% {
-        box-shadow:
-            0 0 0 5px rgba(0, 143, 131, 0);
+        box-shadow: 0 0 0 5px rgba(0, 143, 131, 0);
     }
 
     100% {
-        box-shadow:
-            0 0 0 0 rgba(0, 143, 131, 0);
+        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0);
     }
 }
-
 
 @keyframes progressAppear {
     from {
@@ -1350,10 +1145,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 }
 
-
-
 @media (max-width: 900px) {
-
     .dashboard-intro {
         align-items: flex-start;
 
@@ -1365,14 +1157,11 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 
     .analysis-grid {
-        grid-template-columns:
-            1fr;
+        grid-template-columns: 1fr;
     }
 }
 
-
 @media (max-width: 640px) {
-
     .dashboard-page {
         padding-bottom: 70px;
     }
@@ -1380,11 +1169,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     .dashboard-intro {
         margin-top: 7px;
 
-        padding:
-            16px;
+        padding: 16px;
 
-        border-radius:
-            14px;
+        border-radius: 14px;
     }
 
     .intro-left {
@@ -1419,8 +1206,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     .card-header {
         align-items: flex-start;
 
-        padding:
-            16px 15px 0;
+        padding: 16px 15px 0;
     }
 
     .card-title-group {
@@ -1447,19 +1233,16 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 
     .chart-wrapper {
-        padding:
-            0 11px 12px;
+        padding: 0 11px 12px;
     }
 
     .ageing-list,
     .owed-list {
-        padding:
-            0 14px;
+        padding: 0 14px;
     }
 
     .ageing-row {
-        grid-template-columns:
-            55px minmax(0, 1fr) 68px;
+        grid-template-columns: 55px minmax(0, 1fr) 68px;
 
         gap: 7px;
     }
@@ -1485,17 +1268,13 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 
     .dashboard-footnote {
-        padding:
-            10px 12px;
+        padding: 10px 12px;
     }
 }
 
-
 @media (max-width: 400px) {
-
     .dashboard-intro {
-        padding:
-            14px;
+        padding: 14px;
     }
 
     .intro-text h1 {
@@ -1507,8 +1286,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 
     .ageing-row {
-        grid-template-columns:
-            50px minmax(0, 1fr) 60px;
+        grid-template-columns: 50px minmax(0, 1fr) 60px;
     }
 
     .owed-rank {
@@ -1520,17 +1298,14 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 }
 
-
 @media (prefers-reduced-motion: reduce) {
-
     .dashboard-page *,
     .dashboard-page *::before,
     .dashboard-page *::after {
-        animation-duration: .01ms !important;
+        animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
-        transition-duration: .01ms !important;
+        transition-duration: 0.01ms !important;
     }
 }
-
 </style>
 ```

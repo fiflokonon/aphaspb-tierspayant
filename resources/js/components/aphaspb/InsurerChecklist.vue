@@ -1,22 +1,27 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-type Insurer = { id: number; name: string };
+type Insurer = {
+    id: number;
+    name: string;
+    /** Absent at onboarding, where only active insurers are ever offered. */
+    isActive?: boolean;
+    /** How many declarations this officine already filed with this insurer. */
+    declarations?: number;
+};
 
-const props = withDefaults(
-    defineProps<{
-        insurers: Insurer[];
-        /** Insurers whose monthly slot would be lost, but not their history. */
-        withDeclarations?: number[];
-    }>(),
-    { withDeclarations: () => [] },
-);
+/** Past a short list, scanning beats searching; below it the field is noise. */
+const SEARCHABLE_FROM = 12;
+
+const props = defineProps<{ insurers: Insurer[] }>();
 
 const selected = defineModel<number[]>('selected', { default: () => [] });
 const other = defineModel<string>('other', { default: '' });
 
 const search = ref('');
 const otherOpen = ref(false);
+
+const searchable = computed(() => props.insurers.length > SEARCHABLE_FROM);
 
 /**
  * Filtered in the browser: the list of Beninese insurers and brokers fits in
@@ -36,6 +41,40 @@ const visible = computed(() => {
 
 const isTicked = (id: number) => selected.value.includes(id);
 
+/**
+ * Two groups once anything is ticked, one anonymous group otherwise.
+ *
+ * That single rule is what lets the onboarding step reuse this component
+ * untouched: nothing is ticked there, so no heading appears and the screen
+ * stays the plain list it has always been.
+ */
+const groups = computed(() => {
+    const ticked = visible.value.filter((insurer) => isTicked(insurer.id));
+
+    if (selected.value.length === 0) {
+        return [{ key: 'all', label: null, rows: visible.value }];
+    }
+
+    return [
+        {
+            key: 'ticked',
+            label: `VOS ASSUREURS · ${selected.value.length}`,
+            rows: ticked,
+        },
+        {
+            key: 'rest',
+            label: 'EN AJOUTER',
+            rows: visible.value.filter((insurer) => !isTicked(insurer.id)),
+        },
+    ];
+});
+
+const declarationsLabel = (insurer: Insurer): string | null => {
+    const count = insurer.declarations ?? 0;
+
+    return count === 0 ? null : `${count} déclaration${count > 1 ? 's' : ''}`;
+};
+
 function toggle(id: number) {
     selected.value = isTicked(id)
         ? selected.value.filter((current) => current !== id)
@@ -53,6 +92,7 @@ function toggle(id: number) {
             -->
             <slot name="heading" />
             <input
+                v-if="searchable"
                 v-model="search"
                 type="search"
                 placeholder="Rechercher un assureur…"
@@ -61,73 +101,87 @@ function toggle(id: number) {
         </div>
 
         <div class="flex flex-col border-t border-ink/[0.08]">
-            <button
-                v-for="insurer in visible"
-                :key="insurer.id"
-                type="button"
-                class="flex min-h-[44px] items-center gap-3 px-5 py-[13px] text-left transition-colors"
-                :class="
-                    isTicked(insurer.id)
-                        ? 'bg-officine/[0.06]'
-                        : 'hover:bg-ink/[0.02]'
-                "
-                @click="toggle(insurer.id)"
-            >
-                <span
-                    class="grid size-[22px] shrink-0 place-items-center rounded-md text-[12px] font-bold"
+            <template v-for="(group, index) in groups" :key="group.key">
+                <div
+                    v-if="group.label"
+                    class="bg-cream-header px-5 py-[7px] font-mono text-[10px] font-semibold tracking-[0.04em] text-ink/50"
+                    :class="index > 0 ? 'border-t border-ink/[0.08]' : ''"
+                >
+                    {{ group.label }}
+                </div>
+
+                <button
+                    v-for="insurer in group.rows"
+                    :key="insurer.id"
+                    type="button"
+                    class="flex min-h-[44px] items-center gap-3 px-5 py-[13px] text-left transition-colors"
                     :class="
                         isTicked(insurer.id)
-                            ? 'bg-officine text-white'
-                            : 'border-[1.5px] border-ink/20'
+                            ? 'bg-officine/[0.06]'
+                            : 'hover:bg-ink/[0.02]'
                     "
-                >
-                    <template v-if="isTicked(insurer.id)">✓</template>
-                </span>
-                <span class="min-w-0 flex-1">
-                    <span
-                        class="text-[13.5px]"
-                        :class="
-                            isTicked(insurer.id)
-                                ? 'font-semibold text-ink'
-                                : 'font-medium text-ink/75'
-                        "
-                    >
-                        {{ insurer.name }}
-                    </span>
-                    <span
-                        v-if="
-                            props.withDeclarations.includes(insurer.id) &&
-                            !isTicked(insurer.id)
-                        "
-                        class="mt-[3px] block text-[11px]/[1.35] text-ink/50"
-                    >
-                        Vos déclarations passées sont conservées. Cet assureur
-                        ne vous sera simplement plus proposé chaque mois.
-                    </span>
-                </span>
-            </button>
-
-            <div class="border-t border-dashed border-ink/[0.14]">
-                <button
-                    type="button"
-                    class="flex min-h-[44px] w-full items-center gap-3 px-5 py-[13px] text-left"
-                    @click="otherOpen = !otherOpen"
+                    @click="toggle(insurer.id)"
                 >
                     <span
                         class="grid size-[22px] shrink-0 place-items-center rounded-md text-[12px] font-bold"
                         :class="
-                            other.trim()
+                            isTicked(insurer.id)
                                 ? 'bg-officine text-white'
                                 : 'border-[1.5px] border-ink/20'
                         "
                     >
-                        <template v-if="other.trim()">✓</template>
+                        <template v-if="isTicked(insurer.id)">✓</template>
                     </span>
-                    <span class="text-[13.5px] font-medium text-ink/75">
-                        Autre…
+                    <span class="min-w-0 flex-1">
+                        <span
+                            class="text-[13.5px]"
+                            :class="
+                                isTicked(insurer.id)
+                                    ? 'font-semibold text-ink'
+                                    : 'font-medium text-ink/75'
+                            "
+                        >
+                            {{ insurer.name }}
+                        </span>
+                        <span
+                            v-if="insurer.isActive === false"
+                            class="mt-[3px] block text-[11px]/[1.35] text-ink/50"
+                        >
+                            Plus proposé par l'APhaSPB. Vous pouvez continuer à
+                            déclarer, ou le retirer.
+                        </span>
+                    </span>
+                    <span
+                        v-if="declarationsLabel(insurer)"
+                        class="shrink-0 font-mono text-[10.5px] text-ink/[0.45]"
+                    >
+                        {{ declarationsLabel(insurer) }}
                     </span>
                 </button>
-                <div v-if="otherOpen" class="px-5 pb-[14px]">
+            </template>
+
+            <p
+                v-if="visible.length === 0"
+                class="px-5 py-6 text-center text-[12px] text-ink/[0.45]"
+            >
+                Aucun assureur ne correspond à « {{ search.trim() }} ».
+            </p>
+
+            <div class="border-t border-dashed border-ink/[0.14]">
+                <!--
+                    An action, not a checkbox. The old row wore a tick whose
+                    state came from whether text had been typed, and clicking it
+                    opened a field instead of selecting anything.
+                -->
+                <button
+                    v-if="!otherOpen"
+                    type="button"
+                    class="flex min-h-[44px] w-full items-center px-5 py-[13px] text-left text-[12.5px] font-semibold text-officine transition-colors hover:bg-ink/[0.02]"
+                    @click="otherOpen = true"
+                >
+                    + Un assureur qui n'est pas dans la liste
+                </button>
+                <div v-else class="px-5 py-[14px]">
                     <input
                         v-model="other"
                         name="other"

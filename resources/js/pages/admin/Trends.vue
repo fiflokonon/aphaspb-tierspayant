@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Deferred, Head } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Deferred, Head, router } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
 import DelayTrendChart from '@/components/aphaspb/charts/DelayTrendChart.vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
-import FilterChip from '@/components/aphaspb/FilterChip.vue';
+import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import InsufficientDataRow from '@/components/aphaspb/InsufficientDataRow.vue';
 import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
@@ -41,14 +41,18 @@ const props = defineProps<{
         outstandingBeyond90: number;
     };
     amounts: AmountRow[];
+    /** The mean of the agreed delays: no single one governs the network. */
     threshold: number;
+    period: string;
+    periodLabel: string;
+    periods: { value: string; label: string }[];
     city: string | null;
-    window: number;
+    cities: string[];
     trend?: Trend;
 }>();
 
 const TEMPLATE = '1.9fr .9fr 1fr 1fr .9fr';
-const COLUMNS = ['ASSUREUR', 'OFFICINES (n)', 'FACTURÉ', 'EN COURS', 'RECOUVRÉ'];
+const COLUMNS = ['ASSUREUR', 'OFFICINES (n)', 'FACTURÉ', 'ENCOURS', 'RECOUVRÉ'];
 
 const delayTone = (days: number | null): KpiTone => {
     if (days === null) {
@@ -76,6 +80,40 @@ const share = (value: number): string =>
         ? '—'
         : `${Math.round((value / props.summary.invoiced) * 100)} %`;
 
+const period = ref(props.period);
+const city = ref(props.city);
+
+const cityOptions = computed(() => [
+    { value: null, label: 'Toutes les villes' },
+    ...props.cities.map((one) => ({ value: one, label: one })),
+]);
+
+/**
+ * The curve is a deferred prop, so it has to be named in `only` for the partial
+ * reload to fetch it again — otherwise the KPIs move and the chart does not.
+ */
+function reload() {
+    router.get(
+        '/admin/trends',
+        { period: period.value, city: city.value },
+        {
+            only: [
+                'summary',
+                'amounts',
+                'trend',
+                'period',
+                'periodLabel',
+                'city',
+            ],
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
+}
+
+watch([period, city], reload);
+
 const series = computed(() =>
     Object.values(props.trend?.insurers ?? {}).map((one) => ({
         name: one.name,
@@ -88,86 +126,60 @@ const series = computed(() =>
     <Head title="Évolution du réseau" />
 
     <div class="network-evolution-page">
-
-  
-
         <ConsoleHeader
             eyebrow="RÉSEAU DES OFFICINES · BÉNIN"
-            :title="`${window} derniers mois`"
+            :title="periodLabel"
             class="evolution-header"
         >
-
             <template #filters>
-
                 <div class="header-filters">
-
-                    <FilterChip
-                        :label="city ?? 'Toutes les villes'"
+                    <FilterSelect
+                        v-model="period"
+                        :options="periods"
+                        aria-label="Filtrer par période"
                     />
 
+                    <FilterSelect
+                        v-model="city"
+                        :options="cityOptions"
+                        aria-label="Filtrer par ville"
+                    />
                 </div>
-
             </template>
-
         </ConsoleHeader>
 
-
         <section class="evolution-intro">
-
             <div class="intro-content">
-
                 <div class="intro-icon">
-
-                    <span class="trend-icon">
-                        ↗
-                    </span>
-
+                    <span class="trend-icon"> ↗ </span>
                 </div>
 
-
                 <div class="intro-text">
-
                     <span class="intro-eyebrow">
                         OBSERVATOIRE DES PAIEMENTS
                     </span>
 
-                    <h1>
-                        Évolution du réseau
-                    </h1>
+                    <h1>Évolution du réseau</h1>
 
                     <p>
-                        Analysez l'évolution des montants facturés,
-                        encaissés et en cours, ainsi que les délais
-                        de paiement des assureurs.
+                        Analysez l'évolution des montants facturés, encaissés et
+                        en cours, ainsi que les délais de paiement des
+                        assureurs.
                     </p>
-
                 </div>
-
             </div>
 
-
             <div class="intro-status">
-
                 <span class="status-dot"></span>
 
                 <span>
-                    {{ window }} derniers mois
+                    {{ periodLabel }}
                 </span>
-
             </div>
-
         </section>
 
-
-
-        <KpiRow
-            :columns="4"
-            class="evolution-kpis"
-        >
-
-
+        <KpiRow :columns="4" class="evolution-kpis">
             <div class="metric-wrapper">
-
                 <div class="metric-accent primary"></div>
 
                 <KpiCard
@@ -178,16 +190,11 @@ const series = computed(() =>
                 />
 
                 <div class="metric-icon primary-icon">
-                    <span>
-                        F
-                    </span>
+                    <span> F </span>
                 </div>
-
             </div>
 
-
             <div class="metric-wrapper">
-
                 <div class="metric-accent success"></div>
 
                 <KpiCard
@@ -199,17 +206,11 @@ const series = computed(() =>
                 />
 
                 <div class="metric-icon success-icon">
-                    <span>
-                        ✓
-                    </span>
+                    <span> ✓ </span>
                 </div>
-
             </div>
 
-
-
             <div class="metric-wrapper">
-
                 <div class="metric-accent danger"></div>
 
                 <KpiCard
@@ -221,110 +222,69 @@ const series = computed(() =>
                 />
 
                 <div class="metric-icon danger-icon">
-                    <span>
-                        !
-                    </span>
+                    <span> ! </span>
                 </div>
-
             </div>
 
-
-
             <div class="metric-wrapper">
-
                 <div class="metric-accent gold"></div>
 
                 <KpiCard
                     label="DÉLAI MOYEN PONDÉRÉ"
                     :value="
-                        summary.weightedDelayDays?.toLocaleString('fr-FR')
-                        ?? '—'
+                        summary.weightedDelayDays?.toLocaleString('fr-FR') ??
+                        '—'
                     "
                     unit="jours"
                     :tone="delayTone(summary.weightedDelayDays)"
-                    :hint="`seuil de référence ${threshold} j`"
+                    :hint="`délai standard moyen ${threshold} j`"
                 />
 
                 <div class="metric-icon gold-icon">
-                    <span>
-                        ◷
-                    </span>
+                    <span> ◷ </span>
                 </div>
-
             </div>
-
         </KpiRow>
 
-
         <section class="trend-card">
-
             <div class="trend-top-line"></div>
 
-
             <div class="trend-header">
-
                 <div class="trend-heading">
-
                     <div class="trend-title-row">
-
-                        <div class="chart-icon">
-                            ↗
-                        </div>
+                        <div class="chart-icon">↗</div>
 
                         <div>
-
                             <span class="section-label">
                                 ANALYSE DU RÉSEAU
                             </span>
 
-                            <h2>
-                                Évolution du délai de paiement
-                            </h2>
-
+                            <h2>Évolution du délai de paiement</h2>
                         </div>
-
                     </div>
 
-
                     <p>
-                        Délai moyen pondéré par les montants,
-                        en jours · assureurs au-dessus du seuil
-                        de {{ threshold }} jours d'anonymat.
+                        Délai moyen pondéré par les montants, en jours · ligne
+                        de référence à {{ threshold }} j, la moyenne des délais
+                        standard des assureurs · un assureur n'apparaît qu'à
+                        partir de 5 officines déclarantes.
                     </p>
-
                 </div>
-
 
                 <div class="threshold-badge">
-
                     <span class="threshold-line"></span>
 
-                    <span>
-                        Seuil · {{ threshold }} jours
-                    </span>
-
+                    <span> Référence · {{ threshold }} jours </span>
                 </div>
-
             </div>
 
-
-
             <div class="chart-container">
-
                 <Deferred data="trend">
-
                     <template #fallback>
-
                         <div class="chart-loading">
-
-                            <ChartSkeleton
-                                :height="220"
-                            />
-
+                            <ChartSkeleton :height="220" />
                         </div>
-
                     </template>
-
 
                     <DelayTrendChart
                         v-if="trend"
@@ -333,59 +293,39 @@ const series = computed(() =>
                         :network="trend.network"
                         :threshold="trend.threshold"
                     />
-
                 </Deferred>
-
             </div>
-
 
             <div class="trend-footer">
-
                 <div class="trend-info">
-
                     <span class="legend-dot network"></span>
 
-                    <span>
-                        Réseau
-                    </span>
-
+                    <span> Réseau </span>
                 </div>
-
 
                 <div class="trend-info">
-
                     <span class="legend-dot threshold"></span>
 
-                    <span>
-                        Seuil de référence
-                    </span>
-
+                    <span> Seuil de référence </span>
                 </div>
-
 
                 <div class="trend-context">
-
-                    <span class="context-label">
-                        DÉLAI ACTUEL
-                    </span>
+                    <span class="context-label"> DÉLAI ACTUEL </span>
 
                     <strong>
-                        {{ summary.weightedDelayDays?.toLocaleString('fr-FR') ?? '—' }}
+                        {{
+                            summary.weightedDelayDays?.toLocaleString(
+                                'fr-FR',
+                            ) ?? '—'
+                        }}
                         <small>j</small>
                     </strong>
-
                 </div>
-
             </div>
-
         </section>
 
-
-
         <section class="amounts-section">
-
             <div class="amounts-top-line"></div>
-
 
             <DataTable
                 title="Montants agrégés par assureur"
@@ -394,99 +334,60 @@ const series = computed(() =>
                 footer="Aucun montant individuel : l'agrégation s'ouvre à partir de 5 officines déclarantes."
                 class="amounts-table"
             >
-
-                <template
-                    v-for="row in amounts"
-                    :key="row.insurerId"
-                >
-
-
+                <template v-for="row in amounts" :key="row.insurerId">
                     <InsufficientDataRow
                         v-if="!row.sufficient"
                         :template="TEMPLATE"
                         :label="row.insurerName"
                         :span="4"
-                        :explanation="
-                            `${row.declaringPharmacies}
+                        :explanation="`${row.declaringPharmacies}
                             officine${row.declaringPharmacies > 1 ? 's' : ''}
                             déclarante${row.declaringPharmacies > 1 ? 's' : ''}
-                            — les montants s'agrègent à partir de ${row.required}`
-                        "
+                            — les montants s'agrègent à partir de ${row.required}`"
                     />
-
-
 
                     <DataTableRow
                         v-else
                         :template="TEMPLATE"
                         class="amount-row"
                     >
-
-
                         <div class="insurer-cell">
-
                             <div class="insurer-avatar">
-
-                                {{
-                                    row.insurerName
-                                        ?.charAt(0)
-                                        ?.toUpperCase()
-                                }}
-
+                                {{ row.insurerName?.charAt(0)?.toUpperCase() }}
                             </div>
 
                             <div class="insurer-details">
-
                                 <span class="insurer-name">
                                     {{ row.insurerName }}
                                 </span>
 
-                                <small>
-                                    Assureur actif
-                                </small>
-
+                                <small> Assureur actif </small>
                             </div>
-
                         </div>
 
-
                         <div class="pharmacy-cell">
-
                             <span class="pharmacy-number">
                                 {{ row.declaringPharmacies }}
                             </span>
 
-                            <span class="pharmacy-label">
-                                officines
-                            </span>
-
+                            <span class="pharmacy-label"> officines </span>
                         </div>
 
                         <div class="amount-cell">
-
                             <span class="amount-value">
                                 {{ formatMillions(row.invoiced ?? 0) }}
                             </span>
 
-                            <span class="amount-unit">
-                                FCFA
-                            </span>
-
+                            <span class="amount-unit"> FCFA </span>
                         </div>
 
-
                         <div class="amount-cell outstanding-cell">
-
                             <span class="amount-value">
                                 {{ formatMillions(row.outstanding ?? 0) }}
                             </span>
 
-                            <span class="amount-unit">
-                                FCFA
-                            </span>
-
+                            <span class="amount-unit"> FCFA </span>
                         </div>
-
 
                         <div
                             class="recovery-cell"
@@ -496,83 +397,60 @@ const series = computed(() =>
                                     : 'recovery-success'
                             "
                         >
-
                             <div class="recovery-value">
-
                                 {{
-                                    row.recoveryRate
-                                        ?.toLocaleString('fr-FR')
-                                    ?? '—'
+                                    row.recoveryRate?.toLocaleString('fr-FR') ??
+                                    '—'
                                 }}
 
-                                <span>
-                                    %
-                                </span>
-
+                                <span> % </span>
                             </div>
 
                             <div class="recovery-bar">
-
                                 <div
                                     class="recovery-fill"
                                     :style="{
-                                        width:
-                                            `${Math.min(
-                                                row.recoveryRate ?? 0,
-                                                100
-                                            )}%`
+                                        width: `${Math.min(
+                                            row.recoveryRate ?? 0,
+                                            100,
+                                        )}%`,
                                     }"
                                 ></div>
-
                             </div>
-
                         </div>
-
                     </DataTableRow>
-
                 </template>
-
             </DataTable>
-
         </section>
 
-
         <div class="evolution-footnote">
-
-            <div class="footnote-icon">
-                i
-            </div>
+            <div class="footnote-icon">i</div>
 
             <p>
-                Les montants présentés sont agrégés afin de préserver
-                l'anonymat des officines participantes. Les données
-                individuelles ne sont jamais exposées.
+                Les montants présentés sont agrégés afin de préserver l'anonymat
+                des officines participantes. Les données individuelles ne sont
+                jamais exposées.
             </p>
-
         </div>
-
     </div>
 </template>
 
-
 <style scoped>
-
 .network-evolution-page {
+    --apha-primary: #008f83;
+    --apha-primary-dark: #006f68;
+    --apha-primary-soft: #e8f6f3;
 
-    --apha-primary: #008F83;
-    --apha-primary-dark: #006F68;
-    --apha-primary-soft: #E8F6F3;
-
-    --apha-gold: #D7A33D;
-    --apha-gold-soft: #FFF8E9;
+    --apha-gold: #d7a33d;
+    --apha-gold-soft: #fff8e9;
 
     --apha-ink: #243333;
     --apha-muted: #788585;
-    --apha-light: #A2ADAD;
+    --apha-light: #a2adad;
 
-    --apha-border: #E7ECEB;
+    --apha-border: #e7eceb;
 
-    --apha-background: #F7F9F9;
+    --apha-background: #f7f9f9;
 
     position: relative;
 
@@ -580,10 +458,7 @@ const series = computed(() =>
 
     min-height: 100vh;
 
-    padding:
-        0
-        10px
-        60px;
+    padding: 0 10px 60px;
 
     /* background:
         radial-gradient(
@@ -591,33 +466,23 @@ const series = computed(() =>
             rgba(0, 143, 131, .045),
             transparent 28%
         ); */
-
 }
 
-
-
 .evolution-header {
-
     position: relative;
 
     z-index: 5;
-
 }
 
-
 .header-filters {
-
     display: flex;
 
     align-items: center;
 
     gap: 8px;
-
 }
 
-
 .evolution-intro {
-
     position: relative;
 
     display: flex;
@@ -628,28 +493,15 @@ const series = computed(() =>
 
     gap: 25px;
 
-    margin:
-        16px
-        0
-        22px;
+    margin: 16px 0 22px;
 
-    padding:
-        22px
-        25px;
+    padding: 22px 25px;
 
-    border:
-        1px solid
-        var(--apha-border);
+    border: 1px solid var(--apha-border);
 
-    border-radius:
-        18px;
+    border-radius: 18px;
 
-    background:
-        linear-gradient(
-            110deg,
-            #FFFFFF 0%,
-            #F8FCFB 100%
-        );
+    background: linear-gradient(110deg, #ffffff 0%, #f8fcfb 100%);
 
     /* box-shadow:
         0 8px 30px
@@ -657,1608 +509,915 @@ const series = computed(() =>
 
     overflow: hidden;
 
-    animation:
-        fadeUp .5s ease both;
-
+    animation: fadeUp 0.5s ease both;
 }
 
-
 .evolution-intro::after {
-
-    content: "";
+    content: '';
 
     position: absolute;
 
-    right:
-        -70px;
+    right: -70px;
 
-    top:
-        -90px;
+    top: -90px;
 
-    width:
-        220px;
+    width: 220px;
 
-    height:
-        220px;
+    height: 220px;
 
-    border-radius:
-        50%;
+    border-radius: 50%;
 
-    background:
-        radial-gradient(
-            circle,
-            rgba(0, 143, 131, .09),
-            transparent 68%
-        );
+    background: radial-gradient(
+        circle,
+        rgba(0, 143, 131, 0.09),
+        transparent 68%
+    );
 
-    pointer-events:
-        none;
-
+    pointer-events: none;
 }
-
 
 .intro-content {
+    position: relative;
 
-    position:
-        relative;
+    z-index: 1;
 
-    z-index:
-        1;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
-
-    gap:
-        15px;
-
+    gap: 15px;
 }
-
 
 .intro-icon {
+    width: 48px;
 
-    width:
-        48px;
+    height: 48px;
 
-    height:
-        48px;
+    flex-shrink: 0;
 
-    flex-shrink:
-        0;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    border-radius: 14px;
 
-    border-radius:
-        14px;
+    background: linear-gradient(
+        135deg,
+        var(--apha-primary),
+        var(--apha-primary-dark)
+    );
 
-    background:
-        linear-gradient(
-            135deg,
-            var(--apha-primary),
-            var(--apha-primary-dark)
-        );
+    color: white;
 
-    color:
-        white;
-
-    box-shadow:
-        0 8px 18px
-        rgba(0, 143, 131, .18);
-
+    box-shadow: 0 8px 18px rgba(0, 143, 131, 0.18);
 }
-
 
 .trend-icon {
+    font-size: 22px;
 
-    font-size:
-        22px;
-
-    font-weight:
-        800;
-
+    font-weight: 800;
 }
-
 
 .intro-text {
+    display: flex;
 
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
+    flex-direction: column;
 }
-
 
 .intro-eyebrow {
+    margin-bottom: 3px;
 
-    margin-bottom:
-        3px;
+    color: var(--apha-primary);
 
-    color:
-        var(--apha-primary);
+    font-size: 8.5px;
 
-    font-size:
-        8.5px;
+    font-weight: 850;
 
-    font-weight:
-        850;
-
-    letter-spacing:
-        .14em;
-
+    letter-spacing: 0.14em;
 }
-
 
 .intro-text h1 {
+    margin: 0;
 
-    margin:
-        0;
+    color: var(--apha-ink);
 
-    color:
-        var(--apha-ink);
+    font-size: 20px;
 
-    font-size:
-        20px;
+    font-weight: 800;
 
-    font-weight:
-        800;
-
-    letter-spacing:
-        -.025em;
-
+    letter-spacing: -0.025em;
 }
-
 
 .intro-text p {
+    max-width: 720px;
 
-    max-width:
-        720px;
+    margin-top: 4px;
 
-    margin-top:
-        4px;
+    color: var(--apha-muted);
 
-    color:
-        var(--apha-muted);
+    font-size: 10.5px;
 
-    font-size:
-        10.5px;
-
-    line-height:
-        1.55;
-
+    line-height: 1.55;
 }
-
 
 .intro-status {
+    position: relative;
 
-    position:
-        relative;
+    z-index: 2;
 
-    z-index:
-        2;
+    display: inline-flex;
 
-    display:
-        inline-flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 7px;
 
-    gap:
-        7px;
+    padding: 8px 11px;
 
-    padding:
-        8px
-        11px;
+    border: 1px solid rgba(0, 143, 131, 0.08);
 
-    border:
-        1px solid
-        rgba(0, 143, 131, .08);
+    border-radius: 30px;
 
-    border-radius:
-        30px;
+    background: var(--apha-primary-soft);
 
-    background:
-        var(--apha-primary-soft);
+    color: var(--apha-primary-dark);
 
-    color:
-        var(--apha-primary-dark);
+    font-size: 9px;
 
-    font-size:
-        9px;
+    font-weight: 700;
 
-    font-weight:
-        700;
-
-    white-space:
-        nowrap;
-
+    white-space: nowrap;
 }
-
 
 .status-dot {
+    width: 6px;
 
-    width:
-        6px;
+    height: 6px;
 
-    height:
-        6px;
+    border-radius: 50%;
 
-    border-radius:
-        50%;
-
-    background:
-        var(--apha-primary);
-
+    background: var(--apha-primary);
 }
-
-
 
 .evolution-kpis {
-
-    margin-bottom:
-        22px;
-
+    margin-bottom: 22px;
 }
-
 
 .metric-wrapper {
+    position: relative;
 
-    position:
-        relative;
+    overflow: hidden;
 
-    overflow:
-        hidden;
-
-    border-radius:
-        16px;
+    border-radius: 16px;
 
     transition:
-        transform .25s ease,
-        box-shadow .25s ease;
-
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
 }
-
 
 .metric-wrapper:hover {
+    transform: translateY(-3px);
 
-    transform:
-        translateY(-3px);
-
-    box-shadow:
-        0 12px 28px
-        rgba(35, 70, 68, .065);
-
+    box-shadow: 0 12px 28px rgba(35, 70, 68, 0.065);
 }
-
 
 .metric-accent {
+    position: absolute;
 
-    position:
-        absolute;
+    left: 0;
 
-    left:
-        0;
+    top: 17px;
 
-    top:
-        17px;
+    bottom: 17px;
 
-    bottom:
-        17px;
+    width: 3px;
 
-    width:
-        3px;
+    z-index: 5;
 
-    z-index:
-        5;
-
-    border-radius:
-        0 4px 4px 0;
-
+    border-radius: 0 4px 4px 0;
 }
-
 
 .metric-accent.primary {
-
-    background:
-        var(--apha-primary);
-
+    background: var(--apha-primary);
 }
-
 
 .metric-accent.success {
-
-    background:
-        #4B9B79;
-
+    background: #4b9b79;
 }
-
 
 .metric-accent.danger {
-
-    background:
-        #C55245;
-
+    background: #c55245;
 }
-
 
 .metric-accent.gold {
-
-    background:
-        var(--apha-gold);
-
+    background: var(--apha-gold);
 }
-
 
 .metric-icon {
+    position: absolute;
 
-    position:
-        absolute;
+    right: 15px;
 
-    right:
-        15px;
+    top: 15px;
 
-    top:
-        15px;
+    width: 35px;
 
-    width:
-        35px;
+    height: 35px;
 
-    height:
-        35px;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    border-radius: 10px;
 
-    border-radius:
-        10px;
+    font-size: 10px;
 
-    font-size:
-        10px;
+    font-weight: 850;
 
-    font-weight:
-        850;
+    pointer-events: none;
 
-    pointer-events:
-        none;
-
-    transition:
-        transform .25s ease;
-
+    transition: transform 0.25s ease;
 }
-
 
 .metric-wrapper:hover .metric-icon {
-
-    transform:
-        scale(1.08)
-        rotate(4deg);
-
+    transform: scale(1.08) rotate(4deg);
 }
-
 
 .primary-icon {
+    background: var(--apha-primary-soft);
 
-    background:
-        var(--apha-primary-soft);
-
-    color:
-        var(--apha-primary);
-
+    color: var(--apha-primary);
 }
-
 
 .success-icon {
+    background: #eaf6f0;
 
-    background:
-        #EAF6F0;
-
-    color:
-        #43866A;
-
+    color: #43866a;
 }
-
 
 .danger-icon {
+    background: #fcedea;
 
-    background:
-        #FCEDEA;
-
-    color:
-        #B64D42;
-
+    color: #b64d42;
 }
-
 
 .gold-icon {
+    background: var(--apha-gold-soft);
 
-    background:
-        var(--apha-gold-soft);
-
-    color:
-        #B0842B;
-
+    color: #b0842b;
 }
-
 
 .trend-card {
+    position: relative;
 
-    position:
-        relative;
+    overflow: hidden;
 
-    overflow:
-        hidden;
+    width: 100%;
 
-    width:
-        100%;
+    margin-bottom: 22px;
 
-    margin-bottom:
-        22px;
+    padding: 4px;
 
-    padding:
-        4px;
+    border: 1px solid var(--apha-border);
 
-    border:
-        1px solid
-        var(--apha-border);
+    border-radius: 18px;
 
-    border-radius:
-        18px;
+    background: #ffffff;
 
-    background:
-        #FFFFFF;
+    box-shadow: 0 9px 32px rgba(35, 70, 68, 0.04);
 
-    box-shadow:
-        0 9px 32px
-        rgba(35, 70, 68, .04);
-
-    animation:
-        fadeUp .6s ease .05s both;
-
+    animation: fadeUp 0.6s ease 0.05s both;
 }
-
 
 .trend-top-line {
+    position: absolute;
 
-    position:
-        absolute;
+    left: 0;
 
-    left:
-        0;
+    top: 0;
 
-    top:
-        0;
+    width: 100%;
 
-    width:
-        100%;
+    height: 3px;
 
-    height:
-        3px;
-
-    background:
-        linear-gradient(
-            90deg,
-            var(--apha-primary),
-            #35A799,
-            var(--apha-gold)
-        );
-
+    background: linear-gradient(
+        90deg,
+        var(--apha-primary),
+        #35a799,
+        var(--apha-gold)
+    );
 }
-
-
 
 .trend-header {
+    display: flex;
 
-    display:
-        flex;
+    align-items: flex-start;
 
-    align-items:
-        flex-start;
+    justify-content: space-between;
 
-    justify-content:
-        space-between;
+    gap: 25px;
 
-    gap:
-        25px;
+    padding: 24px 22px 17px;
 
-    padding:
-        24px
-        22px
-        17px;
-
-    border-bottom:
-        1px solid
-        var(--apha-border);
-
+    border-bottom: 1px solid var(--apha-border);
 }
-
 
 .trend-title-row {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
-
-    gap:
-        11px;
-
+    gap: 11px;
 }
-
 
 .chart-icon {
+    width: 35px;
 
-    width:
-        35px;
+    height: 35px;
 
-    height:
-        35px;
+    flex-shrink: 0;
 
-    flex-shrink:
-        0;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    border-radius: 10px;
 
-    border-radius:
-        10px;
+    background: var(--apha-primary-soft);
 
-    background:
-        var(--apha-primary-soft);
+    color: var(--apha-primary);
 
-    color:
-        var(--apha-primary);
+    font-size: 15px;
 
-    font-size:
-        15px;
-
-    font-weight:
-        850;
-
+    font-weight: 850;
 }
-
 
 .trend-heading h2 {
+    margin: 0;
 
-    margin:
-        0;
+    color: var(--apha-ink);
 
-    color:
-        var(--apha-ink);
+    font-size: 15px;
 
-    font-size:
-        15px;
+    font-weight: 800;
 
-    font-weight:
-        800;
-
-    letter-spacing:
-        -.02em;
-
+    letter-spacing: -0.02em;
 }
-
 
 .trend-heading p {
+    max-width: 760px;
 
-    max-width:
-        760px;
+    margin: 9px 0 0;
 
-    margin:
-        9px
-        0
-        0;
+    color: var(--apha-muted);
 
-    color:
-        var(--apha-muted);
+    font-size: 10px;
 
-    font-size:
-        10px;
-
-    line-height:
-        1.5;
-
+    line-height: 1.5;
 }
-
 
 .threshold-badge {
+    display: inline-flex;
 
-    display:
-        inline-flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 7px;
 
-    gap:
-        7px;
+    flex-shrink: 0;
 
-    flex-shrink:
-        0;
+    min-height: 32px;
 
-    min-height:
-        32px;
+    padding: 0 11px;
 
-    padding:
-        0
-        11px;
+    border: 1px solid rgba(215, 163, 61, 0.2);
 
-    border:
-        1px solid
-        rgba(215, 163, 61, .20);
+    border-radius: 8px;
 
-    border-radius:
-        8px;
+    background: var(--apha-gold-soft);
 
-    background:
-        var(--apha-gold-soft);
+    color: #94702a;
 
-    color:
-        #94702A;
+    font-size: 9px;
 
-    font-size:
-        9px;
+    font-weight: 750;
 
-    font-weight:
-        750;
-
-    white-space:
-        nowrap;
-
+    white-space: nowrap;
 }
-
 
 .threshold-line {
+    width: 12px;
 
-    width:
-        12px;
+    height: 2px;
 
-    height:
-        2px;
+    border-radius: 4px;
 
-    border-radius:
-        4px;
-
-    background:
-        var(--apha-gold);
-
+    background: var(--apha-gold);
 }
-
-
 
 .chart-container {
+    min-height: 220px;
 
-    min-height:
-        220px;
-
-    padding:
-        8px
-        18px
-        0;
-
+    padding: 8px 18px 0;
 }
-
 
 .trend-chart {
-
-    width:
-        100%;
-
+    width: 100%;
 }
-
 
 .chart-loading {
-
-    width:
-        100%;
-
+    width: 100%;
 }
-
-
 
 .trend-footer {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 18px;
 
-    gap:
-        18px;
+    margin: 0 18px;
 
-    margin:
-        0
-        18px;
+    padding: 11px 13px;
 
-    padding:
-        11px
-        13px;
+    border: 1px solid #edf1f0;
 
-    border:
-        1px solid
-        #EDF1F0;
+    border-radius: 10px;
 
-    border-radius:
-        10px;
-
-    background:
-        #FAFCFC;
-
+    background: #fafcfc;
 }
-
 
 .trend-info {
+    display: inline-flex;
 
-    display:
-        inline-flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 6px;
 
-    gap:
-        6px;
+    color: var(--apha-muted);
 
-    color:
-        var(--apha-muted);
+    font-size: 8.5px;
 
-    font-size:
-        8.5px;
-
-    font-weight:
-        650;
-
+    font-weight: 650;
 }
-
 
 .legend-dot {
+    width: 7px;
 
-    width:
-        7px;
+    height: 7px;
 
-    height:
-        7px;
-
-    border-radius:
-        50%;
-
+    border-radius: 50%;
 }
-
 
 .legend-dot.network {
-
-    background:
-        var(--apha-primary);
-
+    background: var(--apha-primary);
 }
-
 
 .legend-dot.threshold {
-
-    background:
-        var(--apha-gold);
-
+    background: var(--apha-gold);
 }
-
 
 .trend-context {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    gap: 7px;
 
-    gap:
-        7px;
-
-    margin-left:
-        auto;
-
+    margin-left: auto;
 }
-
 
 .context-label {
+    color: var(--apha-light);
 
-    color:
-        var(--apha-light);
+    font-size: 7px;
 
-    font-size:
-        7px;
+    font-weight: 850;
 
-    font-weight:
-        850;
-
-    letter-spacing:
-        .08em;
-
+    letter-spacing: 0.08em;
 }
-
 
 .trend-context strong {
+    color: var(--apha-ink);
 
-    color:
-        var(--apha-ink);
+    font-size: 11px;
 
-    font-size:
-        11px;
-
-    font-weight:
-        850;
-
+    font-weight: 850;
 }
-
 
 .trend-context small {
+    color: var(--apha-muted);
 
-    color:
-        var(--apha-muted);
-
-    font-size:
-        8px;
-
+    font-size: 8px;
 }
-
 
 .amounts-section {
+    position: relative;
 
-    position:
-        relative;
+    overflow: hidden;
 
-    overflow:
-        hidden;
+    width: 100%;
 
-    width:
-        100%;
+    padding: 4px;
 
-    padding:
-        4px;
+    border: 1px solid var(--apha-border);
 
-    border:
-        1px solid
-        var(--apha-border);
+    border-radius: 18px;
 
-    border-radius:
-        18px;
+    background: #ffffff;
 
-    background:
-        #FFFFFF;
+    box-shadow: 0 8px 30px rgba(35, 70, 68, 0.035);
 
-    box-shadow:
-        0 8px 30px
-        rgba(35, 70, 68, .035);
-
-    animation:
-        fadeUp .65s ease .1s both;
-
+    animation: fadeUp 0.65s ease 0.1s both;
 }
-
 
 .amounts-top-line {
+    position: absolute;
 
-    position:
-        absolute;
+    left: 0;
 
-    left:
-        0;
+    top: 0;
 
-    top:
-        0;
+    width: 100%;
 
-    width:
-        100%;
+    height: 3px;
 
-    height:
-        3px;
+    background: linear-gradient(90deg, var(--apha-primary), #35a799);
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--apha-primary),
-            #35A799
-        );
-
-    opacity:
-        .8;
-
+    opacity: 0.8;
 }
-
 
 .amounts-table {
-
-    border-radius:
-        14px;
-
+    border-radius: 14px;
 }
-
 
 .insurer-cell {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
-
-    gap:
-        9px;
-
+    gap: 9px;
 }
-
 
 .insurer-avatar {
+    width: 32px;
 
-    width:
-        32px;
+    height: 32px;
 
-    height:
-        32px;
+    flex-shrink: 0;
 
-    flex-shrink:
-        0;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    border-radius: 9px;
 
-    border-radius:
-        9px;
+    background: linear-gradient(135deg, #e6f6f2, #f2faf8);
 
-    background:
-        linear-gradient(
-            135deg,
-            #E6F6F2,
-            #F2FAF8
-        );
+    border: 1px solid rgba(0, 143, 131, 0.08);
 
-    border:
-        1px solid
-        rgba(0, 143, 131, .08);
+    color: var(--apha-primary-dark);
 
-    color:
-        var(--apha-primary-dark);
+    font-size: 10px;
 
-    font-size:
-        10px;
-
-    font-weight:
-        850;
-
+    font-weight: 850;
 }
-
 
 .insurer-details {
+    display: flex;
 
-    display:
-        flex;
+    flex-direction: column;
 
-    flex-direction:
-        column;
-
-    gap:
-        2px;
-
+    gap: 2px;
 }
-
 
 .insurer-name {
+    color: var(--apha-ink);
 
-    color:
-        var(--apha-ink);
+    font-size: 11px;
 
-    font-size:
-        11px;
-
-    font-weight:
-        700;
-
+    font-weight: 700;
 }
-
 
 .insurer-details small {
+    color: var(--apha-light);
 
-    color:
-        var(--apha-light);
-
-    font-size:
-        8px;
-
+    font-size: 8px;
 }
-
 
 .pharmacy-cell {
+    display: flex;
 
-    display:
-        flex;
+    align-items: baseline;
 
-    align-items:
-        baseline;
-
-    gap:
-        4px;
-
+    gap: 4px;
 }
-
 
 .pharmacy-number {
+    color: var(--apha-ink);
 
-    color:
-        var(--apha-ink);
-
-    font-weight:
-        750;
-
+    font-weight: 750;
 }
-
 
 .pharmacy-label {
+    color: var(--apha-light);
 
-    color:
-        var(--apha-light);
-
-    font-size:
-        8px;
-
+    font-size: 8px;
 }
-
 
 .amount-cell {
+    display: flex;
 
-    display:
-        flex;
+    align-items: baseline;
 
-    align-items:
-        baseline;
-
-    gap:
-        4px;
-
+    gap: 4px;
 }
-
 
 .amount-value {
+    color: var(--apha-ink);
 
-    color:
-        var(--apha-ink);
-
-    font-weight:
-        700;
-
+    font-weight: 700;
 }
-
 
 .amount-unit {
+    color: var(--apha-light);
 
-    color:
-        var(--apha-light);
-
-    font-size:
-        8px;
-
+    font-size: 8px;
 }
-
 
 .outstanding-cell .amount-value {
-
-    color:
-        #B64D42;
-
+    color: #b64d42;
 }
-
-
 
 .recovery-cell {
-
-    min-width:
-        95px;
-
+    min-width: 95px;
 }
-
 
 .recovery-value {
-
-    font-weight:
-        750;
-
+    font-weight: 750;
 }
-
 
 .recovery-value span {
+    font-size: 8px;
 
-    font-size:
-        8px;
-
-    font-weight:
-        600;
-
+    font-weight: 600;
 }
-
 
 .recovery-success {
-
-    color:
-        var(--apha-primary-dark);
-
+    color: var(--apha-primary-dark);
 }
-
 
 .recovery-danger {
-
-    color:
-        #B64D42;
-
+    color: #b64d42;
 }
-
 
 .recovery-bar {
+    width: 80px;
 
-    width:
-        80px;
+    height: 3px;
 
-    height:
-        3px;
+    margin-top: 5px;
 
-    margin-top:
-        5px;
+    overflow: hidden;
 
-    overflow:
-        hidden;
+    border-radius: 5px;
 
-    border-radius:
-        5px;
-
-    background:
-        #EDF1F0;
-
+    background: #edf1f0;
 }
-
 
 .recovery-fill {
+    height: 100%;
 
-    height:
-        100%;
+    border-radius: inherit;
 
-    border-radius:
-        inherit;
+    background: currentColor;
 
-    background:
-        currentColor;
+    opacity: 0.55;
 
-    opacity:
-        .55;
-
-    transition:
-        width .5s ease;
-
+    transition: width 0.5s ease;
 }
-
-
 
 .evolution-footnote {
+    display: flex;
 
-    display:
-        flex;
+    align-items: flex-start;
 
-    align-items:
-        flex-start;
+    gap: 9px;
 
-    gap:
-        9px;
+    margin-top: 13px;
 
-    margin-top:
-        13px;
+    padding: 11px 14px;
 
-    padding:
-        11px
-        14px;
+    border: 1px solid rgba(0, 143, 131, 0.07);
 
-    border:
-        1px solid
-        rgba(0, 143, 131, .07);
+    border-radius: 11px;
 
-    border-radius:
-        11px;
-
-    background:
-        rgba(0, 143, 131, .025);
-
+    background: rgba(0, 143, 131, 0.025);
 }
-
 
 .footnote-icon {
+    width: 18px;
 
-    width:
-        18px;
+    height: 18px;
 
-    height:
-        18px;
+    flex-shrink: 0;
 
-    flex-shrink:
-        0;
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
 
-    align-items:
-        center;
+    justify-content: center;
 
-    justify-content:
-        center;
+    border-radius: 50%;
 
-    border-radius:
-        50%;
+    background: var(--apha-primary);
 
-    background:
-        var(--apha-primary);
+    color: #ffffff;
 
-    color:
-        #FFFFFF;
+    font-size: 9px;
 
-    font-size:
-        9px;
-
-    font-weight:
-        850;
-
+    font-weight: 850;
 }
-
 
 .evolution-footnote p {
+    margin: 0;
 
-    margin:
-        0;
+    color: var(--apha-muted);
 
-    color:
-        var(--apha-muted);
+    font-size: 9px;
 
-    font-size:
-        9px;
-
-    line-height:
-        1.5;
-
+    line-height: 1.5;
 }
 
-
-
 @keyframes fadeUp {
-
     from {
+        opacity: 0;
 
-        opacity:
-            0;
-
-        transform:
-            translateY(10px);
-
+        transform: translateY(10px);
     }
 
     to {
+        opacity: 1;
 
-        opacity:
-            1;
-
-        transform:
-            translateY(0);
-
+        transform: translateY(0);
     }
-
 }
-
-
-
 
 @media (max-width: 1000px) {
-
     .network-evolution-page {
+        padding-left: 6px;
 
-        padding-left:
-            6px;
-
-        padding-right:
-            6px;
-
+        padding-right: 6px;
     }
-
 
     .evolution-intro {
-
-        padding:
-            20px;
-
+        padding: 20px;
     }
-
 
     .trend-header {
-
-        gap:
-            15px;
-
+        gap: 15px;
     }
-
 }
 
-
-
 @media (max-width: 760px) {
-
     .network-evolution-page {
-
-        padding:
-            0
-            4px
-            50px;
-
+        padding: 0 4px 50px;
     }
-
 
     .evolution-intro {
+        align-items: flex-start;
 
-        align-items:
-            flex-start;
+        flex-direction: column;
 
-        flex-direction:
-            column;
+        margin-top: 10px;
 
-        margin-top:
-            10px;
+        padding: 17px;
 
-        padding:
-            17px;
-
-        border-radius:
-            15px;
-
+        border-radius: 15px;
     }
-
 
     .intro-status {
+        width: 100%;
 
-        width:
-            100%;
-
-        justify-content:
-            center;
-
+        justify-content: center;
     }
-
 
     .intro-icon {
+        width: 41px;
 
-        width:
-            41px;
+        height: 41px;
 
-        height:
-            41px;
-
-        border-radius:
-            11px;
-
+        border-radius: 11px;
     }
-
 
     .intro-text h1 {
-
-        font-size:
-            17px;
-
+        font-size: 17px;
     }
-
 
     .intro-text p {
-
-        font-size:
-            9.5px;
-
+        font-size: 9.5px;
     }
-
 
     /* GRAPH */
 
     .trend-card {
-
-        border-radius:
-            15px;
-
+        border-radius: 15px;
     }
-
 
     .trend-header {
+        align-items: flex-start;
 
-        align-items:
-            flex-start;
+        flex-direction: column;
 
-        flex-direction:
-            column;
-
-        padding:
-            20px
-            16px
-            15px;
-
+        padding: 20px 16px 15px;
     }
-
 
     .threshold-badge {
-
-        width:
-            fit-content;
-
+        width: fit-content;
     }
-
 
     .chart-container {
-
-        padding:
-            5px
-            7px
-            0;
-
+        padding: 5px 7px 0;
     }
-
 
     .trend-footer {
+        flex-wrap: wrap;
 
-        flex-wrap:
-            wrap;
-
-        margin:
-            0
-            10px;
-
+        margin: 0 10px;
     }
-
 
     .trend-context {
+        width: 100%;
 
-        width:
-            100%;
+        margin-left: 0;
 
-        margin-left:
-            0;
+        padding-top: 8px;
 
-        padding-top:
-            8px;
-
-        border-top:
-            1px solid
-            #EDF1F0;
-
+        border-top: 1px solid #edf1f0;
     }
-
 
     /* TABLE */
 
     .amounts-section {
+        border-radius: 15px;
 
-        border-radius:
-            15px;
-
-        padding:
-            2px;
-
+        padding: 2px;
     }
-
 }
 
-
-
 @media (max-width: 520px) {
-
     .intro-content {
-
-        align-items:
-            flex-start;
-
+        align-items: flex-start;
     }
-
 
     .trend-title-row {
-
-        align-items:
-            flex-start;
-
+        align-items: flex-start;
     }
-
 
     .chart-icon {
+        width: 31px;
 
-        width:
-            31px;
-
-        height:
-            31px;
-
+        height: 31px;
     }
-
 
     .trend-heading h2 {
-
-        font-size:
-            13px;
-
+        font-size: 13px;
     }
-
 
     .trend-heading p {
-
-        font-size:
-            9px;
-
+        font-size: 9px;
     }
-
 
     .threshold-badge {
+        width: 100%;
 
-        width:
-            100%;
-
-        justify-content:
-            center;
-
+        justify-content: center;
     }
-
 
     .evolution-footnote {
-
-        padding:
-            9px
-            11px;
-
+        padding: 9px 11px;
     }
-
 
     .evolution-footnote p {
-
-        font-size:
-            8.5px;
-
+        font-size: 8.5px;
     }
-
 }
 
 @media (prefers-reduced-motion: reduce) {
-
     .network-evolution-page *,
     .network-evolution-page *::before,
     .network-evolution-page *::after {
+        animation-duration: 0.01ms !important;
 
-        animation-duration:
-            .01ms !important;
+        animation-iteration-count: 1 !important;
 
-        animation-iteration-count:
-            1 !important;
-
-        transition-duration:
-            .01ms !important;
-
+        transition-duration: 0.01ms !important;
     }
-
 }
-
 </style>

@@ -16,7 +16,11 @@ return [
     */
 
     'ssr' => [
-        'enabled' => true,
+        // Env-driven so the test suite can switch it off: with SSR on, every
+        // rendered page POSTs to a server that is not running under phpunit,
+        // which both wastes a failed request per test and lands in the
+        // recorded calls of any test asserting on outbound HTTP.
+        'enabled' => env('INERTIA_SSR_ENABLED', true),
         'url' => 'http://127.0.0.1:13714',
         // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
 
