@@ -194,7 +194,7 @@ const losing = computed(() =>
     </div>
 </template>
 
-<style>
+<style scoped>
 .insurers-page {
     --apha-primary: #008f83;
     --apha-primary-dark: #006f68;

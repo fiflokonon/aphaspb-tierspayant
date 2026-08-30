@@ -251,7 +251,7 @@ watch([period, city], reload);
     </div>
 </template>
 
-<style>
+<style scoped>
 .download-actions {
     display: flex;
 

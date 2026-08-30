@@ -430,7 +430,7 @@ watch([period, city], reload);
     </div>
 </template>
 
-<style>
+<style scoped>
 .delay-standard {
     display: block;
 
@@ -485,84 +485,6 @@ watch([period, city], reload);
     gap: 7px;
 
     white-space: nowrap;
-}
-
-.filter-control {
-    position: relative;
-
-    display: inline-flex;
-
-    align-items: center;
-
-    min-height: 36px;
-
-    border: 1px solid var(--apha-border);
-
-    border-radius: 10px;
-
-    background: rgba(255, 255, 255, 0.88);
-
-    /* box-shadow:
-        0 2px 8px
-        rgba(35,70,68,.025); */
-
-    overflow: hidden;
-
-    transition:
-        border-color 0.2s ease,
-        box-shadow 0.2s ease,
-        transform 0.2s ease;
-}
-
-.filter-control:hover {
-    border-color: rgba(0, 143, 131, 0.22);
-    /* 
-    box-shadow:
-        0 5px 14px
-        rgba(35,70,68,.06); */
-
-    transform: translateY(-1px);
-}
-
-.filter-control :deep(button),
-.filter-control :deep(a) {
-    border: 0 !important;
-
-    box-shadow: none !important;
-}
-
-.filter-chevron {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    width: 25px;
-
-    height: 100%;
-
-    margin-left: -4px;
-
-    padding-right: 7px;
-
-    color: var(--apha-muted);
-
-    font-size: 12px;
-
-    font-weight: 800;
-
-    pointer-events: none;
-
-    transition:
-        color 0.2s ease,
-        transform 0.2s ease;
-}
-
-.filter-control:hover .filter-chevron {
-    color: var(--apha-primary);
-
-    transform: translateY(1px);
 }
 
 .header-actions {
@@ -1015,88 +937,6 @@ watch([period, city], reload);
     opacity: 0.9;
 }
 
-.table-filters {
-    display: flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-    white-space: nowrap;
-}
-
-.table-filter-control {
-    position: relative;
-
-    display: inline-flex;
-
-    align-items: center;
-
-    min-height: 32px;
-
-    border: 1px solid var(--apha-border);
-
-    border-radius: 9px;
-
-    background: #ffffff;
-
-    box-shadow: 0 2px 7px rgba(35, 70, 68, 0.025);
-
-    overflow: hidden;
-
-    transition:
-        border-color 0.2s ease,
-        box-shadow 0.2s ease,
-        transform 0.2s ease;
-}
-
-.table-filter-control:hover {
-    border-color: rgba(0, 143, 131, 0.24);
-
-    box-shadow: 0 4px 12px rgba(35, 70, 68, 0.055);
-
-    transform: translateY(-1px);
-}
-
-.table-filter-control :deep(button),
-.table-filter-control :deep(a) {
-    border: 0 !important;
-
-    box-shadow: none !important;
-}
-
-.table-filter-chevron {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    width: 23px;
-
-    height: 100%;
-
-    padding-right: 6px;
-
-    color: var(--apha-muted);
-
-    font-size: 11px;
-
-    font-weight: 800;
-
-    pointer-events: none;
-
-    transition:
-        color 0.2s ease,
-        transform 0.2s ease;
-}
-
-.table-filter-control:hover .table-filter-chevron {
-    color: var(--apha-primary);
-
-    transform: translateY(1px);
-}
-
 .network-table {
     border-radius: 14px;
 }
@@ -1421,20 +1261,6 @@ watch([period, city], reload);
         min-width: 0;
 
         padding: 0 9px;
-    }
-
-    .table-filters {
-        width: 100%;
-
-        overflow-x: auto;
-
-        padding-bottom: 2px;
-
-        scrollbar-width: none;
-    }
-
-    .table-filters::-webkit-scrollbar {
-        display: none;
     }
 }
 

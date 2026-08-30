@@ -400,7 +400,7 @@ function startEditing(row: Row) {
     </div>
 </template>
 
-<style>
+<style scoped>
 .input-wrapper.delay-input-wrapper {
     flex: 0 0 auto;
 

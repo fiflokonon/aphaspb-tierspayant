@@ -466,7 +466,7 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
     </div>
 </template>
 
-<style>
+<style scoped>
 .dates {
     display: flex;
 

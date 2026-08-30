@@ -367,7 +367,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     </DataTable>
 </template>
 
-<style>
+<style scoped>
 .dashboard-page {
     --primary: #008f83;
     --primary-dark: #006f68;

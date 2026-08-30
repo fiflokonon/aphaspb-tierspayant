@@ -99,7 +99,7 @@ defineProps<{
     </aside>
 </template>
 
-<style>
+<style scoped>
 .apha-sidebar {
     --primary: #008f83;
     --primary-dark: #006f68;
