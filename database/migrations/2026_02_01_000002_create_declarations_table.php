@@ -25,8 +25,14 @@ return new class extends Migration
             $table->string('private_note', 150)->nullable();
             $table->timestamps();
 
-            $table->unique(['pharmacy_id', 'insurer_id', 'period_year', 'period_month']);
             $table->index(['insurer_id', 'period_year', 'period_month']);
+
+            // Named explicitly: the generated name would run to 67 characters,
+            // past the 64 MySQL allows for an identifier.
+            $table->unique(
+                ['pharmacy_id', 'insurer_id', 'period_year', 'period_month'],
+                'decl_pharmacy_insurer_period_unique',
+            );
         });
     }
 

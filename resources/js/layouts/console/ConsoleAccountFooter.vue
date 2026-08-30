@@ -16,10 +16,10 @@ defineProps<{ account: ConsoleAccount }>();
         -->
         <div
             v-if="account.pharmacies.length > 1"
-            class="border-t border-white/[0.12] pt-3"
+            class="border-t border-ink/[0.08] pt-3"
         >
             <div
-                class="font-mono text-[9.5px] font-semibold tracking-[0.06em] text-white/40"
+                class="font-mono text-[9.5px] font-semibold tracking-[0.06em] text-ink/45"
             >
                 OFFICINE
             </div>
@@ -34,8 +34,8 @@ defineProps<{ account: ConsoleAccount }>();
                     class="flex min-h-[44px] w-full items-center rounded-lg px-[9px] text-left text-[11.5px] transition-colors"
                     :class="
                         pharmacy.current
-                            ? 'bg-white/[0.12] font-semibold text-white'
-                            : 'font-medium text-white/[0.62] hover:bg-white/[0.06]'
+                            ? 'bg-primary/[0.10] font-semibold text-ink'
+                            : 'font-medium text-ink/[0.62] hover:bg-ink/[0.05]'
                     "
                 >
                     <span class="truncate">{{ pharmacy.name }}</span>
@@ -43,14 +43,14 @@ defineProps<{ account: ConsoleAccount }>();
             </div>
         </div>
 
-        <div class="border-t border-white/[0.12] pt-3">
-            <div class="truncate text-[11.5px] font-semibold text-white/80">
+        <div class="border-t border-ink/[0.08] pt-3">
+            <div class="truncate text-[11.5px] font-semibold text-ink">
                 {{ account.name }}
             </div>
 
             <LogoutLink
                 :href="account.logoutHref"
-                class="mt-[2px] flex min-h-[44px] w-full items-center text-left text-[11.5px] font-medium text-white/[0.55] transition-colors hover:text-white"
+                class="mt-[2px] flex min-h-[44px] w-full items-center text-left text-[11.5px] font-medium text-ink/[0.55] transition-colors hover:text-ink"
             />
         </div>
     </div>
