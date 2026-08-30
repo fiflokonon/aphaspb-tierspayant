@@ -150,3 +150,455 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* ================================================================
+   APhaSPB — NOUVEAU DESIGN SIDEBAR / NAVBAR
+   ================================================================ */
+
+[data-sidebar="sidebar"] {
+    background:
+        linear-gradient(
+            180deg,
+            #10251F 0%,
+            #0D211B 55%,
+            #0A1C17 100%
+        ) !important;
+
+    color: #F5F8F6 !important;
+
+    border-color:
+        rgba(255, 255, 255, 0.07) !important;
+}
+
+
+/* ================================================================
+   HEADER SIDEBAR
+   ================================================================ */
+
+[data-sidebar="sidebar"] [data-slot="sidebar-header"] {
+    padding: 18px 14px 12px !important;
+
+    border-bottom:
+        1px solid rgba(255, 255, 255, 0.07);
+}
+
+
+/* ================================================================
+   LOGO
+   ================================================================ */
+
+[data-sidebar="sidebar"] [data-slot="sidebar-header"]
+a {
+    border-radius: 12px;
+
+    transition:
+        background .2s ease,
+        transform .2s ease;
+}
+
+
+[data-sidebar="sidebar"] [data-slot="sidebar-header"]
+a:hover {
+    background:
+        rgba(53, 167, 153, .08);
+
+    transform:
+        translateY(-1px);
+}
+
+
+/* ================================================================
+   PHARMACY SWITCHER
+   ================================================================ */
+
+[data-sidebar="sidebar"]
+[data-test="pharmacy-switcher-trigger"] {
+    width: 100% !important;
+
+    min-height: 48px !important;
+
+    margin-top: 8px;
+
+    padding: 7px 9px !important;
+
+    border:
+        1px solid rgba(255, 255, 255, .08) !important;
+
+    border-radius: 12px !important;
+
+    background:
+        rgba(255, 255, 255, .045) !important;
+
+    color:
+        rgba(255, 255, 255, .88) !important;
+
+    transition:
+        background .2s ease,
+        border-color .2s ease,
+        transform .2s ease !important;
+}
+
+
+[data-sidebar="sidebar"]
+[data-test="pharmacy-switcher-trigger"]:hover {
+    background:
+        rgba(53, 167, 153, .12) !important;
+
+    border-color:
+        rgba(53, 167, 153, .20) !important;
+
+    transform:
+        translateY(-1px);
+}
+
+
+/* ================================================================
+   ZONE NAVIGATION
+   ================================================================ */
+
+[data-sidebar="sidebar"] [data-slot="sidebar-content"] {
+    padding:
+        10px 10px !important;
+}
+
+
+/* ================================================================
+   TITRES DES SECTIONS
+   ================================================================ */
+
+[data-sidebar="sidebar"] [data-sidebar="group-label"] {
+    height: auto !important;
+
+    padding:
+        12px 9px 7px !important;
+
+    color:
+        rgba(255, 255, 255, .32) !important;
+
+    font-size: 8px !important;
+
+    font-weight: 800 !important;
+
+    letter-spacing:
+        .16em !important;
+
+    text-transform:
+        uppercase !important;
+}
+
+
+/* ================================================================
+   BOUTONS NAVIGATION
+   ================================================================ */
+
+[data-sidebar="sidebar"]
+[data-sidebar="menu-button"] {
+
+    position: relative !important;
+
+    min-height: 42px !important;
+
+    margin:
+        2px 0 !important;
+
+    padding:
+        6px 10px !important;
+
+    border:
+        1px solid transparent !important;
+
+    border-radius:
+        11px !important;
+
+    background:
+        transparent !important;
+
+    color:
+        rgba(255, 255, 255, .60) !important;
+
+    font-size:
+        11.5px !important;
+
+    font-weight:
+        500 !important;
+
+    transition:
+        all .2s ease !important;
+}
+
+
+/* ================================================================
+   ICÔNES
+   ================================================================ */
+
+[data-sidebar="sidebar"]
+[data-sidebar="menu-button"] > svg {
+
+    width: 17px !important;
+
+    height: 17px !important;
+
+    flex-shrink: 0 !important;
+
+    color:
+        rgba(255, 255, 255, .43) !important;
+
+    stroke-width:
+        1.8 !important;
+
+    transition:
+        all .2s ease !important;
+}
+
+
+/* ================================================================
+   HOVER
+   ================================================================ */
+
+[data-sidebar="sidebar"]
+[data-sidebar="menu-button"]:hover {
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(53, 167, 153, .13),
+            rgba(53, 167, 153, .04)
+        ) !important;
+
+    border-color:
+        rgba(53, 167, 153, .08) !important;
+
+    color:
+        #FFFFFF !important;
+
+    transform:
+        translateX(2px);
+}
+
+
+[data-sidebar="sidebar"]
+[data-sidebar="menu-button"]:hover > svg {
+
+    color:
+        #5BC0B2 !important;
+
+    transform:
+        scale(1.06);
+}
+
+
+/* ================================================================
+   ÉLÉMENT ACTIF
+   ================================================================ */
+
+[data-sidebar="sidebar"]
+[data-sidebar="menu-button"][data-active="true"] {
+
+    background:
+        linear-gradient(
+            100deg,
+            rgba(53, 167, 153, .23),
+            rgba(53, 167, 153, .07)
+        ) !important;
+
+    border-color:
+        rgba(53, 167, 153, .14) !important;
+
+    color:
+        #FFFFFF !important;
+
+    font-weight:
+        700 !important;
+
+    box-shadow:
+        inset 0 0 0 1px
+        rgba(53, 167, 153, .03),
+
+        0 5px 15px
+        rgba(0, 0, 0, .08) !important;
+}
+
+
+/* ================================================================
+   INDICATEUR ACTIF
+   ================================================================ */
+
+[data-sidebar="sidebar"]
+[data-sidebar="menu-button"][data-active="true"]::after {
+
+    content: "";
+
+    position: absolute;
+
+    right: 8px;
+
+    top: 50%;
+
+    width: 5px;
+
+    height: 5px;
+
+    transform:
+        translateY(-50%);
+
+    border-radius: 50%;
+
+    background:
+        #35A799;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(53, 167, 153, .10);
+}
+
+
+/* ================================================================
+   ICÔNE ACTIVE
+   ================================================================ */
+
+[data-sidebar="sidebar"]
+[data-sidebar="menu-button"][data-active="true"] > svg {
+
+    color:
+        #65C8BB !important;
+}
+
+
+/* ================================================================
+   FOOTER
+   ================================================================ */
+
+[data-sidebar="sidebar"] [data-slot="sidebar-footer"] {
+
+    padding:
+        10px !important;
+
+    border-top:
+        1px solid
+        rgba(255, 255, 255, .07);
+}
+
+
+/* ================================================================
+   BOUTON UTILISATEUR
+   ================================================================ */
+
+[data-sidebar="sidebar"]
+[data-slot="sidebar-footer"]
+button {
+
+    border-radius:
+        11px !important;
+
+    transition:
+        background .2s ease !important;
+}
+
+
+[data-sidebar="sidebar"]
+[data-slot="sidebar-footer"]
+button:hover {
+
+    background:
+        rgba(53, 167, 153, .10) !important;
+}
+
+
+/* ================================================================
+   MODE COLLAPSÉ
+   ================================================================ */
+
+.group[data-collapsible="icon"]
+[data-sidebar="sidebar"] {
+
+    border-radius:
+        0 !important;
+}
+
+
+.group[data-collapsible="icon"]
+[data-sidebar="menu-button"] {
+
+    width:
+        40px !important;
+
+    height:
+        40px !important;
+
+    min-height:
+        40px !important;
+
+    margin:
+        3px auto !important;
+
+    padding:
+        0 !important;
+
+    justify-content:
+        center !important;
+
+    border-radius:
+        11px !important;
+}
+
+
+.group[data-collapsible="icon"]
+[data-sidebar="menu-button"]::after {
+
+    display:
+        none !important;
+}
+
+
+/* ================================================================
+   SCROLLBAR
+   ================================================================ */
+
+[data-sidebar="sidebar"] ::-webkit-scrollbar {
+
+    width:
+        4px;
+}
+
+
+[data-sidebar="sidebar"] ::-webkit-scrollbar-track {
+
+    background:
+        transparent;
+}
+
+
+[data-sidebar="sidebar"] ::-webkit-scrollbar-thumb {
+
+    background:
+        rgba(255, 255, 255, .12);
+
+    border-radius:
+        10px;
+}
+
+
+[data-sidebar="sidebar"] ::-webkit-scrollbar-thumb:hover {
+
+    background:
+        rgba(53, 167, 153, .35);
+}
+
+
+/* ================================================================
+   MOBILE
+   ================================================================ */
+
+@media (max-width: 768px) {
+
+    [data-sidebar="sidebar"]
+    [data-sidebar="menu-button"] {
+
+        min-height:
+            44px !important;
+
+        border-radius:
+            12px !important;
+    }
+
+}

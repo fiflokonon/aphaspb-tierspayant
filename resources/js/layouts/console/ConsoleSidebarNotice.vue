@@ -22,11 +22,11 @@ const isGold = computed(() => props.tone === 'gold');
     >
         <div
             class="text-[11px]/[1.3] font-bold"
-            :class="isGold ? 'text-gold' : 'text-white'"
+            :class="isGold ? 'text-gold' : 'text-black'"
         >
             {{ title }}
         </div>
-        <div class="mt-[5px] text-[11px]/[1.45] text-white/[0.7]">
+        <div class="mt-[5px] text-[11px]/[1.45]">
             {{ body }}
         </div>
     </div>

@@ -64,7 +64,7 @@ class ConsoleNavigation
                 ['Pharmacies inscrites', 'admin.pharmacies'],
                 ['Gestion des assureurs', 'admin.insurers'],
                 ['Exports CSV', 'admin.csv-exports'],
-                ['Profil & réglages', 'profile.edit'],
+                // ['Profil & réglages', 'profile.edit'],
             ]),
             'notices' => [
                 [
@@ -97,7 +97,7 @@ class ConsoleNavigation
         $definitions[] = ['Déclarer ce mois', 'pharmacy.declare'];
         $definitions[] = ['Historique', 'pharmacy.history'];
         $definitions[] = ['Mes assureurs', 'pharmacy.insurers'];
-        $definitions[] = ['Profil & réglages', 'profile.edit'];
+        // $definitions[] = ['Profil & réglages', 'profile.edit'];
 
         return [
             'space' => null,
