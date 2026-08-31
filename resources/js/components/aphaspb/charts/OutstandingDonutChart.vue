@@ -38,23 +38,32 @@ const color = (slice: RankedSlice) => slice.color;
         </div>
 
         <div v-else class="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <VisSingleContainer
-                :data="slices"
-                :height="height"
-                class="shrink-0 sm:w-[240px]"
-            >
-                <VisDonut
-                    :value="value"
-                    :color="color"
-                    :arc-width="34"
-                    :pad-angle="0.02"
-                    :corner-radius="3"
-                    :central-label="formatMillions(total)"
-                    central-sub-label="Encours"
-                />
-            </VisSingleContainer>
+            <!--
+                La largeur vit sur ce div, pas sur VisSingleContainer : unovis
+                dimensionne son propre conteneur et la classe ne le contraint
+                pas. Posée sur le composant, le beignet s'étalait sur toute la
+                ligne et poussait la légende hors du cadre.
+            -->
+            <div class="w-full shrink-0 sm:w-[240px]">
+                <VisSingleContainer :data="slices" :height="height">
+                    <VisDonut
+                        :value="value"
+                        :color="color"
+                        :arc-width="34"
+                        :pad-angle="0.02"
+                        :corner-radius="3"
+                        :central-label="formatMillions(total)"
+                        central-sub-label="Encours"
+                    />
+                </VisSingleContainer>
+            </div>
 
-            <ul class="min-w-0 flex-1 space-y-[7px]">
+            <!--
+                Plafonnée : sur une carte pleine largeur, une liste en flex-1
+                jetait les montants à l'autre bout de l'écran, à un mètre du
+                nom qu'ils chiffrent.
+            -->
+            <ul class="min-w-0 flex-1 space-y-[7px] sm:max-w-md">
                 <li
                     v-for="slice in slices"
                     :key="slice.label"

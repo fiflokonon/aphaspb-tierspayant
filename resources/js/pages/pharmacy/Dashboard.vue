@@ -128,7 +128,13 @@ async function exportJourney() {
     try {
         await exportChartToPng(journeyArea.value, {
             title: journeyHeading.value.title,
-            subtitle: [props.pharmacyName, filteredInsurerName.value]
+            // Le camembert répartit entre TOUS les assureurs : le filtre est
+            // masqué dans ce mode, mais sa valeur persiste. Le nommer ici
+            // ferait mentir le PNG sur son propre contenu.
+            subtitle: [
+                props.pharmacyName,
+                chartType.value === 'pie' ? null : filteredInsurerName.value,
+            ]
                 .filter((one) => one !== null)
                 .join(' · '),
             legend:
@@ -136,13 +142,25 @@ async function exportJourney() {
                     ? donutSlices.value.map((slice) => ({
                           label: `${slice.label} · ${slice.share} %`,
                           color: slice.color,
+                          shape: 'square' as const,
                       }))
                     : [
                           {
                               label: 'Facturé',
                               color: 'rgb(23 33 28 / 0.32)',
+                              shape:
+                                  chartType.value === 'bar'
+                                      ? ('square' as const)
+                                      : ('line' as const),
                           },
-                          { label: 'Encaissé', color: '#1f6f4a' },
+                          {
+                              label: 'Encaissé',
+                              color: 'var(--officine)',
+                              shape:
+                                  chartType.value === 'bar'
+                                      ? ('square' as const)
+                                      : ('line' as const),
+                          },
                       ],
             filename:
                 chartType.value === 'pie'

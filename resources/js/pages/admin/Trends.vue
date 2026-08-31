@@ -195,6 +195,7 @@ async function exportChart() {
                     ? donutSlices.value.map((slice) => ({
                           label: `${slice.label} · ${slice.share} %`,
                           color: slice.color,
+                          shape: 'square' as const,
                       }))
                     : [
                           ...series.value.map((one, index) => ({
@@ -203,6 +204,10 @@ async function exportChart() {
                                   index % CHART_COLORS.length
                               ] as string,
                               dashed: index >= CHART_COLORS.length,
+                              shape:
+                                  chartType.value === 'bar'
+                                      ? ('square' as const)
+                                      : ('line' as const),
                           })),
                           {
                               label: `Seuil ${props.threshold} jours`,

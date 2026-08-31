@@ -1,3 +1,6 @@
+import { ChartColumn, ChartLine, ChartPie } from '@lucide/vue';
+import type { Component } from 'vue';
+
 export type KpiTone = 'neutral' | 'good' | 'warn' | 'bad';
 
 export const kpiToneClass: Record<KpiTone, string> = {
@@ -40,10 +43,15 @@ export const chartTypeLabel: Record<ChartType, string> = {
     pie: 'Camembert',
 };
 
-export const chartTypeGlyph: Record<ChartType, string> = {
-    bar: '▥',
-    line: '↗',
-    pie: '◕',
+/**
+ * Des SVG et non des caractères : la police de l'app, « Plus Jakarta Sans »,
+ * ne couvre pas le bloc Geometric Shapes, et le repli système ne le couvre
+ * pas partout — les glyphes ◔ / ▥ / ◕ s'affichaient vides.
+ */
+export const chartTypeIcon: Record<ChartType, Component> = {
+    bar: ChartColumn,
+    line: ChartLine,
+    pie: ChartPie,
 };
 
 /**

@@ -19,6 +19,8 @@ export type UseConsoleShellReturn = {
     nav: ComputedRef<ConsoleNavItem[]>;
     notices: ComputedRef<ConsoleNotice[]>;
     account: ComputedRef<ConsoleAccount | null>;
+    /** Non-lues et invitations en attente, partagées par HandleInertiaRequests. */
+    notificationCount: ComputedRef<number>;
 };
 
 /**
@@ -39,5 +41,8 @@ export function useConsoleShell(): UseConsoleShellReturn {
         nav: computed(() => shell.value?.nav ?? []),
         notices: computed(() => shell.value?.notices ?? []),
         account: computed(() => shell.value?.account ?? null),
+        notificationCount: computed(
+            () => (page.props.notificationCount as number | undefined) ?? 0,
+        ),
     };
 }

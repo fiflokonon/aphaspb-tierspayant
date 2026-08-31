@@ -43,7 +43,7 @@ class SaveDeclarationRequest extends FormRequest
             // neither date can be in the future. The pair is required or
             // forbidden depending on the status: see withValidator().
             'invoice_deposited_on' => [
-                'nullable',
+                'required',
                 'date',
                 'before_or_equal:today',
                 ...($this->declaredMonthStart() === null
@@ -104,15 +104,12 @@ class SaveDeclarationRequest extends FormRequest
                 return;
             }
 
-            $status = $this->resolvedStatus();
-            $deposited = $this->input('invoice_deposited_on');
             $paid = $this->input('paid_on');
 
-            if ($status->isSettled()) {
-                if ($deposited === null || $deposited === '') {
-                    $validator->errors()->add('invoice_deposited_on', 'Indiquez la date de dépôt de la facture.');
-                }
-
+            // La date de dépôt est exigée par la règle `required` quel que soit
+            // le statut : une facture impayée en a une, c'est le paiement qui
+            // manque. Seul paid_on dépend encore du statut.
+            if ($this->resolvedStatus()->isSettled()) {
                 if ($paid === null || $paid === '') {
                     $validator->errors()->add('paid_on', 'Indiquez la date de paiement.');
                 }
@@ -167,6 +164,7 @@ class SaveDeclarationRequest extends FormRequest
     {
         return [
             'insurer_id.exists' => 'Cet assureur ne fait pas partie de ceux que vous avez cochés.',
+            'invoice_deposited_on.required' => 'Indiquez la date de dépôt de la facture.',
             'amount_received.lte' => 'Le montant reçu ne peut pas dépasser le montant facturé.',
             'invoice_deposited_on.before_or_equal' => 'La date de dépôt ne peut pas être dans le futur.',
             'invoice_deposited_on.after_or_equal' => 'La facture ne peut pas avoir été déposée avant le mois déclaré.',

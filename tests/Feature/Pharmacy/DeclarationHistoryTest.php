@@ -318,3 +318,21 @@ test('a page size outside the whitelist falls back to the default', function () 
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('filters.perPage', 20));
 });
+
+test('each row carries the abbreviated month label', function () {
+    $insurer = Insurer::factory()->create();
+    $user = officineFor([$insurer]);
+
+    Declaration::factory()->paid()->create([
+        'pharmacy_id' => $user->currentPharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('pharmacy.history'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('declarations.data.0.monthLabel', 'Août 26'),
+        );
+});

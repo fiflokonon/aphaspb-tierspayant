@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Pharmacy\SaveDeclarationRequest;
 use App\Models\Declaration;
 use App\Services\Declarations\MonthlyDeclarationRun;
+use App\Support\MonthLabel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -124,15 +125,10 @@ class DeclarationController extends Controller
      */
     protected function periodPayload(Period $period): array
     {
-        $months = [
-            1 => 'JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN',
-            'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE',
-        ];
-
         return [
             'year' => $period->year,
             'month' => $period->month,
-            'label' => $months[$period->month].' '.$period->year,
+            'label' => MonthLabel::long($period->month, $period->year),
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Support\Fcfa;
+use App\Support\MonthLabel;
 use App\Support\PageSize;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -72,7 +73,7 @@ class DeclarationHistoryController extends Controller
                 'insurerName' => $declaration->insurer->name,
                 'year' => $declaration->period_year,
                 'month' => $declaration->period_month,
-                'monthLabel' => $this->monthLabel($declaration->period_month, $declaration->period_year),
+                'monthLabel' => MonthLabel::short($declaration->period_month, $declaration->period_year),
                 'status' => $declaration->status->value,
                 'statusLabel' => $declaration->status->label(),
                 'invoiced' => Fcfa::format($declaration->amount_invoiced),
@@ -100,18 +101,5 @@ class DeclarationHistoryController extends Controller
             ],
             'pageSizes' => PageSize::OPTIONS,
         ]);
-    }
-
-    /**
-     * « Août 26 », as the canvas writes it.
-     */
-    protected function monthLabel(int $month, int $year): string
-    {
-        $months = [
-            1 => 'Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin',
-            'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.',
-        ];
-
-        return $months[$month].' '.substr((string) $year, 2);
     }
 }

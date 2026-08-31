@@ -2,7 +2,7 @@
 import { useConsoleShell } from '@/composables/useConsoleShell';
 import ConsoleLayout from './console/ConsoleLayout.vue';
 
-const { space, nav, notices, account } = useConsoleShell();
+const { space, nav, notices, account, notificationCount } = useConsoleShell();
 
 // Layout props, set by the page through setLayoutProps().
 defineProps<{ focus?: boolean }>();
@@ -15,6 +15,8 @@ defineProps<{ focus?: boolean }>();
         :notices="notices"
         :account="account"
         :focus="focus"
+        :notification-count="notificationCount"
+        notifications-href="/notifications"
     >
         <slot />
     </ConsoleLayout>

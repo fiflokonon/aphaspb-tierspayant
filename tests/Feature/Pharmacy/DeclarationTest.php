@@ -356,3 +356,15 @@ test('a private note recorded here never reaches the admin space', function () {
         ->and($props)->not->toContain('private_note')
         ->and($props)->not->toContain('privateNote');
 });
+
+test('a declaration without a deposit date is refused, even unpaid', function () {
+    [$user, $insurers] = officineWith(1);
+
+    $this->actingAs($user)
+        ->post(route('pharmacy.declare.store'), declarationPayload($insurers[0], [
+            'amount_received' => 0,
+            'paid_on' => null,
+            'invoice_deposited_on' => null,
+        ]))
+        ->assertSessionHasErrors('invoice_deposited_on');
+});

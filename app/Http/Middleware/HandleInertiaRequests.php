@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\PharmacyInvitation;
 use App\Support\ConsoleNavigation;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -45,6 +46,13 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
             ],
             'console' => fn () => app(ConsoleNavigation::class)->forUser($user, $request->getPathInfo()),
+            // La pastille de la cloche vit sur tous les écrans du shell, donc
+            // ici plutôt que dans chaque contrôleur. Fermeture paresseuse : les
+            // deux comptages ne sont payés que lorsque la prop est réellement
+            // sérialisée.
+            'notificationCount' => fn () => $user === null
+                ? 0
+                : $user->unreadNotifications()->count() + PharmacyInvitation::pendingForEmail($user->email)->count(),
             'currentPharmacy' => fn () => $user?->currentPharmacy ? $user->toUserPharmacy($user->currentPharmacy) : null,
             'pharmacies' => fn () => $user?->toUserPharmacies(includeCurrent: true) ?? [],
         ];

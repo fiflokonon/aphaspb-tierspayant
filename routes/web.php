@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\JoomlaCallbackController;
 use App\Http\Controllers\Auth\LoginRedirectController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Dev\LocalLoginController;
+use App\Http\Controllers\Notifications\NotificationCentreController;
 use App\Http\Controllers\Onboarding\PharmacyInsurersController;
 use App\Http\Controllers\Onboarding\PharmacyProfileController;
 use App\Http\Controllers\Pharmacies\PharmacyInvitationController;
@@ -67,6 +68,9 @@ Route::prefix('{current_pharmacy}')
     });
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('notifications', [NotificationCentreController::class, 'index'])->name('notifications.index');
+    Route::patch('notifications/{notification}', [NotificationCentreController::class, 'update'])->name('notifications.update');
+
     Route::post('invitations/{invitation}/accept', [PharmacyInvitationController::class, 'accept'])->name('invitations.accept');
     Route::delete('invitations/{invitation}', [PharmacyInvitationController::class, 'decline'])->name('invitations.decline');
 });
