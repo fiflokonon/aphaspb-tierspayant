@@ -6,7 +6,8 @@
  * The toolbar owns none of the state — the pages keep the type and the filter
  * in the URL, so a shared link reopens the same view.
  */
-import { chartTypeGlyph, chartTypeLabel } from '@/types/aphaspb';
+import { Download } from '@lucide/vue';
+import { chartTypeIcon, chartTypeLabel } from '@/types/aphaspb';
 import type { ChartType } from '@/types/aphaspb';
 
 withDefaults(
@@ -45,9 +46,12 @@ const model = defineModel<ChartType>({ required: true });
                 :aria-pressed="model === type"
                 @click="model = type"
             >
-                <span aria-hidden="true" class="text-[10px]">
-                    {{ chartTypeGlyph[type] }}
-                </span>
+                <component
+                    :is="chartTypeIcon[type]"
+                    class="size-[13px]"
+                    :stroke-width="2"
+                    aria-hidden="true"
+                />
                 {{ chartTypeLabel[type] }}
             </button>
         </div>
@@ -58,7 +62,11 @@ const model = defineModel<ChartType>({ required: true });
             :disabled="exporting"
             @click="$emit('export')"
         >
-            <span aria-hidden="true" class="text-[10px]">↓</span>
+            <Download
+                class="size-[13px]"
+                :stroke-width="2"
+                aria-hidden="true"
+            />
             {{ exporting ? 'Export…' : 'PNG' }}
         </button>
     </div>

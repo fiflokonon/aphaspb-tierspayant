@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
+import { BellOff } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import Pagination from '@/components/aphaspb/Pagination.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
@@ -101,7 +102,7 @@ const empty = computed(() => props.notifications.items.total === 0);
 
         <section class="notifications-card">
             <div v-if="empty" class="empty-state">
-                <div class="empty-icon">◔</div>
+                <BellOff class="empty-icon" :stroke-width="1.5" />
 
                 <p class="empty-title">Rien à signaler</p>
 
@@ -283,7 +284,12 @@ a.row-title:hover {
 }
 
 .empty-icon {
-    font-size: 26px;
+    display: block;
+    margin: 0 auto;
+
+    height: 28px;
+    width: 28px;
+
     color: rgba(23, 33, 28, 0.25);
 }
 
