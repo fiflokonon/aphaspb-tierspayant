@@ -227,6 +227,22 @@ function drawLegend(
     return y + LINE;
 }
 
+/** La plus large entrée de légende, pastille comprise. */
+function widestLegendEntry(
+    context: CanvasRenderingContext2D | null,
+    entries: LegendEntry[],
+): number {
+    if (context === null || entries.length === 0) {
+        return 0;
+    }
+
+    context.font = `500 12px ${FONT}`;
+
+    return Math.max(
+        ...entries.map((entry) => 25 + context.measureText(entry.label).width),
+    );
+}
+
 function today(): string {
     return new Date().toISOString().slice(0, 10);
 }
@@ -258,8 +274,6 @@ export async function exportChartToPng(
         return false;
     }
 
-    // The caption is measured on a throwaway pass so the canvas can be sized
-    // to it: a legend that wraps to two lines would otherwise be clipped.
     // Résolues une fois, contre le conteneur du graphique : hors du DOM, une
     // variable CSS n'a plus de valeur.
     const legend = (options.legend ?? []).map((entry) => ({
@@ -268,14 +282,28 @@ export async function exportChartToPng(
     }));
 
     const measure = document.createElement('canvas').getContext('2d');
-    let captionHeight = options.subtitle === undefined ? 34 : 54;
 
-    if (measure !== null && legend.length > 0) {
-        captionHeight =
-            drawLegend(measure, legend, captionHeight + 10, width) + 6;
-    }
+    const headerHeight = options.subtitle === undefined ? 34 : 54;
 
-    const totalWidth = width + PADDING * 2;
+    // Une seule origine pour la mesure et pour le tracé. Mesurer à un endroit
+    // et dessiner à un autre faisait couler la légende sur le graphique.
+    const legendTop = headerHeight + 10;
+
+    // Le graphique dicte sa largeur, mais un camembert contraint à 240 px
+    // laisserait la légende se replier sur cinq lignes et déborder. On prend
+    // donc la plus large des deux, avec un plancher lisible et un plafond qui
+    // évite une bande démesurée.
+    const contentWidth = Math.min(
+        900,
+        Math.max(width, 420, widestLegendEntry(measure, legend)),
+    );
+
+    const captionHeight =
+        legend.length === 0 || measure === null
+            ? headerHeight
+            : drawLegend(measure, legend, legendTop, contentWidth) + 6;
+
+    const totalWidth = contentWidth + PADDING * 2;
     const totalHeight = captionHeight + height + PADDING + 34;
 
     canvas.width = totalWidth * SCALE;
@@ -299,10 +327,17 @@ export async function exportChartToPng(
     }
 
     if (legend.length > 0) {
-        drawLegend(context, legend, captionHeight - 10, width);
+        drawLegend(context, legend, legendTop, contentWidth);
     }
 
-    context.drawImage(image, PADDING, captionHeight, width, height);
+    // Centré : le graphique est souvent plus étroit que la légende.
+    context.drawImage(
+        image,
+        PADDING + (contentWidth - width) / 2,
+        captionHeight,
+        width,
+        height,
+    );
 
     context.textBaseline = 'alphabetic';
     context.fillStyle = 'rgba(23, 33, 28, 0.4)';

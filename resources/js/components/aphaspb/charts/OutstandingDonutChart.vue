@@ -58,7 +58,12 @@ const color = (slice: RankedSlice) => slice.color;
                 </VisSingleContainer>
             </div>
 
-            <ul class="min-w-0 flex-1 space-y-[7px]">
+            <!--
+                Plafonnée : sur une carte pleine largeur, une liste en flex-1
+                jetait les montants à l'autre bout de l'écran, à un mètre du
+                nom qu'ils chiffrent.
+            -->
+            <ul class="min-w-0 flex-1 space-y-[7px] sm:max-w-md">
                 <li
                     v-for="slice in slices"
                     :key="slice.label"
