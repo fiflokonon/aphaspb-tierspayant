@@ -239,3 +239,28 @@ test('the summary costs a bounded number of queries', function () {
 
     expect(DB::getQueryLog())->toHaveCount(2);
 });
+
+test('the monthly journey can be narrowed to a single insurer', function () {
+    $mutuelle = Insurer::factory()->create();
+    $autre = Insurer::factory()->create();
+
+    declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 400_000, 'amount_received' => 100_000], $mutuelle);
+    declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 900_000, 'amount_received' => 900_000], $autre);
+
+    $journey = $this->stats->monthlyJourney($this->pharmacy, 12, $mutuelle->id);
+
+    expect($journey)->toHaveCount(12)
+        ->and($journey[11]['invoiced'])->toBe(400_000)
+        ->and($journey[11]['received'])->toBe(100_000)
+        ->and($journey[11]['outstanding'])->toBe(300_000);
+});
+
+test('the monthly journey covers every insurer when none is given', function () {
+    $mutuelle = Insurer::factory()->create();
+    $autre = Insurer::factory()->create();
+
+    declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 400_000, 'amount_received' => 100_000], $mutuelle);
+    declareFor($this->pharmacy, 2026, 8, ['amount_invoiced' => 900_000, 'amount_received' => 900_000], $autre);
+
+    expect($this->stats->monthlyJourney($this->pharmacy, 12)[11]['invoiced'])->toBe(1_300_000);
+});

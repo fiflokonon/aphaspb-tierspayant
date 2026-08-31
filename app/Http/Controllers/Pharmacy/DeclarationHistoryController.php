@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Support\Fcfa;
+use App\Support\PageSize;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,6 +20,7 @@ use Inertia\Response;
  */
 class DeclarationHistoryController extends Controller
 {
+    /** The size the register opens at, until the officine picks another. */
     protected const PER_PAGE = 20;
 
     public function __invoke(Request $request): Response
@@ -50,6 +52,8 @@ class DeclarationHistoryController extends Controller
         $year = $request->integer('year');
         $year = in_array($year, $years, true) ? $year : null;
 
+        $perPage = PageSize::resolve($request, self::PER_PAGE);
+
         $declarations = Declaration::query()
             ->with('insurer:id,name')
             ->where('pharmacy_id', $pharmacy->id)
@@ -61,7 +65,7 @@ class DeclarationHistoryController extends Controller
             // Seven insurers over several years runs into the hundreds, so the
             // register is paged. withQueryString keeps the two filters on every
             // page link instead of silently widening the list on page two.
-            ->paginate(self::PER_PAGE)
+            ->paginate($perPage)
             ->withQueryString()
             ->through(fn (Declaration $declaration) => [
                 'id' => $declaration->id,
@@ -92,7 +96,9 @@ class DeclarationHistoryController extends Controller
             'filters' => [
                 'insurer' => $insurerId,
                 'year' => $year,
+                'perPage' => $perPage,
             ],
+            'pageSizes' => PageSize::OPTIONS,
         ]);
     }
 

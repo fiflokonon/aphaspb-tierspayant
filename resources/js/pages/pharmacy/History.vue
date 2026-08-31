@@ -38,7 +38,8 @@ const props = defineProps<{
     declarations: Paginated<Row>;
     insurers: { id: number; name: string }[];
     years: number[];
-    filters: { insurer: number | null; year: number | null };
+    filters: { insurer: number | null; year: number | null; perPage: number };
+    pageSizes: number[];
 }>();
 
 const TEMPLATE = '1.6fr .8fr .9fr 1fr 1fr 1fr .7fr 1.4fr .8fr';
@@ -67,12 +68,18 @@ const yearOptions = computed(() => [
 
 const insurer = ref<number | null>(props.filters.insurer);
 const year = ref<number | null>(props.filters.year);
+const perPage = ref(props.filters.perPage);
 
 /** Filters and paging both reload only the list, never the whole page. */
 function reload(page: number) {
     router.get(
         '/pharmacy/history',
-        { insurer: insurer.value, year: year.value, page },
+        {
+            insurer: insurer.value,
+            year: year.value,
+            per_page: perPage.value,
+            page,
+        },
         {
             only: ['declarations', 'filters'],
             preserveState: true,
@@ -83,8 +90,9 @@ function reload(page: number) {
 }
 
 // Changing a filter returns to page one: staying on page seven of a list that
-// now holds four rows would show an empty table.
-watch([insurer, year], () => reload(1));
+// now holds four rows would show an empty table. Widening the page size has the
+// same effect, so it goes through the same reset.
+watch([insurer, year, perPage], () => reload(1));
 
 const footer = computed(
     () =>
@@ -319,7 +327,10 @@ const footer = computed(
                 :to="declarations.to"
                 :total="declarations.total"
                 noun="déclaration"
+                :per-page="filters.perPage"
+                :page-sizes="pageSizes"
                 @update:page="reload"
+                @update:per-page="perPage = $event"
             />
         </div>
 

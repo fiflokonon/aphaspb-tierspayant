@@ -2,15 +2,22 @@
 import { Deferred, Head, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
+import ChartToolbar from '@/components/aphaspb/charts/ChartToolbar.vue';
+import DelayBarChart from '@/components/aphaspb/charts/DelayBarChart.vue';
 import DelayTrendChart from '@/components/aphaspb/charts/DelayTrendChart.vue';
+import OutstandingDonutChart from '@/components/aphaspb/charts/OutstandingDonutChart.vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import InsufficientDataRow from '@/components/aphaspb/InsufficientDataRow.vue';
 import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
+import { useQueryId, useQueryState } from '@/composables/useQueryState';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
+import { exportChartToPng } from '@/lib/chartPng';
+import { rankSlices } from '@/lib/donut';
 import { formatMillions } from '@/lib/millions';
+import { CHART_COLORS, isChartType } from '@/types/aphaspb';
 import type { KpiTone } from '@/types/aphaspb';
 
 type AmountRow = {
@@ -114,12 +121,104 @@ function reload() {
 
 watch([period, city], reload);
 
-const series = computed(() =>
-    Object.values(props.trend?.insurers ?? {}).map((one) => ({
+/**
+ * Every insurer's curve arrives in the deferred payload, so narrowing to one is
+ * a filter over data the browser already holds — no round trip, unlike the
+ * period and city filters above which change what the server aggregates.
+ */
+const allSeries = computed(() =>
+    Object.entries(props.trend?.insurers ?? {}).map(([id, one]) => ({
+        id: Number(id),
         name: one.name,
         points: one.points,
     })),
 );
+
+const chartType = useQueryState('chart', 'line', isChartType);
+const chartInsurer = useQueryId('chart_insurer');
+
+const series = computed(() =>
+    allSeries.value
+        .filter(
+            (one) =>
+                chartInsurer.value === null || one.id === chartInsurer.value,
+        )
+        .map((one) => ({ name: one.name, points: one.points })),
+);
+
+const insurerOptions = computed(() => [
+    { value: null, label: 'Tous les assureurs' },
+    ...allSeries.value.map((one) => ({ value: one.id, label: one.name })),
+]);
+
+/**
+ * The donut leaves days behind for francs, so the heading has to follow it.
+ * Titling a distribution of outstanding balances « Évolution du délai de
+ * paiement » would be a lie the reader has no way to catch.
+ */
+const chartHeading = computed(() =>
+    chartType.value === 'pie'
+        ? {
+              title: 'Encours par assureur',
+              caption: `Reste à recouvrer sur la période, réparti entre les assureurs · un assureur n'apparaît qu'à partir de 5 officines déclarantes.`,
+          }
+        : {
+              title: 'Évolution du délai de paiement',
+              caption: `Délai moyen pondéré par les montants, en jours · ligne de référence à ${props.threshold} j, la moyenne des délais standard des assureurs · un assureur n'apparaît qu'à partir de 5 officines déclarantes.`,
+          },
+);
+
+/** Only insurers cleared by the anonymity threshold carry a figure. */
+const donutSlices = computed(() =>
+    rankSlices(
+        props.amounts
+            .filter((row) => row.sufficient)
+            .map((row) => ({
+                label: row.insurerName,
+                value: row.outstanding ?? 0,
+            })),
+    ),
+);
+
+const chartArea = ref<HTMLElement | null>(null);
+const exporting = ref(false);
+
+async function exportChart() {
+    exporting.value = true;
+
+    try {
+        await exportChartToPng(chartArea.value, {
+            title: chartHeading.value.title,
+            subtitle: `${props.periodLabel}${props.city === null ? '' : ` · ${props.city}`}`,
+            legend:
+                chartType.value === 'pie'
+                    ? donutSlices.value.map((slice) => ({
+                          label: `${slice.label} · ${slice.share} %`,
+                          color: slice.color,
+                      }))
+                    : [
+                          ...series.value.map((one, index) => ({
+                              label: one.name,
+                              color: CHART_COLORS[
+                                  index % CHART_COLORS.length
+                              ] as string,
+                              dashed: index >= CHART_COLORS.length,
+                          })),
+                          {
+                              label: `Seuil ${props.threshold} jours`,
+                              color: 'rgb(23 33 28 / 0.38)',
+                              dashed: true,
+                          },
+                      ],
+            filename:
+                chartType.value === 'pie'
+                    ? 'aphaspb-encours-assureurs'
+                    : 'aphaspb-delais-reseau',
+        });
+    } finally {
+        exporting.value = false;
+    }
+}
 </script>
 
 <template>
@@ -259,35 +358,65 @@ const series = computed(() =>
                                 ANALYSE DU RÉSEAU
                             </span>
 
-                            <h2>Évolution du délai de paiement</h2>
+                            <h2>{{ chartHeading.title }}</h2>
                         </div>
                     </div>
 
-                    <p>
-                        Délai moyen pondéré par les montants, en jours · ligne
-                        de référence à {{ threshold }} j, la moyenne des délais
-                        standard des assureurs · un assureur n'apparaît qu'à
-                        partir de 5 officines déclarantes.
-                    </p>
+                    <p>{{ chartHeading.caption }}</p>
                 </div>
 
-                <div class="threshold-badge">
+                <div v-if="chartType !== 'pie'" class="threshold-badge">
                     <span class="threshold-line"></span>
 
                     <span> Référence · {{ threshold }} jours </span>
                 </div>
             </div>
 
-            <div class="chart-container">
-                <Deferred data="trend">
+            <div class="chart-toolbar">
+                <ChartToolbar
+                    v-model="chartType"
+                    :exporting="exporting"
+                    @export="exportChart"
+                >
+                    <template #filters>
+                        <!--
+                            Hidden on the donut: a distribution narrowed to one
+                            insurer is a single wedge filling the circle.
+                        -->
+                        <FilterSelect
+                            v-if="chartType !== 'pie'"
+                            v-model="chartInsurer"
+                            :options="insurerOptions"
+                            size="compact"
+                            aria-label="Filtrer le graphique par assureur"
+                        />
+                    </template>
+                </ChartToolbar>
+            </div>
+
+            <div ref="chartArea" class="chart-container">
+                <OutstandingDonutChart
+                    v-if="chartType === 'pie'"
+                    :slices="donutSlices"
+                    :height="220"
+                />
+
+                <Deferred v-else data="trend">
                     <template #fallback>
                         <div class="chart-loading">
                             <ChartSkeleton :height="220" />
                         </div>
                     </template>
 
+                    <DelayBarChart
+                        v-if="trend && chartType === 'bar'"
+                        class="trend-chart"
+                        :series="series"
+                        :threshold="trend.threshold"
+                    />
+
                     <DelayTrendChart
-                        v-if="trend"
+                        v-else-if="trend"
                         class="trend-chart"
                         :series="series"
                         :network="trend.network"
@@ -917,6 +1046,12 @@ const series = computed(() =>
     border-radius: 4px;
 
     background: var(--apha-gold);
+}
+
+.chart-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 14px;
 }
 
 .chart-container {

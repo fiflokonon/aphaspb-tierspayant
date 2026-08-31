@@ -28,7 +28,8 @@ const props = defineProps<{
     pharmacies: Paginated<Row>;
     total: number;
     cities: string[];
-    filters: { city: string | null; search: string | null };
+    filters: { city: string | null; search: string | null; perPage: number };
+    pageSizes: number[];
 }>();
 
 const TEMPLATE = '2fr 1fr 1fr 1.1fr';
@@ -36,6 +37,7 @@ const COLUMNS = ['OFFICINE', 'VILLE', 'N° ONPB', 'INSCRITE LE'];
 
 const city = ref<string | null>(props.filters.city);
 const search = ref(props.filters.search ?? '');
+const perPage = ref(props.filters.perPage);
 
 const cityOptions = computed(() => [
     { value: null, label: 'Toutes les villes' },
@@ -45,7 +47,12 @@ const cityOptions = computed(() => [
 function reload(page: number) {
     router.get(
         '/admin/pharmacies',
-        { city: city.value, search: search.value || null, page },
+        {
+            city: city.value,
+            search: search.value || null,
+            per_page: perPage.value,
+            page,
+        },
         {
             only: ['pharmacies', 'filters'],
             preserveState: true,
@@ -59,7 +66,7 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 
 // Debounced, and back to page one: the search fires on every keystroke, and a
 // narrowed list rarely still has the page the reader was on.
-watch([city, search], () => {
+watch([city, search, perPage], () => {
     clearTimeout(timer);
     timer = setTimeout(() => reload(1), 250);
 });
@@ -237,7 +244,10 @@ const footer = computed(
                 :to="pharmacies.to"
                 :total="pharmacies.total"
                 noun="officine"
+                :per-page="filters.perPage"
+                :page-sizes="pageSizes"
                 @update:page="reload"
+                @update:per-page="perPage = $event"
             />
         </div>
 

@@ -286,3 +286,35 @@ test('a page beyond the last one comes back empty rather than erroring', functio
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->has('declarations.data', 0));
 });
+
+test('the register honours a whitelisted page size', function () {
+    $insurer = Insurer::factory()->create();
+    $user = officineFor([$insurer]);
+
+    foreach (range(1, 12) as $month) {
+        Declaration::factory()->paid()->create([
+            'pharmacy_id' => $user->currentPharmacy->id,
+            'insurer_id' => $insurer->id,
+            'period_year' => 2025,
+            'period_month' => $month,
+        ]);
+    }
+
+    $this->actingAs($user)
+        ->get(route('pharmacy.history', ['per_page' => 10]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('declarations.data', 10)
+            ->where('declarations.last_page', 2)
+            ->where('filters.perPage', 10),
+        );
+});
+
+test('a page size outside the whitelist falls back to the default', function () {
+    $user = officineFor([Insurer::factory()->create()]);
+
+    $this->actingAs($user)
+        ->get(route('pharmacy.history', ['per_page' => 5000]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('filters.perPage', 20));
+});
