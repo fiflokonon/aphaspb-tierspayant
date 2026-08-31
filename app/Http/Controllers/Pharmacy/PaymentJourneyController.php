@@ -29,6 +29,8 @@ class PaymentJourneyController extends Controller
     public function __invoke(Request $request): Response
     {
         $pharmacy = $request->user()->currentPharmacy;
+        $recovery = $this->stats->recoveryByInsurer($pharmacy, self::MONTHS);
+        $insurerId = $this->requestedInsurer($request, $recovery);
 
         return Inertia::render('pharmacy/Dashboard', [
             'pharmacyName' => $pharmacy->name,
@@ -36,16 +38,36 @@ class PaymentJourneyController extends Controller
             'summary' => $this->stats->summary($pharmacy, self::MONTHS),
             'ageing' => $this->stats->ageingBuckets($pharmacy),
             'owed' => $this->stats->outstandingByInsurer($pharmacy, self::MONTHS),
-            'recovery' => $this->stats->recoveryByInsurer($pharmacy, self::MONTHS),
+            'recovery' => $recovery,
+            'filters' => ['insurer' => $insurerId],
             'declareUrl' => route('pharmacy.declare'),
             'pendingInvitations' => $this->pendingInvitations($request),
 
             // The chart is the only expensive read on this page, so it arrives
             // after the first paint rather than delaying it.
             'journey' => Inertia::defer(
-                fn () => $this->stats->monthlyJourney($pharmacy, self::MONTHS),
+                fn () => $this->stats->monthlyJourney($pharmacy, self::MONTHS, $insurerId),
             ),
         ]);
+    }
+
+    /**
+     * The insurer the journey is narrowed to, or null for all of them.
+     *
+     * Matched against the rows the screen already lists rather than against the
+     * currently ticked insurers: recoveryByInsurer() also returns the ones this
+     * officine has stopped working with but still declared to, and the select
+     * has to be bound to a value that exists among its own options.
+     *
+     * @param  list<array{insurerId: int, insurerName: string, invoiced: int, received: int, outstanding: int, recoveryRate: float|null}>  $recovery
+     */
+    protected function requestedInsurer(Request $request, array $recovery): ?int
+    {
+        $requested = $request->integer('insurer');
+
+        return in_array($requested, array_column($recovery, 'insurerId'), true)
+            ? $requested
+            : null;
     }
 
     /**

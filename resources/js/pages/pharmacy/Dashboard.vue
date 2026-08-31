@@ -1,16 +1,25 @@
 <script setup lang="ts">
-import { Deferred, Head } from '@inertiajs/vue3';
+import { Deferred, Head, router } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
+import ChartToolbar from '@/components/aphaspb/charts/ChartToolbar.vue';
 import InvoicedVsCollectedChart from '@/components/aphaspb/charts/InvoicedVsCollectedChart.vue';
+import JourneyLineChart from '@/components/aphaspb/charts/JourneyLineChart.vue';
+import OutstandingDonutChart from '@/components/aphaspb/charts/OutstandingDonutChart.vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
+import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
 import PrimaryAction from '@/components/aphaspb/PrimaryAction.vue';
 import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue';
+import { useQueryState } from '@/composables/useQueryState';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
+import { exportChartToPng } from '@/lib/chartPng';
+import { rankSlices } from '@/lib/donut';
 import { formatMillions } from '@/lib/millions';
 import type { DashboardInvitation } from '@/types';
+import { isChartType } from '@/types/aphaspb';
 import type { KpiTone } from '@/types/aphaspb';
 
 type RecoveryRow = {
@@ -47,9 +56,103 @@ const props = defineProps<{
     owed: { insurerName: string; outstanding: number }[];
     recovery: RecoveryRow[];
     declareUrl: string;
+    filters: { insurer: number | null };
     journey?: JourneyPoint[];
     pendingInvitations?: DashboardInvitation[];
 }>();
+
+const chartType = useQueryState('chart', 'bar', isChartType);
+const journeyInsurer = ref<number | null>(props.filters.insurer);
+
+const insurerOptions = computed(() => [
+    { value: null, label: 'Tous les assureurs' },
+    ...props.recovery.map((row) => ({
+        value: row.insurerId,
+        label: row.insurerName,
+    })),
+]);
+
+/**
+ * Unlike the trends screen, the journey is aggregated server-side and is not
+ * broken down by insurer in the payload, so narrowing it costs a round trip.
+ * Only the curve and the filter come back — the KPIs above stay put.
+ */
+watch(journeyInsurer, (insurer) => {
+    router.get(
+        window.location.pathname,
+        { insurer },
+        {
+            only: ['journey', 'filters'],
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
+});
+
+const journeyHeading = computed(() =>
+    chartType.value === 'pie'
+        ? {
+              title: 'Encours par assureur',
+              caption:
+                  'Reste à recouvrer sur les 12 derniers mois, assureur par assureur.',
+          }
+        : {
+              title: 'Parcours des paiements',
+              caption:
+                  'Facturé et encaissé, en millions de FCFA, sur les 12 derniers mois.',
+          },
+);
+
+const donutSlices = computed(() =>
+    rankSlices(
+        props.owed.map((row) => ({
+            label: row.insurerName,
+            value: row.outstanding,
+        })),
+    ),
+);
+
+const journeyArea = ref<HTMLElement | null>(null);
+const exporting = ref(false);
+
+const filteredInsurerName = computed(
+    () =>
+        props.recovery.find((row) => row.insurerId === props.filters.insurer)
+            ?.insurerName ?? null,
+);
+
+async function exportJourney() {
+    exporting.value = true;
+
+    try {
+        await exportChartToPng(journeyArea.value, {
+            title: journeyHeading.value.title,
+            subtitle: [props.pharmacyName, filteredInsurerName.value]
+                .filter((one) => one !== null)
+                .join(' · '),
+            legend:
+                chartType.value === 'pie'
+                    ? donutSlices.value.map((slice) => ({
+                          label: `${slice.label} · ${slice.share} %`,
+                          color: slice.color,
+                      }))
+                    : [
+                          {
+                              label: 'Facturé',
+                              color: 'rgb(23 33 28 / 0.32)',
+                          },
+                          { label: 'Encaissé', color: '#1f6f4a' },
+                      ],
+            filename:
+                chartType.value === 'pie'
+                    ? 'aphaspb-encours-assureurs'
+                    : 'aphaspb-parcours-paiements',
+        });
+    } finally {
+        exporting.value = false;
+    }
+}
 
 const recoveryTone = (rate: number | null): KpiTone => {
     if (rate === null) {
@@ -195,12 +298,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     </div>
 
                     <div>
-                        <h2>Parcours des paiements</h2>
+                        <h2>{{ journeyHeading.title }}</h2>
 
-                        <p>
-                            Facturé et encaissé, en millions de FCFA, sur les 12
-                            derniers mois.
-                        </p>
+                        <p>{{ journeyHeading.caption }}</p>
                     </div>
                 </div>
 
@@ -210,15 +310,50 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 </div>
             </div>
 
-            <Deferred data="journey">
-                <template #fallback>
-                    <ChartSkeleton class="mt-5" :height="200" />
-                </template>
+            <div class="chart-toolbar">
+                <ChartToolbar
+                    v-model="chartType"
+                    :exporting="exporting"
+                    @export="exportJourney"
+                >
+                    <template #filters>
+                        <!--
+                            Hidden on the donut: a distribution narrowed to one
+                            insurer is a single wedge filling the circle.
+                        -->
+                        <FilterSelect
+                            v-if="chartType !== 'pie'"
+                            v-model="journeyInsurer"
+                            :options="insurerOptions"
+                            size="compact"
+                            aria-label="Filtrer le graphique par assureur"
+                        />
+                    </template>
+                </ChartToolbar>
+            </div>
 
-                <div v-if="journey" class="chart-wrapper">
-                    <InvoicedVsCollectedChart :points="journey" />
-                </div>
-            </Deferred>
+            <div ref="journeyArea">
+                <OutstandingDonutChart
+                    v-if="chartType === 'pie'"
+                    :slices="donutSlices"
+                    :height="200"
+                />
+
+                <Deferred v-else data="journey">
+                    <template #fallback>
+                        <ChartSkeleton class="mt-5" :height="200" />
+                    </template>
+
+                    <div v-if="journey" class="chart-wrapper">
+                        <JourneyLineChart
+                            v-if="chartType === 'line'"
+                            :points="journey"
+                        />
+
+                        <InvoicedVsCollectedChart v-else :points="journey" />
+                    </div>
+                </Deferred>
+            </div>
         </section>
 
         <div class="analysis-grid">
@@ -809,6 +944,12 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
 .journey-card {
     margin-bottom: 12px;
+}
+
+.chart-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 14px;
 }
 
 .chart-wrapper {

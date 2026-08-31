@@ -52,11 +52,16 @@ class PharmacyStatsService
     /**
      * Invoiced and collected, month by month, with empty months at zero.
      *
+     * Narrowing to one insurer keeps the empty months: an officine that filters
+     * on a insurer it declared to twice must still see the ten months where it
+     * declared nothing, or the curve would silently change its time axis.
+     *
      * @return list<array{key: string, label: string, invoiced: int, received: int, outstanding: int, isCurrent: bool}>
      */
-    public function monthlyJourney(Pharmacy $pharmacy, int $months): array
+    public function monthlyJourney(Pharmacy $pharmacy, int $months, ?int $insurerId = null): array
     {
         $rows = $this->window($pharmacy, $months)
+            ->when($insurerId, fn (Builder $query) => $query->where('insurer_id', $insurerId))
             ->select('period_year', 'period_month')
             ->selectRaw('SUM(amount_invoiced) as invoiced')
             ->selectRaw('SUM(amount_received) as received')

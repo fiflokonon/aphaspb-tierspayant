@@ -30,3 +30,34 @@ export const rowToneClass: Record<DataTableRowTone, string> = {
     alert: 'bg-terracotta/[0.04]',
     muted: 'bg-cream-state',
 };
+
+/** How a chart block draws its figures, chosen by the reader. */
+export type ChartType = 'bar' | 'line' | 'pie';
+
+export const chartTypeLabel: Record<ChartType, string> = {
+    bar: 'Barres',
+    line: 'Courbes',
+    pie: 'Camembert',
+};
+
+export const chartTypeGlyph: Record<ChartType, string> = {
+    bar: '▥',
+    line: '↗',
+    pie: '◕',
+};
+
+/**
+ * The narrow palette the charts share: green, gold, terracotta.
+ *
+ * Past three series colour alone stops separating them, which is why the line
+ * chart dashes the fourth onward rather than reaching for more hues.
+ */
+export const CHART_COLORS = [
+    'var(--officine)',
+    'var(--gold-mid)',
+    'var(--terracotta)',
+] as const;
+
+export function isChartType(value: unknown): value is ChartType {
+    return value === 'bar' || value === 'line' || value === 'pie';
+}

@@ -142,3 +142,23 @@ test('an admin account cannot reach the officine dashboard', function () {
         ->get(route('dashboard', ['current_pharmacy' => $admin->currentPharmacy->slug]))
         ->assertForbidden();
 });
+
+test('the dashboard carries the insurer the journey is narrowed to', function () {
+    $user = User::factory()->create();
+    $insurer = $user->currentPharmacy->insurers()->sole();
+
+    $this->actingAs($user)
+        ->get(dashboardUrlFor($user).'?insurer='.$insurer->id)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('filters.insurer', $insurer->id));
+});
+
+test('an insurer the officine has nothing to do with is ignored', function () {
+    $user = User::factory()->create();
+    $stranger = Insurer::factory()->create();
+
+    $this->actingAs($user)
+        ->get(dashboardUrlFor($user).'?insurer='.$stranger->id)
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('filters.insurer', null));
+});
