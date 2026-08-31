@@ -112,7 +112,9 @@ class ConsoleNavigation
                 ['Pharmacies inscrites', 'admin.pharmacies'],
                 ['Gestion des assureurs', 'admin.insurers'],
                 ['Exports CSV', 'admin.csv-exports'],
-                ['Profil & réglages', 'profile.edit'],
+                // Retirée de la navigation le 31/08/2026. L'écran et sa route
+                // existent toujours : seule l'entrée est masquée.
+                // ['Profil & réglages', 'profile.edit'],
             ]),
             'notices' => [
                 [
@@ -145,7 +147,9 @@ class ConsoleNavigation
         $definitions[] = ['Déclarer ce mois', 'pharmacy.declare'];
         $definitions[] = ['Historique', 'pharmacy.history'];
         $definitions[] = ['Mes assureurs', 'pharmacy.insurers'];
-        $definitions[] = ['Profil & réglages', 'profile.edit'];
+        // Retirée de la navigation le 31/08/2026. L'écran et sa route existent
+        // toujours : seule l'entrée est masquée.
+        // $definitions[] = ['Profil & réglages', 'profile.edit'];
 
         return [
             'space' => null,

@@ -16,7 +16,7 @@ test('an admin gets the admin shell with its space and both notices', function (
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('console.space', 'ESPACE ADMIN')
-            ->has('console.nav', 6)
+            ->has('console.nav', 5)
             ->has('console.notices', 2)
             ->has('console.account')
             ->where('console.notices.0.title', 'Vue anonymisée')
@@ -57,7 +57,7 @@ test('a pharmacy gets the pharmacy shell, without space or notice', function () 
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('console.space', null)
-            ->has('console.nav', 5)
+            ->has('console.nav', 4)
             ->has('console.notices', 0),
         );
 });
