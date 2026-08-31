@@ -41,6 +41,8 @@ export type LegendEntry = {
     color: string;
     /** Drawn as a dashed rule, matching how the chart distinguishes it. */
     dashed?: boolean;
+    /** Squares for areas and wedges, rules for lines — as on screen. */
+    shape?: 'line' | 'square';
 };
 
 export type ChartPngOptions = {
@@ -138,6 +140,30 @@ function toImage(markup: string): Promise<HTMLImageElement> {
     });
 }
 
+/**
+ * Turn a CSS colour into something the canvas understands.
+ *
+ * The palette is written in custom properties — `var(--officine)`,
+ * `color-mix(in srgb, …)`. A canvas resolves neither: assigning one to
+ * strokeStyle is silently ignored and the swatch stays the default black,
+ * which is exactly how the exported legend lost its colours. The browser is
+ * asked to compute the value instead, against an element inside the chart so
+ * the custom properties are in scope.
+ */
+function resolveColor(value: string, host: HTMLElement): string {
+    const probe = document.createElement('span');
+
+    probe.style.color = value;
+    probe.style.display = 'none';
+    host.appendChild(probe);
+
+    const resolved = window.getComputedStyle(probe).color;
+
+    probe.remove();
+
+    return resolved === '' ? value : resolved;
+}
+
 /** Legend swatches wrap, so the caption height is not known in advance. */
 function drawLegend(
     context: CanvasRenderingContext2D,
@@ -165,14 +191,31 @@ function drawLegend(
         }
 
         context.save();
-        context.strokeStyle = entry.color;
-        context.lineWidth = 3;
-        context.lineCap = 'round';
-        context.setLineDash(entry.dashed ? [5, 4] : []);
-        context.beginPath();
-        context.moveTo(x, y);
-        context.lineTo(x + RULE, y);
-        context.stroke();
+
+        if (entry.shape === 'square') {
+            context.fillStyle = entry.color;
+            context.beginPath();
+
+            // roundRect est récent : une exception ici ferait échouer tout
+            // l'export pour un coin arrondi.
+            if (typeof context.roundRect === 'function') {
+                context.roundRect(x + 3, y - 5, 11, 11, 2);
+            } else {
+                context.rect(x + 3, y - 5, 11, 11);
+            }
+
+            context.fill();
+        } else {
+            context.strokeStyle = entry.color;
+            context.lineWidth = 3;
+            context.lineCap = 'round';
+            context.setLineDash(entry.dashed ? [5, 4] : []);
+            context.beginPath();
+            context.moveTo(x, y);
+            context.lineTo(x + RULE, y);
+            context.stroke();
+        }
+
         context.restore();
 
         context.fillStyle = 'rgba(23, 33, 28, 0.62)';
@@ -217,7 +260,13 @@ export async function exportChartToPng(
 
     // The caption is measured on a throwaway pass so the canvas can be sized
     // to it: a legend that wraps to two lines would otherwise be clipped.
-    const legend = options.legend ?? [];
+    // Résolues une fois, contre le conteneur du graphique : hors du DOM, une
+    // variable CSS n'a plus de valeur.
+    const legend = (options.legend ?? []).map((entry) => ({
+        ...entry,
+        color: resolveColor(entry.color, container as HTMLElement),
+    }));
+
     const measure = document.createElement('canvas').getContext('2d');
     let captionHeight = options.subtitle === undefined ? 34 : 54;
 
