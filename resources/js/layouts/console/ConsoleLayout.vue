@@ -5,6 +5,7 @@ import type {
     ConsoleNotice,
 } from '@/types/console';
 import ConsoleSidebar from './ConsoleSidebar.vue';
+import ConsoleTopBar from './ConsoleTopBar.vue';
 
 defineProps<{
     space?: string | null;
@@ -18,6 +19,8 @@ defineProps<{
      * Desktop keeps the rail, where it costs nothing.
      */
     focus?: boolean;
+    notificationCount?: number;
+    notificationsHref?: string;
 }>();
 </script>
 
@@ -31,6 +34,8 @@ defineProps<{
             :nav="nav"
             :notices="notices ?? []"
             :account="account ?? null"
+            :notification-count="notificationCount ?? 0"
+            :notifications-href="notificationsHref ?? '/notifications'"
             :class="focus ? 'hidden lg:flex' : ''"
         />
 
@@ -38,6 +43,11 @@ defineProps<{
              CONTENU PRINCIPAL
         ====================================================== -->
         <main class="app-content">
+            <ConsoleTopBar
+                :count="notificationCount ?? 0"
+                :href="notificationsHref ?? '/notifications'"
+            />
+
             <slot />
         </main>
     </div>

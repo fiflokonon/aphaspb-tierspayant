@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\PharmacyRole;
 use Database\Factories\PharmacyInvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,6 +45,26 @@ class PharmacyInvitation extends Model
                 $invitation->code = Str::random(64);
             }
         });
+    }
+
+    /**
+     * Les invitations qu'une adresse doit encore accepter ou refuser.
+     *
+     * La comparaison est insensible à la casse : l'invitation est saisie à la
+     * main par un titulaire, l'adresse du compte vient de Joomla, et rien ne
+     * garantit qu'elles s'écrivent pareil.
+     *
+     * @param  Builder<PharmacyInvitation>  $query
+     */
+    #[Scope]
+    protected function pendingForEmail(Builder $query, string $email): void
+    {
+        $query
+            ->whereRaw('LOWER(email) = ?', [mb_strtolower($email)])
+            ->whereNull('accepted_at')
+            ->where(fn (Builder $inner) => $inner
+                ->whereNull('expires_at')
+                ->orWhere('expires_at', '>=', now()));
     }
 
     /**

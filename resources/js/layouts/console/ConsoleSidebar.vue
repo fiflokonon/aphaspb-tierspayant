@@ -6,6 +6,8 @@ import type {
     ConsoleNotice,
 } from '@/types/console';
 import ConsoleAccountFooter from './ConsoleAccountFooter.vue';
+import ConsoleAccountMenu from './ConsoleAccountMenu.vue';
+import ConsoleBell from './ConsoleBell.vue';
 import ConsoleSidebarNotice from './ConsoleSidebarNotice.vue';
 
 defineProps<{
@@ -13,6 +15,8 @@ defineProps<{
     nav: ConsoleNavItem[];
     notices: ConsoleNotice[];
     account: ConsoleAccount | null;
+    notificationCount: number;
+    notificationsHref: string;
 }>();
 </script>
 
@@ -43,6 +47,21 @@ defineProps<{
                 <span class="space-dot"></span>
 
                 {{ space }}
+            </div>
+
+            <!--
+                Sous lg, cette barre EST le bandeau supérieur : la cloche et le
+                compte s'y posent plutôt que dans un second bandeau. Au-dessus,
+                la cloche vit dans ConsoleTopBar et le compte dans le pied du
+                rail, qui reste inchangé.
+            -->
+            <div class="apha-header-actions">
+                <ConsoleBell
+                    :count="notificationCount"
+                    :href="notificationsHref"
+                />
+
+                <ConsoleAccountMenu v-if="account" :account="account" />
             </div>
         </div>
 
@@ -702,7 +721,24 @@ defineProps<{
     }
 }
 
+.apha-header-actions {
+    display: none;
+}
+
 @media (max-width: 1023px) {
+    .apha-header-actions {
+        position: absolute;
+
+        top: 0;
+        right: 0;
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 8px;
+    }
+
     .apha-sidebar {
         position: relative;
 
