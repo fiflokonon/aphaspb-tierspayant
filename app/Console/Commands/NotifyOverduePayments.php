@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Enums\PharmacyRole;
 use App\Models\Pharmacy;
+use App\Models\User;
+use App\Notifications\Declarations\NetworkOverdueDigest;
 use App\Notifications\Declarations\OverduePaymentsDigest;
 use App\Services\Declarations\OverduePaymentsService;
 use App\Support\Fcfa;
@@ -70,11 +72,52 @@ class NotifyOverduePayments extends Command
             $sent++;
         }
 
+        $this->notifyNetworkAdmins($overdue, $dryRun);
+
         $this->info($dryRun
             ? "Essai à blanc : rien n'a été envoyé."
             : "{$sent} récapitulatif(s) envoyé(s).");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Le digest agrégé de l'APhaSPB.
+     *
+     * Les admins ne sont pas un rôle en base mais un groupe Joomla, et la
+     * shadow table ne connaît que les comptes déjà connectés au moins une
+     * fois : ce digest ne touche que ceux-là, ce qui est une propriété du
+     * modèle d'authentification et non un défaut de cet envoi.
+     */
+    protected function notifyNetworkAdmins(OverduePaymentsService $overdue, bool $dryRun): void
+    {
+        $totals = $overdue->networkTotals();
+
+        if ($totals === []) {
+            $this->line("· Réseau — rien au-delà du seuil d'anonymat");
+
+            return;
+        }
+
+        $admins = User::query()
+            ->where(function ($query) {
+                foreach ((array) config('joomla.groups.admin') as $group) {
+                    $query->orWhereJsonContains('joomla_groups', $group);
+                }
+            })
+            ->get();
+
+        $this->line(sprintf(
+            '· Réseau — %d assureur(s), %d destinataire(s)',
+            count($totals),
+            $admins->count(),
+        ));
+
+        if ($dryRun || $admins->isEmpty()) {
+            return;
+        }
+
+        Notification::send($admins, new NetworkOverdueDigest($totals));
     }
 
     /**

@@ -2,10 +2,12 @@
 
 namespace App\Services\Declarations;
 
+use App\Data\InsurerOverdueTotals;
 use App\Data\OverdueLine;
 use App\Enums\DeclarationStatus;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
+use App\Services\Settings\SettingsRepository;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -20,6 +22,11 @@ use Illuminate\Support\Facades\DB;
  */
 class OverduePaymentsService
 {
+    public function __construct(protected SettingsRepository $settings)
+    {
+        //
+    }
+
     /**
      * Les factures en retard d'une officine, la plus ancienne en tête.
      *
@@ -72,6 +79,42 @@ class OverduePaymentsService
             ->pluck('declarations.pharmacy_id');
 
         return Pharmacy::query()->whereIn('id', $ids)->orderBy('name')->get();
+    }
+
+    /**
+     * Le retard du réseau, assureur par assureur.
+     *
+     * Les assureurs comptant moins d'officines déclarantes que le seuil
+     * d'anonymat sont omis, exactement comme sur les écrans réseau : un digest
+     * qui les listerait contournerait la règle par la porte de derrière.
+     *
+     * @return list<InsurerOverdueTotals>
+     */
+    public function networkTotals(): array
+    {
+        $minimum = $this->settings->anonymityMinPharmacies();
+
+        $rows = $this->overdueQuery()
+            ->select('insurers.id', 'insurers.name', 'insurers.standard_delay_days')
+            ->selectRaw('COUNT(*) as declarations')
+            ->selectRaw('COUNT(DISTINCT declarations.pharmacy_id) as pharmacies')
+            ->selectRaw('SUM(declarations.amount_invoiced - declarations.amount_received) as outstanding')
+            ->groupBy('insurers.id', 'insurers.name', 'insurers.standard_delay_days')
+            ->get();
+
+        $totals = $rows
+            ->filter(fn (object $row): bool => (int) $row->pharmacies >= $minimum)
+            ->map(fn (object $row): InsurerOverdueTotals => new InsurerOverdueTotals(
+                insurerId: (int) $row->id,
+                insurerName: (string) $row->name,
+                standardDelayDays: (int) $row->standard_delay_days,
+                declarations: (int) $row->declarations,
+                pharmacies: (int) $row->pharmacies,
+                outstanding: (int) $row->outstanding,
+            ))
+            ->sortByDesc('outstanding');
+
+        return array_values($totals->values()->all());
     }
 
     /**
