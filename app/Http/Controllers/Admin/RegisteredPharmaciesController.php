@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
+use App\Support\PageSize;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,12 +24,14 @@ use Inertia\Response;
  */
 class RegisteredPharmaciesController extends Controller
 {
+    /** The size the roll opens at, until the admin picks another. */
     protected const PER_PAGE = 50;
 
     public function __invoke(Request $request): Response
     {
         $city = $request->string('city')->value() ?: null;
         $search = $request->string('search')->value() ?: null;
+        $perPage = PageSize::resolve($request, self::PER_PAGE);
 
         $pharmacies = Pharmacy::query()
             ->when($city, fn ($query) => $query->where('city', $city))
@@ -37,7 +40,7 @@ class RegisteredPharmaciesController extends Controller
                 ['%'.mb_strtolower($search).'%'],
             ))
             ->orderBy('name')
-            ->paginate(self::PER_PAGE, ['id', 'name', 'city', 'onpb_license', 'created_at'])
+            ->paginate($perPage, ['id', 'name', 'city', 'onpb_license', 'created_at'])
             ->withQueryString()
             ->through(fn (Pharmacy $pharmacy) => [
                 'id' => $pharmacy->id,
@@ -56,7 +59,8 @@ class RegisteredPharmaciesController extends Controller
                 ->orderBy('city')
                 ->pluck('city')
                 ->all(),
-            'filters' => ['city' => $city, 'search' => $search],
+            'filters' => ['city' => $city, 'search' => $search, 'perPage' => $perPage],
+            'pageSizes' => PageSize::OPTIONS,
         ]);
     }
 }

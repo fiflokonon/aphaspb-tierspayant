@@ -1,17 +1,51 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 
-const props = defineProps<{
-    page: number;
-    lastPage: number;
-    from: number | null;
-    to: number | null;
-    total: number;
-    /** What the rows are, for the count line: « déclaration », « officine ». */
-    noun: string;
+const props = withDefaults(
+    defineProps<{
+        page: number;
+        lastPage: number;
+        from: number | null;
+        to: number | null;
+        total: number;
+        /** What the rows are, for the count line: « déclaration », « officine ». */
+        noun: string;
+        /** Rows per page, and the sizes on offer. Omit both to hide the picker. */
+        perPage?: number;
+        pageSizes?: number[];
+    }>(),
+    { perPage: undefined, pageSizes: () => [] },
+);
+
+const emit = defineEmits<{
+    'update:page': [page: number];
+    'update:perPage': [perPage: number];
 }>();
 
-const emit = defineEmits<{ 'update:page': [page: number] }>();
+/**
+ * The picker only earns its place once there is something to page through:
+ * offering « 100 par page » above eight rows is noise.
+ */
+const showPageSizes = computed(
+    () =>
+        props.perPage !== undefined &&
+        props.pageSizes.length > 0 &&
+        props.total > Math.min(...props.pageSizes),
+);
+
+const pageSizeOptions = computed(() =>
+    props.pageSizes.map((size) => ({ value: size, label: `${size} / page` })),
+);
+
+const pageSize = computed({
+    get: () => props.perPage ?? null,
+    set: (value) => {
+        if (typeof value === 'number' && value !== props.perPage) {
+            emit('update:perPage', value);
+        }
+    },
+});
 
 /**
  * A window of page numbers around the current one, with ellipses.
@@ -63,10 +97,20 @@ const go = (page: number) => {
         v-if="total > 0"
         class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
-        <p class="text-[11.5px] text-ink/[0.55]">
-            {{ from }}–{{ to }} sur {{ total }} {{ noun
-            }}{{ total > 1 ? 's' : '' }}
-        </p>
+        <div class="flex items-center gap-3">
+            <p class="text-[11.5px] text-ink/[0.55]">
+                {{ from }}–{{ to }} sur {{ total }} {{ noun
+                }}{{ total > 1 ? 's' : '' }}
+            </p>
+
+            <FilterSelect
+                v-if="showPageSizes"
+                v-model="pageSize"
+                :options="pageSizeOptions"
+                size="compact"
+                aria-label="Nombre de lignes par page"
+            />
+        </div>
 
         <nav
             v-if="lastPage > 1"

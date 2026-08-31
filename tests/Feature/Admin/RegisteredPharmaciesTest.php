@@ -163,3 +163,23 @@ test('a search survives pagination and narrows the total', function () {
             ->where('filters.search', 'Unique'),
         );
 });
+
+test('the roll honours a whitelisted page size', function () {
+    Pharmacy::factory()->count(12)->create();
+
+    $this->actingAs(User::factory()->networkAdmin()->create())
+        ->get(route('admin.pharmacies', ['per_page' => 10]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('pharmacies.data', 10)
+            ->where('pharmacies.last_page', 2)
+            ->where('filters.perPage', 10),
+        );
+});
+
+test('a page size outside the whitelist falls back to the default', function () {
+    $this->actingAs(User::factory()->networkAdmin()->create())
+        ->get(route('admin.pharmacies', ['per_page' => 5000]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('filters.perPage', 50));
+});
