@@ -26,3 +26,14 @@ grep -l "<fragment du tracé>" public/build/assets/*.js
 ```
 
 Des glyphes du même bloc subsistent dans du code plus ancien et sont probablement invisibles eux aussi — `◷` (7 emplacements), `◉`, `◆`, `◈`, `◌`, `◐`, `▾`. Les convertir quand on touche l'écran concerné. `●` (U+25CF) et les flèches `↗ ← ↓` sont, elles, largement couvertes par les replis système.
+
+## Il y a désormais un runner JS (Vitest) — pour la logique pure, pas le rendu
+**Ajouté le 31/08/2026.** Plusieurs règles plus anciennes affirment que « le projet n'a pas de runner JS » : c'est périmé.
+
+`npm run test:js` (Vitest), inclus dans `composer ci:check`. Les tests vivent à côté du code, en `resources/js/**/*.test.ts`.
+
+Motif : `resources/js/lib/chartPng.ts` a cassé deux fois en silence sur du calcul de géométrie — eslint, prettier, vue-tsc et Pest ne peuvent rien y voir. La suite couvre ce fichier et a été validée par contrôle négatif : réintroduire chaque bug fait tomber le test qui le vise.
+
+Environnement `node`, **pas jsdom** : les tests bouchonnent eux-mêmes le peu de DOM nécessaire. Conséquence à connaître — ce runner couvre **la logique pure** (calculs, tri, mise en forme, géométrie). Il ne monte aucun composant Vue et ne voit **ni le CSS, ni les media queries, ni le rendu**. Une régression de mise en page reste invisible autrement qu'au navigateur : voir la règle sur `lg:h-screen lg:sticky` dans layouts.md, toujours valable.
+
+`vitest.config.ts` est dans les `ignores` d'eslint, comme `vite.config.ts`.
