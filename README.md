@@ -44,8 +44,19 @@ les autorisations refusent et l'application répond 403 partout, même connecté
 
 ```dotenv
 JOOMLA_ADMIN_GROUPS=8
-JOOMLA_PHARMACY_GROUPS=2
+JOOMLA_PHARMACY_GROUPS=10
 ```
+
+Ce sont les identifiants réels de tes groupes Joomla, à relever dans
+**Utilisateurs → Groupes** : `8` est Super Users sur une installation par
+défaut, `10` n'est qu'un exemple pour le groupe des officines.
+
+> **Ne jamais mettre `2` dans `JOOMLA_PHARMACY_GROUPS`.** Le claim `groups` du
+> ticket est rempli par `getAuthorisedGroups()`, qui remonte toute la chaîne
+> d'héritage : un compte du groupe « Officines » porte aussi Registered (2) et
+> Public (1). Pointer `2` ouvre donc le tiers-payant à **tout compte inscrit sur
+> le site Joomla**. Le groupe des officines doit être un groupe dédié, créé pour
+> ça, et c'est l'appartenance à ce groupe qui vaut autorisation d'accès.
 
 Les autres variables `JOOMLA_*` ne servent qu'au vrai flux d'authentification,
 qui n'est pas nécessaire en développement (voir plus bas).
@@ -63,8 +74,12 @@ une seule interface. L'application écoute sur <http://localhost:8000>.
 ## Se connecter sans Joomla
 
 L'authentification est déléguée à un site Joomla qui joue le rôle de
-fournisseur d'identité — et le plugin correspondant n'existe pas encore. Deux
-routes de développement ouvrent donc une session directement :
+fournisseur d'identité. Les extensions Joomla correspondantes vivent dans un
+dépôt séparé, [`aphaspb-joomla-sso`](https://github.com/fiflokonon/aphaspb-joomla-sso),
+qui porte aussi la procédure d'installation côté CMS et la recette manuelle.
+
+Pour travailler sur les écrans sans monter tout le CMS, deux routes de
+développement ouvrent une session directement :
 
 | URL | Profil | Où elle mène |
 |---|---|---|
@@ -77,9 +92,15 @@ routes de développement ouvrent donc une session directement :
 > erreur de configuration. `tests/Feature/Dev/LocalLoginTest.php` vérifie cette
 > absence.
 
-Le vrai flux Joomla reste intact et testé : la route `login` redirige vers
-`JOOMLA_LOGIN_URL`, et `POST /auth/callback` échange un ticket JWT RS256 à usage
-unique contre une session Laravel.
+Le vrai flux Joomla reste intact et testé : la route `login` pose un cookie
+`state` et redirige vers `JOOMLA_LOGIN_URL`, puis `POST /auth/callback` échange
+un ticket JWT RS256 à usage unique contre une session Laravel.
+
+Un compte Joomla dont les groupes ne donnent accès ni à l'espace officine ni à
+l'espace APhaSPB est refusé **au callback** : aucune session n'est ouverte,
+aucun utilisateur miroir n'est créé, et la page `/auth/no-access` le lui
+explique. C'est la gate `access-tierspayant` qui tranche, sur les groupes du
+ticket signé.
 
 ## Ce qu'il y a à voir
 
@@ -185,12 +206,13 @@ npm run types:check && npm run lint:check                # front
 
 ### Ce que la suite garantit
 
-285 tests, dont trois familles qui méritent d'être connues :
+400 tests, dont trois familles qui méritent d'être connues :
 
 - **Authentification** — un JWT signé RS256 par une paire de clés de test ouvre
   une session ; un `aud` étranger, une signature invalide, un jeton expiré ou
-  rejoué donnent chacun un 401 générique ; un `token_version` désynchronisé
-  détruit la session.
+  rejoué, un `state` absent ou faux donnent chacun un 401 générique ; un compte
+  sans groupe autorisé repart sur `/auth/no-access` sans rien laisser derrière
+  lui ; un `token_version` désynchronisé détruit la session.
 - **Déduction du statut** — les quatre cas, plus la correction manuelle qui
   survit à un nouvel enregistrement. Les valeurs de l'énumération sont épinglées
   par un test parce que le SQL d'agrégation les écrit en littéral.
@@ -242,14 +264,60 @@ doit jamais lire une officine nommément, celui de l'officine ne doit jamais
 agréger le réseau. Deux classes rendent la frontière lisible, et chacune a son
 propre test de confidentialité.
 
+## Mise en production
+
+L'application ne se déploie pas seule : la moitié authentification vit dans le
+dépôt [`aphaspb-joomla-sso`](https://github.com/fiflokonon/aphaspb-joomla-sso),
+et **il faut l'installer d'abord** — sans le plugin système, personne ne peut se
+connecter, l'application n'ayant aucun formulaire de connexion propre.
+
+Ordre des opérations :
+
+1. **Côté Joomla** — dérouler le README de `aphaspb-joomla-sso` : paire de clés
+   RSA hors webroot, installation des trois extensions, publication des deux
+   plugins, secret machine-to-machine. Les archives installables sont les
+   pièces jointes de la
+   [release](https://github.com/fiflokonon/aphaspb-joomla-sso/releases/latest) —
+   rien à compiler.
+2. **Créer le groupe des officines** dans **Utilisateurs → Groupes**, relever son
+   identifiant, et y placer les adhérents qui ont accès au tiers-payant. C'est ce
+   groupe, et lui seul, qui ouvre l'application — voir l'avertissement sur
+   `JOOMLA_PHARMACY_GROUPS` plus haut.
+3. **Côté Laravel** — déployer le code, puis :
+
+```bash
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build
+php artisan migrate --force
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+```
+
+4. **Vérifier** avec le chapitre 9 du README des extensions, puis une connexion
+   réelle de bout en bout.
+
+Deux contraintes non négociables :
+
+- **HTTPS des deux côtés.** Le cookie `state` est `SameSite=None; Secure`, sans
+  quoi le navigateur ne l'envoie pas sur le POST cross-site de retour. En clair
+  sur du HTTP en production, **toute connexion échoue en 401**. Les navigateurs
+  font une exception pour `http://localhost`, ce qui masque le problème en local.
+- **`php artisan config:cache` après chaque changement de `.env`.** Sans ça, un
+  `.env` modifié reste sans effet si la configuration est déjà en cache.
+
+Enfin, mettre l'application en production bascule deux comportements :
+`app()->isLocal()` étant faux, les routes `/dev/login/*` disparaissent du
+routeur, et `DB::prohibitDestructiveCommands()` bloque `migrate:fresh`.
+
 ## Reste à faire
 
 Hors du périmètre livré, dans l'ordre où l'APhaSPB en aura probablement besoin :
 
-- le **plugin Joomla** — authentification, émission du JWT, `/api/me`, table des
-  refresh tokens. Trois questions restent ouvertes : le site utilise-t-il le MFA,
-  existe-t-il des comptes migrés depuis Joomla 3 avec des hash legacy, Laravel et
-  Joomla partagent-ils le VPS ;
+- le **lien d'accès depuis Joomla** — un élément de menu vers `/login` de
+  l'application, restreint au groupe des officines, pour que l'adhérent
+  autorisé ait un bouton et que les autres ne voient rien ;
+- l'**incrément de `token_version` côté Joomla** sur changement de mot de passe
+  (`onUserAfterSave`) : le mécanisme de révocation existe côté Laravel et est
+  vérifié périodiquement, mais rien ne le déclenche encore ;
 - le **rappel mensuel par email le 25** (CDC §3.6) ;
 - la **validation des douze colonnes d'export** par l'APhaSPB avant que le
   premier fichier ne circule — le format est en place, son contenu exact n'est

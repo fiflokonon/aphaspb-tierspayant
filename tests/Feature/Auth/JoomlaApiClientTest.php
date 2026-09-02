@@ -11,13 +11,7 @@ beforeEach(function () {
 
 test('it fetches a profile and sends the shared secret', function () {
     Http::fake([
-        'joomla.test/api/me*' => Http::response([
-            'id' => 5150,
-            'name' => 'Pharmacie Le Bon Secours',
-            'email' => 'titulaire@officine.bj',
-            'verified' => true,
-            'token_version' => 3,
-        ]),
+        'joomla.test/api/me*' => Http::response(joomlaProfilePayload(['token_version' => 3])),
     ]);
 
     $profile = $this->client->profile(5150);
@@ -30,6 +24,14 @@ test('it fetches a profile and sends the shared secret', function () {
         ->and($profile->tokenVersion)->toBe(3);
 
     Http::assertSent(fn ($request) => $request->hasHeader('X-Joomla-Secret', 'test-secret'));
+});
+
+test('it asks for JSON:API, which is the only thing Joomla will negotiate', function () {
+    Http::fake(['joomla.test/api/me*' => Http::response(joomlaProfilePayload())]);
+
+    $this->client->profile(5150);
+
+    Http::assertSent(fn ($request) => $request->hasHeader('Accept', 'application/vnd.api+json'));
 });
 
 test('it returns null when Joomla refuses the call', function () {
@@ -45,7 +47,17 @@ test('it returns null when Joomla is unreachable', function () {
 });
 
 test('it returns null when the payload lacks the fields the application needs', function () {
-    Http::fake(['joomla.test/api/me*' => Http::response(['id' => 5150])]);
+    Http::fake([
+        'joomla.test/api/me*' => Http::response([
+            'data' => ['type' => 'me', 'id' => '5150', 'attributes' => ['id' => 5150]],
+        ]),
+    ]);
+
+    expect($this->client->profile(5150))->toBeNull();
+});
+
+test('it returns null when the answer is not wrapped the way JSON:API wraps it', function () {
+    Http::fake(['joomla.test/api/me*' => Http::response(['id' => 5150, 'name' => 'X', 'email' => 'x@y.bj'])]);
 
     expect($this->client->profile(5150))->toBeNull();
 });

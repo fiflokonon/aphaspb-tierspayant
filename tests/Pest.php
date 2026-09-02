@@ -114,6 +114,35 @@ function useJoomlaTestKeys(): void
 }
 
 /**
+ * The JSON:API envelope Joomla's profile endpoint answers with.
+ *
+ * Kept in one place because the shape belongs to Joomla, not to us: the API
+ * application wraps every resource in data.attributes.
+ *
+ * @param  array<string, mixed>  $attributes
+ * @return array<string, mixed>
+ */
+function joomlaProfilePayload(array $attributes = []): array
+{
+    $attributes = array_merge([
+        'id' => 5150,
+        'name' => 'Pharmacie Le Bon Secours',
+        'email' => 'titulaire@officine.bj',
+        'verified' => true,
+        'token_version' => 0,
+        'blocked' => false,
+    ], $attributes);
+
+    return [
+        'data' => [
+            'type' => 'me',
+            'id' => (string) $attributes['id'],
+            'attributes' => $attributes,
+        ],
+    ];
+}
+
+/**
  * Forge a JWT the way the Joomla plugin will. Claims passed in override defaults.
  *
  * @param  array<string, mixed>  $claims
