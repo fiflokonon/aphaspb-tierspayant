@@ -125,8 +125,20 @@ ticket signé.
 | Gestion des assureurs | `/admin/insurers` | ajouter, renommer, désactiver |
 | Exports CSV | `/admin/csv-exports` | agrégats réseau uniquement |
 
-Aucun de ces écrans n'est une page d'attente : les onze sont livrés. Là où une
-donnée manque — un assureur sous le seuil des 5 officines déclarantes, un mois
+### Communs aux deux espaces
+
+Ils ne figurent pas dans la barre de navigation — on y arrive par la cloche du
+bandeau ou par le sélecteur d'officine — mais ce sont des écrans à part entière :
+
+| Écran | URL | Ce qu'on y fait |
+|---|---|---|
+| Centre de notifications | `/notifications` | relire les alertes et les invitations reçues |
+| Mes officines | `/settings/pharmacies` | changer d'officine, en créer une, quitter |
+| Membres d'une officine | `/settings/pharmacies/{officine}` | inviter, retirer, changer un rôle |
+| Profil | `/settings/profile` | l'entrée de menu a été retirée le 31/08/2026, la route vit toujours |
+
+Aucun des onze écrans des deux espaces n'est une page d'attente : ils sont tous
+livrés. Là où une donnée manque — un assureur sous le seuil des 5 officines déclarantes, un mois
 sans déclaration — l'écran l'explique au lieu de rester vide, comme le prévoit
 le canvas.
 
@@ -181,7 +193,7 @@ composer ci:check
 ```
 
 C'est ce que lance la CI, et **la seule vérification complète** : Prettier,
-ESLint, `vue-tsc`, PHPStan, Pint sur tout le projet, puis la suite Pest.
+ESLint, `vue-tsc`, Vitest, PHPStan, Pint sur tout le projet, puis la suite Pest.
 
 Deux étapes échappent aux vérifications partielles et cassent régulièrement sans
 que rien d'autre ne le signale :
@@ -294,6 +306,44 @@ php artisan config:cache && php artisan route:cache && php artisan view:cache
 
 4. **Vérifier** avec le chapitre 9 du README des extensions, puis une connexion
    réelle de bout en bout.
+
+### Les tâches de fond
+
+Deux écrans ne suffisent pas : l'application envoie des courriels et planifie
+des travaux. **Sans les trois points suivants, elle fonctionne en apparence et
+n'envoie jamais rien** — aucune erreur, aucun journal, juste des messages qui ne
+partent pas.
+
+**Un worker de file d'attente.** Les trois notifications — invitation à
+rejoindre une officine, récapitulatif des retards à l'officine, récapitulatif
+réseau — implémentent `ShouldQueue` et sont donc mises en file, pas envoyées à
+chaud. `QUEUE_CONNECTION=database` : la table existe, mais rien ne la dépile
+sans worker.
+
+```bash
+php artisan queue:work --queue=default --tries=3 --max-time=3600
+```
+
+À placer sous supervision (systemd ou Supervisor) pour qu'il redémarre seul.
+
+**Une entrée cron.** `routes/console.php` planifie la purge quotidienne des
+invitations expirées et le récapitulatif hebdomadaire des retards, le lundi à
+07:00 heure du Bénin.
+
+```cron
+* * * * * cd /chemin/vers/le/projet && php artisan schedule:run >> /dev/null 2>&1
+```
+
+**Un vrai mailer.** `.env.example` livre `MAIL_MAILER=log`, qui écrit les
+courriels dans `storage/logs` au lieu de les envoyer. Renseigner un transport
+réel et `MAIL_FROM_ADDRESS` avant la mise en service.
+
+Pour vérifier la chaîne complète sans attendre lundi :
+
+```bash
+php artisan declarations:notify-overdue --dry-run   # ce qui partirait
+php artisan schedule:list                           # les deux tâches et leur prochaine exécution
+```
 
 Deux contraintes non négociables :
 
