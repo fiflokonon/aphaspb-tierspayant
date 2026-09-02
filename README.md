@@ -275,7 +275,10 @@ Ordre des opérations :
 
 1. **Côté Joomla** — dérouler le README de `aphaspb-joomla-sso` : paire de clés
    RSA hors webroot, installation des trois extensions, publication des deux
-   plugins, secret machine-to-machine.
+   plugins, secret machine-to-machine. Les archives installables sont les
+   pièces jointes de la
+   [release](https://github.com/fiflokonon/aphaspb-joomla-sso/releases/latest) —
+   rien à compiler.
 2. **Créer le groupe des officines** dans **Utilisateurs → Groupes**, relever son
    identifiant, et y placer les adhérents qui ont accès au tiers-payant. C'est ce
    groupe, et lui seul, qui ouvre l'application — voir l'avertissement sur
@@ -289,7 +292,7 @@ php artisan migrate --force
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
 
-4. **Vérifier** avec le chapitre 8 du README des extensions, puis une connexion
+4. **Vérifier** avec le chapitre 9 du README des extensions, puis une connexion
    réelle de bout en bout.
 
 Deux contraintes non négociables :
