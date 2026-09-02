@@ -41,6 +41,18 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureJoomlaGates(): void
     {
+        /*
+         * The door itself. Joomla authenticates a whole site, of which the
+         * tiers-payant is one corner: a member with no officine and no seat on
+         * the network has nothing to do here, and must be turned away at the
+         * handoff rather than let in and bounced by the first gate downstream.
+         */
+        Gate::define('access-tierspayant', fn (User $user): bool => $user->hasAnyJoomlaGroup(
+            config('joomla.groups.admin'),
+        ) || $user->hasAnyJoomlaGroup(
+            config('joomla.groups.pharmacy'),
+        ));
+
         Gate::define('manage-network', fn (User $user): bool => $user->hasAnyJoomlaGroup(
             config('joomla.groups.admin'),
         ));

@@ -12,13 +12,7 @@ beforeEach(function () {
 function fakeJoomlaTokenVersion(int $version): void
 {
     Http::fake([
-        'joomla.test/api/me*' => Http::response([
-            'id' => 5150,
-            'name' => 'Pharmacie Le Bon Secours',
-            'email' => 'titulaire@officine.bj',
-            'verified' => true,
-            'token_version' => $version,
-        ]),
+        'joomla.test/api/me*' => Http::response(joomlaProfilePayload(['token_version' => $version])),
     ]);
 }
 

@@ -19,6 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['sidebar_state']);
 
+        /*
+         * Joomla posts the handoff ticket from its own origin and holds no CSRF
+         * token of ours. The handoff state cookie guards this route instead.
+         */
+        $middleware->validateCsrfTokens(except: ['auth/callback']);
+
         $middleware->alias([
             'onboarded' => EnsureOnboarded::class,
         ]);

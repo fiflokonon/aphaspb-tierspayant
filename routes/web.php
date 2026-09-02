@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\NetworkExportController;
 use App\Http\Controllers\Admin\NetworkStatsController;
 use App\Http\Controllers\Admin\NetworkTrendsController;
 use App\Http\Controllers\Admin\RegisteredPharmaciesController;
+use App\Http\Controllers\Auth\AccessDeniedController;
 use App\Http\Controllers\Auth\JoomlaCallbackController;
 use App\Http\Controllers\Auth\LoginRedirectController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -25,6 +26,7 @@ Route::inertia('/', 'Welcome')->name('home');
 Route::get('login', LoginRedirectController::class)->name('login');
 Route::post('auth/callback', JoomlaCallbackController::class)->name('auth.callback');
 Route::post('auth/logout', LogoutController::class)->name('auth.logout');
+Route::get('auth/no-access', AccessDeniedController::class)->name('auth.denied');
 
 Route::middleware(['auth', 'can:manage-network'])
     ->prefix('admin')

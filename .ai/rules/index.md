@@ -5,7 +5,9 @@ Before planning or editing, find the row whose globs match the file's path and r
 | Applies to | Rule file |
 | --- | --- |
 | resources/js/components/aphaspb/** | .ai/rules/aphaspb.md |
+| app/Http/Controllers/Auth/** | .ai/rules/auth.md |
 | resources/js/components/aphaspb/charts/** | .ai/rules/charts.md |
+| config/joomla.php | .ai/rules/config.md |
 | package.json, ** | .ai/rules/general.md |
 | resources/js/** | .ai/rules/js.md |
 | resources/js/layouts/** | .ai/rules/layouts.md |

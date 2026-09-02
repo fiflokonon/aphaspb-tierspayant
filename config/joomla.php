@@ -24,6 +24,12 @@ return [
     'login_url' => env('JOOMLA_LOGIN_URL'),
 
     /*
+    | Racine du site Joomla, vers laquelle repartent les comptes sans accès au
+    | tiers-payant. À défaut, l'émetteur, qui est déjà cette racine.
+    */
+    'site_url' => env('JOOMLA_SITE_URL', env('JOOMLA_ISSUER')),
+
+    /*
     | Base de l'API Joomla et secret machine-to-machine pour GET /api/me.
     */
     'api_url' => env('JOOMLA_API_URL'),

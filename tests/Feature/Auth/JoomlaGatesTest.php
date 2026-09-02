@@ -5,6 +5,17 @@ use Illuminate\Support\Facades\Gate;
 
 beforeEach(fn () => useJoomlaTestKeys());
 
+test('both an officine and a network admin may enter the tiers-payant', function () {
+    expect(Gate::forUser(User::factory()->create())->allows('access-tierspayant'))->toBeTrue()
+        ->and(Gate::forUser(User::factory()->networkAdmin()->create())->allows('access-tierspayant'))->toBeTrue();
+});
+
+test('a member of the association with no role here may not enter', function () {
+    $stranger = User::factory()->create(['joomla_groups' => [999]]);
+
+    expect(Gate::forUser($stranger)->allows('access-tierspayant'))->toBeFalse();
+});
+
 test('a network admin may read the aggregated network and manage insurers', function () {
     $admin = User::factory()->networkAdmin()->create();
 

@@ -11,6 +11,10 @@ createInertiaApp({
         switch (true) {
             case name === 'Welcome':
                 return null;
+            // The refusal page is reached by a visitor with no session at
+            // all: the console shell would have nothing to draw.
+            case name.startsWith('auth/'):
+                return null;
             case name.startsWith('onboarding/'):
                 return OnboardingLayout;
             // Every other page runs the console shell: admin or officine, the
