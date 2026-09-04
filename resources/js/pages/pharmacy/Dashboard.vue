@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Deferred, Head, router } from '@inertiajs/vue3';
+import { Deferred, Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
 import ChartToolbar from '@/components/aphaspb/charts/ChartToolbar.vue';
@@ -56,6 +56,7 @@ const props = defineProps<{
     owed: { insurerName: string; outstanding: number }[];
     recovery: RecoveryRow[];
     declareUrl: string;
+    outstandingMonths: { label: string; url: string }[];
     filters: { insurer: number | null };
     journey?: JourneyPoint[];
     pendingInvitations?: DashboardInvitation[];
@@ -249,6 +250,29 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             <div class="intro-status">
                 <span class="status-dot"></span>
                 <span> Données actualisées </span>
+            </div>
+        </section>
+
+        <section v-if="outstandingMonths.length > 0" class="catch-up">
+            <div class="catch-up-text">
+                <span class="catch-up-label"> MOIS À RATTRAPER </span>
+
+                <p>
+                    Ces mois n'ont pas encore été déclarés pour tous vos
+                    assureurs. Le rattrapage reste possible douze mois en
+                    arrière.
+                </p>
+            </div>
+
+            <div class="catch-up-months">
+                <Link
+                    v-for="month in outstandingMonths"
+                    :key="month.url"
+                    :href="month.url"
+                    class="catch-up-month"
+                >
+                    {{ month.label }}
+                </Link>
             </div>
         </section>
 
@@ -558,6 +582,84 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .dashboard-header {
     position: relative;
     z-index: 5;
+}
+
+.catch-up {
+    position: relative;
+
+    margin: 0 0 22px;
+
+    padding: 18px 22px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 17px;
+
+    background: var(--gold-soft);
+}
+
+.catch-up-label {
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 10.5px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.05em;
+}
+
+.catch-up-text p {
+    margin-top: 6px;
+
+    color: var(--ink);
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+.catch-up-months {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    margin-top: 14px;
+}
+
+.catch-up-month {
+    display: inline-flex;
+
+    align-items: center;
+
+    min-height: 38px;
+
+    padding: 0 14px;
+
+    border: 1px solid rgba(215, 163, 61, 0.45);
+
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    color: var(--ink);
+
+    font-size: 11.5px;
+
+    font-weight: 700;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+.catch-up-month:hover {
+    border-color: var(--gold);
+
+    background: #fffdf7;
 }
 
 .dashboard-intro {

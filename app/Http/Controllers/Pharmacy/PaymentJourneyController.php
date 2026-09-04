@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Pharmacy;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pharmacy;
 use App\Models\PharmacyInvitation;
+use App\Services\Declarations\DeclarationCalendar;
 use App\Services\Pharmacy\PharmacyStatsService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,8 +23,10 @@ class PaymentJourneyController extends Controller
     /** How far back the journey looks. */
     protected const MONTHS = 12;
 
-    public function __construct(protected PharmacyStatsService $stats)
-    {
+    public function __construct(
+        protected PharmacyStatsService $stats,
+        protected DeclarationCalendar $calendar,
+    ) {
         //
     }
 
@@ -41,6 +45,7 @@ class PaymentJourneyController extends Controller
             'recovery' => $recovery,
             'filters' => ['insurer' => $insurerId],
             'declareUrl' => route('pharmacy.declare'),
+            'outstandingMonths' => $this->outstandingMonths($pharmacy),
             'pendingInvitations' => $this->pendingInvitations($request),
 
             // The chart is the only expensive read on this page, so it arrives
@@ -68,6 +73,29 @@ class PaymentJourneyController extends Controller
         return in_array($requested, array_column($recovery, 'insurerId'), true)
             ? $requested
             : null;
+    }
+
+    /**
+     * The months this officine still owes, oldest first.
+     *
+     * Catching up was always allowed and never offered: the screen only ever
+     * linked to the month in progress, so a month missed in June stayed
+     * missed. Each entry carries the link that opens its round.
+     *
+     * @return list<array{year: int, month: int, label: string, isComplete: bool, isCurrent: bool, url: string}>
+     */
+    protected function outstandingMonths(Pharmacy $pharmacy): array
+    {
+        return array_map(
+            fn (array $month): array => [
+                ...$month,
+                'url' => route('pharmacy.declare', [
+                    'year' => $month['year'],
+                    'month' => $month['month'],
+                ]),
+            ],
+            $this->calendar->outstanding($pharmacy),
+        );
     }
 
     /**

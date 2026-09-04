@@ -87,4 +87,24 @@ class User extends Authenticatable
     {
         return array_intersect($this->joomla_groups ?? [], $groups) !== [];
     }
+
+    /**
+     * The screen this account starts on once a session is open.
+     *
+     * Both the Joomla callback and the bare root URL have to answer this, and
+     * they must not drift: a user who lands somewhere different depending on
+     * how they arrived reports it as two separate bugs.
+     */
+    public function landingRoute(): string
+    {
+        if ($this->hasAnyJoomlaGroup(config('joomla.groups.admin'))) {
+            return route('admin.network');
+        }
+
+        if ($this->needsOnboarding()) {
+            return route('onboarding.profile');
+        }
+
+        return route('dashboard', ['current_pharmacy' => $this->currentPharmacy->slug]);
+    }
 }

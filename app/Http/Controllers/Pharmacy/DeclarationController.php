@@ -6,6 +6,8 @@ use App\Data\Period;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pharmacy\SaveDeclarationRequest;
 use App\Models\Declaration;
+use App\Models\Pharmacy;
+use App\Services\Declarations\DeclarationCalendar;
 use App\Services\Declarations\MonthlyDeclarationRun;
 use App\Support\MonthLabel;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +23,11 @@ use Inertia\Response;
  */
 class DeclarationController extends Controller
 {
+    public function __construct(protected DeclarationCalendar $calendar)
+    {
+        //
+    }
+
     public function show(Request $request): Response
     {
         $pharmacy = $request->user()->currentPharmacy;
@@ -35,6 +42,7 @@ class DeclarationController extends Controller
             return Inertia::render('pharmacy/DeclareDone', [
                 'declared' => $run->declaredCount(),
                 'period' => $this->periodPayload($period),
+                'periods' => $this->selectablePeriods($pharmacy),
                 'dashboardUrl' => route('dashboard', ['current_pharmacy' => $pharmacy->slug]),
             ]);
         }
@@ -49,6 +57,7 @@ class DeclarationController extends Controller
             ],
             'progress' => $run->progressFor($insurer),
             'period' => $this->periodPayload($period),
+            'periods' => $this->selectablePeriods($pharmacy),
             // The two date fields are bounded by the same span the request
             // validates, so the browser refuses what the server would refuse.
             'dateBounds' => [
@@ -118,6 +127,27 @@ class DeclarationController extends Controller
         }
 
         return new Period($year, $month);
+    }
+
+    /**
+     * The months the officine may switch to, newest first.
+     *
+     * Reaching a missed month used to mean typing the query string by hand.
+     *
+     * @return list<array{year: int, month: int, label: string, isComplete: bool, isCurrent: bool, url: string}>
+     */
+    protected function selectablePeriods(Pharmacy $pharmacy): array
+    {
+        return array_map(
+            fn (array $month): array => [
+                ...$month,
+                'url' => route('pharmacy.declare', [
+                    'year' => $month['year'],
+                    'month' => $month['month'],
+                ]),
+            ],
+            $this->calendar->months($pharmacy),
+        );
     }
 
     /**

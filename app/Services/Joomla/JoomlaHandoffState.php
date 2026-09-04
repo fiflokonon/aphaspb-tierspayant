@@ -24,7 +24,18 @@ class JoomlaHandoffState
 {
     public const COOKIE = 'joomla_handoff_state';
 
-    protected const LIFETIME_MINUTES = 5;
+    /**
+     * How long a minted state stays usable.
+     *
+     * It has to cover the whole human leg on Joomla's side: reaching the login
+     * form, digging out a password, and clearing the MFA captive page with a
+     * phone in hand. Five minutes did not, and an expired handoff is refused
+     * with the same opaque 401 as a forged one — nothing the user or the
+     * support desk can act on. The replay window is bounded elsewhere, by the
+     * 120-second ticket and its single-use jti, so this only has to be
+     * generous enough for a person.
+     */
+    protected const LIFETIME_MINUTES = 15;
 
     /**
      * Mint a state, queue it on the response, and hand it to the caller for

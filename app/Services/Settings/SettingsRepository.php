@@ -20,6 +20,17 @@ class SettingsRepository
     public const ANONYMITY_MIN_PHARMACIES = 'anonymity_min_pharmacies';
 
     /**
+     * The lowest the anonymity threshold may be set to.
+     *
+     * At one, an insurer's indicators are a single officine's indicators
+     * published under the network's name. Two is not comfortable either — with
+     * exactly two declarants, each can subtract its own figures to read the
+     * other's — but it is where the number stops being one officine's data
+     * outright, so it is where the admin's hand stops.
+     */
+    public const ANONYMITY_FLOOR = 2;
+
+    /**
      * @var array<string, int>
      */
     protected const DEFAULTS = [

@@ -73,10 +73,7 @@ const initials = computed(() => getInitials(props.account.name));
 
             <DropdownMenuSeparator />
 
-            <LogoutLink
-                :href="account.logoutHref"
-                class="flex min-h-[40px] w-full items-center rounded-md px-2 text-left text-[12px] font-medium text-ink/[0.62] transition-colors hover:bg-ink/[0.05]"
-            />
+            <LogoutLink :href="account.logoutHref" class="mt-1 w-full" />
         </DropdownMenuContent>
     </DropdownMenu>
 </template>

@@ -29,6 +29,13 @@ test('the state cookie is set up to survive a cross-site post', function () {
         ->and($cookie->isHttpOnly())->toBeTrue();
 });
 
+test('the state cookie outlives a Joomla login slowed by MFA', function () {
+    $cookie = collect($this->get(route('login'))->headers->getCookies())
+        ->firstWhere(fn ($cookie) => $cookie->getName() === JoomlaHandoffState::COOKIE);
+
+    expect($cookie->getExpiresTime() - now()->getTimestamp())->toBeGreaterThanOrEqual(10 * 60);
+});
+
 test('an invitation code survives the round trip to Joomla', function () {
     $this->get(route('login', ['invitation' => 'abc123']));
 

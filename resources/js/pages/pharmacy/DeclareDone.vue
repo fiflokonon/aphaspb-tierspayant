@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import PeriodPicker from '@/components/aphaspb/PeriodPicker.vue';
+import type { SelectablePeriod } from '@/types/aphaspb';
 
 const props = defineProps<{
     declared: number;
     period: { year: number; month: number; label: string };
+    periods: SelectablePeriod[];
     dashboardUrl: string;
 }>();
 </script>
@@ -45,6 +48,20 @@ const props = defineProps<{
             >
                 Revoir mes déclarations
             </Link>
+        </div>
+
+        <!--
+            Without this the screen was a dead end: a month reached from the
+            picker and already complete landed here, and the only way to
+            another month was back through the dashboard.
+        -->
+        <div class="mt-6 rounded-xl border border-input bg-card px-[18px] py-4">
+            <p class="text-[12px]/[1.5] text-ink/60">
+                Un autre mois à déclarer ? Le rattrapage reste possible douze
+                mois en arrière.
+            </p>
+
+            <PeriodPicker :periods="periods" :current="period" class="mt-3" />
         </div>
     </div>
 </template>

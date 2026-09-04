@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\PharmacyRole;
+use App\Models\Pharmacy;
 use App\Models\User;
 use App\Services\Joomla\JoomlaHandoffState;
 use Illuminate\Support\Facades\Http;
@@ -147,6 +149,41 @@ test('a handoff whose state does not match the cookie is refused', function () {
         ->assertStatus(401);
 
     $this->assertGuest();
+});
+
+test('signing in carries the titulaire’s Joomla name onto the officines they hold', function () {
+    Http::fake([
+        'joomla.test/api/me*' => Http::response(
+            joomlaProfilePayload(['name' => 'Awa Hounkpatin-Doe']),
+        ),
+    ]);
+
+    $user = User::factory()->notOnboarded()->create(['joomla_user_id' => 5150]);
+
+    // Spelled by hand back when the field was still typed, or correct until
+    // Joomla was corrected. Either way the officine is the stale copy.
+    $pharmacy = Pharmacy::factory()->create(['owner_name' => 'Awa Hounkpatin']);
+    $pharmacy->members()->attach($user, ['role' => PharmacyRole::Owner->value]);
+
+    postHandoff(['token' => joomlaToken(['sub' => '5150'])])->assertRedirect();
+
+    expect($pharmacy->fresh()->owner_name)->toBe('Awa Hounkpatin-Doe');
+});
+
+test('an officine is not renamed by a member who is not its titulaire', function () {
+    Http::fake([
+        'joomla.test/api/me*' => Http::response(
+            joomlaProfilePayload(['name' => 'Kofi Adjovi']),
+        ),
+    ]);
+
+    $user = User::factory()->notOnboarded()->create(['joomla_user_id' => 5150]);
+    $pharmacy = Pharmacy::factory()->create(['owner_name' => 'Awa Hounkpatin']);
+    $pharmacy->members()->attach($user, ['role' => PharmacyRole::Member->value]);
+
+    postHandoff(['token' => joomlaToken(['sub' => '5150'])])->assertRedirect();
+
+    expect($pharmacy->fresh()->owner_name)->toBe('Awa Hounkpatin');
 });
 
 test('a replayed ticket is refused', function () {

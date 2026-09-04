@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import FormField from '@/components/aphaspb/FormField.vue';
 import TextInput from '@/components/aphaspb/TextInput.vue';
 
@@ -8,10 +9,18 @@ defineProps<{
         name: string | null;
         onpb_license: string | null;
         city: string | null;
-        owner_name: string | null;
     } | null;
     cities: string[];
 }>();
+
+const page = usePage();
+
+/**
+ * The titulaire is read, never typed: the server writes the Joomla account
+ * holder's name whatever the form carries, so showing anything else here
+ * would promise an edit that does not happen.
+ */
+const ownerName = computed(() => page.props.auth.user?.name ?? '');
 </script>
 
 <template>
@@ -79,13 +88,15 @@ defineProps<{
                 </div>
             </div>
 
-            <FormField label="NOM DU TITULAIRE" :error="errors.owner_name">
-                <TextInput
-                    name="owner_name"
-                    :model-value="pharmacy?.owner_name ?? ''"
-                    :invalid="!!errors.owner_name"
-                    placeholder="Nom et prénom"
-                />
+            <FormField
+                label="NOM DU TITULAIRE"
+                hint="Repris de votre compte APhaSPB. Pour le corriger, modifiez votre profil sur le site de l'association."
+            >
+                <p
+                    class="flex h-[46px] items-center rounded-[10px] border-[1.5px] border-ink/[0.13] bg-ink/[0.03] px-3 text-[13px] font-medium text-ink/70"
+                >
+                    {{ ownerName }}
+                </p>
             </FormField>
 
             <button

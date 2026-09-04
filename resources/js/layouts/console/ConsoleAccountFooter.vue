@@ -48,10 +48,7 @@ defineProps<{ account: ConsoleAccount }>();
                 {{ account.name }}
             </div>
 
-            <LogoutLink
-                :href="account.logoutHref"
-                class="mt-[2px] flex min-h-[44px] w-full items-center text-left text-[11.5px] font-medium text-ink/[0.55] transition-colors hover:text-ink"
-            />
+            <LogoutLink :href="account.logoutHref" class="mt-[10px] w-full" />
         </div>
     </div>
 </template>
