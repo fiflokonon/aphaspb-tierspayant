@@ -50,7 +50,7 @@ class VerifyJoomlaTokenVersion
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect('/');
+            return redirect()->away((string) config('joomla.site_url'));
         }
 
         $request->session()->put(self::CHECKED_AT, now()->getTimestamp());

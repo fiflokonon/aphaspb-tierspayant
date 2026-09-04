@@ -40,6 +40,7 @@ class InsurerManagementController extends Controller
                     'pharmacies' => $insurer->pharmacies_count,
                 ]),
             'anonymityMinimum' => $this->settings->anonymityMinPharmacies(),
+            'anonymityFloor' => SettingsRepository::ANONYMITY_FLOOR,
         ]);
     }
 

@@ -30,7 +30,6 @@ test('submitting the profile creates the officine and makes the user its owner',
             'name' => 'Pharmacie Le Bon Secours',
             'onpb_license' => 'ONPB-4212',
             'city' => 'Cotonou',
-            'owner_name' => 'Awa Hounkpatin',
         ])
         ->assertRedirect(route('onboarding.insurers'));
 
@@ -39,9 +38,25 @@ test('submitting the profile creates the officine and makes the user its owner',
     expect($pharmacy)->not->toBeNull()
         ->and($pharmacy->name)->toBe('Pharmacie Le Bon Secours')
         ->and($pharmacy->city)->toBe('Cotonou')
-        ->and($pharmacy->owner_name)->toBe('Awa Hounkpatin')
+        ->and($pharmacy->owner_name)->toBe($user->name)
         ->and($pharmacy->hasCompleteProfile())->toBeTrue()
         ->and($user->fresh()->pharmacyRole($pharmacy))->toBe(PharmacyRole::Owner);
+});
+
+test('the titulaire comes from the Joomla account, never from the form', function () {
+    $user = User::factory()->notOnboarded()->create(['name' => 'Awa Hounkpatin']);
+
+    // The field is displayed, not typed. A post that carries one anyway — the
+    // browser is the attacker's to edit — must not reach the officine.
+    $this->actingAs($user)
+        ->post(route('onboarding.profile.store'), [
+            'name' => 'Pharmacie Le Bon Secours',
+            'city' => 'Cotonou',
+            'owner_name' => 'Quelqu’un d’autre',
+        ])
+        ->assertRedirect(route('onboarding.insurers'));
+
+    expect($user->fresh()->currentPharmacy->owner_name)->toBe('Awa Hounkpatin');
 });
 
 test('the ONPB licence may be left blank', function () {
@@ -51,7 +66,6 @@ test('the ONPB licence may be left blank', function () {
         ->post(route('onboarding.profile.store'), [
             'name' => 'Pharmacie Sans Licence',
             'city' => 'Parakou',
-            'owner_name' => 'Kofi Adjovi',
         ])
         ->assertRedirect();
 
@@ -66,20 +80,19 @@ test('a duplicate ONPB licence is refused', function () {
             'name' => 'Pharmacie Copie',
             'onpb_license' => 'ONPB-0001',
             'city' => 'Cotonou',
-            'owner_name' => 'Test',
         ])
         ->assertSessionHasErrors('onpb_license');
 });
 
-test('the name, the city and the owner are all required', function () {
+test('the name and the city are both required', function () {
     $this->actingAs(User::factory()->notOnboarded()->create())
         ->post(route('onboarding.profile.store'), [])
-        ->assertSessionHasErrors(['name', 'city', 'owner_name']);
+        ->assertSessionHasErrors(['name', 'city']);
 });
 
 test('a second submission updates the officine instead of creating another', function () {
     $user = User::factory()->notOnboarded()->create();
-    $payload = ['name' => 'Pharmacie A', 'city' => 'Cotonou', 'owner_name' => 'Titulaire'];
+    $payload = ['name' => 'Pharmacie A', 'city' => 'Cotonou'];
 
     $this->actingAs($user)->post(route('onboarding.profile.store'), $payload);
 

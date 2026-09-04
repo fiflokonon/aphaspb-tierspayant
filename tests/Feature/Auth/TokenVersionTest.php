@@ -33,7 +33,9 @@ test('a bumped token version destroys the session', function () {
     $this->actingAs($this->user)
         ->withSession(['joomla.token_version_checked_at' => now()->subHour()->timestamp])
         ->get(route('dashboard', ['current_pharmacy' => $this->user->currentPharmacy->slug]))
-        ->assertRedirect('/');
+        // Out to Joomla, not to the root: the root hands a guest straight to
+        // the handoff, which would re-open the very session just revoked.
+        ->assertRedirect(config('joomla.site_url'));
 
     $this->assertGuest();
 });
@@ -63,7 +65,7 @@ test('an unreachable Joomla leaves the session alone', function () {
 test('a guest is not checked at all', function () {
     Http::fake();
 
-    $this->get('/')->assertOk();
+    $this->get('/')->assertRedirect(route('login'));
 
     Http::assertNothingSent();
 });

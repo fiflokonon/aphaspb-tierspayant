@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\Pharmacies\SyncTitulaireName;
 use App\Data\JoomlaClaims;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -31,6 +32,7 @@ class JoomlaCallbackController extends Controller
         protected JoomlaTicket $ticket,
         protected JoomlaApiClient $joomla,
         protected JoomlaHandoffState $state,
+        protected SyncTitulaireName $syncTitulaireName,
     ) {
         //
     }
@@ -53,12 +55,17 @@ class JoomlaCallbackController extends Controller
 
         abort_if($user === null, 401);
 
+        // Joomla has just told us how this person spells their name; the
+        // officines they hold are the last place still carrying an older
+        // answer.
+        $this->syncTitulaireName->handle($user);
+
         Auth::login($user, remember: false);
 
         $request->session()->regenerate();
         $request->session()->put('joomla.token_version_checked_at', now()->getTimestamp());
 
-        return redirect()->intended($this->landingFor($user));
+        return redirect()->intended($user->landingRoute());
     }
 
     /**
@@ -99,24 +106,5 @@ class JoomlaCallbackController extends Controller
         ])->save();
 
         return $user;
-    }
-
-    /**
-     * Where a freshly authenticated user lands.
-     *
-     * The admin console arrives in a later increment; until then the network
-     * admin is dropped on the home page.
-     */
-    protected function landingFor(User $user): string
-    {
-        if ($user->hasAnyJoomlaGroup(config('joomla.groups.admin'))) {
-            return route('admin.network');
-        }
-
-        if ($user->needsOnboarding()) {
-            return route('onboarding.profile');
-        }
-
-        return route('dashboard', ['current_pharmacy' => $user->currentPharmacy->slug]);
     }
 }

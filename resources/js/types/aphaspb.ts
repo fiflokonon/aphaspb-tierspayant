@@ -26,6 +26,21 @@ export const statusChipClass: Record<DeclarationStatus, string> = {
     rejected: 'text-terracotta-dark bg-terracotta/[0.12]',
 };
 
+/**
+ * A month the officine may declare: the current one and the twelve before it.
+ *
+ * Built server-side by DeclarationCalendar, url included, so no screen has to
+ * assemble a query string of its own.
+ */
+export type SelectablePeriod = {
+    year: number;
+    month: number;
+    label: string;
+    isComplete: boolean;
+    isCurrent: boolean;
+    url: string;
+};
+
 export type DataTableRowTone = 'default' | 'alert' | 'muted';
 
 export const rowToneClass: Record<DataTableRowTone, string> = {

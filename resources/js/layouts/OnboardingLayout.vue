@@ -23,14 +23,10 @@ const { account } = useConsoleShell();
             -->
             <div
                 v-if="account"
-                class="mt-4 flex items-center justify-center gap-2 text-[11.5px] text-ink/50"
+                class="mt-4 flex flex-col items-center gap-2 text-[11.5px] text-ink/50"
             >
                 <span class="truncate">{{ account.name }}</span>
-                <span aria-hidden="true">·</span>
-                <LogoutLink
-                    :href="account.logoutHref"
-                    class="inline-flex min-h-[44px] items-center font-semibold text-ink/70 underline underline-offset-2 transition-colors hover:text-ink"
-                />
+                <LogoutLink :href="account.logoutHref" />
             </div>
         </div>
     </div>

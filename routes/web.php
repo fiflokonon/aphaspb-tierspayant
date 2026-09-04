@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AnonymityThresholdController;
 use App\Http\Controllers\Admin\InsurerManagementController;
 use App\Http\Controllers\Admin\NetworkExportController;
 use App\Http\Controllers\Admin\NetworkStatsController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Auth\JoomlaCallbackController;
 use App\Http\Controllers\Auth\LoginRedirectController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Dev\LocalLoginController;
+use App\Http\Controllers\HomeRedirectController;
 use App\Http\Controllers\Notifications\NotificationCentreController;
 use App\Http\Controllers\Onboarding\PharmacyInsurersController;
 use App\Http\Controllers\Onboarding\PharmacyProfileController;
@@ -21,7 +23,7 @@ use App\Http\Controllers\Pharmacy\PharmacyInsurersController as MyInsurersContro
 use App\Http\Middleware\EnsurePharmacyMembership;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::get('/', HomeRedirectController::class)->name('home');
 
 Route::get('login', LoginRedirectController::class)->name('login');
 Route::post('auth/callback', JoomlaCallbackController::class)->name('auth.callback');
@@ -38,6 +40,7 @@ Route::middleware(['auth', 'can:manage-network'])
         Route::get('insurers', [InsurerManagementController::class, 'index'])->name('insurers');
         Route::post('insurers', [InsurerManagementController::class, 'store'])->name('insurers.store');
         Route::patch('insurers/{insurer}', [InsurerManagementController::class, 'update'])->name('insurers.update');
+        Route::patch('settings/anonymity', AnonymityThresholdController::class)->name('settings.anonymity');
         Route::get('csv-exports', [NetworkExportController::class, 'index'])->name('csv-exports');
         Route::get('csv-exports/download', [NetworkExportController::class, 'download'])->name('csv-exports.download');
     });

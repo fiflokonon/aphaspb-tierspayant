@@ -4,8 +4,9 @@ import { computed, ref } from 'vue';
 import AmountField from '@/components/aphaspb/AmountField.vue';
 import DateField from '@/components/aphaspb/DateField.vue';
 import DerivedStatusNotice from '@/components/aphaspb/DerivedStatusNotice.vue';
+import PeriodPicker from '@/components/aphaspb/PeriodPicker.vue';
 import { formatFcfa } from '@/lib/fcfa';
-import type { DeclarationStatus } from '@/types/aphaspb';
+import type { DeclarationStatus, SelectablePeriod } from '@/types/aphaspb';
 
 type Declaration = {
     amount_invoiced: number;
@@ -22,6 +23,7 @@ const props = defineProps<{
     insurer: { id: number; name: string; standardDelayDays: number };
     progress: { current: number; total: number };
     period: { year: number; month: number; label: string };
+    periods: SelectablePeriod[];
     dateBounds: { earliest: string; latest: string };
     declaration: Declaration | null;
 }>();
@@ -208,6 +210,12 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                             statut de votre règlement sera automatiquement
                             calculé.
                         </p>
+
+                        <PeriodPicker
+                            :periods="periods"
+                            :current="period"
+                            class="mt-4"
+                        />
                     </div>
 
                     <div class="amounts">

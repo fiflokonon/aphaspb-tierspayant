@@ -29,7 +29,6 @@ class SavePharmacyProfileRequest extends FormRequest
                     : Rule::unique(Pharmacy::class, 'onpb_license')->ignore($current->id),
             ],
             'city' => ['required', 'string', 'max:100'],
-            'owner_name' => ['required', 'string', 'max:200'],
         ];
     }
 
@@ -43,7 +42,6 @@ class SavePharmacyProfileRequest extends FormRequest
         return [
             'name.required' => "Le nom de l'officine est obligatoire.",
             'city.required' => 'La ville est obligatoire.',
-            'owner_name.required' => 'Le nom du titulaire est obligatoire.',
             'onpb_license.unique' => 'Ce numéro ONPB est déjà enregistré.',
         ];
     }

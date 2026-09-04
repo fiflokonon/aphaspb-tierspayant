@@ -16,6 +16,7 @@ type Row = {
 defineProps<{
     insurers: Row[];
     anonymityMinimum: number;
+    anonymityFloor: number;
 }>();
 
 const TEMPLATE = '2fr .8fr 1.1fr .9fr 1.2fr';
@@ -165,17 +166,52 @@ function startEditing(row: Row) {
                     corriger ici dès que la convention est connue.
                 </p>
 
+                <Form
+                    action="/admin/settings/anonymity"
+                    method="patch"
+                    class="threshold-form"
+                    #default="{ errors, processing }"
+                >
+                    <div class="threshold-control">
+                        <div class="number-input-wrapper">
+                            <input
+                                name="minimum"
+                                type="number"
+                                :min="anonymityFloor"
+                                max="100"
+                                :value="anonymityMinimum"
+                                aria-label="Seuil d'anonymat, en officines"
+                                class="number-input"
+                            />
+                        </div>
+
+                        <span class="days-label"> officines minimum </span>
+
+                        <button
+                            type="submit"
+                            :disabled="processing"
+                            class="primary-button threshold-button"
+                        >
+                            Enregistrer
+                        </button>
+                    </div>
+
+                    <p v-if="errors.minimum" class="form-error">
+                        {{ errors.minimum }}
+                    </p>
+                </Form>
+
                 <div class="anonymity-info">
                     <div class="anonymity-icon">i</div>
 
                     <p>
-                        Le seuil d'anonymat de
+                        En dessous de
 
-                        <strong> {{ anonymityMinimum }} officines </strong>
+                        <strong> {{ anonymityFloor }} officines </strong>
 
-                        n'est pas réglable ici, et c'est délibéré : l'abaisser
-                        permettrait de lire les indicateurs d'un assureur
-                        déclaré par une seule officine, donc de l'identifier.
+                        les indicateurs d'un assureur sont ceux d'une seule
+                        officine, donc identifiables : le seuil ne descend pas
+                        plus bas, quelle que soit la valeur saisie ici.
                     </p>
                 </div>
             </div>
