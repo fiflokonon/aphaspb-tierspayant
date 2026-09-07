@@ -6,6 +6,7 @@ use App\Services\Joomla\JoomlaApiClient;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -50,7 +51,9 @@ class VerifyJoomlaTokenVersion
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->away((string) config('joomla.site_url'));
+            // Same reason as LogoutController: this fires under an Inertia
+            // XHR, which cannot follow a cross-origin 302.
+            return Inertia::location((string) config('joomla.site_url'));
         }
 
         $request->session()->put(self::CHECKED_AT, now()->getTimestamp());
