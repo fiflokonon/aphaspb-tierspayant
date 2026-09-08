@@ -3,6 +3,7 @@
 namespace App\Services\Network;
 
 use App\Data\Period;
+use App\Services\Exports\CsvRenderer;
 
 /**
  * The network statistics as a CSV a French Excel opens without a wizard.
@@ -15,8 +16,10 @@ class NetworkCsvExport
     /** @var list<string> */
     public const COLUMNS = NetworkExportRows::COLUMNS;
 
-    public function __construct(protected NetworkExportRows $source)
-    {
+    public function __construct(
+        protected NetworkExportRows $source,
+        protected CsvRenderer $renderer,
+    ) {
         //
     }
 
@@ -27,24 +30,6 @@ class NetworkCsvExport
      */
     public function rows(Period $from, Period $to, ?string $city = null): iterable
     {
-        yield self::COLUMNS;
-
-        foreach ($this->source->rows($from, $to, $city) as $row) {
-            yield array_map($this->render(...), $row);
-        }
-    }
-
-    /**
-     * Comma decimals: the file is read in a French Excel, not by a parser.
-     */
-    protected function render(string|int|float|null $value): string
-    {
-        if ($value === null) {
-            return '';
-        }
-
-        return is_float($value)
-            ? str_replace('.', ',', (string) $value)
-            : (string) $value;
+        return $this->renderer->render(self::COLUMNS, $this->source->rows($from, $to, $city));
     }
 }

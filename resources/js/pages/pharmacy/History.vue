@@ -21,6 +21,8 @@ type Row = {
     received: string;
     outstanding: string | null;
     delayDays: number | null;
+    instalments: number;
+    corrections: number;
     privateNote: string | null;
     editUrl: string;
 };
@@ -279,6 +281,20 @@ const footer = computed(
                             </span>
 
                             <span v-else class="delay-empty"> — </span>
+
+                            <!--
+                                Le délai se compte jusqu'au dernier versement :
+                                sans ce repère, un mois réglé en trois fois
+                                affiche un chiffre qu'aucune date du relevé ne
+                                justifie.
+                            -->
+                            <span
+                                v-if="row.instalments > 1"
+                                class="delay-instalments"
+                                :title="`Réglée en ${row.instalments} versements`"
+                            >
+                                ×{{ row.instalments }}
+                            </span>
                         </div>
 
                         <div class="note-cell">
@@ -295,6 +311,14 @@ const footer = computed(
                         </div>
 
                         <div class="action-cell">
+                            <span
+                                v-if="row.corrections > 0"
+                                class="corrections-badge"
+                                :title="`Modifiée ${row.corrections} fois depuis sa déclaration initiale`"
+                            >
+                                {{ row.corrections }} corr.
+                            </span>
+
                             <Link :href="row.editUrl" class="edit-link">
                                 <span> Modifier </span>
 
@@ -940,6 +964,40 @@ const footer = computed(
 
 .delay-empty {
     color: var(--apha-light);
+}
+
+.delay-instalments {
+    margin-left: 2px;
+
+    padding: 1px 4px;
+
+    border-radius: 4px;
+
+    background: var(--apha-primary-soft);
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    color: var(--apha-primary-dark);
+}
+
+.corrections-badge {
+    margin-right: 8px;
+
+    padding: 1px 6px;
+
+    border-radius: 999px;
+
+    background: var(--apha-gold-soft);
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    color: var(--apha-gold-dark);
+
+    white-space: nowrap;
 }
 
 .note-cell {

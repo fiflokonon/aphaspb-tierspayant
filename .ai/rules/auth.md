@@ -25,3 +25,12 @@ Toute réponse qui envoie l'utilisateur sur un autre domaine (`config('joomla.si
 `LogoutController` et le logout forcé de `VerifyJoomlaTokenVersion` répondent à une requête XHR (le bouton est un `<Link method="post">`). Un `redirect()->away()` renvoie un 302 que le **navigateur** suit sur le XHR, pas Inertia : preflight cross-origin refusé, `net::ERR_FAILED`, `HttpNetworkError`. La session est bien détruite côté serveur mais l'utilisateur reste sur la console avec une erreur console.
 
 `Inertia::location()` répond 409 + `X-Inertia-Location`, que le client transforme en vraie visite de page ; un appelant non-Inertia récupère le 302 ordinaire, donc les tests HTTP classiques ne voient pas la différence. Le cas Inertia est verrouillé par `tests/Feature/Auth/LogoutTest.php` (« the button gets an Inertia location… »).
+
+## Un email déjà pris arrête le handoff, il ne réaffecte jamais le compte existant
+`users.email` est unique, et Joomla ne garantit pas cette unicité : « Require Unique Email » est une option de ses user options, et un compte supprimé puis recréé revient sous un nouvel `id` avec la même adresse. Sans garde-fou, `JoomlaCallbackController::synchronise()` plantait en 500 sur `users_email_unique`.
+
+`emailBelongsToAnotherAccount()` teste la collision (comparaison insensible à la casse) **avant toute écriture et avant toute session**, journalise sans recopier l'adresse, et renvoie sur `route('auth.email-conflict')` — page publique, sans layout, comme `auth.denied`.
+
+Décision arrêtée le 08/09/2026 : ne pas « adopter » la ligne existante en lui réattribuant le nouveau `joomla_user_id`. Ça débloquerait le pharmacien, mais si deux comptes Joomla partagent une adresse, le second entrerait dans l'officine du premier — déclarations et notes privées comprises. Le rapprochement est un geste humain.
+
+Verrouillé par `tests/Feature/Auth/JoomlaCallbackTest.php`, contrôle négatif compris (un compte qui garde son propre email n'est pas une collision).

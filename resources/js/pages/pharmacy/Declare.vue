@@ -4,9 +4,28 @@ import { computed, ref } from 'vue';
 import AmountField from '@/components/aphaspb/AmountField.vue';
 import DateField from '@/components/aphaspb/DateField.vue';
 import DerivedStatusNotice from '@/components/aphaspb/DerivedStatusNotice.vue';
+import PaymentInstalments from '@/components/aphaspb/PaymentInstalments.vue';
+import type { Instalment } from '@/components/aphaspb/PaymentInstalments.vue';
 import PeriodPicker from '@/components/aphaspb/PeriodPicker.vue';
 import { formatFcfa } from '@/lib/fcfa';
 import type { DeclarationStatus, SelectablePeriod } from '@/types/aphaspb';
+
+type Payment = {
+    amount: number;
+    paid_on: string;
+    delay_days: number | null;
+};
+
+type Revision = {
+    recordedAt: string | null;
+    authorName: string;
+    amountInvoiced: number;
+    amountReceived: number;
+    statusLabel: string;
+    invoiceDepositedOn: string | null;
+    delayDays: number | null;
+    payments: { amount: number; paid_on: string; delay_days: number | null }[];
+};
 
 type Declaration = {
     amount_invoiced: number;
@@ -17,6 +36,8 @@ type Declaration = {
     paid_on: string | null;
     delay_days: number | null;
     private_note: string | null;
+    payments: Payment[];
+    revisions: Revision[];
 };
 
 const props = defineProps<{
@@ -32,11 +53,27 @@ const props = defineProps<{
 setLayoutProps({ focus: true });
 
 const invoiced = ref(props.declaration?.amount_invoiced ?? 0);
-const received = ref(props.declaration?.amount_received ?? 0);
 const depositedOn = ref<string | null>(
     props.declaration?.invoice_deposited_on ?? null,
 );
-const paidOn = ref<string | null>(props.declaration?.paid_on ?? null);
+
+/**
+ * Les versements reçus, une ligne par virement.
+ *
+ * Le montant reçu n'est plus saisi : c'est leur somme, ici comme sur le
+ * serveur. Une déclaration qui n'a encore rien encaissé part sans aucune
+ * ligne — l'officine en ajoute une quand l'argent arrive.
+ */
+const instalments = ref<Instalment[]>(
+    (props.declaration?.payments ?? []).map((payment) => ({
+        amount: payment.amount,
+        paidOn: payment.paid_on,
+    })),
+);
+
+const received = computed(() =>
+    instalments.value.reduce((sum, line) => sum + line.amount, 0),
+);
 const note = ref(props.declaration?.private_note ?? '');
 const noteOpen = ref(!!props.declaration?.private_note);
 const rejected = ref(props.declaration?.status === 'rejected');
@@ -65,7 +102,7 @@ const status = computed<DeclarationStatus>(() => {
 });
 
 /**
- * The server refuses this pair outright (amount_received lte amount_invoiced),
+ * The server refuses this outright (the instalments may not exceed the invoice),
  * so deriving a status from it would be a confident lie about what saving will
  * do. It is an input error, surfaced where the eye already is.
  */
@@ -88,16 +125,30 @@ const carriesDelay = computed(
 );
 
 /**
+ * La date du versement le plus récent, celle sur laquelle le mois est jugé.
+ */
+const lastPaidOn = computed<string | null>(() => {
+    const dates = instalments.value
+        .map((line) => line.paidOn)
+        .filter((date): date is string => date !== null && date !== '');
+
+    return dates.length === 0
+        ? null
+        : dates.reduce((latest, date) => (date > latest ? date : latest));
+});
+
+/**
  * Mirrors Declaration::deriveDelayDays(). The delay is no longer typed in: it
- * is the distance between the two dates, and the server recomputes it on save.
+ * is the distance between the deposit and the **last** transfer received, and
+ * the server recomputes it on save.
  */
 const delay = computed<number | null>(() => {
-    if (depositedOn.value === null || paidOn.value === null) {
+    if (depositedOn.value === null || lastPaidOn.value === null) {
         return null;
     }
 
     const from = Date.parse(depositedOn.value);
-    const to = Date.parse(paidOn.value);
+    const to = Date.parse(lastPaidOn.value);
 
     if (Number.isNaN(from) || Number.isNaN(to) || to < from) {
         return null;
@@ -111,6 +162,33 @@ const beyondStandardDelay = computed(
 );
 
 const isLast = computed(() => props.progress.current >= props.progress.total);
+
+const revisions = computed(() => props.declaration?.revisions ?? []);
+
+/**
+ * La première révision est l'état d'origine, pas une correction : une
+ * déclaration enregistrée une fois puis laissée tranquille n'a pas été
+ * « modifiée ».
+ */
+const correctionCount = computed(() => Math.max(0, revisions.value.length - 1));
+
+const historyOpen = ref(false);
+
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+});
+
+function formatMoment(value: string | null): string {
+    return value === null ? '—' : dateFormatter.format(new Date(value));
+}
+
+function formatDay(value: string | null): string {
+    return value === null ? '—' : value.split('-').reverse().join('/');
+}
 </script>
 
 <template>
@@ -229,32 +307,15 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                                 :error="errors.amount_invoiced"
                             />
                         </div>
-
-                        <div class="amount-wrapper">
-                            <div class="amount-number">02</div>
-
-                            <AmountField
-                                v-model="received"
-                                label="MONTANT REÇU"
-                                name="amount_received"
-                                :shortcut="{
-                                    label: 'Tout reçu',
-                                    value: invoiced,
-                                }"
-                                :error="
-                                    exceedsInvoiced
-                                        ? 'Le montant reçu ne peut pas dépasser le montant facturé.'
-                                        : errors.amount_received
-                                "
-                            />
-                        </div>
                     </div>
 
                     <!--
-                        Les deux dates tiennent avec les montants plutôt que
-                        dans le panneau de synthèse : elles se saisissent, elles
-                        ne se déduisent pas. Ce qui s'en déduit — le délai —
-                        s'affiche à droite, près du statut auquel il appartient.
+                        Le dépôt de la facture tient avec le montant facturé :
+                        c'est l'autre moitié de ce que l'officine a envoyé. Les
+                        versements, eux, sont ce qui revient de l'assureur, et
+                        forment leur propre bloc juste en dessous. Ce qui se
+                        déduit des deux — le délai — s'affiche à droite, près
+                        du statut auquel il appartient.
                     -->
                     <div class="dates">
                         <DateField
@@ -266,18 +327,22 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                             :max="dateBounds.latest"
                             :error="errors.invoice_deposited_on"
                         />
-
-                        <DateField
-                            v-if="carriesDelay"
-                            v-model="paidOn"
-                            class="date-field"
-                            label="DATE DE PAIEMENT"
-                            name="paid_on"
-                            :min="depositedOn ?? dateBounds.earliest"
-                            :max="dateBounds.latest"
-                            :error="errors.paid_on"
-                        />
                     </div>
+
+                    <!--
+                        Chaque ligne porte un `required` sur sa date : elle
+                        n'existe que parce qu'un montant a été encaissé, et
+                        c'est exactement le cas où SaveDeclarationRequest exige
+                        une date. Le navigateur refuse l'envoi sur place, au
+                        lieu d'un aller-retour serveur.
+                    -->
+                    <PaymentInstalments
+                        v-model="instalments"
+                        :invoiced="invoiced"
+                        :min-date="depositedOn ?? dateBounds.earliest"
+                        :max-date="dateBounds.latest"
+                        :errors="errors"
+                    />
 
                     <button
                         type="button"
@@ -340,6 +405,110 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                             </div>
                         </Transition>
                     </div>
+
+                    <!--
+                        L'historique tient sous la note, en bas du panneau de
+                        saisie : il se consulte quand un chiffre est contesté,
+                        pas à chaque déclaration. Replié par défaut, comme la
+                        note privée juste au-dessus.
+                    -->
+                    <div v-if="correctionCount > 0" class="revision-history">
+                        <button
+                            type="button"
+                            class="note-toggle"
+                            @click="historyOpen = !historyOpen"
+                        >
+                            <span class="note-plus">
+                                {{ historyOpen ? '−' : '+' }}
+                            </span>
+
+                            <span> Modifiée {{ correctionCount }} fois </span>
+
+                            <span class="note-description">
+                                dernière le
+                                {{ formatMoment(revisions[0].recordedAt) }}
+                            </span>
+                        </button>
+
+                        <Transition name="note">
+                            <ol v-if="historyOpen" class="revision-list">
+                                <li
+                                    v-for="(revision, index) in revisions"
+                                    :key="index"
+                                    class="revision-item"
+                                >
+                                    <div class="revision-head">
+                                        <span class="revision-moment">
+                                            {{
+                                                formatMoment(
+                                                    revision.recordedAt,
+                                                )
+                                            }}
+                                        </span>
+
+                                        <span class="revision-author">
+                                            {{ revision.authorName }}
+                                        </span>
+
+                                        <span
+                                            v-if="
+                                                index === revisions.length - 1
+                                            "
+                                            class="revision-origin"
+                                        >
+                                            déclaration initiale
+                                        </span>
+                                    </div>
+
+                                    <div class="revision-figures">
+                                        <span>
+                                            {{
+                                                formatFcfa(
+                                                    revision.amountReceived,
+                                                )
+                                            }}
+                                            reçus sur
+                                            {{
+                                                formatFcfa(
+                                                    revision.amountInvoiced,
+                                                )
+                                            }}
+                                        </span>
+
+                                        <span class="revision-status">
+                                            {{ revision.statusLabel }}
+                                        </span>
+
+                                        <span
+                                            v-if="revision.delayDays !== null"
+                                        >
+                                            {{ revision.delayDays }} j
+                                        </span>
+                                    </div>
+
+                                    <ul
+                                        v-if="revision.payments.length > 0"
+                                        class="revision-payments"
+                                    >
+                                        <li
+                                            v-for="(
+                                                payment, line
+                                            ) in revision.payments"
+                                            :key="line"
+                                        >
+                                            {{ formatFcfa(payment.amount) }}
+                                            FCFA le
+                                            {{ formatDay(payment.paid_on) }}
+                                        </li>
+                                    </ul>
+
+                                    <p v-else class="revision-payments-empty">
+                                        Aucun versement à cette date.
+                                    </p>
+                                </li>
+                            </ol>
+                        </Transition>
+                    </div>
                 </section>
 
                 <aside class="form-panel form-panel-summary">
@@ -396,7 +565,12 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
                             <div class="delay-icon">◷</div>
 
                             <div>
-                                <strong> Délai de règlement </strong>
+                                <strong>
+                                    Délai de règlement
+                                    <template v-if="instalments.length > 1">
+                                        · {{ instalments.length }} versements
+                                    </template>
+                                </strong>
 
                                 <span> Déduit des deux dates </span>
                             </div>
@@ -412,11 +586,14 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
                         <p class="delay-explanation">
                             <template v-if="delay === null">
-                                Renseignez les deux dates : le délai s'en
-                                déduit.
+                                Renseignez le dépôt et au moins un versement :
+                                le délai s'en déduit.
                             </template>
 
                             <template v-else-if="beyondStandardDelay">
+                                <template v-if="instalments.length > 1">
+                                    Compté jusqu'au dernier versement.
+                                </template>
                                 Au-delà des
                                 {{ insurer.standardDelayDays }} jours retenus
                                 pour {{ insurer.name }}.
@@ -1685,5 +1862,110 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 
         transition-duration: 0.01ms !important;
     }
+}
+
+.revision-history {
+    margin-top: 16px;
+
+    padding-top: 14px;
+
+    border-top: 1px solid rgb(36 51 51 / 0.09);
+}
+
+.revision-list {
+    margin: 12px 0 0;
+
+    padding: 0;
+
+    list-style: none;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+.revision-item {
+    padding: 10px 12px;
+
+    border: 1px solid rgb(36 51 51 / 0.1);
+
+    border-radius: 10px;
+
+    font-size: 11px;
+
+    line-height: 1.5;
+}
+
+.revision-head {
+    display: flex;
+    align-items: baseline;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+}
+
+.revision-moment {
+    font-weight: 700;
+
+    color: var(--ink);
+}
+
+.revision-author {
+    color: rgb(36 51 51 / 0.55);
+}
+
+.revision-origin {
+    margin-left: auto;
+
+    padding: 1px 7px;
+
+    border-radius: 999px;
+
+    background: rgb(36 51 51 / 0.06);
+
+    font-size: 9.5px;
+
+    font-weight: 650;
+
+    letter-spacing: 0.03em;
+
+    color: rgb(36 51 51 / 0.5);
+}
+
+.revision-figures {
+    margin-top: 4px;
+
+    display: flex;
+    align-items: baseline;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    color: rgb(36 51 51 / 0.7);
+}
+
+.revision-status {
+    font-weight: 650;
+
+    color: var(--ink);
+}
+
+.revision-payments,
+.revision-payments-empty {
+    margin: 6px 0 0;
+
+    padding: 0 0 0 14px;
+
+    color: rgb(36 51 51 / 0.5);
+}
+
+.revision-payments-empty {
+    padding-left: 0;
+
+    font-style: italic;
 }
 </style>

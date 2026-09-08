@@ -147,6 +147,7 @@ class ConsoleNavigation
         $definitions[] = ['Déclarer ce mois', 'pharmacy.declare'];
         $definitions[] = ['Historique', 'pharmacy.history'];
         $definitions[] = ['Mes assureurs', 'pharmacy.insurers'];
+        $definitions[] = ['Exporter mes données', 'pharmacy.data-exports'];
         // Retirée de la navigation le 31/08/2026. L'écran et sa route existent
         // toujours : seule l'entrée est masquée.
         // $definitions[] = ['Profil & réglages', 'profile.edit'];

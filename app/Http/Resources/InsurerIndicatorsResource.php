@@ -26,6 +26,10 @@ class InsurerIndicatorsResource
      *     averageDelayDays: float|null,
      *     standardDelayDays: int|null,
      *     withinThresholdShare: float|null,
+     *     recoveredWithinDelayShare: float|null,
+     *     instalmentsPerDeclaration: float|null,
+     *     multiInstalmentShare: float|null,
+     *     averageFirstInstalmentDelayDays: float|null,
      *     rejectionRate: float|null,
      *     unpaidRate: float|null,
      * }
@@ -46,6 +50,10 @@ class InsurerIndicatorsResource
             'averageDelayDays' => $sufficient ? $entry->averageDelayDays : null,
             'standardDelayDays' => $sufficient ? $entry->standardDelayDays : null,
             'withinThresholdShare' => $sufficient ? $entry->withinThresholdShare : null,
+            'recoveredWithinDelayShare' => $sufficient ? $entry->recoveredWithinDelayShare : null,
+            'instalmentsPerDeclaration' => $sufficient ? $entry->instalmentsPerDeclaration : null,
+            'multiInstalmentShare' => $sufficient ? $entry->multiInstalmentShare : null,
+            'averageFirstInstalmentDelayDays' => $sufficient ? $entry->averageFirstInstalmentDelayDays : null,
             'rejectionRate' => $sufficient ? $entry->rejectionRate : null,
             'unpaidRate' => $sufficient ? $entry->unpaidRate : null,
         ];

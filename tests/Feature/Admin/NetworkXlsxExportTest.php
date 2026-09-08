@@ -67,6 +67,21 @@ test('the workbook opens on a header naming every column', function () {
     expect(sheetOf($this->path)[0])->toBe(NetworkExportRows::COLUMNS);
 });
 
+/**
+ * Where a named column sits, rather than the number it sits at today.
+ *
+ * Hard-coded indices made every added column a fake failure, three files away
+ * from the change that caused it.
+ */
+function columnIndex(string $column): int
+{
+    $index = array_search($column, NetworkExportRows::COLUMNS, true);
+
+    expect($index)->not->toBeFalse("La colonne « {$column} » a disparu de l'export.");
+
+    return (int) $index;
+}
+
 test('amounts are numeric cells, not text a spreadsheet cannot total', function () {
     $insurer = Insurer::factory()->create(['name' => 'NSIA Assurances']);
     declareForXlsx($insurer, 5);
@@ -79,12 +94,12 @@ test('amounts are numeric cells, not text a spreadsheet cannot total', function 
         ->and($row[1])->toBeInt()
         ->and($row[1])->toBe(5)
         // facture_fcfa: the column an advocacy note sums.
-        ->and($row[9])->toBeInt()
-        ->and($row[9])->toBe(5_000_000)
+        ->and($row[columnIndex('facture_fcfa')])->toBeInt()
+        ->and($row[columnIndex('facture_fcfa')])->toBe(5_000_000)
         // A whole float comes back as an int from the reader; what matters is
         // that the cell is a number and not the text « 75,0 ».
-        ->and($row[12])->not->toBeString()
-        ->and((float) $row[12])->toBe(75.0);
+        ->and($row[columnIndex('taux_recouvrement_pct')])->not->toBeString()
+        ->and((float) $row[columnIndex('taux_recouvrement_pct')])->toBe(75.0);
 });
 
 test('an insurer under the threshold carries its explanation and no figure', function () {
@@ -115,5 +130,5 @@ test('the workbook narrows to one city like the csv does', function () {
 
     $this->export->writeTo($this->path, new Period(2026, 8), new Period(2026, 8), 'Cotonou');
 
-    expect(sheetOf($this->path)[1][9])->toBe(5_000_000);
+    expect(sheetOf($this->path)[1][columnIndex('facture_fcfa')])->toBe(5_000_000);
 });

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Actions\Declarations\RecordPaymentInstalments;
 use App\Enums\DeclarationStatus;
 use App\Models\Declaration;
 use App\Models\Insurer;
@@ -62,6 +63,43 @@ class DeclarationFactory extends Factory
             $declaration->paid_on = $declaration->delay_days === null
                 ? null
                 : $deposited->addDays($declaration->delay_days);
+        })->afterCreating(function (Declaration $declaration) {
+            // Un règlement encaissé se lit désormais dans `declaration_payments`
+            // — la colonne `amount_received` n'en est que le cache. Une
+            // déclaration fabriquée sans versement laisserait donc les deux en
+            // désaccord, et tout agrégat par versement la verrait vide.
+            //
+            // Le cas courant tient en une ligne, ce que produisait la version
+            // à un seul paiement. Les échéances multiples se demandent
+            // explicitement, via instalments().
+            if ($declaration->amount_received <= 0 || $declaration->paid_on === null) {
+                return;
+            }
+
+            if ($declaration->payments()->exists()) {
+                return;
+            }
+
+            $declaration->payments()->create([
+                'amount' => $declaration->amount_received,
+                'paid_on' => $declaration->paid_on,
+                'delay_days' => $declaration->delay_days,
+            ]);
+        });
+    }
+
+    /**
+     * Settled in several transfers, each with its own date.
+     *
+     * The declaration's own total and payment date are then derived from the
+     * lines, exactly as the declaration screen derives them.
+     *
+     * @param  list<array{amount: int, paid_on: string}>  $instalments
+     */
+    public function instalments(array $instalments): static
+    {
+        return $this->afterCreating(function (Declaration $declaration) use ($instalments) {
+            app(RecordPaymentInstalments::class)->handle($declaration, $instalments);
         });
     }
 

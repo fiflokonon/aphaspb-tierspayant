@@ -7,6 +7,7 @@ use App\Enums\StatsPeriod;
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
 use App\Services\Network\NetworkCsvExport;
+use App\Services\Network\NetworkPdfExport;
 use App\Services\Network\NetworkXlsxExport;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -29,6 +30,7 @@ class NetworkExportController extends Controller
     public function __construct(
         protected NetworkCsvExport $csv,
         protected NetworkXlsxExport $xlsx,
+        protected NetworkPdfExport $pdf,
     ) {
         //
     }
@@ -58,10 +60,14 @@ class NetworkExportController extends Controller
 
         $stem = sprintf('aphaspb-reseau-%04d-%02d', $to->year, $to->month);
 
-        // Two formats, one route: the file then cannot cover a different
+        // Three formats, one route: the file then cannot cover a different
         // period or city from the screen the admin is looking at.
         if ($request->string('format')->value() === 'xlsx') {
             return $this->workbook($stem.'.xlsx', $from, $to, $city);
+        }
+
+        if ($request->string('format')->value() === 'pdf') {
+            return $this->report($stem.'.pdf', $from, $to, $city);
         }
 
         $filename = $stem.'.csv';
@@ -78,7 +84,11 @@ class NetworkExportController extends Controller
             fwrite($handle, "\xEF\xBB\xBF");
 
             foreach ($rows as $row) {
-                fputcsv($handle, $row, ';');
+                // L'échappement est explicitement vide : PHP 8.4 déprécie de ne
+                // pas le passer, et « aucun » est le comportement RFC 4180 que
+                // les tableurs attendent — avec le « \ » historique, une note
+                // contenant un antislash ressort non relisible.
+                fputcsv($handle, $row, ';', '"', '');
             }
 
             fclose($handle);
@@ -95,12 +105,35 @@ class NetworkExportController extends Controller
      */
     protected function workbook(string $filename, Period $from, Period $to, ?string $city): BinaryFileResponse
     {
-        $path = tempnam(sys_get_temp_dir(), 'aphaspb').'.xlsx';
+        // Le chemin rendu par tempnam() tel quel : y concaténer une extension
+        // écrirait dans un second fichier et abandonnerait celui que tempnam()
+        // vient de créer — un orphelin par téléchargement. Le nom que voit
+        // l'utilisateur est porté par l'en-tête Content-Disposition, pas par le
+        // chemin sur disque.
+        $path = tempnam(sys_get_temp_dir(), 'aphaspb');
 
         $this->xlsx->writeTo($path, $from, $to, $city);
 
         return response()->download($path, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend();
+    }
+
+    /**
+     * The same figures as a report meant to be read, not recomputed.
+     *
+     * Written to a file for the same reason as the workbook: dompdf's own
+     * stream helper takes over the response, and a downloaded file is one code
+     * path for both binary formats rather than two.
+     */
+    protected function report(string $filename, Period $from, Period $to, ?string $city): BinaryFileResponse
+    {
+        $path = tempnam(sys_get_temp_dir(), 'aphaspb');
+
+        file_put_contents($path, $this->pdf->document($from, $to, $city)->output());
+
+        return response()->download($path, $filename, [
+            'Content-Type' => 'application/pdf',
         ])->deleteFileAfterSend();
     }
 }

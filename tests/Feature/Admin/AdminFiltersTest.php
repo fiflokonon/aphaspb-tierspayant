@@ -202,7 +202,9 @@ test('the download serves a workbook when the xlsx format is asked for', functio
 test('the download stays a csv by default and for an unknown format', function () {
     declareInCity($this->insurer, 'Cotonou', 8);
 
-    foreach ([[], ['format' => 'pdf']] as $query) {
+    // « pdf » a cessé d'être un format inconnu le 08/09/2026 ; le repli sur le
+    // CSV, lui, doit continuer de couvrir tout ce qui n'est pas reconnu.
+    foreach ([[], ['format' => 'odt'], ['format' => '']] as $query) {
         $this->actingAs($this->admin)
             ->get(route('admin.csv-exports.download', $query))
             ->assertOk()
