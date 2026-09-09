@@ -6,6 +6,7 @@ defineProps<{
     max?: string;
     hint?: string;
     error?: string;
+    required?: boolean;
 }>();
 
 const model = defineModel<string | null>({ default: null });
@@ -35,6 +36,7 @@ const model = defineModel<string | null>({ default: null });
                 :name="name"
                 :min="min"
                 :max="max"
+                :required="required"
                 type="date"
                 class="min-w-0 flex-1 bg-transparent text-[14px] font-semibold text-ink outline-none"
             />

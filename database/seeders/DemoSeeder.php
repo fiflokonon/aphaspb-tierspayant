@@ -2,12 +2,15 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Declarations\RecordPaymentInstalments;
 use App\Enums\DeclarationStatus;
 use App\Enums\PharmacyRole;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 
@@ -28,6 +31,11 @@ use Illuminate\Support\Collection;
  */
 class DemoSeeder extends Seeder
 {
+    public function __construct(protected RecordPaymentInstalments $recordInstalments)
+    {
+        //
+    }
+
     protected const PHARMACIES = 30;
 
     protected const MONTHS = 12;
@@ -192,7 +200,11 @@ class DemoSeeder extends Seeder
             // never in the future for the month currently running.
             $deposited = $month->copy()->endOfMonth()->startOfDay()->min(now()->startOfDay());
 
-            Declaration::query()->updateOrCreate(
+            $paidOn = $status->isSettled()
+                ? $deposited->copy()->addDays(max(1, $delay))
+                : null;
+
+            $declaration = Declaration::query()->updateOrCreate(
                 [
                     'pharmacy_id' => $pharmacy->id,
                     'insurer_id' => $insurer->id,
@@ -205,15 +217,61 @@ class DemoSeeder extends Seeder
                     'status' => $status,
                     'is_status_manual' => $manual,
                     'invoice_deposited_on' => $deposited,
-                    'paid_on' => $status->isSettled()
-                        ? $deposited->copy()->addDays(max(1, $delay))
-                        : null,
+                    'paid_on' => $paidOn,
                     'private_note' => $status === DeclarationStatus::Rejected
                         ? 'motif absence ordonnance'
                         : null,
                 ],
             );
+
+            if ($received > 0 && $paidOn !== null) {
+                $this->recordInstalments->handle(
+                    $declaration,
+                    $this->instalments($received, $deposited, $paidOn),
+                );
+            }
         }
+    }
+
+    /**
+     * How the insurer actually paid this month: in one transfer, or in two.
+     *
+     * Without this the demo database would carry totals with no payment rows
+     * behind them — every instalment indicator would read as « unknown » and
+     * the officine's own report would say « aucun versement » on a month it
+     * shows as paid. A quarter of settled months are split, which is enough for
+     * the two ponctuality measures to visibly disagree, and that disagreement
+     * is the whole point of the pair.
+     *
+     * @return list<array{amount: int, paid_on: string}>
+     */
+    protected function instalments(int $received, CarbonInterface $deposited, CarbonInterface $paidOn): array
+    {
+        // now() rend un Carbon mutable : sans cette conversion, le addDays()
+        // plus bas décalerait le dépôt de la déclaration elle-même.
+        $deposited = CarbonImmutable::instance($deposited);
+        $paidOn = CarbonImmutable::instance($paidOn);
+
+        $single = [['amount' => $received, 'paid_on' => $paidOn->toDateString()]];
+
+        if (random_int(1, 4) !== 1) {
+            return $single;
+        }
+
+        // L'acompte tombe vers le tiers du délai, le solde à la date connue.
+        $firstAmount = (int) round($received * random_int(30, 50) / 100 / 1_000) * 1_000;
+        $firstPaidOn = $deposited->addDays(
+            max(1, (int) round($deposited->diffInDays($paidOn) / 3)),
+        );
+
+        if ($firstAmount <= 0 || $firstPaidOn->greaterThanOrEqualTo($paidOn)) {
+            return $single;
+        }
+
+        return [
+            ['amount' => $firstAmount, 'paid_on' => $firstPaidOn->toDateString()],
+            ['amount' => $received - $firstAmount, 'paid_on' => $paidOn->toDateString()],
+        ];
     }
 
     /**

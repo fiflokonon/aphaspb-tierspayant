@@ -67,6 +67,253 @@ test('the average delay ignores unpaid and rejected declarations', function () {
         ->and($indicators->averageDelayDays)->toBe(40.0);
 });
 
+test('the recovered share counts the money that arrived inside the standard delay', function () {
+    // Seuil standard : 30 jours. Chaque officine règle 1 000 000 facturés en
+    // deux fois — 400 000 à J+10, 600 000 à J+50 —, donc 40 % de l'argent
+    // seulement est arrivé dans les clous.
+    foreach (range(1, 5) as $i) {
+        Declaration::factory()
+            ->instalments([
+                ['amount' => 400_000, 'paid_on' => '2026-08-11'],
+                ['amount' => 600_000, 'paid_on' => '2026-09-20'],
+            ])
+            ->create([
+                'pharmacy_id' => Pharmacy::factory(),
+                'insurer_id' => $this->insurer->id,
+                'period_year' => 2026,
+                'period_month' => 8,
+                'amount_invoiced' => 1_000_000,
+                'invoice_deposited_on' => '2026-08-01',
+            ]);
+    }
+
+    $indicators = $this->service->perInsurer(new Period(2026, 8), new Period(2026, 8))[$this->insurer->id];
+
+    expect($indicators->recoveredWithinDelayShare)->toBe(40.0)
+        // Le mois est jugé sur son dernier versement : 50 jours, hors délai.
+        // C'est bien le point de l'indicateur : compté par déclaration, cet
+        // assureur est à 0 % ; il a pourtant fait rentrer 40 % de l'argent.
+        ->and($indicators->averageDelayDays)->toBe(50.0)
+        ->and($indicators->withinThresholdShare)->toBe(0.0);
+});
+
+test('what an insurer never paid weighs against its recovered share', function () {
+    foreach (range(1, 5) as $i) {
+        Declaration::factory()
+            ->instalments([['amount' => 500_000, 'paid_on' => '2026-08-11']])
+            ->create([
+                'pharmacy_id' => Pharmacy::factory(),
+                'insurer_id' => $this->insurer->id,
+                'period_year' => 2026,
+                'period_month' => 8,
+                'amount_invoiced' => 1_000_000,
+                'invoice_deposited_on' => '2026-08-01',
+            ]);
+    }
+
+    // La moitié facturée est arrivée à J+10, l'autre moitié n'est jamais
+    // arrivée : la part recouvrée dans le délai se mesure sur le facturé, donc
+    // ce qui n'a pas été payé du tout pèse comme ce qui a été payé en retard.
+    expect($this->service->perInsurer(new Period(2026, 8), new Period(2026, 8))[$this->insurer->id]->recoveredWithinDelayShare)
+        ->toBe(50.0);
+});
+
+test('the recovered share is judged against each insurer own standard delay', function () {
+    $lenient = Insurer::factory()->create(['standard_delay_days' => 90]);
+
+    foreach ([$this->insurer, $lenient] as $insurer) {
+        foreach (range(1, 5) as $i) {
+            Declaration::factory()
+                ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-09-15']])
+                ->create([
+                    'pharmacy_id' => Pharmacy::factory(),
+                    'insurer_id' => $insurer->id,
+                    'period_year' => 2026,
+                    'period_month' => 8,
+                    'amount_invoiced' => 1_000_000,
+                    'invoice_deposited_on' => '2026-08-01',
+                ]);
+        }
+    }
+
+    $indicators = $this->service->perInsurer(new Period(2026, 8), new Period(2026, 8));
+
+    // Quarante-cinq jours : hors délai pour l'assureur à 30 jours, dans les
+    // clous pour celui à 90.
+    expect($indicators[$this->insurer->id]->recoveredWithinDelayShare)->toBe(0.0)
+        ->and($indicators[$lenient->id]->recoveredWithinDelayShare)->toBe(100.0);
+});
+
+test('an insurer that received nothing keeps an honest zero recovered', function () {
+    recordForDistinctPharmacies($this->insurer, array_fill(0, 5, [
+        'amount_invoiced' => 1_000_000, 'amount_received' => 0, 'delay_days' => null,
+    ]));
+
+    expect($this->service->perInsurer(new Period(2026, 8), new Period(2026, 8))[$this->insurer->id]->recoveredWithinDelayShare)
+        ->toBe(0.0);
+});
+
+test('money received without any instalment to date it reads as unknown, not zero', function () {
+    // L'état de toute déclaration antérieure aux dates de paiement : un montant
+    // encaissé, aucune ligne pour dire quand. Annoncer « 0 % recouvré dans les
+    // délais » serait une accusation tirée d'une donnée absente.
+    foreach (range(1, 5) as $i) {
+        $declaration = Declaration::factory()->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $this->insurer->id,
+            'period_year' => 2026,
+            'period_month' => 8,
+            'amount_invoiced' => 1_000_000,
+            'amount_received' => 800_000,
+            'delay_days' => 20,
+        ]);
+
+        $declaration->payments()->delete();
+    }
+
+    expect($this->service->perInsurer(new Period(2026, 8), new Period(2026, 8))[$this->insurer->id]->recoveredWithinDelayShare)
+        ->toBeNull();
+});
+
+test('a transfer with no delay to measure does not shorten the first-transfer average', function () {
+    foreach (range(1, 4) as $i) {
+        Declaration::factory()
+            ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-08-21']])
+            ->create([
+                'pharmacy_id' => Pharmacy::factory(),
+                'insurer_id' => $this->insurer->id,
+                'period_year' => 2026,
+                'period_month' => 8,
+                'amount_invoiced' => 1_000_000,
+                'invoice_deposited_on' => '2026-08-01',
+            ]);
+    }
+
+    // Un versement repris par la migration depuis une déclaration sans date de
+    // dépôt porte un délai NULL : SUM l'ignore, donc le compter au
+    // dénominateur rabaisserait le délai du premier versement.
+    $undated = Declaration::factory()->create([
+        'pharmacy_id' => Pharmacy::factory(),
+        'insurer_id' => $this->insurer->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+        'amount_invoiced' => 1_000_000,
+        'amount_received' => 1_000_000,
+    ]);
+
+    $undated->payments()->delete();
+    $undated->payments()->create(['amount' => 1_000_000, 'paid_on' => '2026-08-21', 'delay_days' => null]);
+
+    expect($this->service->perInsurer(new Period(2026, 8), new Period(2026, 8))[$this->insurer->id]->averageFirstInstalmentDelayDays)
+        ->toBe(20.0);
+});
+
+test('money not backed by any transfer makes the recovered share unknown, even beside documented months', function () {
+    foreach (range(1, 4) as $i) {
+        Declaration::factory()
+            ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-08-11']])
+            ->create([
+                'pharmacy_id' => Pharmacy::factory(),
+                'insurer_id' => $this->insurer->id,
+                'period_year' => 2026,
+                'period_month' => 8,
+                'amount_invoiced' => 1_000_000,
+                'invoice_deposited_on' => '2026-08-01',
+            ]);
+    }
+
+    // Un seul mois encaissé sans détail suffit : un drapeau « cet assureur
+    // a-t-il des versements ? » laisserait passer le chiffre et lui refuserait
+    // silencieusement le crédit de cet argent.
+    $undocumented = Declaration::factory()->create([
+        'pharmacy_id' => Pharmacy::factory(),
+        'insurer_id' => $this->insurer->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+        'amount_invoiced' => 1_000_000,
+        'amount_received' => 1_000_000,
+        'delay_days' => 5,
+    ]);
+
+    $undocumented->payments()->delete();
+
+    expect($this->service->perInsurer(new Period(2026, 8), new Period(2026, 8))[$this->insurer->id]->recoveredWithinDelayShare)
+        ->toBeNull();
+});
+
+test('the instalment figures describe how an insurer settles a month', function () {
+    // Trois officines réglées en une fois, deux en deux fois : le fractionnement
+    // ne se lit ni dans les montants ni dans les délais des déclarations.
+    foreach (range(1, 3) as $i) {
+        Declaration::factory()
+            ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-08-21']])
+            ->create([
+                'pharmacy_id' => Pharmacy::factory(),
+                'insurer_id' => $this->insurer->id,
+                'period_year' => 2026,
+                'period_month' => 8,
+                'amount_invoiced' => 1_000_000,
+                'invoice_deposited_on' => '2026-08-01',
+            ]);
+    }
+
+    foreach (range(1, 2) as $i) {
+        Declaration::factory()
+            ->instalments([
+                ['amount' => 400_000, 'paid_on' => '2026-08-06'],
+                ['amount' => 600_000, 'paid_on' => '2026-08-26'],
+            ])
+            ->create([
+                'pharmacy_id' => Pharmacy::factory(),
+                'insurer_id' => $this->insurer->id,
+                'period_year' => 2026,
+                'period_month' => 8,
+                'amount_invoiced' => 1_000_000,
+                'invoice_deposited_on' => '2026-08-01',
+            ]);
+    }
+
+    $indicators = $this->service->perInsurer(new Period(2026, 8), new Period(2026, 8))[$this->insurer->id];
+
+    expect($indicators->instalments)->toBe(7)
+        ->and($indicators->instalmentsPerDeclaration)->toBe(1.4)
+        ->and($indicators->multiInstalmentShare)->toBe(40.0)
+        // Premier versement : 20 j pour trois d'entre elles, 5 j pour les deux
+        // fractionnées — soit 14 en moyenne. Le délai des déclarations, lui,
+        // se compte au dernier versement : 20, 20, 20, 25, 25, soit 22. L'écart
+        // entre les deux chiffres est exactement ce que le fractionnement coûte.
+        ->and($indicators->averageFirstInstalmentDelayDays)->toBe(14.0)
+        ->and($indicators->averageDelayDays)->toBe(22.0);
+});
+
+test('a month that received nothing does not dilute the instalment averages', function () {
+    foreach (range(1, 4) as $i) {
+        Declaration::factory()
+            ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-08-21']])
+            ->create([
+                'pharmacy_id' => Pharmacy::factory(),
+                'insurer_id' => $this->insurer->id,
+                'period_year' => 2026,
+                'period_month' => 8,
+                'amount_invoiced' => 1_000_000,
+                'invoice_deposited_on' => '2026-08-01',
+            ]);
+    }
+
+    Declaration::factory()->unpaid()->create([
+        'pharmacy_id' => Pharmacy::factory(),
+        'insurer_id' => $this->insurer->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+        'amount_invoiced' => 1_000_000,
+    ]);
+
+    // Cinq déclarations, quatre encaissées : « 0,8 versement par déclaration »
+    // laisserait croire que l'assureur paie par fractions.
+    expect($this->service->perInsurer(new Period(2026, 8), new Period(2026, 8))[$this->insurer->id]->instalmentsPerDeclaration)
+        ->toBe(1.0);
+});
+
 test('the rejection and unpaid rates count against every declaration', function () {
     recordForDistinctPharmacies($this->insurer, [
         ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 10],
@@ -216,7 +463,7 @@ test('the delay curve narrows to one city', function () {
     expect($trend['network']['2026-08'])->toBe(10.0);
 });
 
-test('the aggregation costs two queries whatever the number of insurers', function () {
+test('the aggregation costs a fixed number of queries whatever the number of insurers', function () {
     Insurer::factory()->count(7)->create()->each(
         fn (Insurer $insurer) => Pharmacy::factory()->count(5)->create()->each(
             fn (Pharmacy $pharmacy) => Declaration::factory()->paid()->create([
@@ -236,9 +483,10 @@ test('the aggregation costs two queries whatever the number of insurers', functi
 
     $this->service->perInsurer(new Period(2026, 8), new Period(2026, 8));
 
-    // One grouped aggregate, one lookup of insurer names. Eight insurers, or
-    // eight hundred, must not change this number.
-    expect(DB::getQueryLog())->toHaveCount(2);
+    // One grouped aggregate over the declarations, one over the instalments,
+    // one lookup of insurer names. Eight insurers, or eight hundred, must not
+    // change this number.
+    expect(DB::getQueryLog())->toHaveCount(3);
 });
 
 test('the network weighted delay differs from the plain average', function () {

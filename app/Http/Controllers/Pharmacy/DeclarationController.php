@@ -2,16 +2,20 @@
 
 namespace App\Http\Controllers\Pharmacy;
 
+use App\Actions\Declarations\RecordDeclarationRevision;
+use App\Actions\Declarations\RecordPaymentInstalments;
 use App\Data\Period;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pharmacy\SaveDeclarationRequest;
 use App\Models\Declaration;
+use App\Models\DeclarationRevision;
 use App\Models\Pharmacy;
 use App\Services\Declarations\DeclarationCalendar;
 use App\Services\Declarations\MonthlyDeclarationRun;
 use App\Support\MonthLabel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -73,33 +77,75 @@ class DeclarationController extends Controller
                 'paid_on' => $declaration->paid_on?->toDateString(),
                 'delay_days' => $declaration->delay_days,
                 'private_note' => $declaration->private_note,
+                // Les versements repartent tels qu'ils sont enregistrés : la
+                // correction d'un mois se fait sur les lignes elles-mêmes, pas
+                // sur un total qui aurait perdu le détail des dates.
+                'payments' => $declaration->payments->map(fn ($payment): array => [
+                    'amount' => $payment->amount,
+                    'paid_on' => $payment->paid_on->toDateString(),
+                    'delay_days' => $payment->delay_days,
+                ])->all(),
+                // L'historique des corrections, du plus récent au plus ancien.
+                // La première révision est l'état d'origine, pas une
+                // correction : l'écran ne compte donc que les suivantes.
+                'revisions' => $declaration->revisions->sortByDesc('id')->values()->map(
+                    fn (DeclarationRevision $revision): array => [
+                        'recordedAt' => $revision->created_at?->toIso8601String(),
+                        'authorName' => $revision->author_name,
+                        'amountInvoiced' => $revision->amount_invoiced,
+                        'amountReceived' => $revision->amount_received,
+                        'statusLabel' => $revision->status->label(),
+                        'invoiceDepositedOn' => $revision->invoice_deposited_on?->toDateString(),
+                        'delayDays' => $revision->delay_days,
+                        'payments' => $revision->payments,
+                    ],
+                )->all(),
             ],
         ]);
     }
 
-    public function store(SaveDeclarationRequest $request): RedirectResponse
-    {
+    public function store(
+        SaveDeclarationRequest $request,
+        RecordPaymentInstalments $recordInstalments,
+        RecordDeclarationRevision $recordRevision,
+    ): RedirectResponse {
         $pharmacy = $request->user()->currentPharmacy;
 
-        Declaration::query()->updateOrCreate(
-            [
-                'pharmacy_id' => $pharmacy->id,
-                'insurer_id' => $request->integer('insurer_id'),
-                'period_year' => $request->integer('period_year'),
-                'period_month' => $request->integer('period_month'),
-            ],
-            [
-                'amount_invoiced' => $request->integer('amount_invoiced'),
-                'amount_received' => $request->integer('amount_received'),
-                'status' => $request->resolvedStatus(),
-                'is_status_manual' => $request->isStatusManual(),
-                // The delay is not stored from here: the model derives it from
-                // this pair, so the client has no say over it.
-                'invoice_deposited_on' => $request->date('invoice_deposited_on'),
-                'paid_on' => $request->date('paid_on'),
-                'private_note' => $request->input('private_note') ?: null,
-            ],
-        );
+        // Les trois écritures tiennent ou tombent ensemble. Sans cela, une
+        // révision qui échoue laisse la déclaration et ses versements déjà
+        // committés : la trace perd cet enregistrement, et la sauvegarde
+        // suivante se compare à une révision périmée, donc enregistre une
+        // correction réelle comme si c'était la précédente.
+        $declaration = DB::transaction(function () use ($request, $pharmacy, $recordInstalments, $recordRevision) {
+            $declaration = Declaration::query()->updateOrCreate(
+                [
+                    'pharmacy_id' => $pharmacy->id,
+                    'insurer_id' => $request->integer('insurer_id'),
+                    'period_year' => $request->integer('period_year'),
+                    'period_month' => $request->integer('period_month'),
+                ],
+                [
+                    'amount_invoiced' => $request->integer('amount_invoiced'),
+                    'status' => $request->resolvedStatus(),
+                    'is_status_manual' => $request->isStatusManual(),
+                    // Neither the received total, the payment date nor the
+                    // delay is stored from here: the instalments below are the
+                    // source of all three, so the client has no say over them.
+                    'invoice_deposited_on' => $request->date('invoice_deposited_on'),
+                    'private_note' => $request->input('private_note') ?: null,
+                ],
+            );
+
+            // Written after the declaration, and only then: the delay of each
+            // transfer is counted from the deposit date this save has settled.
+            $recordInstalments->handle($declaration, $request->instalments());
+
+            // Après les versements, jamais avant : une révision antérieure
+            // photographierait les totaux de l'enregistrement précédent.
+            $recordRevision->handle($declaration->load('payments'), $request->user());
+
+            return $declaration;
+        });
 
         // Carry the period only when catching up on a past month: without it
         // each save would bounce back to the current month.

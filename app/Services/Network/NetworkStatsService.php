@@ -10,6 +10,7 @@ use App\Enums\DeclarationStatus;
 use App\Models\Insurer;
 use App\Services\Settings\SettingsRepository;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -69,6 +70,8 @@ class NetworkStatsService
             ->whereIn('id', $rows->pluck('insurer_id'))
             ->pluck('name', 'id');
 
+        $instalments = $this->instalmentAggregates($from, $to, $city);
+
         $indicators = [];
 
         foreach ($rows as $row) {
@@ -104,10 +107,134 @@ class NetworkStatsService
                 amountReceived: $received,
                 amountOutstanding: max(0, $invoiced - $received),
                 recoveryRate: $invoiced > 0 ? round($received / $invoiced * 100, 1) : null,
+                recoveredWithinDelayShare: $this->recoveredShare(
+                    $instalments[$insurerId] ?? null,
+                    $invoiced,
+                    $received,
+                ),
+                instalments: (int) ($instalments[$insurerId]->instalments ?? 0),
+                instalmentsPerDeclaration: $this->perSettled($instalments[$insurerId] ?? null, 'instalments'),
+                multiInstalmentShare: $this->shareOfSettled($instalments[$insurerId] ?? null, 'multi_instalment'),
+                averageFirstInstalmentDelayDays: $this->perDated($instalments[$insurerId] ?? null, 'first_delay_total'),
             );
         }
 
         return $indicators;
+    }
+
+    /**
+     * What the instalments say about each insurer, beyond the declarations.
+     *
+     * Read from the payment rows, not from the declarations: a month settled in
+     * two transfers is on time for the first and late for the second, and only
+     * the rows know which share fell on which side. `declarations.delay_days`
+     * cannot answer that — it holds the delay of the **last** transfer, so it
+     * marks a whole month late over a residual payment.
+     *
+     * Two levels of grouping. The inner one folds together the payments of a
+     * single declaration, which is the only place « how many transfers did this
+     * month take » and « when did the money first move » exist at all; the
+     * outer one then averages those over the insurer.
+     *
+     * A separate query rather than a join into the main aggregate: joining the
+     * payments would multiply the declaration rows and quietly inflate every
+     * COUNT and every SUM of an invoiced amount beside it.
+     *
+     * @return Collection<int|string, \stdClass> aggregates keyed by insurer id
+     */
+    protected function instalmentAggregates(Period $from, Period $to, ?string $city = null): Collection
+    {
+        $perDeclaration = $this->withStandardDelay($this->baseQuery($from, $to, $city))
+            ->join('declaration_payments', 'declaration_payments.declaration_id', '=', 'declarations.id')
+            ->select('declarations.insurer_id', 'declaration_payments.declaration_id')
+            ->selectRaw('COUNT(*) as instalments')
+            ->selectRaw('MIN(declaration_payments.delay_days) as first_delay')
+            ->selectRaw('SUM(declaration_payments.amount) as recorded_amount')
+            ->selectRaw('SUM(CASE WHEN declaration_payments.delay_days <= insurers.standard_delay_days THEN declaration_payments.amount ELSE 0 END) as recovered_within')
+            ->groupBy('declarations.insurer_id', 'declaration_payments.declaration_id');
+
+        return DB::query()
+            ->fromSub($perDeclaration, 'per_declaration')
+            ->select('insurer_id')
+            ->selectRaw('SUM(instalments) as instalments')
+            ->selectRaw('SUM(recovered_within) as recovered_within')
+            ->selectRaw('COUNT(*) as settled_declarations')
+            ->selectRaw('SUM(CASE WHEN instalments > 1 THEN 1 ELSE 0 END) as multi_instalment')
+            ->selectRaw('SUM(first_delay) as first_delay_total')
+            // COUNT sur la colonne, pas sur les lignes : un versement repris
+            // par la migration depuis une déclaration sans date de dépôt porte
+            // un délai NULL, que SUM ignore. Compter la ligne quand même
+            // rabaisserait le délai du premier versement de cet assureur.
+            ->selectRaw('COUNT(first_delay) as first_delay_count')
+            ->selectRaw('SUM(recorded_amount) as recorded_amount')
+            ->groupBy('insurer_id')
+            ->get()
+            ->keyBy('insurer_id');
+    }
+
+    /**
+     * The share of the invoiced amount that arrived within the standard delay.
+     *
+     * Null as soon as some of the money received is not backed by instalments.
+     * That is the state of every declaration filed before payment dates
+     * existed: reporting « 0 % recouvré dans les délais » for an insurer that
+     * did pay would be an accusation made out of missing data.
+     *
+     * Compared amount to amount rather than « has it any instalment at all »:
+     * one undocumented month among documented ones is exactly the case where a
+     * per-insurer flag would let the figure through, silently crediting the
+     * insurer with none of that money. An insurer that genuinely received
+     * nothing keeps its honest zero.
+     */
+    protected function recoveredShare(?object $row, int $invoiced, int $received): ?float
+    {
+        if ($invoiced <= 0) {
+            return null;
+        }
+
+        if ($received > (int) ($row->recorded_amount ?? 0)) {
+            return null;
+        }
+
+        return round((int) ($row->recovered_within ?? 0) / $invoiced * 100, 1);
+    }
+
+    /**
+     * A per-declaration average of one instalment aggregate, to one decimal.
+     *
+     * The denominator is the number of declarations that received money at all:
+     * an unpaid month has no transfer to average, and counting it would report
+     * « 0,4 transfer per declaration » as though insurers paid in fractions.
+     */
+    protected function perSettled(?object $row, string $column): ?float
+    {
+        $settled = (int) ($row->settled_declarations ?? 0);
+
+        return $settled > 0 ? round((int) $row->{$column} / $settled, 1) : null;
+    }
+
+    /**
+     * The same, over the declarations that actually carry a first delay.
+     *
+     * Kept apart from perSettled() on purpose: a declaration whose transfers
+     * have no delay contributes nothing to the sum, so counting it in the
+     * denominator would report a shorter delay than any transfer took.
+     */
+    protected function perDated(?object $row, string $column): ?float
+    {
+        $dated = (int) ($row->first_delay_count ?? 0);
+
+        return $dated > 0 ? round((int) $row->{$column} / $dated, 1) : null;
+    }
+
+    /**
+     * The same denominator, read as a percentage.
+     */
+    protected function shareOfSettled(?object $row, string $column): ?float
+    {
+        $settled = (int) ($row->settled_declarations ?? 0);
+
+        return $settled > 0 ? round((int) $row->{$column} / $settled * 100, 1) : null;
     }
 
     /**

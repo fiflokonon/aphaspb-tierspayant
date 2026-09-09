@@ -37,11 +37,9 @@ class SaveDeclarationRequest extends FormRequest
             'period_month' => ['required', 'integer'],
             'period' => [new DeclarablePeriod],
             'amount_invoiced' => ['required', 'integer', 'min:0'],
-            'amount_received' => ['required', 'integer', 'min:0', 'lte:amount_invoiced'],
             'status' => ['nullable', new Enum(DeclarationStatus::class)],
             // A monthly invoice cannot be filed before the month it covers, and
-            // neither date can be in the future. The pair is required or
-            // forbidden depending on the status: see withValidator().
+            // it cannot be dated in the future.
             'invoice_deposited_on' => [
                 'required',
                 'date',
@@ -50,8 +48,18 @@ class SaveDeclarationRequest extends FormRequest
                     ? []
                     : ['after_or_equal:'.$this->declaredMonthStart()]),
             ],
-            'paid_on' => [
-                'nullable',
+            // An insurer settles a month in one transfer or several. Each line
+            // carries its own date — that is the whole point of the list, and
+            // it is what keeps a recorded amount from ever losing the date its
+            // delay is measured from.
+            // Plafonnée : chaque ligne devient une ligne en base, et rien du
+            // côté client ne borne ce que la requête transporte. Deux douzaines
+            // de virements sur un seul mois de facturation est déjà au-delà de
+            // ce qu'un assureur produit.
+            'payments' => ['array', 'max:24'],
+            'payments.*.amount' => ['required', 'integer', 'min:1'],
+            'payments.*.paid_on' => [
+                'required',
                 'date',
                 'before_or_equal:today',
                 'after_or_equal:invoice_deposited_on',
@@ -92,35 +100,108 @@ class SaveDeclarationRequest extends FormRequest
     }
 
     /**
-     * The dates only exist where a payment did.
+     * What the instalments as a whole are allowed to add up to.
      *
-     * The condition consults DeclarationStatus::derive(), the same rule the
-     * model applies on save, so the two can never drift apart.
+     * Each line is judged on its own by the rules above; only the total needs
+     * the invoice to compare itself against, and only the status can say
+     * whether any transfer should be there at all.
      */
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            if ($validator->errors()->hasAny(['amount_invoiced', 'amount_received'])) {
+            if ($validator->errors()->hasAny(['amount_invoiced', 'payments'])) {
                 return;
             }
 
-            $paid = $this->input('paid_on');
+            $received = $this->amountReceived();
 
-            // La date de dépôt est exigée par la règle `required` quel que soit
-            // le statut : une facture impayée en a une, c'est le paiement qui
-            // manque. Seul paid_on dépend encore du statut.
-            if ($this->resolvedStatus()->isSettled()) {
-                if ($paid === null || $paid === '') {
-                    $validator->errors()->add('paid_on', 'Indiquez la date de paiement.');
-                }
+            if ($received > $this->integer('amount_invoiced')) {
+                $validator->errors()->add(
+                    'payments',
+                    'Le total des versements ne peut pas dépasser le montant facturé.',
+                );
 
                 return;
             }
 
-            if ($paid !== null && $paid !== '') {
-                $validator->errors()->add('paid_on', "Une date de paiement n'a de sens que si un paiement a été reçu.");
+            // Le statut et les versements doivent se répondre, dans les deux
+            // sens. `status` est un champ ouvert sur une route publique : sans
+            // le second test, un POST forgé posait une déclaration « payée »
+            // sans un franc ni une date, que les agrégats réseau comptaient
+            // comme réglée tout en la privant de délai — moyenne et part dans
+            // les clous sous-estimées, en silence.
+            $settled = $this->resolvedStatus()->isSettled();
+
+            if ($received > 0 && ! $settled) {
+                $validator->errors()->add(
+                    'payments',
+                    "Un versement n'a pas de sens sur une facture déclarée rejetée.",
+                );
+
+                return;
+            }
+
+            if ($received === 0 && $settled && $this->input('status') !== null) {
+                $validator->errors()->add(
+                    'payments',
+                    'Un statut « payé » ou « partiel » suppose au moins un versement.',
+                );
             }
         });
+    }
+
+    /**
+     * The instalments as the action expects them, in the order submitted.
+     *
+     * Anything malformed is dropped rather than cast. The after() callback that
+     * totals these runs even when the per-line rules have already failed, so
+     * this is reached with whatever the client sent — a list of scalars, a
+     * string, a line missing its date. Each of those already carries its own
+     * error; casting them here would only turn a 422 into a 500.
+     *
+     * @return list<array{amount: int, paid_on: string}>
+     */
+    public function instalments(): array
+    {
+        $lines = $this->input('payments');
+
+        if (! is_array($lines)) {
+            return [];
+        }
+
+        $instalments = [];
+
+        foreach ($lines as $line) {
+            if (! is_array($line)) {
+                continue;
+            }
+
+            $amount = $line['amount'] ?? null;
+            $paidOn = $line['paid_on'] ?? null;
+
+            if (! is_numeric($amount) || ! is_string($paidOn)) {
+                continue;
+            }
+
+            $instalments[] = [
+                'amount' => (int) $amount,
+                'paid_on' => $paidOn,
+            ];
+        }
+
+        return $instalments;
+    }
+
+    /**
+     * What the instalments add up to.
+     *
+     * The received amount is no longer typed in: it is the sum of the lines,
+     * both here and on the model. Reading it from the request would be a
+     * second source of truth for the same number.
+     */
+    public function amountReceived(): int
+    {
+        return array_sum(array_column($this->instalments(), 'amount'));
     }
 
     /**
@@ -135,8 +216,8 @@ class SaveDeclarationRequest extends FormRequest
         }
 
         return DeclarationStatus::derive(
-            (int) $this->input('amount_invoiced'),
-            (int) $this->input('amount_received'),
+            $this->integer('amount_invoiced'),
+            $this->amountReceived(),
         );
     }
 
@@ -152,8 +233,8 @@ class SaveDeclarationRequest extends FormRequest
         }
 
         return DeclarationStatus::from((string) $explicit) !== DeclarationStatus::derive(
-            (int) $this->input('amount_invoiced'),
-            (int) $this->input('amount_received'),
+            $this->integer('amount_invoiced'),
+            $this->amountReceived(),
         );
     }
 
@@ -165,11 +246,14 @@ class SaveDeclarationRequest extends FormRequest
         return [
             'insurer_id.exists' => 'Cet assureur ne fait pas partie de ceux que vous avez cochés.',
             'invoice_deposited_on.required' => 'Indiquez la date de dépôt de la facture.',
-            'amount_received.lte' => 'Le montant reçu ne peut pas dépasser le montant facturé.',
             'invoice_deposited_on.before_or_equal' => 'La date de dépôt ne peut pas être dans le futur.',
             'invoice_deposited_on.after_or_equal' => 'La facture ne peut pas avoir été déposée avant le mois déclaré.',
-            'paid_on.before_or_equal' => 'La date de paiement ne peut pas être dans le futur.',
-            'paid_on.after_or_equal' => 'Le paiement ne peut pas précéder le dépôt de la facture.',
+            'payments.max' => 'Une déclaration mensuelle ne peut pas porter plus de 24 versements.',
+            'payments.*.amount.required' => 'Indiquez le montant de ce versement.',
+            'payments.*.amount.min' => 'Un versement porte forcément sur un montant.',
+            'payments.*.paid_on.required' => 'Indiquez la date de ce versement.',
+            'payments.*.paid_on.before_or_equal' => 'La date de paiement ne peut pas être dans le futur.',
+            'payments.*.paid_on.after_or_equal' => 'Le paiement ne peut pas précéder le dépôt de la facture.',
         ];
     }
 

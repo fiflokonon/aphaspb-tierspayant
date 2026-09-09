@@ -20,6 +20,7 @@ type Indicator = {
     averageDelayDays: number | null;
     standardDelayDays: number | null;
     withinThresholdShare: number | null;
+    recoveredWithinDelayShare: number | null;
     rejectionRate: number | null;
     unpaidRate: number | null;
 };
@@ -42,13 +43,14 @@ const props = defineProps<{
     cities: string[];
 }>();
 
-const TEMPLATE = '1.7fr 1fr .9fr 1fr .8fr .9fr';
+const TEMPLATE = '1.6fr .9fr .85fr 1fr 1fr .75fr .8fr';
 
 const COLUMNS = [
     'ASSUREUR',
     'OFFICINES (n)',
     'DÉLAI MOYEN',
     'DANS LES DÉLAIS',
+    'ARGENT DANS LES DÉLAIS',
     'REJET',
     'NON PAYÉ',
 ];
@@ -318,7 +320,7 @@ watch([period, city], reload);
                         v-if="!indicator.sufficient"
                         :template="TEMPLATE"
                         :label="indicator.insurerName"
-                        :span="5"
+                        :span="6"
                         :explanation="`${indicator.declaringPharmacies}
                             officine${indicator.declaringPharmacies > 1 ? 's' : ''}
                             déclarante${indicator.declaringPharmacies > 1 ? 's' : ''}
@@ -393,6 +395,30 @@ watch([period, city], reload);
                                     shareTone(indicator.withinThresholdShare)
                                 "
                                 :label="percent(indicator.withinThresholdShare)"
+                            />
+                        </div>
+
+                        <!--
+                            La part des déclarations réglées dans les temps dit
+                            combien de mois sont passés dans les clous ; celle-ci
+                            dit combien d'argent y est passé. Les deux divergent
+                            dès qu'un assureur règle un mois en plusieurs fois :
+                            un solde tardif fait sortir toute la déclaration du
+                            délai, alors que l'acompte, lui, est bien arrivé.
+                        -->
+                        <div class="threshold-cell">
+                            <ProgressMiniBar
+                                :share="
+                                    indicator.recoveredWithinDelayShare ?? 0
+                                "
+                                :tone="
+                                    shareTone(
+                                        indicator.recoveredWithinDelayShare,
+                                    )
+                                "
+                                :label="
+                                    percent(indicator.recoveredWithinDelayShare)
+                                "
                             />
                         </div>
 

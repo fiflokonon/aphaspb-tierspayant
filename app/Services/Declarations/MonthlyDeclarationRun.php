@@ -31,8 +31,12 @@ class MonthlyDeclarationRun
             ->orderBy('insurers.name')
             ->get();
 
+        // Les versements et les révisions repartent avec la déclaration que
+        // l'écran rouvre : chargés à la demande, ils feraient une requête par
+        // assureur du tour, sur l'écran le plus emprunté de l'application.
         $this->declarations = $pharmacy->declarations()
             ->forPeriod($period->year, $period->month)
+            ->with(['payments', 'revisions'])
             ->get()
             ->keyBy('insurer_id');
     }

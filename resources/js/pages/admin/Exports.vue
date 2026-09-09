@@ -23,7 +23,7 @@ const cityOptions = computed(() => [
 ]);
 
 /** Each link carries the filters, so the file matches the screen above it. */
-const hrefFor = (format: 'csv' | 'xlsx') => {
+const hrefFor = (format: 'csv' | 'xlsx' | 'pdf') => {
     const query = new URLSearchParams({ period: period.value, format });
 
     if (city.value) {
@@ -35,6 +35,7 @@ const hrefFor = (format: 'csv' | 'xlsx') => {
 
 const csvHref = computed(() => hrefFor('csv'));
 const xlsxHref = computed(() => hrefFor('xlsx'));
+const pdfHref = computed(() => hrefFor('pdf'));
 
 function reload() {
     router.get(
@@ -138,7 +139,9 @@ watch([period, city], reload);
                         numériques, donc une colonne s'additionne sans
                         conversion. Le CSV reste là pour un réimport :
                         séparateur point-virgule, décimales à la virgule, UTF-8
-                        avec BOM pour les accents.
+                        avec BOM pour les accents. Le PDF, lui, ne se recalcule
+                        pas : c'est le rapport mis en page, à joindre tel quel à
+                        une note ou à un courrier.
                     </p>
                 </div>
             </div>
@@ -169,6 +172,17 @@ watch([period, city], reload);
                         </span>
 
                         <span class="download-button-arrow"> → </span>
+                    </a>
+
+                    <a
+                        :href="pdfHref"
+                        class="download-button download-button-secondary"
+                    >
+                        <span class="download-button-icon"> ↓ </span>
+
+                        <span class="download-button-text">
+                            Télécharger le rapport PDF
+                        </span>
                     </a>
 
                     <a

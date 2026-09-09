@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\NetworkStatsController;
 use App\Http\Controllers\Admin\NetworkTrendsController;
 use App\Http\Controllers\Admin\RegisteredPharmaciesController;
 use App\Http\Controllers\Auth\AccessDeniedController;
+use App\Http\Controllers\Auth\EmailConflictController;
 use App\Http\Controllers\Auth\JoomlaCallbackController;
 use App\Http\Controllers\Auth\LoginRedirectController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Pharmacies\PharmacyInvitationController;
 use App\Http\Controllers\Pharmacy\DeclarationController;
 use App\Http\Controllers\Pharmacy\DeclarationHistoryController;
 use App\Http\Controllers\Pharmacy\PaymentJourneyController;
+use App\Http\Controllers\Pharmacy\PharmacyExportController;
 use App\Http\Controllers\Pharmacy\PharmacyInsurersController as MyInsurersController;
 use App\Http\Middleware\EnsurePharmacyMembership;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +31,7 @@ Route::get('login', LoginRedirectController::class)->name('login');
 Route::post('auth/callback', JoomlaCallbackController::class)->name('auth.callback');
 Route::post('auth/logout', LogoutController::class)->name('auth.logout');
 Route::get('auth/no-access', AccessDeniedController::class)->name('auth.denied');
+Route::get('auth/email-conflict', EmailConflictController::class)->name('auth.email-conflict');
 
 Route::middleware(['auth', 'can:manage-network'])
     ->prefix('admin')
@@ -64,6 +67,12 @@ Route::middleware(['auth', 'can:declare-payments', 'onboarded'])
         Route::get('history', DeclarationHistoryController::class)->name('history');
         Route::get('insurers', [MyInsurersController::class, 'edit'])->name('insurers');
         Route::patch('insurers', [MyInsurersController::class, 'update'])->name('insurers.update');
+        // Nommée « data-exports » et non « exports » : Wayfinder dérive le nom
+        // du symbole TypeScript du nom de la route, et `export const exports`
+        // entre en collision avec le `exports` de CommonJS — vue-tsc perd alors
+        // le typage expando et refuse `.url()` et `.form`.
+        Route::get('exports', [PharmacyExportController::class, 'index'])->name('data-exports');
+        Route::get('exports/download', [PharmacyExportController::class, 'download'])->name('data-exports.download');
     });
 
 Route::prefix('{current_pharmacy}')

@@ -9,9 +9,11 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -31,6 +33,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read int<0, max> $amount_outstanding
+ * @property-read Collection<int, DeclarationPayment> $payments
+ * @property-read Collection<int, DeclarationRevision> $revisions
  * @property-read Pharmacy $pharmacy
  * @property-read Insurer $insurer
  */
@@ -57,6 +61,21 @@ class Declaration extends Model
      * How far back a pharmacy may still record a missed month.
      */
     public const EARLIEST_MONTHS_BACK = 12;
+
+    /**
+     * The default attribute values.
+     *
+     * `amount_received` is no longer written by the form — it is the sum of the
+     * instalments, recorded just after the declaration itself. A new row is
+     * therefore saved before a single transfer exists, and the saving hook
+     * derives its status from this number: null would fail the type, and zero
+     * is what it truly is at that instant.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'amount_received' => 0,
+    ];
 
     /**
      * Bootstrap the model and its traits.
@@ -93,6 +112,44 @@ class Declaration extends Model
     }
 
     /**
+     * Recompute the cached totals from the instalments, and save.
+     *
+     * `amount_received` and `paid_on` are no longer typed in: an insurer may
+     * settle a month in several transfers, and those rows are the truth. The
+     * two columns remain because every aggregate reads them in SQL, and the
+     * saving hook derives `status` and `delay_days` from them in turn.
+     *
+     * The payment date kept is the **most recent** instalment: it is the one
+     * the network measures its delay against, so a month settled in two goes
+     * is judged on when it was finished, not on when it was started.
+     */
+    public function syncFromInstalments(): void
+    {
+        $payments = $this->payments()->get();
+
+        $this->amount_received = (int) $payments->sum('amount');
+        $this->paid_on = $payments->max('paid_on');
+
+        $this->save();
+    }
+
+    /**
+     * How long the insurer took to pay this instalment, from the deposit.
+     *
+     * Same rule as deriveDelayDays(), applied one transfer at a time. Written
+     * onto the payment row rather than computed on read, because the share of
+     * money recovered within an insurer's standard delay is summed in SQL.
+     */
+    public function deriveInstalmentDelayDays(CarbonImmutable $paidOn): ?int
+    {
+        if ($this->invoice_deposited_on === null) {
+            return null;
+        }
+
+        return (int) $this->invoice_deposited_on->diffInDays($paidOn);
+    }
+
+    /**
      * Work out the status from the two amounts.
      *
      * Rejected is never derived: no pair of amounts implies an insurer refused
@@ -104,7 +161,11 @@ class Declaration extends Model
     }
 
     /**
-     * How long the insurer took to pay, counted from the deposit of the invoice.
+     * How long the insurer took to settle, counted from the deposit.
+     *
+     * Measured to `paid_on`, which syncFromInstalments() keeps on the most
+     * recent transfer received: a month paid in two goes is judged on when it
+     * was finished. The per-instalment delays live on the payment rows.
      *
      * Stored rather than computed on read, because every network aggregate sums
      * and averages it in SQL. The two dates remain the only source of truth:
@@ -153,6 +214,29 @@ class Declaration extends Model
     protected function settled(Builder $query): void
     {
         $query->whereIn('status', DeclarationStatus::settledValues());
+    }
+
+    /**
+     * The transfers received against this month, oldest first.
+     *
+     * @return HasMany<DeclarationPayment, $this>
+     */
+    public function payments(): HasMany
+    {
+        // L'id départage deux versements du même jour : sans lui leur ordre
+        // varie d'une requête à l'autre, et RecordDeclarationRevision, qui
+        // compare des listes ordonnées, inventerait une correction.
+        return $this->hasMany(DeclarationPayment::class)->orderBy('paid_on')->orderBy('id');
+    }
+
+    /**
+     * What this declaration said at each save, newest last.
+     *
+     * @return HasMany<DeclarationRevision, $this>
+     */
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(DeclarationRevision::class);
     }
 
     /**

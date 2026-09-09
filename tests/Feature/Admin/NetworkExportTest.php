@@ -1,9 +1,12 @@
 <?php
 
+use App\Data\Period;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
+use App\Services\Network\NetworkExportRows;
+use App\Services\Network\NetworkPdfExport;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia;
 
@@ -86,7 +89,7 @@ test('an insurer above the threshold gets a full row', function () {
         // The delay the share « sous seuil » is judged against travels with it,
         // otherwise the file states a percentage against an unstated rule.
         ->and($cells[5])->toBe('30')
-        ->and($cells)->toHaveCount(13)
+        ->and($cells)->toHaveCount(count(NetworkExportRows::COLUMNS))
         ->and($line)->toContain('5000000');
 });
 
@@ -149,4 +152,32 @@ test('a pharmacy account cannot reach either export route', function () {
 
     $this->actingAs($user)->get(route('admin.csv-exports'))->assertForbidden();
     $this->actingAs($user)->get(route('admin.csv-exports.download'))->assertForbidden();
+});
+
+test('the report comes back as a pdf, and states the period it covers', function () {
+    exportDeclare(Insurer::factory()->create(['name' => 'Assez de declarants']), 5);
+
+    $response = $this->actingAs($this->admin)
+        ->get(route('admin.csv-exports.download', ['format' => 'pdf', 'period' => 'last-12-months']))
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+
+    expect($response->streamedContent())->toStartWith('%PDF-');
+});
+
+test('the report withholds an insurer below the anonymity threshold like every other format', function () {
+    exportDeclare(Insurer::factory()->create(['name' => 'Petit Assureur']), 3);
+
+    $data = app(NetworkPdfExport::class);
+
+    // Rendre le PDF puis y chercher du texte n'apprendrait rien de fiable : la
+    // vue est testée par ce qu'on lui donne, et la règle de retenue vit dans le
+    // service. Un assureur sous le seuil ne doit jamais arriver dans `rows`.
+    $reflected = new ReflectionMethod($data, 'data');
+    $payload = $reflected->invoke($data, new Period(2026, 8), new Period(2026, 8), null);
+
+    expect($payload['rows'])->toBeEmpty()
+        ->and($payload['withheld'])->toHaveCount(1)
+        ->and($payload['withheld'][0]['name'])->toBe('Petit Assureur')
+        ->and($payload['withheld'][0]['declaringPharmacies'])->toBe(3);
 });

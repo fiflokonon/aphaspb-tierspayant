@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\Joomla\JoomlaHandoffState;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 
 beforeEach(fn () => useJoomlaTestKeys());
 
@@ -234,4 +235,63 @@ test('a callback is refused when Joomla will not hand over the profile', functio
 
     expect(User::query()->where('joomla_user_id', 5150)->exists())->toBeFalse();
     $this->assertGuest();
+});
+
+test('an email already held by another Joomla account stops the handoff', function () {
+    fakeJoomlaProfile();
+
+    // Le compte Joomla 4242 porte déjà cette adresse ici. Joomla n'impose pas
+    // toujours l'unicité des emails, et un compte supprimé puis recréé revient
+    // sous un nouvel identifiant avec la même adresse.
+    $existing = User::factory()->create([
+        'joomla_user_id' => 4242,
+        'email' => 'titulaire@officine.bj',
+    ]);
+
+    postHandoff(['token' => joomlaToken(['sub' => '5150'])])
+        ->assertRedirect(route('auth.email-conflict'));
+
+    // Ni session ouverte, ni compte fantôme laissé derrière, ni compte existant
+    // détourné vers le nouvel identifiant Joomla.
+    $this->assertGuest();
+
+    expect(User::query()->where('joomla_user_id', 5150)->exists())->toBeFalse()
+        ->and($existing->fresh()->joomla_user_id)->toBe(4242);
+});
+
+test('the collision is judged without regard to case', function () {
+    fakeJoomlaProfile();
+
+    User::factory()->create([
+        'joomla_user_id' => 4242,
+        'email' => 'Titulaire@Officine.BJ',
+    ]);
+
+    postHandoff(['token' => joomlaToken(['sub' => '5150'])])
+        ->assertRedirect(route('auth.email-conflict'));
+});
+
+test('a user keeping their own email across logins is not treated as a collision', function () {
+    fakeJoomlaProfile();
+
+    // Contrôle négatif : c'est le cas de tous les jours. Le compte porte déjà
+    // son adresse, et la garder ne doit pas le faire refuser à chaque retour.
+    $user = User::factory()->create([
+        'joomla_user_id' => 5150,
+        'email' => 'titulaire@officine.bj',
+    ]);
+
+    postHandoff(['token' => joomlaToken(['sub' => '5150'])])->assertRedirect();
+
+    $this->assertAuthenticatedAs($user->fresh());
+});
+
+test('the conflict page is readable without a session and points back to Joomla', function () {
+    config(['joomla.site_url' => 'https://joomla.test']);
+
+    $this->get(route('auth.email-conflict'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('auth/EmailConflict')
+            ->where('siteUrl', 'https://joomla.test'));
 });

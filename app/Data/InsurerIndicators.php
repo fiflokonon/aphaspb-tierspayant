@@ -26,6 +26,24 @@ readonly class InsurerIndicators
         public int $amountReceived,
         public int $amountOutstanding,
         public ?float $recoveryRate,
+        /**
+         * Share of the invoiced amount actually paid within this insurer's own
+         * standard delay, in percent.
+         *
+         * Money-based, where withinThresholdShare counts declarations: a month
+         * settled in two transfers contributes only the part that arrived in
+         * time. Measured against what was invoiced, so what an insurer never
+         * paid at all weighs against it exactly like what it paid late.
+         */
+        public ?float $recoveredWithinDelayShare,
+        /** How many transfers this insurer's settled months took, in total. */
+        public int $instalments,
+        /** Transfers per settled month: 1.0 means it always pays in one go. */
+        public ?float $instalmentsPerDeclaration,
+        /** Share of settled months that took more than one transfer, in percent. */
+        public ?float $multiInstalmentShare,
+        /** Days to the **first** transfer, where averageDelayDays counts to the last. */
+        public ?float $averageFirstInstalmentDelayDays,
     ) {
         //
     }
