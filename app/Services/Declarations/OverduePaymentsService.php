@@ -22,8 +22,10 @@ use Illuminate\Support\Facades\DB;
  */
 class OverduePaymentsService
 {
-    public function __construct(protected SettingsRepository $settings)
-    {
+    public function __construct(
+        protected SettingsRepository $settings,
+        protected PenaltyCalculator $penalties,
+    ) {
         //
     }
 
@@ -41,19 +43,26 @@ class OverduePaymentsService
                 'declarations.period_year',
                 'declarations.period_month',
                 'declarations.invoice_deposited_on',
+                'declarations.amount_invoiced',
+                'declarations.amount_received',
+                'insurers.id as insurer_id',
                 'insurers.name as insurer_name',
                 'insurers.standard_delay_days',
+                'insurers.penalty_trigger_days',
+                'insurers.penalty_rate_bp',
             )
             ->selectRaw('declarations.amount_invoiced - declarations.amount_received as outstanding')
             ->get();
 
         $today = CarbonImmutable::now()->startOfDay();
+        $instalments = $this->instalmentsOf($rows->pluck('id'));
 
-        $lines = $rows->map(function (object $row) use ($today): OverdueLine {
+        $lines = $rows->map(function (object $row) use ($today, $instalments): OverdueLine {
             $deposited = CarbonImmutable::parse((string) $row->invoice_deposited_on)->startOfDay();
 
             return new OverdueLine(
                 declarationId: (int) $row->id,
+                insurerId: (int) $row->insurer_id,
                 insurerName: (string) $row->insurer_name,
                 periodYear: (int) $row->period_year,
                 periodMonth: (int) $row->period_month,
@@ -61,10 +70,65 @@ class OverduePaymentsService
                 ageDays: (int) $deposited->diffInDays($today),
                 standardDelayDays: (int) $row->standard_delay_days,
                 outstanding: (int) $row->outstanding,
+                penalty: $this->penaltyOf($row, $deposited, $instalments[$row->id] ?? []),
             );
         });
 
         return array_values($lines->sortByDesc('ageDays')->values()->all());
+    }
+
+    /**
+     * La pénalité courue par une ligne en retard.
+     *
+     * `paidOn: null` n'est pas un oubli : une ligne en retard doit encore
+     * quelque chose par définition — overdueQuery() impose
+     * `amount_invoiced > amount_received` —, donc l'horloge court jusqu'à
+     * aujourd'hui et la date de solde n'est jamais lue.
+     *
+     * @param  list<array{amount: int, paid_on: CarbonImmutable}>  $payments
+     */
+    protected function penaltyOf(object $row, CarbonImmutable $deposited, array $payments): ?int
+    {
+        if ($row->penalty_trigger_days === null || $row->penalty_rate_bp === null) {
+            return null;
+        }
+
+        return $this->penalties->accrued(
+            amountInvoiced: (int) $row->amount_invoiced,
+            amountReceived: (int) $row->amount_received,
+            depositedOn: $deposited,
+            paidOn: null,
+            triggerDays: (int) $row->penalty_trigger_days,
+            rateBp: (int) $row->penalty_rate_bp,
+            payments: $payments,
+        );
+    }
+
+    /**
+     * Les versements de ces déclarations, groupés, en une requête.
+     *
+     * Une par déclaration ferait un N+1 sur l'écran qui ouvre le tableau de
+     * bord — première cause de lenteur perçue de cette application.
+     *
+     * @param  Collection<int, mixed>  $declarationIds
+     * @return array<int, list<array{amount: int, paid_on: CarbonImmutable}>>
+     */
+    protected function instalmentsOf(Collection $declarationIds): array
+    {
+        if ($declarationIds->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('declaration_payments')
+            ->whereIn('declaration_id', $declarationIds)
+            ->orderBy('paid_on')
+            ->get(['declaration_id', 'amount', 'paid_on'])
+            ->groupBy('declaration_id')
+            ->map(fn (Collection $payments): array => array_values($payments->map(fn (object $payment): array => [
+                'amount' => (int) $payment->amount,
+                'paid_on' => CarbonImmutable::parse((string) $payment->paid_on),
+            ])->all()))
+            ->all();
     }
 
     /**
