@@ -5,6 +5,8 @@ namespace App\Services\Pharmacy;
 use App\Data\Period;
 use App\Models\Declaration;
 use App\Models\Pharmacy;
+use App\Services\Declarations\LongestDelay;
+use App\Services\Declarations\PenaltyCalculator;
 use App\Support\MonthLabel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as PdfDocument;
@@ -27,6 +29,8 @@ class PharmacyPdfExport
     public function __construct(
         protected PharmacyExportRows $source,
         protected PharmacyStatsService $stats,
+        protected PenaltyCalculator $penalties,
+        protected LongestDelay $longestDelay,
     ) {
         //
     }
@@ -86,6 +90,8 @@ class PharmacyPdfExport
             'splitSettlements' => $declarations->filter(
                 fn (Declaration $one): bool => $one->payments->count() > 1,
             )->count(),
+            'longestDelayDays' => $this->longestDelay->for($declarations),
+            'penalty' => $this->penalties->total($declarations),
             'withinStandard' => $dated->count() === 0 ? null : round($dated->filter(
                 fn (Declaration $one): bool => $one->delay_days <= $one->insurer->standard_delay_days,
             )->count() / $dated->count() * 100, 1),
@@ -119,6 +125,11 @@ class PharmacyPdfExport
                 'splitSettlements' => $group->filter(
                     fn (Declaration $one): bool => $one->payments->count() > 1,
                 )->count(),
+                // Calculés sur le groupe que ce fichier liste, jamais délégués
+                // à InsurerRelationshipReport : une synthèse qui contredirait
+                // sa propre table de détail serait pire que pas de synthèse.
+                'longestDelayDays' => $this->longestDelay->for($group),
+                'penalty' => $this->penalties->total($group),
             ];
         })->values();
 

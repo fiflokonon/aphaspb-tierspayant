@@ -5,6 +5,7 @@ namespace App\Services\Pharmacy;
 use App\Data\Period;
 use App\Models\Declaration;
 use App\Models\Pharmacy;
+use App\Services\Declarations\PenaltyCalculator;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -24,6 +25,11 @@ use Illuminate\Database\Eloquent\Collection;
  */
 class PharmacyExportRows
 {
+    public function __construct(protected PenaltyCalculator $penalties)
+    {
+        //
+    }
+
     /** @var list<string> */
     public const COLUMNS = [
         'annee',
@@ -38,6 +44,9 @@ class PharmacyExportRows
         'delai_jours',
         'delai_standard_jours',
         'dans_le_delai',
+        'delai_declenchement_penalite_jours',
+        'taux_penalite_pct',
+        'penalite_fcfa',
         'versements',
         'detail_versements',
         'corrections',
@@ -64,7 +73,7 @@ class PharmacyExportRows
     public function declarations(Pharmacy $pharmacy, Period $from, Period $to, ?int $insurerId = null)
     {
         return Declaration::query()
-            ->with(['insurer:id,name,standard_delay_days', 'payments'])
+            ->with(['insurer:id,name,standard_delay_days,penalty_trigger_days,penalty_rate_bp', 'payments'])
             ->withCount('revisions')
             ->where('pharmacy_id', $pharmacy->id)
             ->whereRaw(
@@ -98,6 +107,12 @@ class PharmacyExportRows
             $declaration->delay_days,
             $standard,
             $declaration->delay_days === null ? null : ($declaration->delay_days <= $standard ? 'oui' : 'non'),
+            // Le délai et le taux accompagnent le montant pour le rendre
+            // vérifiable : une pénalité sans le taux qui l'a produite est
+            // inauditable dans un tableur.
+            $declaration->insurer->penalty_trigger_days,
+            $declaration->insurer->penalty_rate_percent,
+            $this->penalties->for($declaration),
             $declaration->payments->count(),
             // Les versements tiennent dans une cellule plutôt que d'éclater
             // chaque déclaration sur plusieurs lignes : le fichier reste une

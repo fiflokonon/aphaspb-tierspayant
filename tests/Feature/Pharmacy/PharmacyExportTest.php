@@ -1,11 +1,13 @@
 <?php
 
+use App\Data\Period;
 use App\Enums\PharmacyRole;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
 use App\Services\Pharmacy\PharmacyExportRows;
+use App\Services\Pharmacy\PharmacyPdfExport;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia;
 
@@ -212,4 +214,70 @@ test('a binary download creates one temp file, not one it then abandons', functi
     foreach ($created as $orphan) {
         @unlink($orphan);
     }
+});
+
+test('the csv carries the penalty and what produced it', function () {
+    [$user, $pharmacy, $insurer] = exportingOfficine();
+    $insurer->update(['penalty_trigger_days' => 10, 'penalty_rate_bp' => 200]);
+
+    // Déposée le 2026-08-01, 400 000 le 06 puis 600 000 le 26, donc soldée :
+    // l'horloge s'arrête au 26 et une seule tranche mord, le 11, sur la base
+    // déjà ramenée à 600 000 par le premier versement.
+    declareSplit($pharmacy, $insurer);
+
+    $rows = csvRowsFor($user);
+    $header = $rows[0];
+    $row = $rows[1];
+    $cell = fn (string $column): string => $row[array_search($column, $header, true)];
+
+    expect($cell('delai_declenchement_penalite_jours'))->toBe('10')
+        ->and($cell('taux_penalite_pct'))->toBe('2')
+        ->and($cell('penalite_fcfa'))->toBe('12000');
+});
+
+test('an insurer without a clause leaves the three penalty cells empty', function () {
+    [$user, $pharmacy, $insurer] = exportingOfficine();
+
+    declareSplit($pharmacy, $insurer);
+
+    $rows = csvRowsFor($user);
+    $header = $rows[0];
+    $row = $rows[1];
+    $cell = fn (string $column): string => $row[array_search($column, $header, true)];
+
+    expect($cell('delai_declenchement_penalite_jours'))->toBe('')
+        ->and($cell('taux_penalite_pct'))->toBe('')
+        ->and($cell('penalite_fcfa'))->toBe('');
+});
+
+test('the pdf summary carries the longest delay and the penalty', function () {
+    [$user, $pharmacy, $insurer] = exportingOfficine();
+    $insurer->update(['penalty_trigger_days' => 10, 'penalty_rate_bp' => 200]);
+
+    declareSplit($pharmacy, $insurer);
+
+    // Même idiome que NetworkExportTest : la vue est testée par ce qu'on lui
+    // donne, et rendre le PDF puis y chercher du texte n'apprendrait rien de
+    // fiable.
+    $export = app(PharmacyPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, $pharmacy, new Period(2025, 9), new Period(2026, 8), null);
+
+    expect($payload['perInsurer'])->toHaveCount(1)
+        ->and($payload['perInsurer'][0])->toHaveKeys(['longestDelayDays', 'penalty'])
+        ->and($payload['perInsurer'][0]['penalty'])->toBe(12_000)
+        ->and($payload['perInsurer'][0]['longestDelayDays'])->toBe(25);
+});
+
+test('the pdf summary leaves both new columns empty without a clause', function () {
+    [$user, $pharmacy, $insurer] = exportingOfficine();
+
+    declareSplit($pharmacy, $insurer);
+
+    $export = app(PharmacyPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, $pharmacy, new Period(2025, 9), new Period(2026, 8), null);
+
+    expect($payload['perInsurer'][0]['penalty'])->toBeNull()
+        ->and($payload['perInsurer'][0]['longestDelayDays'])->toBe(25);
 });

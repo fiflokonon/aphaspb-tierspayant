@@ -232,6 +232,8 @@
                 <th>Reste dû</th>
                 <th>Recouvrement</th>
                 <th>Délai moyen</th>
+                <th>Délai max</th>
+                <th>Pénalité</th>
                 <th>Versements</th>
             </tr>
         </thead>
@@ -250,6 +252,13 @@
                     <td class="{{ $row['averageDelayDays'] !== null && $row['averageDelayDays'] > $row['standardDelayDays'] ? 'late' : '' }}">
                         {{ $row['averageDelayDays'] === null ? '—' : number_format($row['averageDelayDays'], 1, ',', ' ').' j' }}
                     </td>
+                    <td class="{{ $row['longestDelayDays'] !== null && $row['longestDelayDays'] > $row['standardDelayDays'] ? 'late' : '' }}">
+                        {{ $row['longestDelayDays'] === null ? '—' : $row['longestDelayDays'].' j' }}
+                    </td>
+                    {{-- Un tiret, jamais zéro : « pas de clause de pénalité »
+                         et « une clause mais rien à réclamer » ne se lisent
+                         pas pareil. --}}
+                    <td>{{ $row['penalty'] === null ? '—' : \App\Support\Fcfa::format($row['penalty']) }}</td>
                     <td>
                         {{ $row['instalments'] }}
                         <div class="sub">
@@ -260,7 +269,7 @@
             @endforeach
 
             @if (count($perInsurer) === 0)
-                <tr><td class="text" colspan="8">Aucune déclaration sur la période retenue.</td></tr>
+                <tr><td class="text" colspan="10">Aucune déclaration sur la période retenue.</td></tr>
             @endif
         </tbody>
         <tfoot>
@@ -272,6 +281,8 @@
                 <td>{{ \App\Support\Fcfa::format($totals['outstanding']) }}</td>
                 <td>{{ $totals['recoveryRate'] === null ? '—' : number_format($totals['recoveryRate'], 1, ',', ' ').' %' }}</td>
                 <td>{{ $totals['averageDelayDays'] === null ? '—' : number_format($totals['averageDelayDays'], 1, ',', ' ').' j' }}</td>
+                <td>{{ $totals['longestDelayDays'] === null ? '—' : $totals['longestDelayDays'].' j' }}</td>
+                <td>{{ $totals['penalty'] === null ? '—' : \App\Support\Fcfa::format($totals['penalty']) }}</td>
                 <td>{{ $totals['instalments'] }}</td>
             </tr>
         </tfoot>
