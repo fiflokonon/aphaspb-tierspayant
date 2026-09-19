@@ -10,6 +10,8 @@ type Row = {
     name: string;
     isActive: boolean;
     standardDelayDays: number;
+    penaltyTriggerDays: number | null;
+    penaltyRatePercent: number | null;
     pharmacies: number;
 };
 
@@ -19,11 +21,12 @@ defineProps<{
     anonymityFloor: number;
 }>();
 
-const TEMPLATE = '2fr .8fr 1.1fr .9fr 1.2fr';
+const TEMPLATE = '1.8fr .7fr 1fr 1.4fr .8fr 1fr';
 const COLUMNS = [
     'ASSUREUR',
     'OFFICINES (n)',
     'DÉLAI STANDARD',
+    'CLAUSE DE PÉNALITÉ',
     'ÉTAT',
     'ACTION',
 ];
@@ -357,6 +360,67 @@ function startEditing(row: Row) {
                         </Form>
                     </div>
 
+                    <!--
+                        Les deux champs dans un seul formulaire, contrairement
+                        au délai standard : un déclenchement sans taux
+                        n'accumule rien, et required_with refuserait la moitié
+                        d'une clause. Les deux vides l'effacent.
+                    -->
+                    <div>
+                        <Form
+                            :action="`/admin/insurers/${row.id}`"
+                            method="patch"
+                            #default="{ submit, processing, errors }"
+                        >
+                            <div class="row-penalty-control">
+                                <input
+                                    :value="row.penaltyTriggerDays ?? ''"
+                                    name="penalty_trigger_days"
+                                    type="number"
+                                    min="1"
+                                    max="365"
+                                    placeholder="—"
+                                    :disabled="processing"
+                                    :aria-label="`Déclenchement de la pénalité de ${row.name}, en jours`"
+                                    class="row-delay-input"
+                                    @change="submit"
+                                />
+
+                                <span class="row-delay-unit"> j · </span>
+
+                                <input
+                                    :value="row.penaltyRatePercent ?? ''"
+                                    name="penalty_rate_percent"
+                                    type="number"
+                                    min="0.01"
+                                    max="100"
+                                    step="0.01"
+                                    placeholder="—"
+                                    :disabled="processing"
+                                    :aria-label="`Taux de pénalité de ${row.name}, en pourcent`"
+                                    class="row-delay-input"
+                                    @change="submit"
+                                />
+
+                                <span class="row-delay-unit"> % </span>
+                            </div>
+
+                            <p
+                                v-if="errors.penalty_trigger_days"
+                                class="form-error"
+                            >
+                                {{ errors.penalty_trigger_days }}
+                            </p>
+
+                            <p
+                                v-if="errors.penalty_rate_percent"
+                                class="form-error"
+                            >
+                                {{ errors.penalty_rate_percent }}
+                            </p>
+                        </Form>
+                    </div>
+
                     <div>
                         <span v-if="row.isActive" class="status-badge active">
                             <span class="status-badge-dot"></span>
@@ -437,6 +501,12 @@ function startEditing(row: Row) {
 </template>
 
 <style scoped>
+.row-penalty-control {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
 .input-wrapper.delay-input-wrapper {
     flex: 0 0 auto;
 

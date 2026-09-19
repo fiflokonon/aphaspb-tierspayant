@@ -37,6 +37,8 @@ class InsurerManagementController extends Controller
                     'name' => $insurer->name,
                     'isActive' => $insurer->is_active,
                     'standardDelayDays' => $insurer->standard_delay_days,
+                    'penaltyTriggerDays' => $insurer->penalty_trigger_days,
+                    'penaltyRatePercent' => $insurer->penalty_rate_percent,
                     'pharmacies' => $insurer->pharmacies_count,
                 ]),
             'anonymityMinimum' => $this->settings->anonymityMinPharmacies(),
@@ -68,8 +70,29 @@ class InsurerManagementController extends Controller
             'standard_delay_days' => $request->has('standard_delay_days')
                 ? $request->integer('standard_delay_days')
                 : $insurer->standard_delay_days,
+            // Les deux champs arrivent ensemble ou pas du tout : tester l'un
+            // suffit, et le faire ici garde la clause intacte quand l'écran ne
+            // renvoie qu'un renommage.
+            ...$request->has('penalty_trigger_days') ? [
+                'penalty_trigger_days' => $request->integer('penalty_trigger_days') ?: null,
+                'penalty_rate_bp' => $this->rateInBasisPoints($request),
+            ] : [],
         ]);
 
         return to_route('admin.insurers');
+    }
+
+    /**
+     * Le taux saisi en pourcentage, ramené en points de base.
+     *
+     * La conversion vit ici plutôt que dans le modèle : la base de données est
+     * la source de vérité et elle compte en points de base ; le pourcentage
+     * n'est qu'une commodité de saisie, comme le montant formaté d'AmountField.
+     */
+    protected function rateInBasisPoints(SaveInsurerRequest $request): ?int
+    {
+        $percent = $request->validated('penalty_rate_percent');
+
+        return $percent === null || $percent === '' ? null : (int) round((float) $percent * 100);
     }
 }
