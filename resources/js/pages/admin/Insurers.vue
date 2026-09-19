@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { Clock, ShieldCheck } from '@lucide/vue';
 import { ref } from 'vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
@@ -38,6 +39,27 @@ function startEditing(row: Row) {
     editing.value = row.id;
     draft.value = row.name;
 }
+
+/**
+ * N'envoyer la clause de pénalité que lorsqu'elle est entière, ou vidée.
+ *
+ * Les deux champs sont validés l'un par l'autre côté serveur : une moitié
+ * seule est refusée. Sans ce garde, remplir le délai puis passer au taux
+ * soumettrait la moitié du formulaire et ferait apparaître une erreur pendant
+ * la frappe.
+ */
+function submitWhenComplete(event: Event, submit: () => void) {
+    const control = event.currentTarget as HTMLElement;
+    const values = [...control.querySelectorAll('input')].map((input) =>
+        input.value.trim(),
+    );
+
+    const filled = values.filter((value) => value !== '').length;
+
+    if (filled === 0 || filled === values.length) {
+        submit();
+    }
+}
 </script>
 
 <template>
@@ -53,7 +75,7 @@ function startEditing(row: Row) {
         <section class="insurers-intro">
             <div class="intro-content">
                 <div class="intro-icon">
-                    <span>◆</span>
+                    <ShieldCheck :size="16" />
                 </div>
 
                 <div class="intro-text">
@@ -108,7 +130,7 @@ function startEditing(row: Row) {
                 >
                     <div class="form-row">
                         <div class="input-wrapper">
-                            <span class="input-icon"> ◆ </span>
+                            <ShieldCheck class="input-icon" :size="14" />
 
                             <input
                                 name="name"
@@ -152,7 +174,7 @@ function startEditing(row: Row) {
 
             <div class="configuration-card threshold-card">
                 <div class="card-header">
-                    <div class="card-icon gold">◷</div>
+                    <div class="card-icon gold"><Clock :size="16" /></div>
 
                     <div>
                         <span class="card-eyebrow gold"> MODE DE CALCUL </span>
@@ -372,7 +394,18 @@ function startEditing(row: Row) {
                             method="patch"
                             #default="{ submit, processing, errors }"
                         >
-                            <div class="row-penalty-control">
+                            <!--
+                                Soumis depuis le conteneur, et seulement quand
+                                les deux champs s'accordent : sur @change de
+                                chaque input, renseigner le délai puis quitter
+                                le champ enverrait une demi-clause et
+                                afficherait une erreur required_with en pleine
+                                saisie, avant même qu'on ait tapé le taux.
+                            -->
+                            <div
+                                class="row-penalty-control"
+                                @change="submitWhenComplete($event, submit)"
+                            >
                                 <input
                                     :value="row.penaltyTriggerDays ?? ''"
                                     name="penalty_trigger_days"
@@ -383,7 +416,6 @@ function startEditing(row: Row) {
                                     :disabled="processing"
                                     :aria-label="`Déclenchement de la pénalité de ${row.name}, en jours`"
                                     class="row-delay-input"
-                                    @change="submit"
                                 />
 
                                 <span class="row-delay-unit"> j · </span>
@@ -399,7 +431,6 @@ function startEditing(row: Row) {
                                     :disabled="processing"
                                     :aria-label="`Taux de pénalité de ${row.name}, en pourcent`"
                                     class="row-delay-input"
-                                    @change="submit"
                                 />
 
                                 <span class="row-delay-unit"> % </span>

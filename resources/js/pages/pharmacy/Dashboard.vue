@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Deferred, Head, Link, router } from '@inertiajs/vue3';
-import { TriangleAlert } from '@lucide/vue';
+import { Clock, TriangleAlert } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
 import ChartToolbar from '@/components/aphaspb/charts/ChartToolbar.vue';
@@ -402,7 +402,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 />
 
                 <div class="kpi-icon gold">
-                    <span>◷</span>
+                    <Clock :size="16" />
                 </div>
             </div>
         </KpiRow>
@@ -533,7 +533,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 <div class="card-header">
                     <div class="card-title-group">
                         <div class="card-icon gold">
-                            <span>◷</span>
+                            <Clock :size="16" />
                         </div>
 
                         <div>

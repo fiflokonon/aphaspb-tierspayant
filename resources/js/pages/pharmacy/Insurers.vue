@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { ShieldCheck } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import InsurerChecklist from '@/components/aphaspb/InsurerChecklist.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
@@ -61,7 +62,7 @@ const losing = computed(() =>
 
             <div class="intro-content">
                 <div class="intro-icon">
-                    <span>◈</span>
+                    <ShieldCheck :size="16" />
                 </div>
 
                 <div class="intro-text">
