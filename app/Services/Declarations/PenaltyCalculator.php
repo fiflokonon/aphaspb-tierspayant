@@ -57,10 +57,10 @@ class PenaltyCalculator
             paidOn: $declaration->paid_on,
             triggerDays: (int) $insurer->penalty_trigger_days,
             rateBp: (int) $insurer->penalty_rate_bp,
-            payments: $declaration->payments->map(fn (DeclarationPayment $payment): array => [
+            payments: array_values($declaration->payments->map(fn (DeclarationPayment $payment): array => [
                 'amount' => $payment->amount,
                 'paid_on' => $payment->paid_on,
-            ])->all(),
+            ])->all()),
         );
     }
 
@@ -122,7 +122,10 @@ class PenaltyCalculator
             $base = $amountInvoiced - $this->receivedBy($payments, $tranche);
 
             // Les versements ne font que s'ajouter : une base retombée à zéro
-            // ne peut plus remonter, donc l'arrêt est définitif.
+            // ne peut plus remonter, donc les tranches suivantes ne
+            // factureraient rien. Sortir plutôt que continuer est une
+            // optimisation, pas une règle — le total est le même dans les deux
+            // cas, et c'est pourquoi aucun test ne peut les distinguer.
             if ($base <= 0) {
                 break;
             }

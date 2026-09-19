@@ -6,7 +6,6 @@ use Database\Factories\InsurerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -20,7 +19,6 @@ use Illuminate\Support\Carbon;
  * @property int $standard_delay_days
  * @property int|null $penalty_trigger_days
  * @property int|null $penalty_rate_bp
- * @property-read float|null $penalty_rate_percent
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -76,18 +74,25 @@ class Insurer extends Model
     /**
      * The penalty rate as the convention writes it: 250 basis points → 2.5 %.
      *
-     * Read-only. The column stays the source of truth, in basis points, so
-     * every amount derived from it is integer arithmetic.
+     * A plain method rather than an Eloquent accessor, unlike
+     * Declaration::amountOutstanding(): PHPStan treats Attribute's TGet as
+     * invariant, and a nullable union in that position is rejected however it
+     * is annotated. It sits beside hasPenaltyClause(), which is a method for
+     * the same reason — both derive from the columns and neither is stored.
      *
-     * @return Attribute<float|null, never>
+     * The column stays the source of truth, in basis points, so every amount
+     * derived from it is integer arithmetic.
      */
-    protected function penaltyRatePercent(): Attribute
+    public function penaltyRatePercent(): ?float
     {
-        return Attribute::get(
-            fn (): ?float => $this->penalty_rate_bp === null
-                ? null
-                : $this->penalty_rate_bp / 100,
-        );
+        if ($this->penalty_rate_bp === null) {
+            return null;
+        }
+
+        // Le cast n'est pas décoratif : en PHP, 200 / 100 rend l'entier 2 et
+        // 250 / 100 le flottant 2.5. Sans lui, le taux change de type selon sa
+        // valeur, et ce qui part vers le client aussi.
+        return (float) ($this->penalty_rate_bp / 100);
     }
 
     /**

@@ -62,7 +62,7 @@ test('an insurer has no penalty clause by default', function () {
     expect($insurer->penalty_trigger_days)->toBeNull()
         ->and($insurer->penalty_rate_bp)->toBeNull()
         ->and($insurer->hasPenaltyClause())->toBeFalse()
-        ->and($insurer->penalty_rate_percent)->toBeNull();
+        ->and($insurer->penaltyRatePercent())->toBeNull();
 });
 
 test('a penalty clause is read back as a percentage', function () {
@@ -71,7 +71,7 @@ test('a penalty clause is read back as a percentage', function () {
     expect($insurer->penalty_trigger_days)->toBe(90)
         ->and($insurer->penalty_rate_bp)->toBe(250)
         ->and($insurer->hasPenaltyClause())->toBeTrue()
-        ->and($insurer->penalty_rate_percent)->toBe(2.5);
+        ->and($insurer->penaltyRatePercent())->toBe(2.5);
 });
 
 test('a clause needs both halves to count as one', function () {

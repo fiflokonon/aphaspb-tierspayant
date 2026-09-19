@@ -70,7 +70,14 @@ class OverduePaymentsService
                 ageDays: (int) $deposited->diffInDays($today),
                 standardDelayDays: (int) $row->standard_delay_days,
                 outstanding: (int) $row->outstanding,
-                penalty: $this->penaltyOf($row, $deposited, $instalments[$row->id] ?? []),
+                penalty: $this->penaltyOf(
+                    triggerDays: $row->penalty_trigger_days === null ? null : (int) $row->penalty_trigger_days,
+                    rateBp: $row->penalty_rate_bp === null ? null : (int) $row->penalty_rate_bp,
+                    amountInvoiced: (int) $row->amount_invoiced,
+                    amountReceived: (int) $row->amount_received,
+                    depositedOn: $deposited,
+                    payments: $instalments[$row->id] ?? [],
+                ),
             );
         });
 
@@ -87,19 +94,25 @@ class OverduePaymentsService
      *
      * @param  list<array{amount: int, paid_on: CarbonImmutable}>  $payments
      */
-    protected function penaltyOf(object $row, CarbonImmutable $deposited, array $payments): ?int
-    {
-        if ($row->penalty_trigger_days === null || $row->penalty_rate_bp === null) {
+    protected function penaltyOf(
+        ?int $triggerDays,
+        ?int $rateBp,
+        int $amountInvoiced,
+        int $amountReceived,
+        CarbonImmutable $depositedOn,
+        array $payments,
+    ): ?int {
+        if ($triggerDays === null || $rateBp === null) {
             return null;
         }
 
         return $this->penalties->accrued(
-            amountInvoiced: (int) $row->amount_invoiced,
-            amountReceived: (int) $row->amount_received,
-            depositedOn: $deposited,
+            amountInvoiced: $amountInvoiced,
+            amountReceived: $amountReceived,
+            depositedOn: $depositedOn,
             paidOn: null,
-            triggerDays: (int) $row->penalty_trigger_days,
-            rateBp: (int) $row->penalty_rate_bp,
+            triggerDays: $triggerDays,
+            rateBp: $rateBp,
             payments: $payments,
         );
     }

@@ -171,12 +171,26 @@ test('an unpaid month keeps accruing as time passes', function () {
     expect($this->calculator->for($declaration))->toBe($before + 20_000);
 });
 
-test('a base fallen to zero stops the clock for good', function () {
+test('a month settled between two tranches is charged only for the first', function () {
     // Soldée le 2026-07-25, donc après la première tranche et avant la seconde.
     $declaration = declarationFor(insurerWith(60, 200), 1_000_000, '2026-05-22', [
         ['amount' => 1_000_000, 'paid_on' => '2026-07-25'],
     ]);
 
+    expect($this->calculator->for($declaration))->toBe(20_000);
+});
+
+test('a base emptied while tranches remain charges nothing more', function () {
+    // Déposée le 2026-05-01, déclenchement à 30 : tranches les 05-31, 06-30,
+    // 07-30 et 08-29. La dette est éteinte dès le 06-15, mais un reliquat
+    // encaissé le 09-01 tient l'horloge ouverte jusque-là — ce qui fait passer
+    // la boucle par la branche « base à zéro » avec trois tranches devant elle.
+    $declaration = declarationFor(insurerWith(30, 200), 1_000_000, '2026-05-01', [
+        ['amount' => 1_000_000, 'paid_on' => '2026-06-15'],
+        ['amount' => 50_000, 'paid_on' => '2026-09-01'],
+    ]);
+
+    // Seule la tranche du 05-31 mord, sur la base encore entière.
     expect($this->calculator->for($declaration))->toBe(20_000);
 });
 

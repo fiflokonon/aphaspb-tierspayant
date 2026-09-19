@@ -111,7 +111,7 @@ class PharmacyExportRows
             // vérifiable : une pénalité sans le taux qui l'a produite est
             // inauditable dans un tableur.
             $declaration->insurer->penalty_trigger_days,
-            $declaration->insurer->penalty_rate_percent,
+            $declaration->insurer->penaltyRatePercent(),
             $this->penalties->for($declaration),
             $declaration->payments->count(),
             // Les versements tiennent dans une cellule plutôt que d'éclater

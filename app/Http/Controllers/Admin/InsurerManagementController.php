@@ -38,7 +38,7 @@ class InsurerManagementController extends Controller
                     'isActive' => $insurer->is_active,
                     'standardDelayDays' => $insurer->standard_delay_days,
                     'penaltyTriggerDays' => $insurer->penalty_trigger_days,
-                    'penaltyRatePercent' => $insurer->penalty_rate_percent,
+                    'penaltyRatePercent' => $insurer->penaltyRatePercent(),
                     'pharmacies' => $insurer->pharmacies_count,
                 ]),
             'anonymityMinimum' => $this->settings->anonymityMinPharmacies(),

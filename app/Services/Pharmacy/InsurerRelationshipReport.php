@@ -111,7 +111,7 @@ class InsurerRelationshipReport
             insurerName: $insurer->name,
             standardDelayDays: $insurer->standard_delay_days,
             penaltyTriggerDays: $insurer->penalty_trigger_days,
-            penaltyRatePercent: $insurer->penalty_rate_percent,
+            penaltyRatePercent: $insurer->penaltyRatePercent(),
             declarations: $declarations->count(),
             invoiced: $invoiced,
             received: $received,
