@@ -14,4 +14,9 @@ describe('formatAmount', () => {
     it('groups thousands like formatFcfa above zero', () => {
         expect(formatAmount(1_240_000)).toBe(formatFcfa(1_240_000));
     });
+
+    it('keeps a negative readable, where formatFcfa renders nothing', () => {
+        expect(formatFcfa(-1_240_000)).toBe('');
+        expect(formatAmount(-1_240_000)).toBe(`-${formatFcfa(1_240_000)}`);
+    });
 });

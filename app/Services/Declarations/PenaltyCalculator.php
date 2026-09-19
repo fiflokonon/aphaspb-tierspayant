@@ -72,6 +72,12 @@ class PenaltyCalculator
      * un zéro. Les confondre ferait lire une convention absente comme une
      * convention respectée.
      *
+     * C'est pourquoi la décision se prend sur la **clause de l'assureur** et
+     * non sur le retour de for(), qui rend aussi null pour un mois rejeté ou
+     * jamais déposé. Un assureur dont l'unique mois de la période est rejeté
+     * porte bien une convention : afficher « — » sous un en-tête qui l'énonce
+     * serait un démenti.
+     *
      * @param  iterable<Declaration>  $declarations
      */
     public function total(iterable $declarations): ?int
@@ -79,13 +85,11 @@ class PenaltyCalculator
         $total = null;
 
         foreach ($declarations as $declaration) {
-            $penalty = $this->for($declaration);
-
-            if ($penalty === null) {
+            if (! $declaration->insurer->hasPenaltyClause()) {
                 continue;
             }
 
-            $total = ($total ?? 0) + $penalty;
+            $total = ($total ?? 0) + ($this->for($declaration) ?? 0);
         }
 
         return $total;

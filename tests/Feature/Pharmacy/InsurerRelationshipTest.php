@@ -83,6 +83,50 @@ test('the longest delay can come from a settled month rather than an open one', 
         ->toBe(300);
 });
 
+test('a month left half paid weighs its whole age, not its instalment delay', function () {
+    $insurer = Insurer::factory()->create(['standard_delay_days' => 30]);
+
+    // Déposée le 2026-01-01, 100 000 encaissés le 2026-01-10, le solde jamais
+    // versé. Le hook `saving` en tire delay_days = 9, mais la dette a 261 jours
+    // au 2026-09-19 — et c'est elle que l'écran doit montrer.
+    Declaration::factory()->instalments([
+        ['amount' => 100_000, 'paid_on' => '2026-01-10'],
+    ])->create([
+        'pharmacy_id' => $this->pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 1,
+        'amount_invoiced' => 1_000_000,
+        'invoice_deposited_on' => '2026-01-01',
+    ]);
+
+    $built = $this->report->build($this->pharmacy, $insurer, ...$this->bounds);
+
+    expect($built['months'][0]['delayDays'])->toBe(9)
+        ->and($built['summary']->longestDelayDays)->toBe(261);
+});
+
+test('a clause with nothing yet to claim reads zero, never a dash', function () {
+    $insurer = Insurer::factory()
+        ->withPenalty(triggerDays: 90, ratePercent: 2.5)
+        ->create(['standard_delay_days' => 30]);
+
+    // Rejetée : PenaltyCalculator::for() rend null, mais la convention existe
+    // et l'écran l'affiche deux centimètres plus haut. « — » s'y lirait
+    // « pas de clause », ce qui est faux.
+    Declaration::factory()->rejected()->create([
+        'pharmacy_id' => $this->pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 7,
+        'amount_invoiced' => 500_000,
+        'invoice_deposited_on' => '2026-08-01',
+    ]);
+
+    expect($this->report->build($this->pharmacy, $insurer, ...$this->bounds)['summary']->penalty)
+        ->toBe(0);
+});
+
 test('the claimable penalty includes a month settled late', function () {
     $insurer = Insurer::factory()
         ->withPenalty(triggerDays: 60, ratePercent: 2.0)
@@ -246,4 +290,34 @@ test('the screen never carries the private note', function () {
     $response = $this->actingAs($user)->get(route('pharmacy.insurers.show', $insurer));
 
     expect(inertiaPropsJson($response))->not->toContain('Relancer la comptabilite');
+});
+
+test('a ticked insurer with nothing declared offers no export link', function () {
+    $user = User::factory()->create();
+    $insurer = Insurer::factory()->create();
+    $user->currentPharmacy->insurers()->attach($insurer);
+
+    // PharmacyExportController::insurerId() ne retient le filtre que pour un
+    // assureur déclaré : le bouton rendrait sinon le fichier de toute
+    // l'officine sans le dire.
+    $this->actingAs($user)
+        ->get(route('pharmacy.insurers.show', $insurer))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('exportUrl', null));
+});
+
+test('an insurer with a history offers an export filtered on it', function () {
+    $user = User::factory()->create();
+    $insurer = Insurer::factory()->create();
+
+    settledMonth($user->currentPharmacy, $insurer, 8, 400_000, 15);
+
+    $this->actingAs($user)
+        ->get(route('pharmacy.insurers.show', $insurer))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where(
+            'exportUrl',
+            route('pharmacy.data-exports.download', [
+                'insurer' => $insurer->id,
+                'period' => 'last-12-months',
+            ], absolute: false),
+        ));
 });

@@ -209,3 +209,17 @@ test('the total sums what carries a clause and ignores what does not', function 
         declarationFor(insurerWith(null, null), 9_000_000, '2026-01-01'),
     ]))->toBe(20_000);
 });
+
+test('a clause with only a rejected month totals zero, not null', function () {
+    $declaration = declarationFor(
+        insurerWith(60, 200),
+        1_000_000,
+        '2026-01-01',
+        status: DeclarationStatus::Rejected,
+    );
+
+    // for() rend null — rien n'a couru — mais la convention existe, et null
+    // se rend par un tiret qui se lirait « pas de clause ».
+    expect($this->calculator->for($declaration))->toBeNull()
+        ->and($this->calculator->total([$declaration]))->toBe(0);
+});

@@ -46,11 +46,29 @@ class InsurerRelationshipController extends Controller
             'period' => $period->value,
             'periodLabel' => $period->describe(),
             'periods' => StatsPeriod::options(),
-            'exportUrl' => route('pharmacy.data-exports.download', [
-                'insurer' => $insurer->id,
-                'period' => $period->value,
-            ], absolute: false),
+            'exportUrl' => $this->exportUrl($pharmacy, $insurer, $period),
         ]);
+    }
+
+    /**
+     * Le lien d'export, seulement quand il filtrerait vraiment.
+     *
+     * PharmacyExportController::insurerId() ne retient le filtre que pour un
+     * assureur auquel l'officine a **déclaré**. Sur un assureur coché mais
+     * vierge — cas que cet écran ouvre volontiers — le bouton rendrait le
+     * fichier de toute l'officine sans le dire. Mieux vaut pas de bouton qu'un
+     * bouton qui exporte autre chose que ce qu'on regarde.
+     */
+    protected function exportUrl(Pharmacy $pharmacy, Insurer $insurer, StatsPeriod $period): ?string
+    {
+        if (! $pharmacy->declarations()->where('insurer_id', $insurer->id)->exists()) {
+            return null;
+        }
+
+        return route('pharmacy.data-exports.download', [
+            'insurer' => $insurer->id,
+            'period' => $period->value,
+        ], absolute: false);
     }
 
     /**

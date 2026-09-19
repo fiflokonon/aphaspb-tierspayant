@@ -7,6 +7,7 @@ use App\Models\Pharmacy;
 use App\Models\User;
 use App\Support\Fcfa;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
 
 beforeEach(function () {
@@ -257,6 +258,39 @@ test('the table shows the eight worst and says how many it hides', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('overdue', 8)
             ->where('overdueSummary.count', 11)
-            ->where('overdueSummary.hidden', 3),
+            ->where('overdueSummary.hidden', 3)
+            // Les huit **pires**, pas les huit premières venues : la plus
+            // ancienne est en tête, et celle qu'on garde en dernier dépasse
+            // encore les trois qu'on cache.
+            ->where('overdue.0.overdueDays', 60 + 10 * 35 - 30)
+            ->where('overdue.7.overdueDays', 60 + 3 * 35 - 30),
         );
+});
+
+test('the dashboard query count does not grow with the overdue invoices', function () {
+    $user = User::factory()->create();
+    $insurer = Insurer::factory()
+        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
+        ->create(['standard_delay_days' => 30]);
+
+    overdueOn($user, $insurer, 100);
+
+    DB::enableQueryLog();
+    $this->actingAs($user)->get(dashboardUrlFor($user))->assertOk();
+    $withOne = count(DB::getQueryLog());
+    DB::flushQueryLog();
+
+    // Espacées de 35 jours : la clé unique porte sur le mois déclaré.
+    foreach (range(1, 6) as $step) {
+        overdueOn($user, $insurer, 100 + $step * 35);
+    }
+
+    DB::flushQueryLog();
+    $this->actingAs($user)->get(dashboardUrlFor($user))->assertOk();
+    $withSeven = count(DB::getQueryLog());
+
+    // Le chargement des versements est groupé : sept fois plus de lignes en
+    // retard ne doit pas coûter une requête de plus. Un N+1 est la première
+    // cause de lenteur perçue de cette application.
+    expect($withSeven)->toBe($withOne);
 });

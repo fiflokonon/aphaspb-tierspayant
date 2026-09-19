@@ -48,7 +48,7 @@ const props = defineProps<{
     period: string;
     periodLabel: string;
     periods: { value: string; label: string }[];
-    exportUrl: string;
+    exportUrl: string | null;
 }>();
 
 const period = ref<string | number | null>(props.period);
@@ -107,7 +107,7 @@ const COLUMNS = [
             </template>
 
             <template #action>
-                <a :href="exportUrl" class="export-link">
+                <a v-if="exportUrl" :href="exportUrl" class="export-link">
                     <Download :size="15" />
 
                     Exporter
@@ -134,8 +134,15 @@ const COLUMNS = [
                     Pénalité à partir de
                     <strong>{{ relationship.penaltyTriggerDays }} jours</strong
                     >,
-                    <strong>{{ relationship.penaltyRatePercent }} %</strong> par
-                    tranche de 30 jours.
+                    <strong
+                        >{{
+                            relationship.penaltyRatePercent.toLocaleString(
+                                'fr-FR',
+                            )
+                        }}
+                        %</strong
+                    >
+                    par tranche de 30 jours.
                 </template>
 
                 <template v-else>
@@ -158,14 +165,21 @@ const COLUMNS = [
             />
 
             <KpiCard
-                label="RESTE DÛ"
-                :value="formatMillions(relationship.outstanding)"
+                label="ENCAISSÉ"
+                :value="formatMillions(relationship.received)"
                 unit="FCFA"
                 :hint="
                     relationship.recoveryRate === null
                         ? 'rien de déclaré'
-                        : `${relationship.recoveryRate} % recouvrés`
+                        : `${relationship.recoveryRate.toLocaleString('fr-FR')} % recouvrés`
                 "
+            />
+
+            <KpiCard
+                label="RESTE DÛ"
+                :value="formatMillions(relationship.outstanding)"
+                unit="FCFA"
+                hint="sur la période retenue"
             />
 
             <KpiCard
@@ -176,7 +190,7 @@ const COLUMNS = [
             />
         </KpiRow>
 
-        <KpiRow :columns="2">
+        <KpiRow :columns="3">
             <KpiCard
                 label="VOTRE DÉLAI MOYEN"
                 :value="

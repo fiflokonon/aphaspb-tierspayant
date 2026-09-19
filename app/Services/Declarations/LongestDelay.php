@@ -30,7 +30,20 @@ class LongestDelay
         $longest = null;
 
         foreach ($declarations as $declaration) {
-            $candidate = $declaration->delay_days ?? $this->openAge($declaration, $today);
+            // Une facture refusée n'est pas une dette, et son acompte éventuel
+            // n'est pas un délai à opposer à l'assureur. Même exclusion que
+            // PenaltyCalculator::for() : les deux classes prétendent partager
+            // une définition, elles doivent s'accorder.
+            if ($declaration->status === DeclarationStatus::Rejected) {
+                continue;
+            }
+
+            // L'encours d'abord, le délai ensuite — et surtout pas l'inverse.
+            // syncFromInstalments() pose `paid_on` dès le **premier** versement,
+            // donc un mois entamé puis abandonné porte un `delay_days` court
+            // pendant que sa dette vieillit. Lire `delay_days` en premier
+            // rendrait 9 jours pour une facture impayée depuis 261.
+            $candidate = $this->openAge($declaration, $today) ?? $declaration->delay_days;
 
             if ($candidate === null) {
                 continue;
@@ -48,13 +61,12 @@ class LongestDelay
      * Même horloge que `OverdueLine::ageDays` et que `delay_days` — surtout
      * pas depuis la fin du mois déclaré, qui est celle des tranches
      * d'ancienneté et donnerait un second chiffre pour la même facture.
+     *
+     * Rend null pour un mois soldé : c'est alors `delay_days` qui parle. Un
+     * mois seulement entamé reste, lui, une dette ouverte.
      */
     protected function openAge(Declaration $declaration, CarbonImmutable $today): ?int
     {
-        if ($declaration->status === DeclarationStatus::Rejected) {
-            return null;
-        }
-
         if ($declaration->amount_invoiced <= $declaration->amount_received) {
             return null;
         }

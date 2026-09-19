@@ -37,5 +37,12 @@ export function formatAmount(value: number | null): string {
         return '—';
     }
 
+    // formatFcfa() filtre zéro **et** les négatifs. Aucun appelant ne produit
+    // aujourd'hui de montant négatif, mais « — » y serait un mensonge et la
+    // chaîne vide un trou : on groupe la valeur absolue et on rend le signe.
+    if (value < 0) {
+        return `-${formatFcfa(-value)}`;
+    }
+
     return value === 0 ? '0' : formatFcfa(value);
 }
