@@ -48,6 +48,9 @@ class PharmacyInsurersController extends Controller
                     'name' => $insurer->name,
                     'isActive' => $insurer->is_active,
                     'declarations' => (int) ($declarations[$insurer->id] ?? 0),
+                    // Construite ici et non côté Vue : le serveur possède les
+                    // noms de route, comme partout ailleurs dans cet espace.
+                    'url' => route('pharmacy.insurers.show', $insurer->id, absolute: false),
                 ])
                 ->all(),
             'selected' => $linked->all(),

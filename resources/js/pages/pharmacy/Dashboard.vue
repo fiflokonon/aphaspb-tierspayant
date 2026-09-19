@@ -298,9 +298,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     }}
                     j<template v-if="overdueSummary.penalty !== null">
                         · pénalité courue
-                        {{
-                            formatAmount(overdueSummary.penalty)
-                        }}
+                        {{ formatAmount(overdueSummary.penalty) }}
                         FCFA</template
                     >
                 </p>

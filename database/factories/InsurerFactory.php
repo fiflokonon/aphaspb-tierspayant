@@ -20,6 +20,11 @@ class InsurerFactory extends Factory
         return [
             'name' => fake()->unique()->company().' Assurances',
             'is_active' => true,
+            // Posé explicitement bien que la colonne porte le même défaut :
+            // sans cela l'instance rendue par create() garde la valeur à null
+            // jusqu'à une relecture, et tout code qui lit l'assureur sans
+            // repasser par la base voit un délai absent.
+            'standard_delay_days' => Insurer::DEFAULT_STANDARD_DELAY_DAYS,
         ];
     }
 
