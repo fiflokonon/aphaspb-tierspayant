@@ -1,6 +1,7 @@
 ---
 paths:
   - app/Models/Declaration.php
+  - app/Models/Insurer.php
 ---
 
 # Models
@@ -24,3 +25,12 @@ Depuis le 08/09/2026, un assureur peut régler un mois en plusieurs virements. C
 `DeclarationFactory` crée automatiquement une ligne unique quand `amount_received > 0` et `paid_on` non nul, ce qui garde toute la suite existante cohérente ; l'état `instalments([...])` sert aux échéances multiples.
 
 Verrouillé par `tests/Feature/Pharmacy/DeclarationTest.php`.
+
+## Le taux de pénalité vit en points de base, et se lit par une méthode
+`penalty_rate_bp` : 250 = 2,50 %. Une pénalité est de l'argent, et tout montant de ce projet est un entier FCFA — `intdiv($base * $rateBp, 10000)` reste exact là où `$base * 2.5 / 100` passe par un flottant. Le pourcentage n'est qu'une commodité de saisie, converti dans `InsurerManagementController`.
+
+`penaltyRatePercent()` est une **méthode simple, pas un accesseur Eloquent**, contrairement à `Declaration::amountOutstanding()`. PHPStan traite le `TGet` d'`Attribute` comme invariant et refuse une union nullable en cette position, quelle que soit l'annotation (`float|null`, `?float`, closure explicite : toutes testées). Ne pas « corriger » en la retransformant en `Attribute`.
+
+Le cast `(float)` dans cette méthode n'est pas décoratif : en PHP `200 / 100` rend l'entier `2` et `250 / 100` le flottant `2.5`. Sans lui le taux change de type selon sa valeur, jusque dans le JSON envoyé au client.
+
+Les deux colonnes de clause sont nullables et se lisent **comme un tout** via `hasPenaltyClause()` : une demi-clause n'accumule rien. `SaveInsurerRequest` les valide ensemble avec `required_with` dans les deux sens, et **sans `sometimes`** — `sometimes` court-circuite la validation d'un champ absent, soit exactement ce que `required_with` doit refuser.
