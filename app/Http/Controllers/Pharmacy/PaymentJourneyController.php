@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Pharmacy;
 
+use App\Data\OverdueLine;
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
 use App\Models\PharmacyInvitation;
 use App\Services\Declarations\DeclarationCalendar;
+use App\Services\Declarations\OverduePaymentsService;
 use App\Services\Pharmacy\PharmacyStatsService;
+use App\Support\MonthLabel;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,9 +26,13 @@ class PaymentJourneyController extends Controller
     /** How far back the journey looks. */
     protected const MONTHS = 12;
 
+    /** Combien de lignes en retard la table montre avant de renvoyer au registre. */
+    protected const OVERDUE_SHOWN = 8;
+
     public function __construct(
         protected PharmacyStatsService $stats,
         protected DeclarationCalendar $calendar,
+        protected OverduePaymentsService $overdue,
     ) {
         //
     }
@@ -35,6 +42,7 @@ class PaymentJourneyController extends Controller
         $pharmacy = $request->user()->currentPharmacy;
         $recovery = $this->stats->recoveryByInsurer($pharmacy, self::MONTHS);
         $insurerId = $this->requestedInsurer($request, $recovery);
+        $overdue = $this->overdue->forPharmacy($pharmacy);
 
         return Inertia::render('pharmacy/Dashboard', [
             'pharmacyName' => $pharmacy->name,
@@ -43,6 +51,8 @@ class PaymentJourneyController extends Controller
             'ageing' => $this->stats->ageingBuckets($pharmacy),
             'owed' => $this->stats->outstandingByInsurer($pharmacy, self::MONTHS),
             'recovery' => $recovery,
+            'overdue' => $this->overdueLines($overdue),
+            'overdueSummary' => $this->overdueSummary($overdue),
             'filters' => ['insurer' => $insurerId],
             'declareUrl' => route('pharmacy.declare'),
             'outstandingMonths' => $this->outstandingMonths($pharmacy),
@@ -96,6 +106,78 @@ class PaymentJourneyController extends Controller
             ],
             $this->calendar->outstanding($pharmacy),
         );
+    }
+
+    /**
+     * Les pires factures en retard, prêtes à l'affichage.
+     *
+     * Tronquée volontairement : une officine portant quarante factures en
+     * retard noierait le reste du tableau de bord, et le registre — qui sait
+     * déjà filtrer par assureur — est fait pour la liste complète.
+     *
+     * @param  list<OverdueLine>  $overdue
+     * @return list<array{declarationId: int, insurerId: int, insurerName: string, monthLabel: string, depositedOn: string, overdueDays: int, standardDelayDays: int, outstanding: int, penalty: int|null, insurerUrl: string}>
+     */
+    protected function overdueLines(array $overdue): array
+    {
+        return array_map(fn (OverdueLine $line): array => [
+            'declarationId' => $line->declarationId,
+            'insurerId' => $line->insurerId,
+            'insurerName' => $line->insurerName,
+            'monthLabel' => MonthLabel::short($line->periodMonth, $line->periodYear),
+            'depositedOn' => $line->invoiceDepositedOn->toDateString(),
+            // Le dépassement, pas l'âge brut : chaque assureur a son propre
+            // délai, et « 120 jours » ne veut rien dire sans lui.
+            'overdueDays' => $line->ageDays - $line->standardDelayDays,
+            'standardDelayDays' => $line->standardDelayDays,
+            'outstanding' => $line->outstanding,
+            'penalty' => $line->penalty,
+            'insurerUrl' => route('pharmacy.insurers.show', $line->insurerId, absolute: false),
+        ], array_slice($overdue, 0, self::OVERDUE_SHOWN));
+    }
+
+    /**
+     * Ce que le bandeau annonce, ou null quand rien n'est en retard.
+     *
+     * La pénalité annoncée ne couvre **que les factures en retard**, pas les
+     * mois déjà soldés tardivement qui gardent leur pénalité acquise : un
+     * bandeau chiffrant un total que la table juste en dessous ne retrouve pas
+     * serait illisible. Le total réclamable vit sur la page par assureur.
+     *
+     * Le bandeau nomme la pire ligne plutôt que de compter au-delà d'un seuil
+     * d'ancienneté : ConsoleNavigation::chaseNotice() compte déjà « au-delà de
+     * 60 jours » depuis la fin du mois déclaré, là où ageDays compte depuis le
+     * dépôt. Deux seuils voisins sur deux horloges se contrediraient.
+     *
+     * @param  list<OverdueLine>  $overdue
+     * @return array{count: int, outstanding: int, penalty: int|null, worst: array{insurerName: string, monthLabel: string, overdueDays: int}, hidden: int, historyUrl: string}|null
+     */
+    protected function overdueSummary(array $overdue): ?array
+    {
+        if ($overdue === []) {
+            return null;
+        }
+
+        $penalties = array_filter(
+            array_map(fn (OverdueLine $line): ?int => $line->penalty, $overdue),
+            fn (?int $penalty): bool => $penalty !== null,
+        );
+
+        // forPharmacy() rend la plus ancienne en tête.
+        $worst = $overdue[0];
+
+        return [
+            'count' => count($overdue),
+            'outstanding' => array_sum(array_map(fn (OverdueLine $line): int => $line->outstanding, $overdue)),
+            'penalty' => $penalties === [] ? null : array_sum($penalties),
+            'worst' => [
+                'insurerName' => $worst->insurerName,
+                'monthLabel' => MonthLabel::long($worst->periodMonth, $worst->periodYear),
+                'overdueDays' => $worst->ageDays - $worst->standardDelayDays,
+            ],
+            'hidden' => max(0, count($overdue) - self::OVERDUE_SHOWN),
+            'historyUrl' => route('pharmacy.history', absolute: false),
+        ];
     }
 
     /**

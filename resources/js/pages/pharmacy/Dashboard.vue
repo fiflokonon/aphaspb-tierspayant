@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Deferred, Head, Link, router } from '@inertiajs/vue3';
+import { TriangleAlert } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
 import ChartToolbar from '@/components/aphaspb/charts/ChartToolbar.vue';
@@ -17,6 +18,7 @@ import { useQueryState } from '@/composables/useQueryState';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 import { exportChartToPng } from '@/lib/chartPng';
 import { rankSlices } from '@/lib/donut';
+import { formatAmount } from '@/lib/fcfa';
 import { formatMillions } from '@/lib/millions';
 import type { DashboardInvitation } from '@/types';
 import { isChartType } from '@/types/aphaspb';
@@ -29,6 +31,32 @@ type RecoveryRow = {
     received: number;
     outstanding: number;
     recoveryRate: number | null;
+};
+
+type OverdueRow = {
+    declarationId: number;
+    insurerId: number;
+    insurerName: string;
+    monthLabel: string;
+    depositedOn: string;
+    overdueDays: number;
+    standardDelayDays: number;
+    outstanding: number;
+    penalty: number | null;
+    insurerUrl: string;
+};
+
+type OverdueSummary = {
+    count: number;
+    outstanding: number;
+    penalty: number | null;
+    worst: {
+        insurerName: string;
+        monthLabel: string;
+        overdueDays: number;
+    };
+    hidden: number;
+    historyUrl: string;
 };
 
 type JourneyPoint = {
@@ -55,6 +83,8 @@ const props = defineProps<{
     ageing: { label: string; amount: number }[];
     owed: { insurerName: string; outstanding: number }[];
     recovery: RecoveryRow[];
+    overdue: OverdueRow[];
+    overdueSummary: OverdueSummary | null;
     declareUrl: string;
     outstandingMonths: { label: string; url: string }[];
     filters: { insurer: number | null };
@@ -113,6 +143,19 @@ const donutSlices = computed(() =>
         })),
     ),
 );
+
+const OVERDUE_TEMPLATE = '1.6fr .8fr 1fr .8fr 1.1fr 1.1fr';
+const OVERDUE_COLUMNS = [
+    'ASSUREUR',
+    'MOIS',
+    'DÉPOSÉE',
+    'RETARD',
+    'RESTE DÛ',
+    'PÉNALITÉ',
+];
+
+const overdueFooter =
+    'Au-delà du délai convenu avec chaque assureur, compté depuis le dépôt de la facture.';
 
 const journeyArea = ref<HTMLElement | null>(null);
 const exporting = ref(false);
@@ -228,6 +271,42 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </template>
         </ConsoleHeader>
 
+        <!--
+            Le bandeau nomme la pire ligne plutôt que de compter au-delà d'un
+            seuil d'ancienneté : l'encart de la barre latérale compte déjà
+            « au-delà de 60 jours » depuis la fin du mois déclaré, là où ce
+            retard-ci se compte depuis le dépôt de facture. Deux seuils voisins
+            sur deux horloges se contrediraient sous les yeux du lecteur.
+        -->
+        <section v-if="overdueSummary" class="overdue-banner">
+            <TriangleAlert class="overdue-banner-icon" :size="20" />
+
+            <div>
+                <p class="overdue-banner-headline">
+                    {{ overdueSummary.count }} facture{{
+                        overdueSummary.count > 1 ? 's' : ''
+                    }}
+                    en retard ·
+                    {{ formatAmount(overdueSummary.outstanding) }} FCFA
+                </p>
+
+                <p class="overdue-banner-detail">
+                    la plus ancienne :
+                    {{ overdueSummary.worst.insurerName }},
+                    {{ overdueSummary.worst.monthLabel }}, +{{
+                        overdueSummary.worst.overdueDays
+                    }}
+                    j<template v-if="overdueSummary.penalty !== null">
+                        · pénalité courue
+                        {{
+                            formatAmount(overdueSummary.penalty)
+                        }}
+                        FCFA</template
+                    >
+                </p>
+            </div>
+        </section>
+
         <section class="dashboard-intro">
             <div class="intro-left">
                 <div class="intro-icon">
@@ -329,6 +408,59 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 </div>
             </div>
         </KpiRow>
+
+        <section v-if="overdue.length > 0" class="overdue-section">
+            <DataTable
+                title="Factures en retard"
+                :columns="OVERDUE_COLUMNS"
+                :template="OVERDUE_TEMPLATE"
+                :footer="overdueFooter"
+            >
+                <DataTableRow
+                    v-for="row in overdue"
+                    :key="row.declarationId"
+                    :template="OVERDUE_TEMPLATE"
+                >
+                    <div>
+                        <Link :href="row.insurerUrl" class="overdue-insurer">
+                            {{ row.insurerName }}
+                        </Link>
+                    </div>
+
+                    <div>{{ row.monthLabel }}</div>
+
+                    <div>{{ row.depositedOn }}</div>
+
+                    <div
+                        class="overdue-days"
+                        :title="`Délai convenu : ${row.standardDelayDays} jours`"
+                    >
+                        +{{ row.overdueDays }} j
+                    </div>
+
+                    <div>{{ formatAmount(row.outstanding) }}</div>
+
+                    <!--
+                        formatAmount() rend « — » sur null et « 0 » sur zéro :
+                        « pas de clause de pénalité » et « une clause mais rien
+                        encore à réclamer » ne doivent pas se lire pareil.
+                    -->
+                    <div>{{ formatAmount(row.penalty) }}</div>
+                </DataTableRow>
+            </DataTable>
+
+            <p
+                v-if="overdueSummary && overdueSummary.hidden > 0"
+                class="overdue-more"
+            >
+                <Link :href="overdueSummary.historyUrl">
+                    et {{ overdueSummary.hidden }} autre{{
+                        overdueSummary.hidden > 1 ? 's' : ''
+                    }}
+                    dans le registre
+                </Link>
+            </p>
+        </section>
 
         <section class="dashboard-card journey-card">
             <div class="card-top-line"></div>
@@ -545,6 +677,63 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 </template>
 
 <style scoped>
+.overdue-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1.125rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid var(--terracotta);
+    border-left-width: 4px;
+    border-radius: 11px;
+    background: var(--terracotta-soft);
+}
+
+.overdue-banner-icon {
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+    color: var(--terracotta);
+}
+
+.overdue-banner-headline {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.overdue-banner-detail {
+    margin-top: 0.125rem;
+    font-size: 0.8125rem;
+    color: color-mix(in srgb, var(--ink) 72%, transparent);
+}
+
+.overdue-section {
+    margin-bottom: 0.5rem;
+}
+
+.overdue-insurer {
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.overdue-days {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--terracotta);
+}
+
+.overdue-more {
+    margin-top: 0.625rem;
+    font-size: 0.8125rem;
+    text-align: right;
+}
+
+.overdue-more a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
 .dashboard-page {
     --primary: #008f83;
     --primary-dark: #006f68;

@@ -19,6 +19,7 @@ use App\Http\Controllers\Onboarding\PharmacyProfileController;
 use App\Http\Controllers\Pharmacies\PharmacyInvitationController;
 use App\Http\Controllers\Pharmacy\DeclarationController;
 use App\Http\Controllers\Pharmacy\DeclarationHistoryController;
+use App\Http\Controllers\Pharmacy\InsurerRelationshipController;
 use App\Http\Controllers\Pharmacy\PaymentJourneyController;
 use App\Http\Controllers\Pharmacy\PharmacyExportController;
 use App\Http\Controllers\Pharmacy\PharmacyInsurersController as MyInsurersController;
@@ -67,6 +68,9 @@ Route::middleware(['auth', 'can:declare-payments', 'onboarded'])
         Route::get('history', DeclarationHistoryController::class)->name('history');
         Route::get('insurers', [MyInsurersController::class, 'edit'])->name('insurers');
         Route::patch('insurers', [MyInsurersController::class, 'update'])->name('insurers.update');
+        // Nommée « show » : Wayfinder dérive le symbole TypeScript du dernier
+        // segment du nom de route, et un mot réservé JS y casse l'inférence.
+        Route::get('insurers/{insurer}', InsurerRelationshipController::class)->name('insurers.show');
         // Nommée « data-exports » et non « exports » : Wayfinder dérive le nom
         // du symbole TypeScript du nom de la route, et `export const exports`
         // entre en collision avec le `exports` de CommonJS — vue-tsc perd alors
