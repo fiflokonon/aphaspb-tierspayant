@@ -221,8 +221,10 @@ graphique du parcours des paiements.
 
 La convention du projet réserve les deferred props aux requêtes dépassant
 ~200 ms, ce qui vaut pour le graphique du parcours, déjà différé. Ici ce sont
-deux requêtes courtes — et surtout, un squelette pulsant à l'endroit exact où
-l'alerte doit apparaître irait contre le but du changement.
+trois requêtes courtes — les délais standards distincts, les lignes en retard,
+puis leurs versements en un `whereIn` — dont les deux premières existent déjà.
+Et surtout, un squelette pulsant à l'endroit exact où l'alerte doit apparaître
+irait contre le but du changement.
 
 ### `chaseNotice` ne bouge pas
 
@@ -252,17 +254,32 @@ inconnu ne doit pas rendre une page vide, qui se lirait « rien déclaré ».
 
 ### Les chiffres
 
-Méthode nouvelle `PharmacyStatsService::forInsurer(Pharmacy, Insurer, Period $from, Period $to)`,
-renvoyant un `App\Data\InsurerRelationship`. Elle vit dans cette classe et non
-dans une classe neuve : c'est littéralement « les chiffres d'une officine », ce
-que l'en-tête du fichier annonce, et `recoveryByInsurer()` y est déjà.
+Classe nouvelle `App\Services\Pharmacy\InsurerRelationshipReport`, méthode
+`build(Pharmacy, Insurer, Period $from, Period $to)`, renvoyant les agrégats
+(`App\Data\InsurerRelationship`) **et** les lignes mois par mois.
 
-Elle **n'utilise pas `window()`**, qui raisonne en nombre de mois glissants :
-l'écran porte un sélecteur de période, donc le filtrage se fait sur les
-ordinaux `period_year * 12 + period_month`, exactement comme
-`PharmacyExportRows::declarations()`. Les deux écrans doivent tomber d'accord
-sur ce que couvre « les douze derniers mois », puisque l'un mène à l'autre par
-un bouton d'export.
+**Pourquoi pas une méthode de `PharmacyStatsService`.** L'en-tête de cette
+classe pose deux contraintes explicites : elle ne lit qu'en *query builder*,
+jamais en Eloquent, précisément pour ne jamais charger `private_note` ; et elle
+ne produit que des agrégats. L'écran par assureur viole les deux — il lui faut
+les versements de chaque déclaration pour la pénalité, et une ligne par mois.
+Y greffer `forInsurer()` obligerait à réécrire cet en-tête pour dire l'inverse
+de ce qu'il dit. Une classe dédiée coûte un fichier et garde les deux contrats
+lisibles.
+
+La requête sélectionne **explicitement ses colonnes** et laisse `private_note`
+de côté : l'écran ne l'affiche pas, et `pharmacy/History` reste le seul endroit
+où la note apparaît.
+
+Le filtrage se fait sur les ordinaux `period_year * 12 + period_month`, comme
+`PharmacyExportRows::declarations()` — surtout pas via
+`PharmacyStatsService::window()`, qui raisonne en mois glissants. Les deux
+écrans doivent tomber d'accord sur ce que couvre « les douze derniers mois »,
+puisque l'un mène à l'autre par un bouton d'export.
+
+**`App\Services\Declarations\LongestDelay`**, troisième petite classe pure : le
+délai le plus long est calculé à l'identique ici et dans la synthèse du PDF
+(§7), et deux implémentations divergeraient.
 
 `InsurerRelationship` porte : facturé, encaissé, reste dû, taux de recouvrement,
 délai moyen pondéré, **délai le plus long**, **pénalité réclamable**, nombre de
@@ -338,29 +355,41 @@ Les tests référencent chaque colonne par `array_search()` sur `COLUMNS`, jamai
 par son index, comme l'impose la règle du projet : l'insertion ne casse donc
 aucune assertion.
 
-### Bloc de synthèse par assureur : PDF uniquement
+### Synthèse par assureur : deux colonnes de plus dans le PDF
 
 Le fichier officine est **une ligne par déclaration**, pas par assureur. Le
 « délai le plus long » et la « pénalité potentielle » demandés n'y ont pas de
 case, et leur en fabriquer une dupliquerait la même valeur sur chaque ligne du
 même assureur.
 
-`PharmacyPdfExport` — qui est un rapport, non un tableau — reçoit donc un
-**bloc de synthèse par assureur** : nom, mois déclarés, facturé, reste dû,
-délai le plus long, pénalité réclamable. Une ligne par assureur, placée avant
-le détail.
+**Le tableau de synthèse par assureur existe déjà** dans le PDF :
+`PharmacyPdfExport::perInsurer()` alimente une table « Assureur / Décl. /
+Facturé / Encaissé / Reste dû / Recouvrement / Délai moyen / Versements » dans
+`resources/views/exports/pharmacy.blade.php`. Il n'y a donc **rien à créer** :
+elle gagne deux colonnes, **Délai le plus long** et **Pénalité**.
 
-Ces lignes sont produites par `PharmacyStatsService::forInsurer()` (§6), une
-par assureur présent dans la période — jamais recalculées sur place. Le PDF et
-la page par assureur donneraient sinon deux chiffres pour la même chose, et
-c'est exactement le genre d'écart qu'un export met sous le nez du lecteur.
+Ces deux valeurs sont calculées **dans `perInsurer()`, sur la collection
+`$declarations` que le fichier liste déjà** — surtout pas déléguées à
+`InsurerRelationshipReport` (§6). Seul `LongestDelay` est partagé, parce que
+c'est une définition et non une fenêtre de lecture. L'en-tête de `PharmacyPdfExport`
+refuse explicitement cette délégation, et la raison tient toujours : un rapport
+dont la synthèse contredirait sa propre table de détail serait pire qu'un
+rapport sans synthèse. Les versements sont déjà préchargés par
+`PharmacyExportRows::declarations()`, donc le calcul ne coûte aucune requête.
+
+**Conséquence assumée** : la page par assureur et le PDF peuvent afficher des
+valeurs différentes pour le même assureur si les fenêtres diffèrent. C'est déjà
+le cas du délai moyen et du taux de recouvrement, et chaque document porte sa
+période en en-tête.
 
 Le CSV et le XLSX gardent leur granularité : la pénalité y est ligne à ligne, et
 un tableur la somme trivialement. La vraie agrégation par assureur tombe dans
 l'export **réseau** du lot B, qui est déjà une ligne par assureur.
 
 Contraintes dompdf à respecter, déjà documentées : ni flexbox ni grid — les
-colonnes sont des `<table>` —, `page-break-inside: avoid` sur les lignes.
+colonnes sont des `<table>` —, `page-break-inside: avoid` sur les lignes. La
+table de synthèse passe de huit à dix colonnes : vérifier qu'elle tient encore
+en A4 portrait.
 
 ## 8. Tests
 
@@ -405,7 +434,8 @@ points de base exacte sur une valeur à décimale (2,50 → 250).
 
 - les trois nouvelles colonnes, référencées par leur nom ;
 - vides pour un assureur sans clause ;
-- bloc de synthèse présent dans le PDF, absent du CSV et du XLSX.
+- colonnes « délai le plus long » et « pénalité » présentes dans la table de
+  synthèse du PDF, absentes du CSV et du XLSX.
 
 ## 9. Ce que ce lot ne fait pas
 
@@ -431,7 +461,8 @@ Explicitement hors périmètre, des deux lots, sauf demande :
 3. `SaveInsurerRequest` + `InsurerManagementController` + `admin/Insurers.vue`.
 4. `OverdueLine::penalty` et `OverduePaymentsService::forPharmacy()`.
 5. Bandeau et table du tableau de bord.
-6. `PharmacyStatsService::forInsurer()` + `InsurerRelationship`.
+6. `LongestDelay` + `InsurerRelationshipReport` + `InsurerRelationship`.
 7. Route, contrôleur et page par assureur ; `npm run build` pour Wayfinder.
-8. `PharmacyExportRows` (3 colonnes) puis `PharmacyPdfExport` (synthèse).
+8. `PharmacyExportRows` (3 colonnes) puis `PharmacyPdfExport::perInsurer()`
+   (2 colonnes dans la table de synthèse existante).
 9. `composer ci:check` en entier — pas seulement `pint --dirty`.
