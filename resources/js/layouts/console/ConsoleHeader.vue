@@ -42,7 +42,11 @@ const identity = computed(() => {
             >
                 {{ identity }}
             </div>
-            <div class="mt-2 text-[22px]/[1.2] font-bold text-ink">
+            <!--
+                Instrument Serif n'a qu'une graisse : pas de font-bold, qui
+                déclencherait une graisse synthétique baveuse.
+            -->
+            <div class="mt-2 font-serif text-[34px]/[1.06] text-ink">
                 <slot name="title">{{ title }}</slot>
             </div>
         </div>

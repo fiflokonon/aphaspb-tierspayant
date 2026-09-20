@@ -181,9 +181,15 @@ watch(collapsed, writeCollapsed);
 
     flex-direction: column;
 
-    width: 212px;
+    /*
+      212 px auparavant. La navigation passe de 10 à 14,5 px dans ce lot, et
+      « Exporter mes données » ne tenait plus : il sortait tronqué d'une
+      ellipse. Élargir plutôt que réduire la police — c'est grossir qui était
+      demandé.
+    */
+    width: 236px;
 
-    min-width: 212px;
+    min-width: 236px;
 
     height: 100vh;
 
@@ -311,7 +317,7 @@ watch(collapsed, writeCollapsed);
 .apha-brand-name {
     color: var(--ink);
 
-    font-size: 13px;
+    font-size: 17px;
 
     font-weight: 800;
 
@@ -452,7 +458,8 @@ watch(collapsed, writeCollapsed);
 
     color: var(--muted);
 
-    font-size: 10px;
+    /* 10 px auparavant : la navigation était plus petite que le corps. */
+    font-size: 14.5px;
 
     font-weight: 650;
 
