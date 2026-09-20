@@ -1,6 +1,7 @@
 <?php
 
 use App\Data\Period;
+use App\Enums\DeclarationStatus;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
@@ -158,6 +159,20 @@ test('the monthly breakdown gives one row per month an insurer was declared to',
         );
     }
 
+    // Un mois rejeté portant un délai : il compte dans les montants, jamais
+    // dans la moyenne de délai — celle-ci ne parle que des mois réglés.
+    Declaration::factory()->create([
+        'pharmacy_id' => Pharmacy::factory(),
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 7,
+        'amount_invoiced' => 0,
+        'amount_received' => 0,
+        'status' => DeclarationStatus::Rejected,
+        'is_status_manual' => true,
+        'delay_days' => 400,
+    ]);
+
     $monthly = app(NetworkStatsService::class)->monthlyByInsurer(
         [$insurer->id],
         new Period(2026, 1),
@@ -167,7 +182,7 @@ test('the monthly breakdown gives one row per month an insurer was declared to',
     expect($monthly[$insurer->id])->toHaveCount(2)
         // Le plus récent en tête : un rapport se lit du haut.
         ->and($monthly[$insurer->id][0]['month'])->toBe(7)
-        ->and($monthly[$insurer->id][0]['declarations'])->toBe(2)
+        ->and($monthly[$insurer->id][0]['declarations'])->toBe(3)
         ->and($monthly[$insurer->id][0]['invoiced'])->toBe(2_000_000)
         ->and($monthly[$insurer->id][0]['received'])->toBe(1_200_000)
         ->and($monthly[$insurer->id][0]['outstanding'])->toBe(800_000)

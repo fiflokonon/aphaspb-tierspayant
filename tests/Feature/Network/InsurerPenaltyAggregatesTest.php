@@ -81,6 +81,17 @@ test('the penalty sums across the officines of one insurer', function () {
         penaltyDeclare($insurer, $month, neverSettled(120));
     }
 
+    // Deux lignes qui doivent rester hors du total, et qui l'inflateraient si
+    // les gardes tombaient : une facture refusée n'est pas due, et une facture
+    // jamais déposée n'a pas d'horloge à faire courir.
+    penaltyDeclare($insurer, 3, [...neverSettled(400), 'status' => DeclarationStatus::Rejected]);
+
+    // La date de dépôt est effacée par requête et non par la fabrique :
+    // DeclarationFactory::configure() la remplit toujours quand elle est nulle,
+    // donc la passer en attribut ne produirait pas l'état visé.
+    $undeposited = penaltyDeclare($insurer, 4, neverSettled(400));
+    DB::table('declarations')->where('id', $undeposited->id)->update(['invoice_deposited_on' => null]);
+
     expect($this->aggregates->forInsurers([$insurer->id], ...$this->bounds)[$insurer->id]->penalty)
         ->toBe(120_000);
 });
@@ -151,7 +162,12 @@ test('a period outside the window contributes nothing', function () {
 });
 
 test('the city filter narrows the aggregate like every other network read', function () {
-    $insurer = Insurer::factory()->create(['standard_delay_days' => 30]);
+    // Sous convention : sans clause, penaltiesByInsurer() sort tôt et la
+    // requête jointe sur declaration_payments — celle dont les colonnes
+    // doivent être qualifiées — n'est jamais exercée avec une ville.
+    $insurer = Insurer::factory()
+        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
+        ->create(['standard_delay_days' => 30]);
 
     Declaration::factory()->create([
         'pharmacy_id' => Pharmacy::factory()->create(['city' => 'Cotonou']),
@@ -173,9 +189,21 @@ test('the city filter narrows the aggregate like every other network read', func
         'delay_days' => 300,
     ]);
 
+    // Une troisième, à Parakou, impayée depuis 120 jours : elle porterait
+    // 60 000 de pénalité si le filtre de ville ne traversait pas la requête
+    // jointe des versements.
+    Declaration::factory()->create([
+        'pharmacy_id' => Pharmacy::factory()->create(['city' => 'Parakou']),
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 6,
+        ...neverSettled(120),
+    ]);
+
     $figures = $this->aggregates->forInsurers([$insurer->id], ...[...$this->bounds, 'Cotonou']);
 
-    expect($figures[$insurer->id]->longestDelayDays)->toBe(44);
+    expect($figures[$insurer->id]->longestDelayDays)->toBe(44)
+        ->and($figures[$insurer->id]->penalty)->toBe(0);
 });
 
 test('the query count stays flat however many declarations there are', function () {

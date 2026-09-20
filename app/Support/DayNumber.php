@@ -29,9 +29,22 @@ class DayNumber
      * Ancrée sur UTC explicitement : sans ce suffixe, la conversion suivrait le
      * fuseau du processus et deux dates identiques rendraient deux numéros
      * différents selon la machine.
+     *
+     * Une heure qui suit la date est tronquée vers le bas — `paid_on` remonte
+     * de la base en `Y-m-d H:i:s` et peut en porter une. C'est le second
+     * emploi de floor(), et celui-là est nécessaire.
      */
     public static function fromDate(string $date): int
     {
+        // La forme est vérifiée avant l'analyse, parce que strtotime() ne
+        // refuse pas tout ce qu'il devrait : sur une chaîne vide il rend
+        // **maintenant**, et une date nulle transtypée en chaîne passerait
+        // alors pour aujourd'hui — pénalité nulle, aucune erreur, aucun test
+        // rouge. C'est l'entrée la plus probable, pas « pas une date ».
+        if (preg_match('/^\d{4}-\d{2}-\d{2}/', $date) !== 1) {
+            throw new InvalidArgumentException("Date illisible : {$date}");
+        }
+
         $timestamp = strtotime($date.' UTC');
 
         if ($timestamp === false) {

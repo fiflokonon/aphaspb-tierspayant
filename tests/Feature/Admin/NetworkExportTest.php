@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Network\InsurerPenaltyAggregates;
 use App\Services\Network\NetworkExportRows;
 use App\Services\Network\NetworkPdfExport;
+use App\Support\Fcfa;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia;
 
@@ -300,7 +301,7 @@ test('the report gives a page to each insurer above the threshold', function () 
         ->and($payload['withheld'][0]['name'])->toBe('Petit Assureur');
 });
 
-test('a page never contradicts the recap line above it', function () {
+test('a page totals back to the recap line above it', function () {
     $insurer = Insurer::factory()
         ->withPenalty(triggerDays: 60, ratePercent: 2.0)
         ->create(['name' => 'NSIA Assurances']);
@@ -318,11 +319,20 @@ test('a page never contradicts the recap line above it', function () {
     $reflected = new ReflectionMethod($export, 'data');
     $payload = $reflected->invoke($export, new Period(2026, 4), new Period(2026, 8), null);
 
-    // La page et la ligne du récapitulatif sortent du même appel : le test le
-    // prouve plutôt que de l'espérer.
-    $fromMonthly = array_sum(array_column($payload['rows'][0]['monthly'], 'outstanding'));
+    // La page et la ligne du récapitulatif sortent du même appel, mais le
+    // reste dû n'est **pas** additif : chaque mois est borné à zéro
+    // (max(0, facturé − encaissé)) tandis que le récapitulatif ne borne
+    // qu'une fois, sur les totaux. Un seul mois surpayé suffit à les séparer,
+    // et PenaltyCalculator traite ce cas, donc il est représentable.
+    //
+    // Ce qui tient toujours, c'est la relation entre les sommes non bornées.
+    $months = $payload['rows'][0]['monthly'];
+    $invoiced = array_sum(array_column($months, 'invoiced'));
+    $received = array_sum(array_column($months, 'received'));
 
-    expect($fromMonthly)->toBe($payload['rows'][0]['amounts']->outstanding);
+    expect(max(0, $invoiced - $received))->toBe($payload['rows'][0]['amounts']->outstanding)
+        ->and($invoiced)->toBe($payload['rows'][0]['amounts']->invoiced)
+        ->and($received)->toBe($payload['rows'][0]['amounts']->received);
 });
 
 test('the rendered report still comes back as a pdf with the pages in it', function () {
@@ -359,4 +369,89 @@ test('the figures are never even computed for an insurer under the threshold', f
     });
 
     downloadCsv();
+});
+
+test('a month declared by a single officine is withheld from the insurer page', function () {
+    $insurer = Insurer::factory()->create(['name' => 'NSIA Assurances']);
+
+    // Cinq officines sur la période : l'assureur franchit le seuil et obtient
+    // sa page. Mais en juillet, une seule d'entre elles a déclaré.
+    $pharmacies = Pharmacy::factory()->count(5)->create();
+
+    $pharmacies->each(fn (Pharmacy $pharmacy) => Declaration::factory()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+        'amount_invoiced' => 1_000_000,
+        'amount_received' => 1_000_000,
+        'delay_days' => 20,
+    ]));
+
+    Declaration::factory()->create([
+        'pharmacy_id' => $pharmacies->first()->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 7,
+        'amount_invoiced' => 4_210_000,
+        'amount_received' => 0,
+        'status' => DeclarationStatus::Unpaid,
+        'is_status_manual' => true,
+        'delay_days' => null,
+    ]);
+
+    $export = app(NetworkPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, new Period(2026, 7), new Period(2026, 8), null);
+
+    $months = collect($payload['rows'][0]['monthly'])->keyBy('month');
+
+    // Le seuil vaut 5 sur la période ; il vaut 5 sur chaque mois publié aussi.
+    // Sans ça, la ligne de juillet imprimerait la facture exacte d'une officine
+    // nommable dans un rapport qui promet l'inverse.
+    expect($months[7]['withheld'])->toBeTrue()
+        ->and($months[7]['invoiced'])->toBeNull()
+        ->and($months[7]['outstanding'])->toBeNull()
+        ->and($months[8]['withheld'])->toBeFalse()
+        ->and($months[8]['invoiced'])->toBe(5_000_000);
+});
+
+test('the rendered page prints no figure for a withheld month', function () {
+    $insurer = Insurer::factory()->create(['name' => 'NSIA Assurances']);
+    $pharmacies = Pharmacy::factory()->count(5)->create();
+
+    // Août laisse un reste dû, pour que le total de période de l'assureur ne
+    // coïncide pas numériquement avec la facture retenue de juillet : sans
+    // cela le test rougirait sur un agrégat parfaitement légitime.
+    $pharmacies->each(fn (Pharmacy $pharmacy) => Declaration::factory()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+        'amount_invoiced' => 1_000_000,
+        'amount_received' => 900_000,
+        'delay_days' => 20,
+    ]));
+
+    Declaration::factory()->create([
+        'pharmacy_id' => $pharmacies->first()->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 7,
+        'amount_invoiced' => 4_210_000,
+        'amount_received' => 0,
+        'status' => DeclarationStatus::Unpaid,
+        'is_status_manual' => true,
+        'delay_days' => null,
+    ]);
+
+    $export = app(NetworkPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, new Period(2026, 7), new Period(2026, 8), null);
+
+    $html = view('exports.network', $payload)->render();
+
+    // Le montant exact de l'officine unique ne doit apparaître nulle part.
+    expect($html)->not->toContain('4'.Fcfa::THIN_NBSP.'210'.Fcfa::THIN_NBSP.'000')
+        ->and($html)->toContain('chiffres retenus');
 });

@@ -353,16 +353,32 @@
             </thead>
             <tbody>
                 @foreach ($row['monthly'] as $month)
-                    <tr>
-                        <td class="text">{{ $month['monthLabel'] }}</td>
-                        <td>{{ $month['declarations'] }}</td>
-                        <td>{{ \App\Support\Fcfa::format($month['invoiced']) }}</td>
-                        <td>{{ \App\Support\Fcfa::format($month['received']) }}</td>
-                        <td>{{ \App\Support\Fcfa::format($month['outstanding']) }}</td>
-                        <td class="{{ $month['averageDelayDays'] !== null && $month['averageDelayDays'] > $indicators->standardDelayDays ? 'late' : '' }}">
-                            {{ $month['averageDelayDays'] === null ? '—' : number_format($month['averageDelayDays'], 1, ',', ' ').' j' }}
-                        </td>
-                    </tr>
+                    {{-- Le seuil d'anonymat vaut aussi mois par mois : un
+                         assureur autorisé sur la période peut n'avoir eu qu'une
+                         officine déclarante en mars, et cette ligne rendrait sa
+                         facture exacte. La ligne est conservée pour que son
+                         absence ne se lise pas « rien déclaré ce mois-là ». --}}
+                    @if ($month['withheld'])
+                        <tr class="withheld">
+                            <td class="text">{{ $month['monthLabel'] }}</td>
+                            <td colspan="5">
+                                {{ $month['declaringPharmacies'] }} officine{{ $month['declaringPharmacies'] > 1 ? 's' : '' }}
+                                déclarante{{ $month['declaringPharmacies'] > 1 ? 's' : '' }} ce mois-là —
+                                chiffres retenus, affichage à partir de {{ $anonymityThreshold }}
+                            </td>
+                        </tr>
+                    @else
+                        <tr>
+                            <td class="text">{{ $month['monthLabel'] }}</td>
+                            <td>{{ $month['declarations'] }}</td>
+                            <td>{{ \App\Support\Fcfa::format($month['invoiced']) }}</td>
+                            <td>{{ \App\Support\Fcfa::format($month['received']) }}</td>
+                            <td>{{ \App\Support\Fcfa::format($month['outstanding']) }}</td>
+                            <td class="{{ $month['averageDelayDays'] !== null && $month['averageDelayDays'] > $indicators->standardDelayDays ? 'late' : '' }}">
+                                {{ $month['averageDelayDays'] === null ? '—' : number_format($month['averageDelayDays'], 1, ',', ' ').' j' }}
+                            </td>
+                        </tr>
+                    @endif
                 @endforeach
 
                 @if (count($row['monthly']) === 0)

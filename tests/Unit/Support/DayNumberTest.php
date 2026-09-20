@@ -62,3 +62,19 @@ test('an unparseable date is refused rather than silently zero', function () {
     expect(fn () => DayNumber::fromDate('pas une date'))
         ->toThrow(InvalidArgumentException::class);
 });
+
+test('an empty date is refused, where strtotime would answer today', function () {
+    // strtotime(' UTC') ne rend pas false : il rend maintenant. Une date nulle
+    // transtypée en chaîne passerait donc pour aujourd'hui, ce qui annulerait
+    // sa pénalité sans bruit.
+    expect(strtotime(' UTC'))->not->toBeFalse()
+        ->and(fn () => DayNumber::fromDate(''))->toThrow(InvalidArgumentException::class)
+        ->and(fn () => DayNumber::fromDate('   '))->toThrow(InvalidArgumentException::class);
+});
+
+test('a date carrying a time truncates down to its day', function () {
+    // paid_on remonte de la base en Y-m-d H:i:s : la troncature doit tomber
+    // sur le jour de la date, pas sur le suivant.
+    expect(DayNumber::fromDate('2026-09-19 23:59:59'))->toBe(DayNumber::fromDate('2026-09-19'))
+        ->and(DayNumber::fromDate('2026-09-19 00:00:01'))->toBe(DayNumber::fromDate('2026-09-19'));
+});

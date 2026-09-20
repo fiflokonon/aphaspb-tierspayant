@@ -320,11 +320,17 @@ class NetworkStatsService
      * qu'elle alimente un graphique, et lui ajouter quatre colonnes ferait
      * payer ce poids à l'écran des tendances.
      *
-     * Les identifiants passés sont ceux que perInsurer() a déjà autorisés : le
-     * seuil d'anonymat n'est pas réévalué ici, il est en amont.
+     * Les identifiants passés sont ceux que perInsurer() a déjà autorisés.
+     *
+     * **Mais l'autorisation de l'assureur ne vaut pas pour chacun de ses mois.**
+     * Le seuil de perInsurer() porte sur les officines déclarantes de toute la
+     * période ; un assureur qui en compte cinq peut n'en avoir qu'une sur un
+     * mois donné, et cette ligne-là rendrait ses chiffres exacts. Chaque ligne
+     * porte donc son propre `declaringPharmacies`, et c'est à l'appelant — qui
+     * détient le seuil — de retenir ce qui doit l'être.
      *
      * @param  list<int>  $insurerIds
-     * @return array<int, list<array{year: int, month: int, monthLabel: string, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>
+     * @return array<int, list<array{year: int, month: int, monthLabel: string, declaringPharmacies: int, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>
      */
     public function monthlyByInsurer(array $insurerIds, Period $from, Period $to, ?string $city = null): array
     {
@@ -335,6 +341,7 @@ class NetworkStatsService
         $rows = $this->baseQuery($from, $to, $city)
             ->whereIn('declarations.insurer_id', $insurerIds)
             ->select('declarations.insurer_id', 'declarations.period_year', 'declarations.period_month')
+            ->selectRaw('COUNT(DISTINCT declarations.pharmacy_id) as declaring_pharmacies')
             ->selectRaw('COUNT(*) as declarations')
             ->selectRaw('SUM(declarations.amount_invoiced) as invoiced')
             ->selectRaw('SUM(declarations.amount_received) as received')
@@ -357,6 +364,7 @@ class NetworkStatsService
                 'year' => (int) $row->period_year,
                 'month' => (int) $row->period_month,
                 'monthLabel' => MonthLabel::short((int) $row->period_month, (int) $row->period_year),
+                'declaringPharmacies' => (int) $row->declaring_pharmacies,
                 'declarations' => (int) $row->declarations,
                 'invoiced' => $invoiced,
                 'received' => $received,
