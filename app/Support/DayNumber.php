@@ -38,8 +38,12 @@ class DayNumber
             throw new InvalidArgumentException("Date illisible : {$date}");
         }
 
-        // floor() et non intdiv() : ce dernier tronque vers zéro, ce qui
-        // rendrait le même numéro pour le 31/12/1969 et le 01/01/1970.
+        // floor() et non intdiv() par précaution, pas par nécessité : sur une
+        // date seule, minuit UTC tombe toujours sur un multiple exact de 86 400
+        // et les deux rendent le même entier. Ils ne divergent que sur un
+        // horodatage antérieur à 1970 portant une heure — ce que cette méthode
+        // ne promet pas d'accepter. Aucun test ne peut donc les distinguer, et
+        // il ne faut pas en écrire un qui prétendrait le faire.
         return (int) floor($timestamp / self::SECONDS_PER_DAY);
     }
 

@@ -6,6 +6,7 @@ use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
+use App\Services\Network\InsurerPenaltyAggregates;
 use App\Services\Network\NetworkExportRows;
 use App\Services\Network\NetworkPdfExport;
 use Carbon\CarbonImmutable;
@@ -332,4 +333,30 @@ test('the rendered report still comes back as a pdf with the pages in it', funct
         ->get(route('admin.csv-exports.download', ['format' => 'pdf']))
         ->assertOk()
         ->assertHeader('content-type', 'application/pdf');
+});
+
+test('the figures are never even computed for an insurer under the threshold', function () {
+    $shown = Insurer::factory()->create(['name' => 'Assez de declarants']);
+    $hidden = Insurer::factory()->create(['name' => 'Trop peu']);
+
+    exportDeclare($shown, 5, ['amount_received' => 1_000_000, 'delay_days' => 44]);
+    exportDeclare($hidden, 1, ['amount_received' => 1_000_000, 'delay_days' => 44]);
+
+    // La ligne de retenue protège déjà la sortie : même calculés, les chiffres
+    // d'un assureur sous le seuil n'y arriveraient pas. Ce test épingle la
+    // défense en amont — il n'entre pas dans la requête — pour qu'une colonne
+    // ajoutée un jour au chemin « retenu » ne puisse pas la faire fuiter.
+    $this->mock(InsurerPenaltyAggregates::class, function ($mock) use ($shown, $hidden) {
+        $mock->shouldReceive('forInsurers')
+            ->once()
+            ->withArgs(function (array $insurerIds) use ($shown, $hidden): bool {
+                expect($insurerIds)->toContain($shown->id)
+                    ->and($insurerIds)->not->toContain($hidden->id);
+
+                return true;
+            })
+            ->andReturn([]);
+    });
+
+    downloadCsv();
 });

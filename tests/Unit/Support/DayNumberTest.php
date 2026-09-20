@@ -9,7 +9,9 @@ test('a day number counts whole days from the epoch', function () {
 });
 
 test('dates before the epoch count backwards', function () {
-    // intdiv() tronque vers zéro et rendrait 0 ici : il faut floor().
+    // Pin la convention de signe, pas le choix de floor() contre intdiv() :
+    // sur une date seule les deux rendent le même entier, et aucun test ne
+    // peut les séparer.
     expect(DayNumber::fromDate('1969-12-31'))->toBe(-1)
         ->and(DayNumber::fromDate('1969-12-30'))->toBe(-2);
 });
