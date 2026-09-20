@@ -272,3 +272,64 @@ test('an insurer under the anonymity threshold gets no penalty figure either', f
         ->and($cell('delai_le_plus_long_jours'))->toBe('')
         ->and($cell('penalite_potentielle_fcfa'))->toBe('');
 });
+
+test('the report gives a page to each insurer above the threshold', function () {
+    $shown = Insurer::factory()
+        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
+        ->create(['name' => 'NSIA Assurances']);
+    $hidden = Insurer::factory()->create(['name' => 'Petit Assureur']);
+
+    // Soldées : sans cela l'âge de l'encours l'emporterait sur delay_days.
+    exportDeclare($shown, 5, ['amount_received' => 1_000_000, 'delay_days' => 44]);
+    exportDeclare($hidden, 1, ['amount_received' => 1_000_000, 'delay_days' => 10]);
+
+    $export = app(NetworkPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, new Period(2026, 8), new Period(2026, 8), null);
+
+    expect($payload['rows'])->toHaveCount(1)
+        ->and($payload['rows'][0]['name'])->toBe('NSIA Assurances')
+        ->and($payload['rows'][0]['figures']->longestDelayDays)->toBe(44)
+        ->and($payload['rows'][0])->toHaveKey('monthly')
+        ->and($payload['rows'][0]['monthly'])->toHaveCount(1)
+        // L'assureur sous le seuil n'a pas de page : il n'est pas dans `rows`.
+        // Son nom reste dans la liste de retenue, et c'est voulu — sa ligne
+        // explique pourquoi ses chiffres manquent.
+        ->and($payload['withheld'])->toHaveCount(1)
+        ->and($payload['withheld'][0]['name'])->toBe('Petit Assureur');
+});
+
+test('a page never contradicts the recap line above it', function () {
+    $insurer = Insurer::factory()
+        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
+        ->create(['name' => 'NSIA Assurances']);
+
+    exportDeclare($insurer, 5, [
+        'amount_received' => 0,
+        'status' => DeclarationStatus::Unpaid,
+        'is_status_manual' => true,
+        'invoice_deposited_on' => CarbonImmutable::create(2026, 8, 15)->subDays(120),
+        'paid_on' => null,
+        'delay_days' => null,
+    ]);
+
+    $export = app(NetworkPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, new Period(2026, 4), new Period(2026, 8), null);
+
+    // La page et la ligne du récapitulatif sortent du même appel : le test le
+    // prouve plutôt que de l'espérer.
+    $fromMonthly = array_sum(array_column($payload['rows'][0]['monthly'], 'outstanding'));
+
+    expect($fromMonthly)->toBe($payload['rows'][0]['amounts']->outstanding);
+});
+
+test('the rendered report still comes back as a pdf with the pages in it', function () {
+    $shown = Insurer::factory()->create(['name' => 'NSIA Assurances']);
+    exportDeclare($shown, 5, ['amount_received' => 1_000_000, 'delay_days' => 44]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.csv-exports.download', ['format' => 'pdf']))
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+});

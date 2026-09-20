@@ -4,6 +4,7 @@ namespace App\Services\Network;
 
 use App\Data\InsufficientData;
 use App\Data\InsurerAmounts;
+use App\Data\InsurerPenaltyFigures;
 use App\Data\Period;
 use App\Models\Insurer;
 use App\Services\Settings\SettingsRepository;
@@ -28,6 +29,7 @@ class NetworkPdfExport
     public function __construct(
         protected NetworkStatsService $stats,
         protected SettingsRepository $settings,
+        protected InsurerPenaltyAggregates $penalties,
     ) {
         //
     }
@@ -64,10 +66,26 @@ class NetworkPdfExport
             $amount = $amounts[$insurerId] ?? null;
 
             $rows[] = [
+                'insurerId' => $insurerId,
                 'name' => $name,
                 'indicators' => $entry,
                 'amounts' => $amount instanceof InsurerAmounts ? $amount : null,
             ];
+        }
+
+        // Seuls les assureurs de $rows ont franchi le seuil : c'est cette
+        // liste, et pas les indicateurs bruts, qui est passée aux agrégats.
+        // Un assureur retenu n'entre donc jamais dans le calcul, plutôt que
+        // d'en être écarté après coup.
+        $allowed = array_map(fn (array $row): int => $row['insurerId'], $rows);
+
+        $figures = $this->penalties->forInsurers($allowed, $from, $to, $city);
+        $monthly = $this->stats->monthlyByInsurer($allowed, $from, $to, $city);
+
+        foreach ($rows as $index => $row) {
+            $rows[$index]['figures'] = $figures[$row['insurerId']]
+                ?? new InsurerPenaltyFigures(null, null);
+            $rows[$index]['monthly'] = $monthly[$row['insurerId']] ?? [];
         }
 
         // Le plus mauvais payeur en tête : un rapport se lit du haut, et c'est
