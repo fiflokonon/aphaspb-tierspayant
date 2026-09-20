@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { computed, useSlots } from 'vue';
+import { computed } from 'vue';
 import type { ConsoleAccount } from '@/types/console';
 
 const props = defineProps<{
@@ -10,7 +10,6 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
-const slots = useSlots();
 
 /**
  * L'officine passe avant la légende de l'écran.
@@ -31,14 +30,6 @@ const identity = computed(() => {
         .filter(Boolean)
         .join(' · ');
 });
-
-/**
- * `v-if` sur le slot plutôt que `:empty` en CSS : Vue rend parfois un nœud
- * commentaire à la place d'un slot vide, et `:empty` ne le voit pas de la même
- * façon selon le mode de compilation. Un `v-if` ne laisse aucune ambiguïté —
- * et sous 1024 px, un conteneur vide creuserait un trou dans le bandeau.
- */
-const hasHero = computed(() => Boolean(slots.hero));
 </script>
 
 <template>
@@ -54,7 +45,16 @@ const hasHero = computed(() => Boolean(slots.hero));
                 <slot name="title">{{ title }}</slot>
             </div>
 
-            <div v-if="hasHero" class="header-hero"><slot name="hero" /></div>
+            <!--
+                `$slots.hero` directement dans le template, et non un computed
+                sur useSlots() : l'objet des slots est muté sur place entre
+                deux rendus sans notifier le computed, qui resterait figé si un
+                écran rendait son hero sous condition. Un `:empty` en CSS ne
+                convient pas non plus — Vue laisse parfois un nœud commentaire.
+            -->
+            <div v-if="$slots.hero" class="header-hero">
+                <slot name="hero" />
+            </div>
         </div>
 
         <div class="header-actions">
@@ -83,13 +83,14 @@ const hasHero = computed(() => Boolean(slots.hero));
     letter-spacing: 0.06em;
     text-transform: uppercase;
 
-    color: rgb(20 29 24 / 0.72);
+    /* Dérivé de --ink : l'écrire en clair figerait l'ancienne teinte. */
+    color: color-mix(in srgb, var(--ink) 72%, transparent);
 }
 
 .header-title {
     margin-top: 8px;
 
-    font-family: 'Instrument Serif', ui-serif, Georgia, serif;
+    font-family: var(--font-serif, ui-serif, Georgia, serif);
     font-size: 34px;
     line-height: 1.06;
 
@@ -108,6 +109,11 @@ const hasHero = computed(() => Boolean(slots.hero));
         flex-direction: row;
         align-items: flex-end;
         justify-content: space-between;
+    }
+
+    /* Sinon la grille du hero colle au titre de 34 px. */
+    .header-hero {
+        margin-top: 18px;
     }
 }
 
@@ -130,7 +136,12 @@ const hasHero = computed(() => Boolean(slots.hero));
     }
 
     .header-eyebrow {
-        color: rgb(255 255 255 / 0.55);
+        /*
+          0.72 et non 0.55 : sur --officine-dark, 0.55 donne 3,69:1, sous le
+          seuil AA de 4,5:1 pour un texte de 11,5 px. 0.72 donne 5,08:1 et se
+          lit toujours comme secondaire.
+        */
+        color: rgb(255 255 255 / 0.72);
     }
 
     .header-title {

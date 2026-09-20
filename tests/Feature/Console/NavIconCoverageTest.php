@@ -15,7 +15,15 @@ beforeEach(fn () => useJoomlaTestKeys());
  * table ne rendrait aucune icône, en silence, sur un écran de production.
  */
 test('every icon key the server can emit exists in navIcons.ts', function () {
-    $map = File::get(resource_path('js/lib/navIcons.ts'));
+    $source = File::get(resource_path('js/lib/navIcons.ts'));
+
+    // Ne lire que le corps de l'objet, commentaires retirés. Sur le fichier
+    // entier, une entrée mise en commentaire pendant un débogage — ou une
+    // phrase de docblock comme « download : réservé aux exports » — suffisait
+    // à faire passer le test pour une clé que la table ne connaît plus.
+    expect(preg_match('/const ICONS[^=]*=\s*\{(.*?)\n\};/s', $source, $matches))->toBe(1);
+
+    $map = preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $matches[1]);
 
     $emitted = [];
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { PanelLeftClose, PanelLeftOpen } from '@lucide/vue';
-import { ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { readCollapsed, writeCollapsed } from '@/lib/sidebarCollapsed';
 import { navIcon } from '@/lib/navIcons';
 import type {
@@ -27,7 +27,20 @@ defineProps<{
  * Le repli n'existe qu'au-dessus de 1024 px : en dessous, la barre est déjà
  * une bande horizontale, et la CSS neutralise la classe.
  */
-const collapsed = ref(readCollapsed());
+/*
+ * Lu dans onMounted et non au setup : le projet rend en SSR
+ * (INERTIA_SSR_ENABLED vaut true par défaut), où localStorage n'existe pas.
+ * Le serveur produisait donc toujours `false`, et Vue n'applique pas une
+ * classe divergente à l'hydratation — le patchFlag est CLASS sans
+ * dynamicProps, et la boucle de props est court-circuitée en production.
+ * Résultat : la préférence était ignorée à chaque chargement, et le premier
+ * clic sur « Replier » l'écrasait par un `'0'`.
+ */
+const collapsed = ref(false);
+
+onMounted(() => {
+    collapsed.value = readCollapsed();
+});
 
 watch(collapsed, writeCollapsed);
 </script>
@@ -85,7 +98,8 @@ watch(collapsed, writeCollapsed);
                     v-for="item in nav"
                     :key="item.href"
                     :href="item.href"
-                    :data-label="item.label"
+                    :title="collapsed ? item.label : undefined"
+                    :aria-label="collapsed ? item.label : undefined"
                     prefetch
                     class="apha-nav-item"
                     :class="{
@@ -794,7 +808,7 @@ watch(collapsed, writeCollapsed);
 .apha-sidebar.collapsed .apha-section-label,
 .apha-sidebar.collapsed .apha-footer-status,
 .apha-sidebar.collapsed .apha-collapse-label,
-.apha-sidebar.collapsed .apha-sidebar-footer :deep(.truncate) {
+.apha-sidebar.collapsed .apha-sidebar-footer :deep(.account-switcher) {
     display: none;
 }
 
@@ -807,7 +821,9 @@ watch(collapsed, writeCollapsed);
   l'envelopper ici imposerait un balisage à ses deux autres appelants.
   L'icône garde sa taille, fixée par `size-[15px]`.
 */
-.apha-sidebar.collapsed .apha-sidebar-footer :deep(.w-full) {
+.apha-sidebar.collapsed
+    .apha-sidebar-footer
+    :deep([data-test='logout-button']) {
     width: 44px;
     justify-content: center;
     gap: 0;
@@ -817,8 +833,7 @@ watch(collapsed, writeCollapsed);
     font-size: 0;
 }
 
-/* Rien ne dépasse : le rail ne défile pas latéralement. */
-.apha-sidebar.collapsed .apha-navigation,
+/* .apha-navigation est déjà en overflow: hidden ; seul .apha-nav défile. */
 .apha-sidebar.collapsed .apha-nav {
     overflow-x: hidden;
 }
@@ -827,46 +842,22 @@ watch(collapsed, writeCollapsed);
 .apha-sidebar.collapsed .apha-collapse {
     justify-content: center;
 
-    width: 44px;
+    /* 100 % et non 44 px : .apha-nav a 2 px de marge intérieure, et une
+       largeur fixe débordait de 4 px sous l'overflow qu'on vient de poser. */
+    width: 100%;
     padding-left: 0;
     padding-right: 0;
 
     gap: 0;
 }
 
-/* L'infobulle remplace le libellé disparu. */
-.apha-sidebar.collapsed .apha-nav-item::after {
-    content: attr(data-label);
-
-    position: absolute;
-    left: 52px;
-    top: 50%;
-    transform: translateY(-50%);
-
-    z-index: 40;
-
-    padding: 5px 9px;
-
-    border-radius: 7px;
-
-    background: var(--ink);
-
-    color: #fff;
-
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-
-    opacity: 0;
-    pointer-events: none;
-
-    transition: opacity 0.15s ease;
-}
-
-.apha-sidebar.collapsed .apha-nav-item:hover::after,
-.apha-sidebar.collapsed .apha-nav-item:focus-visible::after {
-    opacity: 1;
-}
+/*
+  Pas d'infobulle en ::after : elle vivrait à 52 px du bord d'un rail de
+  62 px, et trois ancêtres la découpent — .apha-sidebar et .apha-navigation
+  sont en overflow: hidden, .apha-nav défile. Un pseudo-élément ne sort pas
+  d'un conteneur qui défile. Le libellé passe donc par title + aria-label sur
+  le lien lui-même, posés seulement quand la barre est repliée.
+*/
 
 @media (max-width: 1023px) {
     /*
@@ -879,23 +870,36 @@ watch(collapsed, writeCollapsed);
         min-width: 0;
     }
 
-    .apha-sidebar.collapsed .apha-nav-label,
+    /*
+      Valeurs explicites, jamais `revert` : `revert` remonte au-delà de tout
+      l'origine auteur, donc .apha-brand-content serait retombé sur le `block`
+      du navigateur au lieu de son `flex`, et la marque se serait mise sur une
+      seule ligne.
+    */
     .apha-sidebar.collapsed .apha-brand-content {
-        display: revert;
+        display: flex;
+    }
+
+    /* .apha-space déclare `flex` ; les trois autres n'ont pas de display. */
+    .apha-sidebar.collapsed .apha-space {
+        display: flex;
+    }
+
+    .apha-sidebar.collapsed .apha-nav-label,
+    .apha-sidebar.collapsed .apha-section-label,
+    .apha-sidebar.collapsed .apha-nav-arrow {
+        display: block;
+    }
+
+    .apha-sidebar.collapsed {
+        padding-left: 12px;
+        padding-right: 12px;
     }
 
     .apha-sidebar.collapsed .apha-nav-item {
         width: auto;
         justify-content: flex-start;
         gap: 9px;
-    }
-
-    .apha-sidebar.collapsed .apha-nav-item::after {
-        content: none;
-    }
-
-    .apha-collapse {
-        display: none;
     }
 
     /*

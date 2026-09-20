@@ -13,6 +13,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/Exports/** | .ai/rules/exports.md |
 | package.json, ** | .ai/rules/general.md |
 | resources/js/** | .ai/rules/js.md |
+| resources/js/layouts/**, app/Support/ConsoleNavigation.php | .ai/rules/layouts-support.md |
 | resources/js/layouts/** | .ai/rules/layouts.md |
 | app/Models/Declaration.php, app/Models/Insurer.php | .ai/rules/models.md |
 | app/Services/Network/** | .ai/rules/network.md |

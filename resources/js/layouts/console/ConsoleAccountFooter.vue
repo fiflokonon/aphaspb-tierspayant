@@ -14,9 +14,16 @@ defineProps<{ account: ConsoleAccount }>();
             to another application. Absent below two officines — nothing to
             choose.
         -->
+        <!--
+            `account-switcher` n'a pas de style : elle existe pour que le rail
+            replié puisse masquer ce bloc entier. Sans elle, ses liens — qui
+            portent `w-full` comme le bouton de déconnexion — se réduisaient à
+            des pastilles de 44 px sans libellé, qui changent pourtant
+            d'officine au clic.
+        -->
         <div
             v-if="account.pharmacies.length > 1"
-            class="border-t border-ink/[0.08] pt-3"
+            class="account-switcher border-t border-ink/[0.08] pt-3"
         >
             <div
                 class="font-mono text-[9.5px] font-semibold tracking-[0.06em] text-ink/45"
