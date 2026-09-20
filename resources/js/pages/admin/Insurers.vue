@@ -607,20 +607,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .insurers-page {
-    --apha-primary: #008f83;
-    --apha-primary-dark: #006f68;
-    --apha-primary-soft: #e8f6f3;
-
-    --apha-gold: #d7a33d;
-    --apha-gold-soft: #fff8e9;
-
-    --apha-ink: #243333;
-    --apha-muted: #788585;
-    --apha-light: #a2adad;
-
-    --apha-border: #e7eceb;
-
-    --apha-background: #f7f9f9;
+    /* La palette vient de :root — voir resources/css/app.css. */
 
     width: 100%;
 
