@@ -145,7 +145,7 @@ class PenaltyCalculator
      *
      * `$today` se passe quand l'appelant boucle : DayNumber::today() traverse
      * Carbon, et le laisser se recalculer à chaque ligne coûtait 406 ms sur
-     * 40 000 déclarations contre 40 quand il est hissé hors de la boucle.
+     * 40 000 déclarations contre 52 quand il est hissé hors de la boucle.
      * Omis, il est résolu ici — c'est ce que fait le chemin officine, qui
      * traite des centaines de lignes et n'a rien à hisser.
      *

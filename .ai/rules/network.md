@@ -42,3 +42,17 @@ L'âge se déduit du second par une soustraction, et le résultat est le max des
 **Le seuil par défaut vaut 5** (`SettingsRepository::DEFAULTS`), pas 2 : `ANONYMITY_FLOOR = 2` n'est que le plancher réglable. Un test qui crée moins de 5 officines verra son assureur retenu, avec toutes ses cellules vides — cause d'échec non évidente à la lecture.
 
 **Vérifié par mutation, et le résultat surprend** : pour le **CSV**, passer *tous* les assureurs à l'agrégateur ne fait rougir aucune assertion de sortie — la branche `withheld()` de `NetworkExportRows` protège déjà le fichier. Le filtre en amont est donc de la **défense en profondeur**, pas la garde porteuse. Un test à espion (`$this->mock(InsurerPenaltyAggregates::class)`) l'épingle explicitement, pour qu'une colonne ajoutée un jour au chemin « retenu » ne puisse pas la faire fuiter. Pour le **PDF**, en revanche, la garde est structurelle : les pages itèrent `$rows`, qui ne contient que des assureurs autorisés.
+
+## Le seuil d'anonymat vaut à chaque granularité publiée, pas une fois par période
+**Correction d'une règle précédente qui surestimait la garantie.** `NetworkStatsService::perInsurer()` décide du seuil sur `COUNT(DISTINCT pharmacy_id)` **de toute la période**. Cette clairance ne vaut **que pour les agrégats de période**.
+
+Dès qu'une sortie désagrège un assureur autorisé — par mois, par ville, par statut —, le seuil doit être réévalué à cette granularité. Un assureur déclaré par cinq officines sur l'année peut n'en avoir eu qu'une en mars : la ligne de mars rend alors la facture exacte d'une officine nommable.
+
+Le cas s'est produit : `monthlyByInsurer()` + les pages par assureur du PDF réseau imprimaient ce mois-là en clair. `NetworkPdfExport::withheldMonths()` retient désormais les mois sous le seuil.
+
+Conséquences pratiques :
+
+- une méthode d'agrégat qui désagrège **expose son `declaringPharmacies`** et ne décide pas ; c'est l'appelant qui détient `SettingsRepository` qui retient ;
+- la ligne retenue est **conservée et vidée**, jamais supprimée — une ligne absente se lit « rien déclaré », pas « chiffres retenus ». Même choix que `NetworkExportRows::withheld()` ;
+- le seuil par défaut vaut **5** (`SettingsRepository::DEFAULTS`), pas 2 : `ANONYMITY_FLOOR = 2` n'est que le plancher réglable ;
+- un test d'absence de fuite doit avoir un décor **discriminant** : si le total de période de l'assureur coïncide numériquement avec la valeur retenue, le test rougit sur un agrégat parfaitement légitime.
