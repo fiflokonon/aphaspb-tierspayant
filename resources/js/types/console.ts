@@ -19,8 +19,15 @@ export type ConsoleSwitchablePharmacy = {
     current: boolean;
 };
 
+export type ConsoleCurrentPharmacy = {
+    name: string;
+    city: string | null;
+};
+
 export type ConsoleAccount = {
     name: string;
     logoutHref: string;
+    /** L'officine sur laquelle la session est ouverte ; null dans l'espace réseau. */
+    pharmacy: ConsoleCurrentPharmacy | null;
     pharmacies: ConsoleSwitchablePharmacy[];
 };

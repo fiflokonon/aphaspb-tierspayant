@@ -284,11 +284,6 @@ const RECOVERY_COLUMNS = [
     'TAUX',
 ];
 
-const eyebrow = [props.pharmacyName, props.city]
-    .filter(Boolean)
-    .join(' · ')
-    .toUpperCase();
-
 const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 </script>
 
@@ -301,11 +296,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     />
 
     <div class="dashboard-page">
-        <ConsoleHeader
-            :eyebrow="eyebrow"
-            title="Parcours des paiements"
-            class="dashboard-header"
-        >
+        <ConsoleHeader title="Parcours des paiements" class="dashboard-header">
             <template #action>
                 <PrimaryAction
                     label="+ Nouvelle déclaration"

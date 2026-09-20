@@ -106,11 +106,7 @@ const footer = computed(
     <Head title="Historique" />
 
     <div class="history-page">
-        <ConsoleHeader
-            eyebrow="MES DÉCLARATIONS"
-            title="Historique"
-            class="history-header"
-        >
+        <ConsoleHeader title="Historique" class="history-header">
             <template #filters>
                 <div class="history-filters">
                     <div class="filter-wrapper">

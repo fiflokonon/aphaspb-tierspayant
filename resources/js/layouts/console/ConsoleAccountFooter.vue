@@ -43,12 +43,13 @@ defineProps<{ account: ConsoleAccount }>();
             </div>
         </div>
 
+        <!--
+            Le nom a rejoint la barre du haut : ici il était en 11,5 px sous la
+            navigation, et invisible sous 1024 px où ce pied est masqué. Le
+            garder aux deux endroits créerait deux identités concurrentes.
+        -->
         <div class="border-t border-ink/[0.08] pt-3">
-            <div class="truncate text-[11.5px] font-semibold text-ink">
-                {{ account.name }}
-            </div>
-
-            <LogoutLink :href="account.logoutHref" class="mt-[10px] w-full" />
+            <LogoutLink :href="account.logoutHref" class="w-full" />
         </div>
     </div>
 </template>

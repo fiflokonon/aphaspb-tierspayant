@@ -155,3 +155,42 @@ test('every navigation entry of both shells resolves to a real page', function (
 test('a guest is sent to Joomla to log in', function () {
     $this->get(route('admin.network'))->assertRedirect(route('login'));
 });
+
+test('the shell carries the officine the session is on', function () {
+    $user = User::factory()->create();
+    $user->currentPharmacy->update(['name' => 'Pharmacie Le Bon Secours', 'city' => 'Cotonou']);
+
+    // Portée par le shell et non par chaque contrôleur : l'en-tête de tous les
+    // écrans l'affiche, et la faire voyager en prop obligerait six contrôleurs
+    // à la répéter.
+    $this->actingAs($user)
+        ->get(route('dashboard', ['current_pharmacy' => $user->currentPharmacy->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('console.account.pharmacy.name', 'Pharmacie Le Bon Secours')
+            ->where('console.account.pharmacy.city', 'Cotonou'),
+        );
+});
+
+test('an admin has no officine in the shell', function () {
+    // Un compte réseau porte pourtant une officine courante en base : c'est
+    // l'espace qui décide, pas la relation. Sinon l'en-tête admin afficherait
+    // le nom d'une officine au-dessus de chiffres agrégés.
+    $admin = User::factory()->networkAdmin()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.network'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('console.account.pharmacy', null),
+        );
+});
+
+test('an officine still onboarding has no officine in the shell either', function () {
+    $this->actingAs(User::factory()->notOnboarded()->create())
+        ->get(route('onboarding.profile'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('console.account.pharmacy', null),
+        );
+});

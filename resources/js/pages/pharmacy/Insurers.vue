@@ -51,11 +51,7 @@ const losing = computed(() =>
     <Head title="Mes assureurs" />
 
     <div class="insurers-page">
-        <ConsoleHeader
-            eyebrow="MON OFFICINE"
-            title="Mes assureurs"
-            class="insurers-header"
-        />
+        <ConsoleHeader title="Mes assureurs" class="insurers-header" />
 
         <section class="insurers-intro">
             <div class="intro-glow"></div>

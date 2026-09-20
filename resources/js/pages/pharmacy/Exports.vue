@@ -89,11 +89,7 @@ watch([period, insurer], reload);
 <template>
     <Head title="Exporter mes données" />
 
-    <ConsoleHeader
-        eyebrow="ESPACE OFFICINE"
-        title="Exporter mes données"
-        class="exports-header"
-    >
+    <ConsoleHeader title="Exporter mes données" class="exports-header">
         <template #filters>
             <FilterSelect
                 v-model="period"

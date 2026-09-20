@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
+
 import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import AmountField from '@/components/aphaspb/AmountField.vue';
@@ -9,6 +11,7 @@ import type { Instalment } from '@/components/aphaspb/PaymentInstalments.vue';
 import PeriodPicker from '@/components/aphaspb/PeriodPicker.vue';
 import { formatFcfa } from '@/lib/fcfa';
 import type { DeclarationStatus, SelectablePeriod } from '@/types/aphaspb';
+import type { ConsoleAccount } from '@/types/console';
 
 type Payment = {
     amount: number;
@@ -189,6 +192,21 @@ function formatMoment(value: string | null): string {
 function formatDay(value: string | null): string {
     return value === null ? '—' : value.split('-').reverse().join('/');
 }
+
+/**
+ * L'officine annoncée en haut à droite.
+ *
+ * Cet écran ne passe pas par ConsoleHeader — il a son propre en-tête — mais
+ * il doit dire la même chose : c'est là qu'on saisit des montants au nom de
+ * l'officine, et se tromper de session coûte cher.
+ */
+const officine = computed(() => {
+    const account = (
+        usePage().props.console as { account?: ConsoleAccount } | null
+    )?.account;
+
+    return account?.pharmacy?.name?.toUpperCase() ?? 'ESPACE OFFICINE';
+});
 </script>
 
 <template>
@@ -212,7 +230,7 @@ function formatDay(value: string | null): string {
 
             <div class="header-context">
                 <span class="header-dot"></span>
-                <span>ESPACE OFFICINE</span>
+                <span>{{ officine }}</span>
             </div>
         </div>
 
@@ -272,21 +290,30 @@ function formatDay(value: string | null): string {
                 />
 
                 <section class="form-panel form-panel-main">
+                    <!--
+                        L'assureur est le titre, pas la question.
+                        On enchaîne les assureurs un à un avec « Assureur
+                        suivant » : c'est lui qui change d'un écran à l'autre,
+                        la question est la même à chaque fois. Se tromper
+                        d'interlocuteur, c'est déclarer les mauvais chiffres.
+                    -->
                     <div class="panel-intro">
-                        <div class="eyebrow">
-                            {{ period.label }} ·
-                            {{ insurer.name.toUpperCase() }}
-                        </div>
+                        <div class="eyebrow">{{ period.label }}</div>
 
-                        <h1>
-                            Combien avez-vous facturé, et combien avez-vous
-                            <em>réellement reçu</em> ?
-                        </h1>
+                        <h1 class="insurer-title">{{ insurer.name }}</h1>
+
+                        <p class="insurer-terms">
+                            Délai de remboursement convenu :
+                            <strong
+                                >{{ insurer.standardDelayDays }} jours</strong
+                            >
+                        </p>
 
                         <p class="intro-text">
-                            Déclarez les montants correspondant à ce mois. Le
-                            statut de votre règlement sera automatiquement
-                            calculé.
+                            Combien avez-vous facturé, et combien avez-vous
+                            <em>réellement reçu</em> ? Déclarez les montants
+                            correspondant à ce mois : le statut de votre
+                            règlement sera automatiquement calculé.
                         </p>
 
                         <PeriodPicker
@@ -652,6 +679,25 @@ function formatDay(value: string | null): string {
 </template>
 
 <style scoped>
+.insurer-title {
+    /* Un cran au-dessus du titre d'écran habituel : c'est le seul mot qui
+       change quand on passe d'un assureur au suivant. */
+    font-size: 27px;
+    line-height: 1.15;
+    letter-spacing: -0.4px;
+}
+
+.insurer-terms {
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: var(--muted, #788585);
+}
+
+.insurer-terms strong {
+    font-weight: 700;
+    color: var(--ink, #17211c);
+}
+
 .dates {
     display: flex;
 

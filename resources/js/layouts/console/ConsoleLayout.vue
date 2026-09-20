@@ -46,6 +46,7 @@ defineProps<{
             <ConsoleTopBar
                 :count="notificationCount ?? 0"
                 :href="notificationsHref ?? '/notifications'"
+                :account-name="account?.name ?? ''"
             />
 
             <slot />

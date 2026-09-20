@@ -94,10 +94,7 @@ const COLUMNS = [
     <div class="insurer-page">
         <Head :title="relationship.insurerName" />
 
-        <ConsoleHeader
-            eyebrow="MES ASSUREURS"
-            :title="relationship.insurerName"
-        >
+        <ConsoleHeader :title="relationship.insurerName">
             <template #filters>
                 <FilterSelect
                     v-model="period"

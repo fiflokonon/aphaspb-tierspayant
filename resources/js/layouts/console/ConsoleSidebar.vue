@@ -726,6 +726,15 @@ defineProps<{
 }
 
 @media (max-width: 1023px) {
+    /*
+     * Le sous-titre cède la place au nom de la personne, que le menu de compte
+     * affiche désormais en clair : sous 1024 px c'est la seule trace de
+     * l'identité, la barre du haut n'existant pas et le pied étant masqué.
+     */
+    .apha-brand-subtitle {
+        display: none;
+    }
+
     .apha-header-actions {
         position: absolute;
 

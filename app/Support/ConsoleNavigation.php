@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Gate;
  *
  * @phpstan-type NavItem array{label: string, href: string, active: bool}
  * @phpstan-type Notice array{tone: string, title: string, body: string}
- * @phpstan-type Account array{name: string, logoutHref: string, pharmacies: list<SwitchablePharmacy>}
+ * @phpstan-type Account array{name: string, logoutHref: string, pharmacy: CurrentPharmacy|null, pharmacies: list<SwitchablePharmacy>}
+ * @phpstan-type CurrentPharmacy array{name: string, city: string|null}
  * @phpstan-type SwitchablePharmacy array{name: string, slug: string, switchHref: string, current: bool}
  */
 class ConsoleNavigation
@@ -42,6 +43,9 @@ class ConsoleNavigation
             return null;
         }
 
+        $onPharmacySpace = ! Gate::forUser($user)->allows('manage-network')
+            && Gate::forUser($user)->allows('declare-payments');
+
         $shell = match (true) {
             Gate::forUser($user)->allows('manage-network') => $this->admin($currentPath),
             Gate::forUser($user)->allows('declare-payments') => $this->pharmacy($user, $currentPath),
@@ -53,7 +57,7 @@ class ConsoleNavigation
         // Attached here rather than in each shell: the way out of a session
         // does not depend on which space the user landed in, and onboarding —
         // which renders no navigation at all — needs it just as much.
-        return [...$shell, 'account' => $this->account($user)];
+        return [...$shell, 'account' => $this->account($user, $onPharmacySpace)];
     }
 
     /**
@@ -64,13 +68,42 @@ class ConsoleNavigation
      *
      * @return Account
      */
-    protected function account(User $user): array
+    protected function account(User $user, bool $onPharmacySpace): array
     {
         return [
             'name' => $user->name,
             'logoutHref' => route('auth.logout', absolute: false),
+            'pharmacy' => $this->currentPharmacy($user, $onPharmacySpace),
             'pharmacies' => $this->switchablePharmacies($user),
         ];
+    }
+
+    /**
+     * L'officine que l'en-tête de chaque écran annonce, ou null.
+     *
+     * Portée par le shell plutôt que par chaque contrôleur : cinq écrans
+     * l'affichent, et la faire voyager en prop obligerait autant de
+     * contrôleurs à la répéter.
+     *
+     * C'est **l'espace** qui décide, pas la relation : un compte réseau porte
+     * une officine courante en base, et l'afficher au-dessus de chiffres
+     * agrégés de tout le Bénin serait un contresens.
+     *
+     * @return CurrentPharmacy|null
+     */
+    protected function currentPharmacy(User $user, bool $onPharmacySpace): ?array
+    {
+        if (! $onPharmacySpace) {
+            return null;
+        }
+
+        $pharmacy = $user->currentPharmacy;
+
+        if ($pharmacy === null) {
+            return null;
+        }
+
+        return ['name' => $pharmacy->name, 'city' => $pharmacy->city];
     }
 
     /**

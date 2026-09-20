@@ -11,7 +11,6 @@
  * touché.
  */
 import { Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
 import LogoutLink from '@/components/aphaspb/LogoutLink.vue';
 import {
     DropdownMenu,
@@ -20,23 +19,25 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useInitials } from '@/composables/useInitials';
 import type { ConsoleAccount } from '@/types/console';
 
-const props = defineProps<{ account: ConsoleAccount }>();
-
-const { getInitials } = useInitials();
-
-const initials = computed(() => getInitials(props.account.name));
+defineProps<{ account: ConsoleAccount }>();
 </script>
 
 <template>
     <DropdownMenu>
+        <!--
+            Le nom, pas les initiales : ce menu ne s'affiche que sous 1024 px,
+            où la barre du haut n'existe pas et le pied de la barre latérale
+            est masqué. Il y est donc la seule trace de l'identité, et « AH »
+            obligeait à déplier pour savoir qui était connecté. Les deux
+            ensemble ne tiennent pas sur un téléphone.
+        -->
         <DropdownMenuTrigger
-            class="grid size-9 shrink-0 place-items-center rounded-[10px] border border-ink/[0.10] bg-white/80 text-[11px] font-bold text-ink/70 transition-colors hover:bg-cream-header"
+            class="flex h-9 min-w-0 shrink items-center rounded-[10px] border border-ink/[0.10] bg-white/80 px-[10px] text-[12px] font-bold text-ink/75 transition-colors hover:bg-cream-header"
             :aria-label="`Compte de ${account.name}`"
         >
-            {{ initials }}
+            <span class="truncate">{{ account.name }}</span>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" class="w-56">
