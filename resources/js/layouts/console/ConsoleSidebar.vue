@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import { PanelLeftClose, PanelLeftOpen } from '@lucide/vue';
+import { ref, watch } from 'vue';
+import { readCollapsed, writeCollapsed } from '@/lib/sidebarCollapsed';
 import { navIcon } from '@/lib/navIcons';
 import type {
     ConsoleAccount,
@@ -19,10 +22,18 @@ defineProps<{
     notificationCount: number;
     notificationsHref: string;
 }>();
+
+/**
+ * Le repli n'existe qu'au-dessus de 1024 px : en dessous, la barre est déjà
+ * une bande horizontale, et la CSS neutralise la classe.
+ */
+const collapsed = ref(readCollapsed());
+
+watch(collapsed, writeCollapsed);
 </script>
 
 <template>
-    <aside class="apha-sidebar">
+    <aside class="apha-sidebar" :class="{ collapsed }">
         <div class="sidebar-glow"></div>
 
         <div class="apha-sidebar-header">
@@ -117,6 +128,24 @@ defineProps<{
         </div>
 
         <div class="apha-sidebar-footer">
+            <button
+                type="button"
+                class="apha-collapse"
+                :aria-label="
+                    collapsed
+                        ? 'Déployer la navigation'
+                        : 'Replier la navigation'
+                "
+                :aria-expanded="!collapsed"
+                @click="collapsed = !collapsed"
+            >
+                <component
+                    :is="collapsed ? PanelLeftOpen : PanelLeftClose"
+                    class="apha-collapse-glyph"
+                />
+                <span class="apha-collapse-label">Replier</span>
+            </button>
+
             <div class="apha-footer-line"></div>
 
             <ConsoleAccountFooter v-if="account" :account="account" />
@@ -701,7 +730,167 @@ defineProps<{
     display: none;
 }
 
+/* =============================================================
+   REPLI — rail de 62 px, au-dessus de 1024 px seulement
+============================================================= */
+
+.apha-collapse {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 9px 10px;
+
+    border: 1px solid var(--border);
+    border-radius: 9px;
+
+    background: #fff;
+
+    color: var(--muted);
+
+    font-size: 12.5px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.apha-collapse-glyph {
+    width: 17px;
+    height: 17px;
+
+    flex: none;
+
+    stroke-width: 1.9;
+}
+
+.apha-sidebar.collapsed {
+    width: 62px;
+    min-width: 62px;
+
+    padding-left: 9px;
+    padding-right: 9px;
+}
+
+/*
+  Tout ce qui porte du texte disparaît. La liste est explicite plutôt qu'un
+  sélecteur large : un `* { display: none }` emporterait les icônes, et un
+  masquage par débordement laisse des mots tronqués — « NAVIGAT »,
+  « Se déconnect » — qui se lisent comme un bug d'affichage.
+*/
+.apha-sidebar.collapsed .apha-brand-content,
+.apha-sidebar.collapsed .apha-nav-label,
+.apha-sidebar.collapsed .apha-nav-arrow,
+.apha-sidebar.collapsed .apha-space,
+.apha-sidebar.collapsed .apha-notices,
+.apha-sidebar.collapsed .apha-section-label,
+.apha-sidebar.collapsed .apha-footer-status,
+.apha-sidebar.collapsed .apha-collapse-label,
+.apha-sidebar.collapsed .apha-sidebar-footer :deep(.truncate) {
+    display: none;
+}
+
+/*
+  Le pied de compte se réduit à son bouton.
+
+  `font-size: 0` plutôt qu'un `display: none` sur le libellé : « Se
+  déconnecter » est un nœud texte nu dans le slot de LogoutLink, un composant
+  partagé par trois emplacements. Aucun sélecteur ne l'atteint, et
+  l'envelopper ici imposerait un balisage à ses deux autres appelants.
+  L'icône garde sa taille, fixée par `size-[15px]`.
+*/
+.apha-sidebar.collapsed .apha-sidebar-footer :deep(.w-full) {
+    width: 44px;
+    justify-content: center;
+    gap: 0;
+    padding-left: 0;
+    padding-right: 0;
+
+    font-size: 0;
+}
+
+/* Rien ne dépasse : le rail ne défile pas latéralement. */
+.apha-sidebar.collapsed .apha-navigation,
+.apha-sidebar.collapsed .apha-nav {
+    overflow-x: hidden;
+}
+
+.apha-sidebar.collapsed .apha-nav-item,
+.apha-sidebar.collapsed .apha-collapse {
+    justify-content: center;
+
+    width: 44px;
+    padding-left: 0;
+    padding-right: 0;
+
+    gap: 0;
+}
+
+/* L'infobulle remplace le libellé disparu. */
+.apha-sidebar.collapsed .apha-nav-item::after {
+    content: attr(data-label);
+
+    position: absolute;
+    left: 52px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    z-index: 40;
+
+    padding: 5px 9px;
+
+    border-radius: 7px;
+
+    background: var(--ink);
+
+    color: #fff;
+
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+
+    opacity: 0;
+    pointer-events: none;
+
+    transition: opacity 0.15s ease;
+}
+
+.apha-sidebar.collapsed .apha-nav-item:hover::after,
+.apha-sidebar.collapsed .apha-nav-item:focus-visible::after {
+    opacity: 1;
+}
+
 @media (max-width: 1023px) {
+    /*
+      Le repli n'existe pas ici : la barre est déjà une bande horizontale, et
+      lui superposer un rail de 62 px la réduirait à un timbre-poste. Sans
+      cette annulation, replier sur son ordinateur mutilerait son téléphone.
+    */
+    .apha-sidebar.collapsed {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .apha-sidebar.collapsed .apha-nav-label,
+    .apha-sidebar.collapsed .apha-brand-content {
+        display: revert;
+    }
+
+    .apha-sidebar.collapsed .apha-nav-item {
+        width: auto;
+        justify-content: flex-start;
+        gap: 9px;
+    }
+
+    .apha-sidebar.collapsed .apha-nav-item::after {
+        content: none;
+    }
+
+    .apha-collapse {
+        display: none;
+    }
+
     /*
      * Le sous-titre cède la place au nom de la personne, que le menu de compte
      * affiche désormais en clair : sous 1024 px c'est la seule trace de
