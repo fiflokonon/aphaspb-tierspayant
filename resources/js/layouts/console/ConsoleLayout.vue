@@ -70,13 +70,7 @@ defineProps<{
      * Même ambiance que les pages Statistiques réseau :
      * blanc cassé + halo turquoise très léger.
      */
-    background:
-        radial-gradient(
-            circle at 95% 0%,
-            rgba(0, 143, 131, 0.045),
-            transparent 28%
-        ),
-        #f7f9f9;
+    background: #f7f9f9;
 
     color: #243333;
 }
@@ -95,13 +89,9 @@ defineProps<{
     padding: 20px 16px 28px;
 
     /*
-     * Petit effet de profondeur très subtil.
+     * Le halo de profondeur a été retiré : un dégradé diffuse le propos là
+     * où un aplat le pose.
      */
-    background: radial-gradient(
-        circle at 100% 0%,
-        rgba(0, 143, 131, 0.025),
-        transparent 24%
-    );
 }
 
 /* =============================================================

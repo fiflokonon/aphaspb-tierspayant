@@ -221,12 +221,7 @@
    ================================================================ */
 
 [data-sidebar='sidebar'] {
-    background: linear-gradient(
-        180deg,
-        #10251f 0%,
-        #0d211b 55%,
-        #0a1c17 100%
-    ) !important;
+    background: #0d211b !important;
 
     color: #f5f8f6 !important;
 
@@ -375,11 +370,7 @@
    ================================================================ */
 
 [data-sidebar='sidebar'] [data-sidebar='menu-button']:hover {
-    background: linear-gradient(
-        90deg,
-        rgba(53, 167, 153, 0.13),
-        rgba(53, 167, 153, 0.04)
-    ) !important;
+    background: rgba(53, 167, 153, 0.13) !important;
 
     border-color: rgba(53, 167, 153, 0.08) !important;
 
@@ -399,11 +390,7 @@
    ================================================================ */
 
 [data-sidebar='sidebar'] [data-sidebar='menu-button'][data-active='true'] {
-    background: linear-gradient(
-        100deg,
-        rgba(53, 167, 153, 0.23),
-        rgba(53, 167, 153, 0.07)
-    ) !important;
+    background: rgba(53, 167, 153, 0.23) !important;
 
     border-color: rgba(53, 167, 153, 0.14) !important;
 

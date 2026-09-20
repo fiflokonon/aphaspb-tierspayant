@@ -158,13 +158,7 @@ defineProps<{
 
     padding: 15px 11px 11px;
 
-    background:
-        radial-gradient(
-            circle at 100% 0%,
-            rgba(0, 143, 131, 0.075),
-            transparent 34%
-        ),
-        linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+    background: #fff;
 
     color: var(--ink);
 
@@ -188,12 +182,6 @@ defineProps<{
 
     border-radius: 50%;
 
-    background: radial-gradient(
-        circle,
-        rgba(0, 143, 131, 0.09),
-        transparent 68%
-    );
-
     pointer-events: none;
 }
 
@@ -210,12 +198,7 @@ defineProps<{
 
     width: 3px;
 
-    background: linear-gradient(
-        180deg,
-        var(--primary),
-        rgba(0, 143, 131, 0.15),
-        var(--gold)
-    );
+    background: var(--primary);
 
     border-radius: 0 4px 4px 0;
 
@@ -269,7 +252,7 @@ defineProps<{
 
     border-radius: 11px;
 
-    background: linear-gradient(135deg, #e8f6f3, #ffffff);
+    background: var(--primary-soft);
 
     border: 1px solid rgba(0, 143, 131, 0.12);
 
@@ -467,11 +450,7 @@ defineProps<{
 .apha-nav-item.active {
     color: var(--primary-dark);
 
-    background: linear-gradient(
-        100deg,
-        rgba(0, 143, 131, 0.11),
-        rgba(0, 143, 131, 0.045)
-    );
+    background: var(--primary-soft);
 
     box-shadow:
         inset 3px 0 0 var(--primary),
@@ -671,7 +650,7 @@ defineProps<{
 
     margin-bottom: 7px;
 
-    background: linear-gradient(90deg, rgba(0, 143, 131, 0.14), transparent);
+    background: var(--border);
 }
 
 .apha-footer-status {
