@@ -21,4 +21,5 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Requests/Pharmacy/SaveDeclarationRequest.php | .ai/rules/pharmacy.md |
 | routes/web.php | .ai/rules/routes.md |
 | app/Services/Declarations/** | .ai/rules/services-declarations.md |
+| app/Support/DayNumber.php | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |
