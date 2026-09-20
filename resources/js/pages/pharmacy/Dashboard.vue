@@ -314,7 +314,15 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </template>
         </ConsoleHeader>
 
-        <!--
+        <div
+            v-if="
+                insurerBands.late.length > 0 ||
+                insurerBands.owing ||
+                insurerBands.settled
+            "
+            class="bands"
+        >
+            <!--
             Une bande par assureur en retard, puis une bande pour ceux qui
             doivent dans les clous, puis une pour les soldés. Le détail va où
             il y a quelque chose à faire ; le reste se contente de ses noms.
@@ -325,93 +333,93 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             là où ce retard-ci se compte depuis le dépôt. Deux seuils voisins
             sur deux horloges se contrediraient.
         -->
-        <section
-            v-for="band in visibleLateBands"
-            :key="band.insurerId"
-            class="insurer-banner late"
-        >
-            <TriangleAlert class="insurer-banner-icon" :size="17" />
+            <section
+                v-for="band in visibleLateBands"
+                :key="band.insurerId"
+                class="insurer-banner late"
+            >
+                <TriangleAlert class="insurer-banner-icon" :size="18" />
 
-            <p class="insurer-banner-line">
-                <Link :href="band.insurerUrl" class="insurer-banner-name">{{
-                    band.insurerName
-                }}</Link>
-                · {{ band.count }} facture{{ band.count > 1 ? 's' : '' }} ·
-                <strong>{{ formatAmount(band.outstanding) }} FCFA</strong> ·
-                plus ancienne {{ band.oldestMonthLabel }}
-                <span class="insurer-banner-days"
-                    >+{{ band.oldestOverdueDays }} j</span
-                ><template v-if="band.penalty !== null">
-                    · pénalité {{ formatAmount(band.penalty) }}</template
-                >
-            </p>
-        </section>
+                <p class="insurer-banner-line">
+                    <Link :href="band.insurerUrl" class="insurer-banner-name">{{
+                        band.insurerName
+                    }}</Link>
+                    · {{ band.count }} facture{{ band.count > 1 ? 's' : '' }} ·
+                    <strong>{{ formatAmount(band.outstanding) }} FCFA</strong> ·
+                    plus ancienne {{ band.oldestMonthLabel }}
+                    <span class="insurer-banner-days"
+                        >+{{ band.oldestOverdueDays }} j</span
+                    ><template v-if="band.penalty !== null">
+                        · pénalité {{ formatAmount(band.penalty) }}</template
+                    >
+                </p>
+            </section>
 
-        <section v-if="insurerBands.owing" class="insurer-banner owing">
-            <Clock class="insurer-banner-icon" :size="17" />
+            <section v-if="insurerBands.owing" class="insurer-banner owing">
+                <Clock class="insurer-banner-icon" :size="18" />
 
-            <p class="insurer-banner-line">
-                {{ insurerBands.owing.count }} assureur{{
-                    insurerBands.owing.count > 1 ? 's' : ''
-                }}
-                dans le délai convenu ·
-                <strong
-                    >{{
-                        formatAmount(insurerBands.owing.outstanding)
+                <p class="insurer-banner-line">
+                    {{ insurerBands.owing.count }} assureur{{
+                        insurerBands.owing.count > 1 ? 's' : ''
                     }}
-                    FCFA</strong
-                >
-                · {{ insurerBands.owing.insurerNames.join(', ') }}
-            </p>
-        </section>
+                    dans le délai convenu ·
+                    <strong
+                        >{{
+                            formatAmount(insurerBands.owing.outstanding)
+                        }}
+                        FCFA</strong
+                    >
+                    · {{ insurerBands.owing.insurerNames.join(', ') }}
+                </p>
+            </section>
 
-        <section v-if="insurerBands.settled" class="insurer-banner settled">
-            <CircleCheck class="insurer-banner-icon" :size="17" />
+            <section v-if="insurerBands.settled" class="insurer-banner settled">
+                <CircleCheck class="insurer-banner-icon" :size="18" />
 
-            <p class="insurer-banner-line">
-                {{ insurerBands.settled.count }} assureur{{
-                    insurerBands.settled.count > 1 ? 's' : ''
-                }}
-                à jour · {{ insurerBands.settled.insurerNames.join(', ') }}
-            </p>
-        </section>
+                <p class="insurer-banner-line">
+                    {{ insurerBands.settled.count }} assureur{{
+                        insurerBands.settled.count > 1 ? 's' : ''
+                    }}
+                    à jour · {{ insurerBands.settled.insurerNames.join(', ') }}
+                </p>
+            </section>
 
-        <!--
+            <!--
             Les deux commandes vivent sous la dernière bande, pas plus bas :
             un bouton « voir le détail » flottant entre les KPI et le graphique
             ne disait pas à quoi il se rapportait.
         -->
-        <div
-            v-if="hiddenLateBands > 0 || overdue.length > 0"
-            class="bands-footer"
-        >
-            <button
-                v-if="hiddenLateBands > 0"
-                type="button"
-                class="bands-footer-action"
-                @click="showAllLateBands = true"
+            <div
+                v-if="hiddenLateBands > 0 || overdue.length > 0"
+                class="bands-footer"
             >
-                et {{ hiddenLateBands }} autre{{
-                    hiddenLateBands > 1 ? 's' : ''
-                }}
-                assureur{{ hiddenLateBands > 1 ? 's' : '' }} en retard
-            </button>
+                <button
+                    v-if="hiddenLateBands > 0"
+                    type="button"
+                    class="bands-footer-action"
+                    @click="showAllLateBands = true"
+                >
+                    et {{ hiddenLateBands }} autre{{
+                        hiddenLateBands > 1 ? 's' : ''
+                    }}
+                    assureur{{ hiddenLateBands > 1 ? 's' : '' }} en retard
+                </button>
 
-            <button
-                v-if="overdue.length > 0"
-                type="button"
-                class="bands-footer-action"
-                :aria-expanded="showOverdueTable"
-                @click="showOverdueTable = !showOverdueTable"
-            >
-                {{ showOverdueTable ? 'Masquer' : 'Voir' }} le détail<template
-                    v-if="overdueSummary"
+                <button
+                    v-if="overdue.length > 0"
+                    type="button"
+                    class="bands-footer-action"
+                    :aria-expanded="showOverdueTable"
+                    @click="showOverdueTable = !showOverdueTable"
                 >
-                    ({{ overdueSummary.count }} facture{{
-                        overdueSummary.count > 1 ? 's' : ''
-                    }})</template
-                >
-            </button>
+                    {{ showOverdueTable ? 'Masquer' : 'Voir' }} le
+                    détail<template v-if="overdueSummary">
+                        ({{ overdueSummary.count }} facture{{
+                            overdueSummary.count > 1 ? 's' : ''
+                        }})</template
+                    >
+                </button>
+            </div>
         </div>
 
         <section class="dashboard-intro">
@@ -743,9 +751,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .insurer-banner {
     display: flex;
     align-items: flex-start;
-    gap: 0.5rem;
-    padding: 0.5rem 0.875rem;
-    margin-bottom: 0.375rem;
+    gap: 0.625rem;
+    padding: 0.6875rem 1rem;
+    margin-bottom: 0.5rem;
     border: 1px solid;
     border-left-width: 4px;
     border-radius: 11px;
@@ -785,9 +793,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 }
 
 .insurer-banner-line {
-    font-size: 0.8125rem;
+    font-size: 0.9375rem;
     font-weight: 500;
-    line-height: 1.45;
+    line-height: 1.5;
     color: var(--ink);
 }
 
@@ -809,18 +817,26 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     text-underline-offset: 2px;
 }
 
+.bands {
+    /* Détache le bloc de l'en-tête au-dessus : collé à elle, il se lisait
+       comme une partie du titre. La marge basse reste courte parce que
+       .dashboard-intro porte déjà la sienne — et la porte encore quand il n'y
+       a aucune bande, cas où elle seule sépare la carte de l'en-tête. */
+    margin: 1.125rem 0 0.75rem;
+}
+
 .bands-footer {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem 1rem;
-    margin: 0.5rem 0 1.25rem;
+    gap: 0.375rem 1.25rem;
+    margin-top: 0.75rem;
 }
 
 .bands-footer-action {
     padding: 0;
     border: 0;
     background: none;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 700;
     color: var(--muted);
     text-decoration: underline;
@@ -901,7 +917,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .catch-up {
     position: relative;
 
-    margin: 0 0 22px;
+    margin: 12px 0 22px;
 
     padding: 18px 22px;
 
@@ -985,7 +1001,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     gap: 20px;
 
-    margin: 12px 0 22px;
+    margin: 0 0 22px;
 
     padding: 20px 22px;
 
