@@ -29,3 +29,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Maquettes de la session de conception (compagnon visuel)
+.superpowers/
