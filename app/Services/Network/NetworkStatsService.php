@@ -9,6 +9,7 @@ use App\Data\Period;
 use App\Enums\DeclarationStatus;
 use App\Models\Insurer;
 use App\Services\Settings\SettingsRepository;
+use App\Support\MonthLabel;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -309,6 +310,62 @@ class NetworkStatsService
             'network' => $network,
             'threshold' => $this->averageStandardDelayDays(),
         ];
+    }
+
+    /**
+     * Le détail mois par mois des assureurs demandés, le plus récent en tête.
+     *
+     * Alimente les pages par assureur du rapport PDF. Voisine de delayTrend()
+     * sans la remplacer : celle-là ne rend qu'une moyenne de délai parce
+     * qu'elle alimente un graphique, et lui ajouter quatre colonnes ferait
+     * payer ce poids à l'écran des tendances.
+     *
+     * Les identifiants passés sont ceux que perInsurer() a déjà autorisés : le
+     * seuil d'anonymat n'est pas réévalué ici, il est en amont.
+     *
+     * @param  list<int>  $insurerIds
+     * @return array<int, list<array{year: int, month: int, monthLabel: string, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>
+     */
+    public function monthlyByInsurer(array $insurerIds, Period $from, Period $to, ?string $city = null): array
+    {
+        if ($insurerIds === []) {
+            return [];
+        }
+
+        $rows = $this->baseQuery($from, $to, $city)
+            ->whereIn('declarations.insurer_id', $insurerIds)
+            ->select('declarations.insurer_id', 'declarations.period_year', 'declarations.period_month')
+            ->selectRaw('COUNT(*) as declarations')
+            ->selectRaw('SUM(declarations.amount_invoiced) as invoiced')
+            ->selectRaw('SUM(declarations.amount_received) as received')
+            ->selectRaw(
+                'AVG(CASE WHEN declarations.status IN (?, ?) THEN declarations.delay_days END) as average_delay',
+                DeclarationStatus::settledValues(),
+            )
+            ->groupBy('declarations.insurer_id', 'declarations.period_year', 'declarations.period_month')
+            ->orderByDesc('declarations.period_year')
+            ->orderByDesc('declarations.period_month')
+            ->get();
+
+        $monthly = [];
+
+        foreach ($rows as $row) {
+            $invoiced = (int) $row->invoiced;
+            $received = (int) $row->received;
+
+            $monthly[(int) $row->insurer_id][] = [
+                'year' => (int) $row->period_year,
+                'month' => (int) $row->period_month,
+                'monthLabel' => MonthLabel::short((int) $row->period_month, (int) $row->period_year),
+                'declarations' => (int) $row->declarations,
+                'invoiced' => $invoiced,
+                'received' => $received,
+                'outstanding' => max(0, $invoiced - $received),
+                'averageDelayDays' => $row->average_delay === null ? null : round((float) $row->average_delay, 1),
+            ];
+        }
+
+        return $monthly;
     }
 
     /**
