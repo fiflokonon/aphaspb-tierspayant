@@ -56,3 +56,14 @@ Conséquences pratiques :
 - la ligne retenue est **conservée et vidée**, jamais supprimée — une ligne absente se lit « rien déclaré », pas « chiffres retenus ». Même choix que `NetworkExportRows::withheld()` ;
 - le seuil par défaut vaut **5** (`SettingsRepository::DEFAULTS`), pas 2 : `ANONYMITY_FLOOR = 2` n'est que le plancher réglable ;
 - un test d'absence de fuite doit avoir un décor **discriminant** : si le total de période de l'assureur coïncide numériquement avec la valeur retenue, le test rougit sur un agrégat parfaitement légitime.
+
+## Le résumé réseau n'a pas de seuil — sauf restreint à un assureur
+`NetworkStatsService::networkSummary()` n'applique **aucun** seuil d'anonymat, et c'est légitime : il agrège tous les assureurs, donc aucune officine n'y est nommable.
+
+Le filtre assureur de l'export (20/09/2026) change cette prémisse. Restreint à un assureur, ce même résumé devient *les chiffres de cet assureur* — une granularité de publication nouvelle, où une unique officine déclarante rend sa facture exacte lisible. `NetworkPdfExport::summary()` retient donc le résumé quand un assureur est choisi **et** qu'il est sous le seuil.
+
+La condition porte sur `$withheld` non vide, pas sur un `$rows` vide : un assureur qui n'a rien déclaré sur la période mérite un résumé à zéro (« rien déclaré »), pas une rétention (« chiffres cachés »).
+
+Le filtre lui-même vit dans `DeclarationWindow::apply()`, seul goulot des neuf agrégats. `InsurerPenaltyAggregates` ne le reçoit pas : son `whereIn` sur les assureurs autorisés le restreint déjà.
+
+Deux tests le tiennent : un sur les données (`summary` vaut null), un sur le **rendu** — sans ce second, un `$summary['declarations']` resté dans le Blade ne rougirait qu'en production. Vérifié par mutation : la garde neutralisée, la vue rend un 500.
