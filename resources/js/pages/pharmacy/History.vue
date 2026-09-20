@@ -380,18 +380,6 @@ const footer = computed(
 
     padding-bottom: 60px;
 
-    /* background:
-        radial-gradient(
-            circle at 95% 0%,
-            rgba(0, 143, 131, 0.055),
-            transparent 28%
-        ),
-        radial-gradient(
-            circle at 0% 35%,
-            rgba(215, 163, 61, 0.025),
-            transparent 24%
-        ),
-        var(--apha-background); */
 }
 
 .history-header {
@@ -441,7 +429,7 @@ const footer = computed(
 
     border-radius: 18px;
 
-    background: linear-gradient(110deg, #ffffff 0%, #f9fcfb 100%);
+    background: #fff;
 
     /* box-shadow:
         0 9px 30px rgba(35, 70, 68, 0.035); */
@@ -462,11 +450,7 @@ const footer = computed(
 
     border-radius: 50%;
 
-    background: radial-gradient(
-        circle,
-        rgba(0, 143, 131, 0.09),
-        transparent 68%
-    );
+    
 
     pointer-events: none;
 }
@@ -482,12 +466,7 @@ const footer = computed(
     width: 100%;
     height: 2px;
 
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(0, 143, 131, 0.25),
-        transparent
-    );
+    background: var(--border);
 
     opacity: 0.5;
 }
@@ -516,11 +495,7 @@ const footer = computed(
 
     color: #ffffff;
 
-    background: linear-gradient(
-        135deg,
-        var(--apha-primary),
-        var(--apha-primary-dark)
-    );
+    background: var(--apha-primary);
 
     /* box-shadow:
         0 8px 20px rgba(0, 143, 131, 0.17); */
@@ -632,12 +607,7 @@ const footer = computed(
     width: 100%;
     height: 3px;
 
-    background: linear-gradient(
-        90deg,
-        var(--apha-primary),
-        #35a799,
-        var(--apha-gold)
-    );
+    background: var(--apha-primary);
 
     opacity: 0.9;
 }
@@ -696,7 +666,7 @@ const footer = computed(
 
     border-radius: 11px;
 
-    background: linear-gradient(135deg, #f5fbf9, #ffffff);
+    background: #f5fbf9;
 
     white-space: nowrap;
 }
@@ -800,11 +770,7 @@ const footer = computed(
 }
 
 .history-row:hover {
-    background: linear-gradient(
-        90deg,
-        rgba(0, 143, 131, 0.025),
-        rgba(0, 143, 131, 0.008)
-    );
+    background: var(--cream-state);
 }
 
 .insurer-cell {
@@ -830,7 +796,7 @@ const footer = computed(
 
     border-radius: 10px;
 
-    background: linear-gradient(135deg, #e5f6f2, #f4faf9);
+    background: var(--primary-soft);
 
     color: var(--apha-primary-dark);
 
@@ -1079,7 +1045,7 @@ const footer = computed(
 
     border-top: 1px solid rgba(35, 70, 68, 0.055);
 
-    background: linear-gradient(135deg, #ffffff, #f9fcfb);
+    background: #fff;
 
     animation: emptyAppear 0.5s ease both;
 }

@@ -891,13 +891,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: var(--ink);
 
-    /* background:
-        radial-gradient(
-            circle at 95% 0%,
-            rgba(0, 143, 131, 0.045),
-            transparent 28%
-        ),
-        var(--background); */
 }
 
 .dashboard-header {
@@ -1000,13 +993,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 17px;
 
-    /* background:
-        linear-gradient(
-            110deg,
-            #ffffff 0%,
-            #f9fcfb 100%
-        ); */
-
     /* box-shadow:
         0 8px 28px rgba(35, 70, 68, 0.035); */
 
@@ -1030,11 +1016,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 50%;
 
-    background: radial-gradient(
-        circle,
-        rgba(0, 143, 131, 0.09),
-        transparent 68%
-    );
+    
 
     pointer-events: none;
 }
@@ -1065,7 +1047,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: #ffffff;
 
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    background: var(--primary);
 
     /* box-shadow:
         0 9px 20px rgba(0, 143, 131, .18); */
@@ -1291,7 +1273,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     width: 100%;
     height: 3px;
 
-    background: linear-gradient(90deg, var(--primary), #35a799, var(--gold));
+    background: var(--primary);
 
     opacity: 0.9;
 }
@@ -1458,7 +1440,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: inherit;
 
-    background: linear-gradient(90deg, #d7a33d, #e6bf63);
+    background: var(--gold-mid);
 
     transform-origin: left center;
 

@@ -932,7 +932,7 @@ const officine = computed(() => {
 
     border-bottom: 1px solid var(--border);
 
-    background: linear-gradient(100deg, #ffffff, #fbfdfc);
+    background: #fff;
 }
 
 .progress-left {
@@ -950,7 +950,7 @@ const officine = computed(() => {
 
     border-radius: 10px;
 
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    background: var(--primary);
 
     color: #ffffff;
 
@@ -1009,7 +1009,7 @@ const officine = computed(() => {
 .progress-value {
     height: 100%;
 
-    background: linear-gradient(90deg, var(--primary), #35a799, var(--gold));
+    background: var(--primary);
 
     transition: width 0.5s ease;
 }
@@ -1035,7 +1035,7 @@ const officine = computed(() => {
 
     border-left: 1px solid var(--border);
 
-    background: linear-gradient(145deg, #f9fcfb, #f5f9f8);
+    background: #f9fcfb;
 }
 
 .eyebrow {
@@ -1507,7 +1507,7 @@ const officine = computed(() => {
 
     border-radius: 14px;
 
-    background: linear-gradient(135deg, #ffffff, #fffcf5);
+    background: #fff;
 
     animation: cardAppear 0.45s 0.1s ease both;
 }
@@ -1575,7 +1575,7 @@ const officine = computed(() => {
 
     border-radius: 13px;
 
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    background: var(--primary);
 
     color: #ffffff;
 
@@ -1601,12 +1601,7 @@ const officine = computed(() => {
 
     inset: 0;
 
-    background: linear-gradient(
-        110deg,
-        transparent 20%,
-        rgba(255, 255, 255, 0.18) 45%,
-        transparent 70%
-    );
+    
 
     transform: translateX(-120%);
 

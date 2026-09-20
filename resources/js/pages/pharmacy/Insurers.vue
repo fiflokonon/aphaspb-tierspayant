@@ -250,18 +250,6 @@ const losing = computed(() =>
     min-height: 100%;
     padding-bottom: 60px;
 
-    /* background:
-        radial-gradient(
-            circle at 95% 0%,
-            rgba(0, 143, 131, 0.045),
-            transparent 28%
-        ),
-        radial-gradient(
-            circle at 5% 35%,
-            rgba(215, 163, 61, 0.025),
-            transparent 25%
-        ); */
-
     animation: pageAppear 0.5s ease both;
 }
 
@@ -289,7 +277,7 @@ const losing = computed(() =>
     border: 1px solid var(--apha-border);
     border-radius: 18px;
 
-    background: linear-gradient(110deg, #ffffff 0%, #f9fcfb 100%);
+    background: #fff;
 
     /* box-shadow:
         0 8px 30px rgba(35, 70, 68, 0.035); */
@@ -308,11 +296,7 @@ const losing = computed(() =>
 
     border-radius: 50%;
 
-    background: radial-gradient(
-        circle,
-        rgba(0, 143, 131, 0.09),
-        transparent 68%
-    );
+    
 
     pointer-events: none;
 }
@@ -341,11 +325,7 @@ const losing = computed(() =>
 
     color: #ffffff;
 
-    background: linear-gradient(
-        135deg,
-        var(--apha-primary),
-        var(--apha-primary-dark)
-    );
+    background: var(--apha-primary);
 
     box-shadow: 0 8px 20px rgba(0, 143, 131, 0.18);
 
@@ -465,12 +445,7 @@ const losing = computed(() =>
     width: 100%;
     height: 3px;
 
-    background: linear-gradient(
-        90deg,
-        var(--apha-primary),
-        #35a799,
-        var(--apha-gold)
-    );
+    background: var(--apha-primary);
 
     opacity: 0.9;
 }
@@ -573,7 +548,7 @@ const losing = computed(() =>
 .checklist-container {
     padding: 4px 5px;
 
-    background: linear-gradient(180deg, #ffffff 0%, #fcfdfd 100%);
+    background: #fff;
 }
 
 .checklist-heading {
@@ -609,7 +584,7 @@ const losing = computed(() =>
 
     border-top: 1px solid var(--apha-border);
 
-    background: linear-gradient(180deg, #fbfcfc 0%, #f8faf9 100%);
+    background: #fbfcfc;
 }
 
 .message {
@@ -691,11 +666,7 @@ const losing = computed(() =>
     border: 0;
     border-radius: 12px;
 
-    background: linear-gradient(
-        135deg,
-        var(--apha-primary),
-        var(--apha-primary-dark)
-    );
+    background: var(--apha-primary);
 
     color: #ffffff;
 
@@ -723,12 +694,7 @@ const losing = computed(() =>
     width: 60%;
     height: 100%;
 
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.12),
-        transparent
-    );
+    
 
     transition: left 0.55s ease;
 }
@@ -803,7 +769,7 @@ const losing = computed(() =>
     border: 1px solid var(--apha-border);
     border-radius: 16px;
 
-    background: linear-gradient(145deg, #ffffff, #f8fbfa);
+    background: #fff;
 
     box-shadow: 0 8px 26px rgba(35, 70, 68, 0.03);
 
@@ -823,11 +789,7 @@ const losing = computed(() =>
 
     border-radius: 50%;
 
-    background: radial-gradient(
-        circle,
-        rgba(215, 163, 61, 0.07),
-        transparent 70%
-    );
+    
 
     pointer-events: none;
 }
@@ -886,7 +848,7 @@ const losing = computed(() =>
 
     margin: 17px 0;
 
-    background: linear-gradient(90deg, var(--apha-border), transparent);
+    background: var(--apha-border);
 }
 
 .info-status {
