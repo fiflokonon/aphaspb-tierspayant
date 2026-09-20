@@ -615,12 +615,6 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     padding: 0 10px 60px;
 
-    /* background:
-        radial-gradient(
-            circle at 95% 0%,
-            rgba(0, 143, 131, .045),
-            transparent 28%
-        ); */
 }
 
 .insurers-header {
@@ -650,7 +644,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 18px;
 
-    background: linear-gradient(110deg, #ffffff 0%, #f8fcfb 100%);
+    background: #fff;
     /* 
     box-shadow:
         0 8px 30px
@@ -674,11 +668,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 50%;
 
-    background: radial-gradient(
-        circle,
-        rgba(0, 143, 131, 0.09),
-        transparent 68%
-    );
+    
 
     pointer-events: none;
 }
@@ -710,11 +700,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 14px;
 
-    background: linear-gradient(
-        135deg,
-        var(--apha-primary),
-        var(--apha-primary-dark)
-    );
+    background: var(--apha-primary);
 
     color: #ffffff;
 
@@ -838,12 +824,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     height: 3px;
 
-    background: linear-gradient(
-        90deg,
-        var(--apha-primary),
-        #35a799,
-        var(--apha-gold)
-    );
+    background: var(--apha-primary);
 }
 
 .insurers-table {
@@ -877,7 +858,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 11px;
 
-    background: linear-gradient(135deg, #e6f6f2, #f3faf8);
+    background: var(--primary-soft);
 
     color: var(--apha-primary-dark);
 
@@ -1237,21 +1218,12 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 50%;
 
-    background: radial-gradient(
-        circle,
-        rgba(0, 143, 131, 0.045),
-        transparent 68%
-    );
+    
 
     pointer-events: none;
 }
 
 .threshold-card::after {
-    background: radial-gradient(
-        circle,
-        rgba(215, 163, 61, 0.06),
-        transparent 68%
-    );
 }
 
 .card-header {
@@ -1435,11 +1407,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 10px;
 
-    background: linear-gradient(
-        135deg,
-        var(--apha-primary),
-        var(--apha-primary-dark)
-    );
+    background: var(--apha-primary);
 
     color: #ffffff;
 

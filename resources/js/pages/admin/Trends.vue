@@ -581,12 +581,6 @@ async function exportChart() {
 
     padding: 0 10px 60px;
 
-    /* background:
-        radial-gradient(
-            circle at 95% 0%,
-            rgba(0, 143, 131, .045),
-            transparent 28%
-        ); */
 }
 
 .evolution-header {
@@ -622,7 +616,7 @@ async function exportChart() {
 
     border-radius: 18px;
 
-    background: linear-gradient(110deg, #ffffff 0%, #f8fcfb 100%);
+    background: #fff;
 
     /* box-shadow:
         0 8px 30px
@@ -648,11 +642,7 @@ async function exportChart() {
 
     border-radius: 50%;
 
-    background: radial-gradient(
-        circle,
-        rgba(0, 143, 131, 0.09),
-        transparent 68%
-    );
+    
 
     pointer-events: none;
 }
@@ -684,11 +674,7 @@ async function exportChart() {
 
     border-radius: 14px;
 
-    background: linear-gradient(
-        135deg,
-        var(--apha-primary),
-        var(--apha-primary-dark)
-    );
+    background: var(--apha-primary);
 
     color: white;
 
@@ -924,12 +910,7 @@ async function exportChart() {
 
     height: 3px;
 
-    background: linear-gradient(
-        90deg,
-        var(--apha-primary),
-        #35a799,
-        var(--apha-gold)
-    );
+    background: var(--apha-primary);
 }
 
 .trend-header {
@@ -1173,7 +1154,7 @@ async function exportChart() {
 
     height: 3px;
 
-    background: linear-gradient(90deg, var(--apha-primary), #35a799);
+    background: var(--apha-primary);
 
     opacity: 0.8;
 }
@@ -1205,7 +1186,7 @@ async function exportChart() {
 
     border-radius: 9px;
 
-    background: linear-gradient(135deg, #e6f6f2, #f2faf8);
+    background: var(--primary-soft);
 
     border: 1px solid rgba(0, 143, 131, 0.08);
 

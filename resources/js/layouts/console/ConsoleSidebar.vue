@@ -120,21 +120,15 @@ defineProps<{
 
 <style scoped>
 .apha-sidebar {
-    --primary: #008f83;
-    --primary-dark: #006f68;
-    --primary-soft: rgba(0, 143, 131, 0.09);
-
-    --gold: #d7a33d;
-    --gold-soft: rgba(215, 163, 61, 0.1);
-
-    --ink: #243333;
+    /*
+      --muted et --light sont ici des couleurs de TEXTE. Le thème réserve
+      --muted à une surface (#faf8f3) : les retirer rendrait ce texte presque
+      blanc. À renommer au lot 3 ou 4, pas à supprimer.
+    */
     --muted: #788585;
     --light: #a2adad;
 
-    --background: #ffffff;
     --background-soft: #f7faf9;
-
-    --border: #e7eceb;
 
     position: sticky;
 

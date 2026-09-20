@@ -372,7 +372,7 @@ watch([period, city, insurer], reload);
 
     border-radius: 18px;
 
-    background: linear-gradient(110deg, #ffffff 0%, #f8fcfb 100%);
+    background: #fff;
 
     /* box-shadow:
         0 8px 30px
@@ -398,11 +398,7 @@ watch([period, city, insurer], reload);
 
     border-radius: 50%;
 
-    background: radial-gradient(
-        circle,
-        rgba(0, 143, 131, 0.1),
-        transparent 68%
-    );
+    
 
     pointer-events: none;
 }
@@ -436,11 +432,7 @@ watch([period, city, insurer], reload);
 
     color: #ffffff;
 
-    background: linear-gradient(
-        135deg,
-        var(--apha-primary),
-        var(--apha-primary-dark)
-    );
+    background: var(--apha-primary);
 
     /* box-shadow:
         0 8px 18px
@@ -584,12 +576,7 @@ watch([period, city, insurer], reload);
 
     height: 3px;
 
-    background: linear-gradient(
-        90deg,
-        var(--apha-primary),
-        #35a799,
-        var(--apha-gold)
-    );
+    background: var(--apha-primary);
 }
 
 .export-card-header {
@@ -777,7 +764,7 @@ watch([period, city, insurer], reload);
 
     border-radius: 13px;
 
-    background: linear-gradient(110deg, #fcfdfd, #f9fbfb);
+    background: #fcfdfd;
 
     transition:
         border-color 0.2s ease,
@@ -1094,7 +1081,7 @@ watch([period, city, insurer], reload);
 
     border-radius: 15px;
 
-    background: linear-gradient(110deg, #fffdf8, var(--apha-gold-soft));
+    background: var(--apha-gold-soft);
 
     box-shadow: 0 6px 22px rgba(130, 100, 40, 0.035);
 

@@ -472,15 +472,6 @@ watch([period, city], reload);
 
     min-height: 100vh;
 
-    /* background:
-        radial-gradient(
-            circle at 90% 0%,
-            rgba(0, 143, 131, .045),
-            transparent 30%
-        ),
-
-        var(--apha-background); */
-
     padding-bottom: 50px;
 }
 
@@ -626,7 +617,7 @@ watch([period, city], reload);
 }
 
 .action-edit {
-    background: linear-gradient(135deg, #ffffff, #f8fcfb);
+    background: #fff;
 
     border-color: rgba(0, 143, 131, 0.18);
 
@@ -666,7 +657,7 @@ watch([period, city], reload);
 
     padding: 22px 24px;
 
-    background: linear-gradient(110deg, #ffffff 0%, #f9fcfb 100%);
+    background: #fff;
 
     border: 1px solid var(--apha-border);
 
@@ -698,11 +689,7 @@ watch([period, city], reload);
 
     border-radius: 50%;
 
-    background: radial-gradient(
-        circle,
-        rgba(0, 143, 131, 0.08),
-        transparent 68%
-    );
+    
 
     pointer-events: none;
 }
@@ -732,11 +719,7 @@ watch([period, city], reload);
 
     color: white;
 
-    background: linear-gradient(
-        135deg,
-        var(--apha-primary),
-        var(--apha-primary-dark)
-    );
+    background: var(--apha-primary);
 
     box-shadow: 0 8px 18px rgba(0, 143, 131, 0.18);
 
@@ -940,12 +923,7 @@ watch([period, city], reload);
 
     height: 3px;
 
-    background: linear-gradient(
-        90deg,
-        var(--apha-primary),
-        #35a799,
-        var(--apha-gold)
-    );
+    background: var(--apha-primary);
 
     opacity: 0.9;
 }
@@ -979,7 +957,7 @@ watch([period, city], reload);
 
     color: var(--apha-primary-dark);
 
-    background: linear-gradient(135deg, #e6f6f2, #f2faf8);
+    background: var(--primary-soft);
 
     font-size: 11px;
 

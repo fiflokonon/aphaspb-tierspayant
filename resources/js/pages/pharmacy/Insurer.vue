@@ -262,10 +262,12 @@ const COLUMNS = [
 
 <style scoped>
 .insurer-page {
-    --ink: #17211c;
+    /*
+      --muted et --light sont ici des couleurs de TEXTE. Le thème réserve
+      --muted à une surface (#faf8f3) : les retirer rendrait ce texte presque
+      blanc. À renommer au lot 3 ou 4, pas à supprimer.
+    */
     --muted: #788585;
-    --border: #e7eceb;
-    --primary: #008f83;
 
     position: relative;
     min-height: 100vh;

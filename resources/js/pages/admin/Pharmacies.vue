@@ -274,12 +274,6 @@ const footer = computed(
 
     padding: 0 10px 60px;
 
-    /* background:
-        radial-gradient(
-            circle at 95% 0%,
-            rgba(0, 143, 131, .045),
-            transparent 28%
-        ); */
 }
 
 .pharmacies-header {
@@ -493,7 +487,7 @@ const footer = computed(
 
     border-radius: 18px;
 
-    background: linear-gradient(110deg, #ffffff 0%, #f8fcfb 100%);
+    background: #fff;
 
     /* box-shadow:
         0 8px 30px
@@ -519,11 +513,7 @@ const footer = computed(
 
     border-radius: 50%;
 
-    background: radial-gradient(
-        circle,
-        rgba(0, 143, 131, 0.09),
-        transparent 68%
-    );
+    
 
     pointer-events: none;
 }
@@ -555,11 +545,7 @@ const footer = computed(
 
     border-radius: 14px;
 
-    background: linear-gradient(
-        135deg,
-        var(--apha-primary),
-        var(--apha-primary-dark)
-    );
+    background: var(--apha-primary);
 
     color: #ffffff;
 
@@ -687,12 +673,7 @@ const footer = computed(
 
     height: 3px;
 
-    background: linear-gradient(
-        90deg,
-        var(--apha-primary),
-        #35a799,
-        var(--apha-gold)
-    );
+    background: var(--apha-primary);
 
     opacity: 0.9;
 }
@@ -728,7 +709,7 @@ const footer = computed(
 
     border-radius: 10px;
 
-    background: linear-gradient(135deg, #e6f6f2, #f3faf8);
+    background: var(--primary-soft);
 
     color: var(--apha-primary-dark);
 

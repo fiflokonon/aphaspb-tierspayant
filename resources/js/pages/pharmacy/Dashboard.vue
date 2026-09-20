@@ -867,22 +867,13 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 }
 
 .dashboard-page {
-    --primary: #008f83;
-    --primary-dark: #006f68;
-    --primary-soft: #e8f6f3;
-
-    --gold: #d7a33d;
-    --gold-soft: #fff8e9;
-
-    --terracotta: #c0472f;
-    --terracotta-soft: #fff0ec;
-
-    --ink: #17211c;
+    /*
+      --muted et --light sont ici des couleurs de TEXTE. Le thème réserve
+      --muted à une surface (#faf8f3) : les retirer rendrait ce texte presque
+      blanc. À renommer au lot 3 ou 4, pas à supprimer.
+    */
     --muted: #788585;
     --light: #a2adad;
-
-    --border: #e7eceb;
-    --background: #f7f9f9;
 
     position: relative;
     min-height: 100vh;
