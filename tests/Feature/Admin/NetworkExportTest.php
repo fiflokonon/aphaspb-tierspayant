@@ -38,10 +38,13 @@ function exportDeclare(Insurer $insurer, int $pharmacies, array $attributes = []
     );
 }
 
-function downloadCsv(): string
+/**
+ * @param  array<string, mixed>  $query
+ */
+function downloadCsv(array $query = []): string
 {
     return test()->actingAs(test()->admin)
-        ->get(route('admin.csv-exports.download'))
+        ->get(route('admin.csv-exports.download', $query))
         ->streamedContent();
 }
 
@@ -190,11 +193,12 @@ test('the report withholds an insurer below the anonymity threshold like every o
 /**
  * Le CSV téléchargé, parsé, en-tête compris.
  *
+ * @param  array<string, mixed>  $query
  * @return list<list<string>>
  */
-function networkCsvRows(): array
+function networkCsvRows(array $query = []): array
 {
-    $body = str_replace("\xEF\xBB\xBF", '', downloadCsv());
+    $body = str_replace("\xEF\xBB\xBF", '', downloadCsv($query));
 
     return array_map(
         fn (string $line): array => str_getcsv($line, ';', '"', ''),
@@ -454,4 +458,43 @@ test('the rendered page prints no figure for a withheld month', function () {
     // Le montant exact de l'officine unique ne doit apparaître nulle part.
     expect($html)->not->toContain('4'.Fcfa::THIN_NBSP.'210'.Fcfa::THIN_NBSP.'000')
         ->and($html)->toContain('chiffres retenus');
+});
+
+test('the city filter re-applies the threshold inside the city', function () {
+    $insurer = Insurer::factory()->create(['name' => 'NSIA Assurances']);
+
+    /** Une déclaration d'une officine neuve, dans la ville voulue. */
+    $declareIn = function (string $city, int $invoiced) use ($insurer): void {
+        Declaration::factory()->create([
+            'pharmacy_id' => Pharmacy::factory()->create(['city' => $city]),
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => 8,
+            'amount_invoiced' => $invoiced,
+            'amount_received' => $invoiced,
+            'delay_days' => 20,
+        ]);
+    };
+
+    // Cinq officines à Cotonou : l'assureur franchit le seuil nationalement.
+    foreach (range(1, 5) as $ignored) {
+        $declareIn('Cotonou', 1_000_000);
+    }
+
+    // Une seule à Parakou.
+    $declareIn('Parakou', 4_210_000);
+
+    $rows = networkCsvRows(['city' => 'Parakou']);
+    $header = $rows[0];
+    $row = $rows[1];
+    $cell = fn (string $column): string => $row[array_search($column, $header, true)];
+
+    // Une clairance nationale ne vaut pas clairance dans chaque ville : dans
+    // Parakou cet assureur n'est déclaré que par une officine, et ses chiffres
+    // seraient les siens, exactement.
+    expect($cell('assureur'))->toBe('NSIA Assurances')
+        ->and($cell('officines_declarantes'))->toBe('1')
+        ->and($cell('facture_fcfa'))->toBe('')
+        ->and($cell('delai_le_plus_long_jours'))->toBe('')
+        ->and(downloadCsv(['city' => 'Parakou']))->not->toContain('4210000');
 });
