@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import { navIcon } from '@/lib/navIcons';
 import type {
     ConsoleAccount,
     ConsoleNavItem,
@@ -73,6 +74,7 @@ defineProps<{
                     v-for="item in nav"
                     :key="item.href"
                     :href="item.href"
+                    :data-label="item.label"
                     prefetch
                     class="apha-nav-item"
                     :class="{
@@ -80,7 +82,17 @@ defineProps<{
                     }"
                 >
                     <span class="apha-nav-icon">
-                        <span class="apha-nav-dot"></span>
+                        <component
+                            :is="navIcon(item.icon)"
+                            v-if="navIcon(item.icon)"
+                            class="apha-nav-glyph"
+                        />
+                        <!--
+                            Repli visuel d'une clé inconnue. NavIconCoverageTest
+                            empêche ce cas ; si jamais il survenait, une puce
+                            vaut mieux qu'un trou.
+                        -->
+                        <span v-else class="apha-nav-dot"></span>
                     </span>
 
                     <span class="apha-nav-label">
@@ -385,6 +397,13 @@ defineProps<{
     background: rgba(0, 143, 131, 0.14);
 
     border-radius: 10px;
+}
+
+.apha-nav-glyph {
+    width: 18px;
+    height: 18px;
+
+    stroke-width: 1.9;
 }
 
 .apha-nav-item {
