@@ -213,6 +213,27 @@ Juste avant l'accolade fermante de `:root`, après les tokens `--chart-*` :
     --apha-border: rgb(20 29 24 / 0.11);
 ```
 
+- [ ] **Step 3 bis : Définir `--primary-dark` et `--primary-soft`, aujourd'hui pendants**
+
+Relevé à la lecture du plan contre le dépôt : `var(--primary-dark)` (7 usages)
+et `var(--primary-soft)` (13 usages) pointent vers des variables **définies
+nulle part**, sans valeur de repli. Ces vingt déclarations sont mortes : un
+`background: var(--primary-soft)` ne peint rien. Les définir est la seule
+réponse cohérente avec le but du lot — mais c'est un **changement visible**,
+des survols vont se mettre à peindre. À reporter comme écart.
+
+Après `--primary: var(--officine);` dans `:root` :
+
+```css
+    /*
+      Ces deux-là étaient consommées par vingt déclarations sans avoir jamais
+      été définies : les fonds concernés ne peignaient rien. Les définir fait
+      apparaître des états de survol qui n'avaient jamais fonctionné.
+    */
+    --primary-dark: var(--officine-dark);
+    --primary-soft: var(--officine-soft);
+```
+
 - [ ] **Step 4 : Mettre à jour les tokens dérivés qui portaient une valeur littérale**
 
 Toujours dans `:root`, remplacer ces trois déclarations, qui portaient
@@ -242,10 +263,15 @@ shot admin network-t1 'http://localhost:8000/admin/network' 1440
 
 Comparer `dash-t1-1440.png` à `dash-avant-1440.png`.
 
-Attendu : la pastille active de la barre latérale et les boutons primaires
-passent au vert accentué ; **le corps des pages admin reste turquoise**,
-puisque leur copie locale l'emporte encore. Si le corps a déjà changé, c'est
-que la copie locale a été retirée par erreur — revenir à l'étape 2.
+Attendu : un état **mixte**, et c'est le résultat correct. Les 34 usages de
+`var(--primary)` dans les pages passent au vert accentué, puisque ce token
+vient de `:root` ; les usages de `var(--apha-*)` restent turquoise, puisque la
+copie locale de la page l'emporte encore. Des survols jusqu'ici inertes se
+mettent à peindre (`--primary-soft`).
+
+Le mélange est laid et transitoire : la tâche 3 le résout. **Ne pas tenter de
+le corriger ici.** En revanche, si *plus rien* n'est turquoise, c'est qu'une
+copie locale a sauté par erreur — revenir à l'étape 2.
 
 - [ ] **Step 7 : Lancer la suite**
 

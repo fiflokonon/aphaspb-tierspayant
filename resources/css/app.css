@@ -89,15 +89,24 @@
 }
 
 :root {
-    /* Palette relevée sur les artboards du canvas APhaSPB. */
-    --ink: #17211c;
-    --officine: #1f6f4a;
-    --officine-dark: #17553a;
-    --gold: #e8c25c;
-    --gold-mid: #d9a325;
+    /*
+      Source unique de la couleur. Sept pages portaient chacune une copie
+      d'une palette turquoise concurrente ; elles ont été supprimées au
+      profit de ce bloc. Ne pas redéclarer ces variables dans un
+      <style scoped> : c'est la duplication qu'on vient de retirer, et
+      PaletteSourceTest interdit la huitième copie.
+    */
+    --ink: #141d18;
+    --officine: #14764c;
+    --officine-dark: #0e5a3a;
+    --officine-soft: #e6f3ec;
+    --gold: #f0c53f;
+    --gold-mid: #e0a516;
+    --gold-soft: #fdf7e6;
     --gold-dark: #b07c1a;
-    --terracotta: #c0472f;
-    --terracotta-dark: #a8391f;
+    --terracotta: #d13b22;
+    --terracotta-dark: #ad2c16;
+    --terracotta-soft: #fdf0ed;
     --cream: #fdfbf7;
     --cream-header: #f7f5f0;
     --cream-state: #faf8f3;
@@ -110,16 +119,25 @@
     --popover-foreground: var(--ink);
     --primary: var(--officine);
     --primary-foreground: #fff;
+
+    /*
+      Ces deux-là étaient consommées par vingt déclarations sans avoir jamais
+      été définies, et sans valeur de repli : les fonds concernés ne peignaient
+      rien. Les définir fait apparaître des états de survol qui n'ont jamais
+      fonctionné — c'est un changement visible, pas une remise en ordre muette.
+    */
+    --primary-dark: var(--officine-dark);
+    --primary-soft: var(--officine-soft);
     --secondary: var(--cream-header);
     --secondary-foreground: var(--ink);
     --muted: var(--cream-state);
-    --muted-foreground: rgb(23 33 28 / 0.5);
+    --muted-foreground: rgb(20 29 24 / 0.5);
     --accent: var(--gold);
     --accent-foreground: var(--ink);
     --destructive: var(--terracotta);
     --destructive-foreground: #fff;
-    --border: rgb(23 33 28 / 0.09);
-    --input: rgb(23 33 28 / 0.14);
+    --border: rgb(20 29 24 / 0.09);
+    --input: rgb(20 29 24 / 0.14);
     --ring: var(--officine);
     --radius: 0.625rem;
 
@@ -140,6 +158,23 @@
     --chart-3: var(--terracotta);
     --chart-4: var(--officine-dark);
     --chart-5: var(--gold-dark);
+
+    /*
+      Alias de compatibilité. Environ 255 usages de var(--apha-*) vivent dans
+      les <style scoped> des pages. Les renommer tous relève des lots 3 et 4 ;
+      en attendant, ces alias font que la page lit la palette du thème au lieu
+      d'une copie locale. Ils pointent sur les tokens ci-dessus et n'ont
+      aucune valeur propre.
+    */
+    --apha-primary: var(--officine);
+    --apha-primary-dark: var(--officine-dark);
+    --apha-primary-soft: var(--officine-soft);
+    --apha-gold: var(--gold-mid);
+    --apha-gold-soft: var(--gold-soft);
+    --apha-ink: var(--ink);
+    --apha-muted: rgb(20 29 24 / 0.55);
+    --apha-light: rgb(20 29 24 / 0.38);
+    --apha-border: rgb(20 29 24 / 0.11);
 }
 
 @layer base {
