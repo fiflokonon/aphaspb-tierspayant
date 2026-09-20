@@ -158,7 +158,10 @@ qu'un oubli se voie.
 
 ### Barre latérale — repli
 
-- Déployée : 196 px, icône + libellé, bouton « Replier » en pied de barre.
+- Déployée : **236 px**, icône + libellé, bouton « Replier » en pied de barre.
+  *Corrigé le 21/09/2026 : la maquette annonçait 196 px, la barre en mesurait
+  212, et la navigation passant de 10 à 14,5 px, « Exporter mes données »
+  sortait tronqué. Mesuré à l'implémentation.*
 - Repliée : 62 px, icônes centrées, libellé en infobulle CSS au survol et au
   focus. Le nom accessible reste porté par `aria-label`.
 - État mémorisé par navigateur sous la clé `apha.sidebar.collapsed`
