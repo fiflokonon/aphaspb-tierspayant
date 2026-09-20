@@ -36,8 +36,10 @@ class NetworkStatsService
      */
     protected const WITHIN_STANDARD_DELAY_SUM = "SUM(CASE WHEN status IN ('paid', 'partial') AND delay_days <= insurers.standard_delay_days THEN 1 ELSE 0 END) as within_threshold";
 
-    public function __construct(protected SettingsRepository $settings)
-    {
+    public function __construct(
+        protected SettingsRepository $settings,
+        protected DeclarationWindow $window,
+    ) {
         //
     }
 
@@ -488,17 +490,15 @@ class NetworkStatsService
         return $query->join('insurers', 'insurers.id', '=', 'declarations.insurer_id');
     }
 
+    /**
+     * Le socle de tout agrégat réseau : la période, et la ville s'il y en a une.
+     *
+     * Délègue à DeclarationWindow, que partagent les requêtes parties d'une
+     * autre table — voir InsurerPenaltyAggregates, qui filtre
+     * `declaration_payments` sur la même fenêtre.
+     */
     protected function baseQuery(Period $from, Period $to, ?string $city = null): Builder
     {
-        return DB::table('declarations')
-            ->whereRaw(
-                '(period_year * 12 + period_month) BETWEEN ? AND ?',
-                [$from->toOrdinal(), $to->toOrdinal()],
-            )
-            ->when($city, fn (Builder $query, string $filtered) => $query->whereExists(
-                fn (Builder $sub) => $sub->from('pharmacies')
-                    ->whereColumn('pharmacies.id', 'declarations.pharmacy_id')
-                    ->where('pharmacies.city', $filtered),
-            ));
+        return $this->window->query($from, $to, $city);
     }
 }
