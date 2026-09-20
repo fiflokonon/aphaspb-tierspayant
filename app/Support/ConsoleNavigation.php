@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Gate;
  * names and knows which entry is current, so the front end never duplicates
  * that knowledge. The entries come from artboards 1c and 2a of the canvas.
  *
- * @phpstan-type NavItem array{label: string, href: string, active: bool}
+ * @phpstan-type NavItem array{label: string, href: string, active: bool, icon: string}
  * @phpstan-type Notice array{tone: string, title: string, body: string}
  * @phpstan-type Account array{name: string, logoutHref: string, pharmacy: CurrentPharmacy|null, pharmacies: list<SwitchablePharmacy>}
  * @phpstan-type CurrentPharmacy array{name: string, city: string|null}
@@ -140,11 +140,11 @@ class ConsoleNavigation
         return [
             'space' => 'ESPACE ADMIN',
             'nav' => $this->items($currentPath, [
-                ['Statistiques réseau', 'admin.network'],
-                ['Évolution', 'admin.trends'],
-                ['Pharmacies inscrites', 'admin.pharmacies'],
-                ['Gestion des assureurs', 'admin.insurers'],
-                ['Exports CSV', 'admin.csv-exports'],
+                ['Statistiques réseau', 'admin.network', [], 'chart-column'],
+                ['Évolution', 'admin.trends', [], 'trending-up'],
+                ['Pharmacies inscrites', 'admin.pharmacies', [], 'store'],
+                ['Gestion des assureurs', 'admin.insurers', [], 'building-2'],
+                ['Exports CSV', 'admin.csv-exports', [], 'download'],
                 // Retirée de la navigation le 31/08/2026. L'écran et sa route
                 // existent toujours : seule l'entrée est masquée.
                 // ['Profil & réglages', 'profile.edit'],
@@ -174,13 +174,13 @@ class ConsoleNavigation
 
         // A titulaire between officines has no dashboard to point at.
         if ($pharmacy !== null) {
-            $definitions[] = ['Tableau de bord', 'dashboard', ['current_pharmacy' => $pharmacy->slug]];
+            $definitions[] = ['Tableau de bord', 'dashboard', ['current_pharmacy' => $pharmacy->slug], 'layout-dashboard'];
         }
 
-        $definitions[] = ['Déclarer ce mois', 'pharmacy.declare'];
-        $definitions[] = ['Historique', 'pharmacy.history'];
-        $definitions[] = ['Mes assureurs', 'pharmacy.insurers'];
-        $definitions[] = ['Exporter mes données', 'pharmacy.data-exports'];
+        $definitions[] = ['Déclarer ce mois', 'pharmacy.declare', [], 'file-plus-2'];
+        $definitions[] = ['Historique', 'pharmacy.history', [], 'history'];
+        $definitions[] = ['Mes assureurs', 'pharmacy.insurers', [], 'building-2'];
+        $definitions[] = ['Exporter mes données', 'pharmacy.data-exports', [], 'download'];
         // Retirée de la navigation le 31/08/2026. L'écran et sa route existent
         // toujours : seule l'entrée est masquée.
         // $definitions[] = ['Profil & réglages', 'profile.edit'];
@@ -216,7 +216,12 @@ class ConsoleNavigation
     }
 
     /**
-     * @param  list<array{0: string, 1: string, 2?: array<string, mixed>}>  $definitions
+     * Les définitions sont des tuples : libellé, nom de route, paramètres de
+     * route, clé d'icône. Les paramètres restent obligatoires — et souvent
+     * vides — pour que l'icône garde une position fixe : une définition à
+     * arité variable mettrait l'icône tantôt en 3e, tantôt en 4e place.
+     *
+     * @param  list<array{0: string, 1: string, 2: array<string, mixed>, 3: string}>  $definitions
      * @return list<NavItem>
      */
     protected function items(string $currentPath, array $definitions): array
@@ -224,12 +229,16 @@ class ConsoleNavigation
         $items = [];
 
         foreach ($definitions as $definition) {
-            $href = route($definition[1], $definition[2] ?? [], absolute: false);
+            $href = route($definition[1], $definition[2], absolute: false);
 
             $items[] = [
                 'label' => $definition[0],
                 'href' => $href,
                 'active' => $currentPath === $href || str_starts_with($currentPath, $href.'/'),
+                // Pas de repli : une entrée sans icône est une erreur de
+                // définition, et un `?? ''` la rendrait invisible au lieu de
+                // faire rougir NavIconCoverageTest.
+                'icon' => $definition[3],
             ];
         }
 

@@ -4,6 +4,7 @@ use App\Enums\PharmacyRole;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
+use App\Support\ConsoleNavigation;
 use Inertia\Testing\AssertableInertia;
 
 beforeEach(fn () => useJoomlaTestKeys());
@@ -193,4 +194,37 @@ test('an officine still onboarding has no officine in the shell either', functio
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('console.account.pharmacy', null),
         );
+});
+
+test('every navigation entry carries a non-empty icon key', function () {
+    // L'icône vient du serveur pour que le front n'ait pas à deviner d'après
+    // le libellé : les libellés de ce projet ont déjà été reformulés.
+    $users = [
+        User::factory()->networkAdmin()->notOnboarded()->create(),
+        User::factory()->create(),
+    ];
+
+    foreach ($users as $user) {
+        $nav = app(ConsoleNavigation::class)->forUser($user, '/')['nav'];
+
+        expect($nav)->not->toBeEmpty();
+
+        foreach ($nav as $item) {
+            expect($item)->toHaveKey('icon')
+                ->and($item['icon'])->toBeString()
+                ->and($item['icon'])->not->toBe('');
+        }
+    }
+});
+
+test('a named entry carries the icon it is supposed to', function () {
+    // Épingle une paire précise : sans cela, renommer un libellé pourrait
+    // déplacer silencieusement une icône sur une autre entrée.
+    $nav = app(ConsoleNavigation::class)
+        ->forUser(User::factory()->networkAdmin()->notOnboarded()->create(), '/')['nav'];
+
+    $byLabel = collect($nav)->keyBy('label');
+
+    expect($byLabel['Statistiques réseau']['icon'])->toBe('chart-column')
+        ->and($byLabel['Exports CSV']['icon'])->toBe('download');
 });

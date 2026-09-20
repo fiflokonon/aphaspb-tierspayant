@@ -2,6 +2,8 @@ export type ConsoleNavItem = {
     label: string;
     href: string;
     active: boolean;
+    /** Clé d'icône, traduite en composant par `@/lib/navIcons`. */
+    icon: string;
 };
 
 export type ConsoleNoticeTone = 'gold' | 'neutral';
