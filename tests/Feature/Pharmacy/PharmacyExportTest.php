@@ -281,3 +281,55 @@ test('the pdf summary leaves both new columns empty without a clause', function 
     expect($payload['perInsurer'][0]['penalty'])->toBeNull()
         ->and($payload['perInsurer'][0]['longestDelayDays'])->toBe(25);
 });
+
+test('the officine report gives a page to each of its insurers', function () {
+    [$user, $pharmacy, $insurer] = exportingOfficine();
+    $insurer->update(['penalty_trigger_days' => 10, 'penalty_rate_bp' => 200]);
+
+    $other = Insurer::factory()->create(['name' => 'SUNU Assurances', 'standard_delay_days' => 30]);
+    $pharmacy->insurers()->attach($other);
+
+    declareSplit($pharmacy, $insurer);
+
+    Declaration::factory()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $other->id,
+        'period_year' => 2026,
+        'period_month' => 7,
+        'amount_invoiced' => 500_000,
+        'amount_received' => 500_000,
+        'delay_days' => 12,
+    ]);
+
+    $export = app(PharmacyPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, $pharmacy, new Period(2025, 9), new Period(2026, 8), null);
+
+    expect($payload['insurerPages'])->toHaveCount(2);
+
+    $pages = collect($payload['insurerPages'])->keyBy('name');
+
+    expect($pages['NSIA Assurances']['penalty'])->toBe(12_000)
+        ->and($pages['NSIA Assurances']['longestDelayDays'])->toBe(25)
+        ->and($pages['NSIA Assurances']['months'])->toHaveCount(1)
+        ->and($pages['NSIA Assurances']['months'][0]['penalty'])->toBe(12_000)
+        ->and($pages['SUNU Assurances']['penalty'])->toBeNull()
+        ->and($pages['SUNU Assurances']['longestDelayDays'])->toBe(12);
+});
+
+test('the pages agree with the summary table they follow', function () {
+    [$user, $pharmacy, $insurer] = exportingOfficine();
+    $insurer->update(['penalty_trigger_days' => 10, 'penalty_rate_bp' => 200]);
+
+    declareSplit($pharmacy, $insurer);
+
+    $export = app(PharmacyPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, $pharmacy, new Period(2025, 9), new Period(2026, 8), null);
+
+    // Les pages et la synthèse sortent de la même collection : elles ne
+    // peuvent pas diverger, et ce test le prouve plutôt que de l'espérer.
+    expect($payload['insurerPages'][0]['penalty'])->toBe($payload['perInsurer'][0]['penalty'])
+        ->and($payload['insurerPages'][0]['longestDelayDays'])->toBe($payload['perInsurer'][0]['longestDelayDays'])
+        ->and($payload['insurerPages'][0]['outstanding'])->toBe($payload['perInsurer'][0]['outstanding']);
+});

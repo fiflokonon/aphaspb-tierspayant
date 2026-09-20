@@ -52,6 +52,7 @@ class PharmacyPdfExport
             'pharmacy' => $pharmacy,
             'totals' => $this->totals($declarations),
             'perInsurer' => $this->perInsurer($declarations),
+            'insurerPages' => $this->insurerPages($declarations),
             'declarations' => $declarations,
             'periodLabel' => $this->periodLabel($from, $to),
             'insurerFilter' => $insurerId === null
@@ -136,6 +137,57 @@ class PharmacyPdfExport
         // array_values() rather than the collection's: what leaves this method
         // is declared a list, and only re-indexing an array proves it is one.
         return array_values($rows->sortByDesc(fn (array $row): int => $row['outstanding'])->all());
+    }
+
+    /**
+     * Une page par assureur, avec ses seuls mois.
+     *
+     * Bâtie sur la même collection que perInsurer() et que la table de détail :
+     * les trois vues du même fichier ne peuvent pas se contredire, et un test
+     * compare une page à la ligne de synthèse qui la précède.
+     *
+     * Les mois sont aplatis ici et non dans la vue : une vue Blade ne doit pas
+     * appeler un service, et la pénalité de chaque mois demande le calculateur.
+     *
+     * @param  Collection<int, Declaration>  $declarations
+     * @return list<array<string, mixed>>
+     */
+    protected function insurerPages(Collection $declarations): array
+    {
+        $pages = $declarations->groupBy('insurer_id')->map(function (Collection $group): array {
+            $insurer = $group->first()->insurer;
+            $invoiced = (int) $group->sum('amount_invoiced');
+            $received = (int) $group->sum('amount_received');
+
+            return [
+                'name' => $insurer->name,
+                'standardDelayDays' => $insurer->standard_delay_days,
+                'penaltyTriggerDays' => $insurer->penalty_trigger_days,
+                'penaltyRatePercent' => $insurer->penaltyRatePercent(),
+                'longestDelayDays' => $this->longestDelay->for($group),
+                'penalty' => $this->penalties->total($group),
+                'invoiced' => $invoiced,
+                'received' => $received,
+                'outstanding' => max(0, $invoiced - $received),
+                // Du plus récent au plus ancien, comme la table de détail.
+                'months' => array_values($group->sortByDesc(
+                    fn (Declaration $one): int => $one->period_year * 12 + $one->period_month,
+                )->map(fn (Declaration $one): array => [
+                    'monthLabel' => MonthLabel::short($one->period_month, $one->period_year),
+                    'statusLabel' => $one->status->label(),
+                    'invoiced' => $one->amount_invoiced,
+                    'received' => $one->amount_received,
+                    'outstanding' => $one->amount_outstanding,
+                    'depositedOn' => $one->invoice_deposited_on?->toDateString(),
+                    'delayDays' => $one->delay_days,
+                    'penalty' => $this->penalties->for($one),
+                ])->all()),
+            ];
+        })->values();
+
+        // array_values() plutôt que celui de la collection : ce qui sort est
+        // déclaré list, et seule une réindexation le prouve.
+        return array_values($pages->sortByDesc(fn (array $page): int => $page['outstanding'])->all());
     }
 
     protected function periodLabel(Period $from, Period $to): string

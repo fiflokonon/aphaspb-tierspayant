@@ -102,6 +102,15 @@
     .grid .name { font-weight: bold; }
     .grid .sub { color: #8b9797; font-size: 7px; }
     .grid .late { color: #b4472e; font-weight: bold; }
+    .insurer-page { page-break-before: always; }
+    .insurer-page h2 { margin-bottom: 2px; }
+
+    .convention {
+        margin: 0 0 10px;
+        color: #445050;
+        font-size: 8px;
+    }
+
     .grid tfoot td {
         border-top: 1.1px solid #243333;
         border-bottom: 0;
@@ -357,3 +366,75 @@
         Aucun de ces trois fichiers ne quitte l'officine par l'application.
     </p>
 </div>
+
+@foreach ($insurerPages as $page)
+    <div class="insurer-page">
+        <h2>{{ $page['name'] }}</h2>
+
+        {{-- Sans la convention, la pénalité imprimée plus bas est un nombre
+             sans provenance. --}}
+        <p class="convention">
+            Remboursement convenu à {{ $page['standardDelayDays'] }} jours.
+            @if ($page['penaltyTriggerDays'] !== null && $page['penaltyRatePercent'] !== null)
+                Pénalité à partir de {{ $page['penaltyTriggerDays'] }} jours,
+                {{ number_format($page['penaltyRatePercent'], 2, ',', ' ') }} % par tranche de 30 jours.
+            @else
+                Aucune clause de pénalité enregistrée pour cet assureur.
+            @endif
+        </p>
+
+        <table class="kpis">
+            <tr>
+                <td>
+                    <div class="value">{{ \App\Support\Fcfa::format($page['outstanding']) }}</div>
+                    <div class="label">Reste dû</div>
+                </td>
+                <td>
+                    <div class="value">
+                        {{ $page['longestDelayDays'] === null ? '—' : $page['longestDelayDays'] }}<span class="unit"> j</span>
+                    </div>
+                    <div class="label">Délai le plus long</div>
+                </td>
+                <td>
+                    {{-- Un tiret dit « pas de convention », un zéro dit « une
+                         convention, rien à réclamer ». --}}
+                    <div class="value">
+                        {{ $page['penalty'] === null ? '—' : \App\Support\Fcfa::format($page['penalty']) }}
+                    </div>
+                    <div class="label">Pénalité réclamable</div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th class="text">Mois</th>
+                    <th class="text">Statut</th>
+                    <th>Facturé</th>
+                    <th>Encaissé</th>
+                    <th>Reste dû</th>
+                    <th class="text">Dépôt</th>
+                    <th>Délai</th>
+                    <th>Pénalité</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($page['months'] as $month)
+                    <tr>
+                        <td class="text">{{ $month['monthLabel'] }}</td>
+                        <td class="text">{{ $month['statusLabel'] }}</td>
+                        <td>{{ \App\Support\Fcfa::format($month['invoiced']) }}</td>
+                        <td>{{ \App\Support\Fcfa::format($month['received']) }}</td>
+                        <td>{{ \App\Support\Fcfa::format($month['outstanding']) }}</td>
+                        <td class="text">{{ $month['depositedOn'] ?? '—' }}</td>
+                        <td class="{{ $month['delayDays'] !== null && $month['delayDays'] > $page['standardDelayDays'] ? 'late' : '' }}">
+                            {{ $month['delayDays'] === null ? '—' : $month['delayDays'].' j' }}
+                        </td>
+                        <td>{{ $month['penalty'] === null ? '—' : \App\Support\Fcfa::format($month['penalty']) }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+@endforeach
