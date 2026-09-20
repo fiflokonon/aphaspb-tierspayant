@@ -126,6 +126,15 @@
     }
 
     .section { margin-top: 22px; page-break-inside: avoid; }
+
+    .insurer-page { page-break-before: always; }
+    .insurer-page h2 { margin-bottom: 2px; }
+
+    .convention {
+        margin: 0 0 10px;
+        color: #445050;
+        font-size: 8px;
+    }
 </style>
 
 <div class="sheet-header">
@@ -280,3 +289,102 @@
         </p>
     @endif
 </div>
+
+@foreach ($rows as $row)
+    @php($indicators = $row['indicators'])
+    @php($figures = $row['figures'])
+
+    <div class="insurer-page">
+        <h2>{{ $row['name'] }}</h2>
+
+        {{-- Sans la convention, la pénalité imprimée plus bas est un nombre
+             sans provenance. --}}
+        <p class="convention">
+            Remboursement convenu à {{ $indicators->standardDelayDays }} jours.
+            @if ($indicators->penaltyTriggerDays !== null && $indicators->penaltyRatePercent !== null)
+                Pénalité à partir de {{ $indicators->penaltyTriggerDays }} jours,
+                {{ number_format($indicators->penaltyRatePercent, 2, ',', ' ') }} % par tranche de 30 jours.
+            @else
+                Aucune clause de pénalité enregistrée pour cet assureur.
+            @endif
+        </p>
+
+        <table class="kpis">
+            <tr>
+                <td>
+                    <div class="value">
+                        {{ $figures->longestDelayDays === null ? '—' : $figures->longestDelayDays }}<span class="unit"> j</span>
+                    </div>
+                    <div class="label">Délai le plus long</div>
+                </td>
+                <td>
+                    <div class="value">
+                        {{ $indicators->weightedDelayDays === null ? '—' : number_format($indicators->weightedDelayDays, 1, ',', ' ') }}<span class="unit"> j</span>
+                    </div>
+                    <div class="label">Délai moyen pondéré</div>
+                </td>
+                <td>
+                    <div class="value">
+                        {{ $row['amounts'] === null ? '—' : \App\Support\Fcfa::format($row['amounts']->outstanding) }}
+                    </div>
+                    <div class="label">Reste dû au réseau</div>
+                </td>
+                <td>
+                    {{-- Un tiret dit « pas de convention », un zéro dit « une
+                         convention, rien à réclamer ». --}}
+                    <div class="value">
+                        {{ $figures->penalty === null ? '—' : \App\Support\Fcfa::format($figures->penalty) }}
+                    </div>
+                    <div class="label">Pénalité potentielle</div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="grid">
+            <thead>
+                <tr>
+                    <th class="text">Mois</th>
+                    <th>Décl.</th>
+                    <th>Facturé</th>
+                    <th>Encaissé</th>
+                    <th>Reste dû</th>
+                    <th>Délai moyen</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($row['monthly'] as $month)
+                    {{-- Le seuil d'anonymat vaut aussi mois par mois : un
+                         assureur autorisé sur la période peut n'avoir eu qu'une
+                         officine déclarante en mars, et cette ligne rendrait sa
+                         facture exacte. La ligne est conservée pour que son
+                         absence ne se lise pas « rien déclaré ce mois-là ». --}}
+                    @if ($month['withheld'])
+                        <tr class="withheld">
+                            <td class="text">{{ $month['monthLabel'] }}</td>
+                            <td colspan="5">
+                                {{ $month['declaringPharmacies'] }} officine{{ $month['declaringPharmacies'] > 1 ? 's' : '' }}
+                                déclarante{{ $month['declaringPharmacies'] > 1 ? 's' : '' }} ce mois-là —
+                                chiffres retenus, affichage à partir de {{ $anonymityThreshold }}
+                            </td>
+                        </tr>
+                    @else
+                        <tr>
+                            <td class="text">{{ $month['monthLabel'] }}</td>
+                            <td>{{ $month['declarations'] }}</td>
+                            <td>{{ \App\Support\Fcfa::format($month['invoiced']) }}</td>
+                            <td>{{ \App\Support\Fcfa::format($month['received']) }}</td>
+                            <td>{{ \App\Support\Fcfa::format($month['outstanding']) }}</td>
+                            <td class="{{ $month['averageDelayDays'] !== null && $month['averageDelayDays'] > $indicators->standardDelayDays ? 'late' : '' }}">
+                                {{ $month['averageDelayDays'] === null ? '—' : number_format($month['averageDelayDays'], 1, ',', ' ').' j' }}
+                            </td>
+                        </tr>
+                    @endif
+                @endforeach
+
+                @if (count($row['monthly']) === 0)
+                    <tr><td class="text" colspan="6">Aucune déclaration sur la période retenue.</td></tr>
+                @endif
+            </tbody>
+        </table>
+    </div>
+@endforeach

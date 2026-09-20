@@ -4,6 +4,7 @@ namespace App\Services\Network;
 
 use App\Data\InsufficientData;
 use App\Data\InsurerAmounts;
+use App\Data\InsurerPenaltyFigures;
 use App\Data\Period;
 use App\Models\Insurer;
 use App\Services\Settings\SettingsRepository;
@@ -28,6 +29,7 @@ class NetworkPdfExport
     public function __construct(
         protected NetworkStatsService $stats,
         protected SettingsRepository $settings,
+        protected InsurerPenaltyAggregates $penalties,
     ) {
         //
     }
@@ -64,10 +66,26 @@ class NetworkPdfExport
             $amount = $amounts[$insurerId] ?? null;
 
             $rows[] = [
+                'insurerId' => $insurerId,
                 'name' => $name,
                 'indicators' => $entry,
                 'amounts' => $amount instanceof InsurerAmounts ? $amount : null,
             ];
+        }
+
+        // Seuls les assureurs de $rows ont franchi le seuil : c'est cette
+        // liste, et pas les indicateurs bruts, qui est passée aux agrégats.
+        // Un assureur retenu n'entre donc jamais dans le calcul, plutôt que
+        // d'en être écarté après coup.
+        $allowed = array_map(fn (array $row): int => $row['insurerId'], $rows);
+
+        $figures = $this->penalties->forInsurers($allowed, $from, $to, $city);
+        $monthly = $this->stats->monthlyByInsurer($allowed, $from, $to, $city);
+
+        foreach ($rows as $index => $row) {
+            $rows[$index]['figures'] = $figures[$row['insurerId']]
+                ?? new InsurerPenaltyFigures(null, null);
+            $rows[$index]['monthly'] = $this->withheldMonths($monthly[$row['insurerId']] ?? []);
         }
 
         // Le plus mauvais payeur en tête : un rapport se lit du haut, et c'est
@@ -84,6 +102,43 @@ class NetworkPdfExport
             'periodLabel' => $this->periodLabel($from, $to),
             'generatedAt' => now(),
         ];
+    }
+
+    /**
+     * Les mois d'un assureur, ceux sous le seuil vidés de leurs chiffres.
+     *
+     * Le seuil de perInsurer() porte sur toute la période : un assureur
+     * déclaré par cinq officines sur l'année peut n'en avoir qu'une en mars, et
+     * cette ligne-là rendrait sa facture exacte. Une clairance de période ne
+     * vaut pas clairance de chaque mois — c'est un second point de décision,
+     * et il est assumé comme tel.
+     *
+     * La ligne est **conservée**, vidée, comme le fait NetworkExportRows pour
+     * un assureur retenu : une ligne manquante se lirait « rien déclaré ce
+     * mois-là » au lieu de « chiffres retenus ».
+     *
+     * @param  list<array<string, mixed>>  $months
+     * @return list<array<string, mixed>>
+     */
+    protected function withheldMonths(array $months): array
+    {
+        $minimum = $this->settings->anonymityMinPharmacies();
+
+        return array_map(function (array $month) use ($minimum): array {
+            if ($month['declaringPharmacies'] >= $minimum) {
+                return [...$month, 'withheld' => false];
+            }
+
+            return [
+                ...$month,
+                'withheld' => true,
+                'declarations' => null,
+                'invoiced' => null,
+                'received' => null,
+                'outstanding' => null,
+                'averageDelayDays' => null,
+            ];
+        }, $months);
     }
 
     protected function periodLabel(Period $from, Period $to): string

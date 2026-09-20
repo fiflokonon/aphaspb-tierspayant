@@ -198,3 +198,83 @@ test('a pharmacy account cannot manage insurers', function () {
     $this->actingAs($pharmacyUser)->post(route('admin.insurers.store'), ['name' => 'X'])->assertForbidden();
     $this->actingAs($pharmacyUser)->patch(route('admin.insurers.update', $insurer), ['name' => 'X'])->assertForbidden();
 });
+
+test('an admin records a penalty clause as a percentage', function () {
+    $insurer = Insurer::factory()->create();
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.insurers.update', $insurer), [
+            'penalty_trigger_days' => 90,
+            'penalty_rate_percent' => 2.5,
+        ])
+        ->assertRedirect(route('admin.insurers'));
+
+    expect($insurer->fresh()->penalty_trigger_days)->toBe(90)
+        ->and($insurer->fresh()->penalty_rate_bp)->toBe(250);
+});
+
+test('a trigger without a rate is refused', function () {
+    $insurer = Insurer::factory()->create();
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.insurers.update', $insurer), ['penalty_trigger_days' => 90])
+        ->assertSessionHasErrors('penalty_rate_percent');
+
+    expect($insurer->fresh()->penalty_trigger_days)->toBeNull();
+});
+
+test('a rate without a trigger is refused', function () {
+    $insurer = Insurer::factory()->create();
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.insurers.update', $insurer), ['penalty_rate_percent' => 2.5])
+        ->assertSessionHasErrors('penalty_trigger_days');
+
+    expect($insurer->fresh()->penalty_rate_bp)->toBeNull();
+});
+
+test('submitting both fields empty clears the clause', function () {
+    $insurer = Insurer::factory()->withPenalty()->create();
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.insurers.update', $insurer), [
+            'penalty_trigger_days' => '',
+            'penalty_rate_percent' => '',
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($insurer->fresh()->penalty_trigger_days)->toBeNull()
+        ->and($insurer->fresh()->penalty_rate_bp)->toBeNull()
+        ->and($insurer->fresh()->hasPenaltyClause())->toBeFalse();
+});
+
+test('renaming an insurer leaves its clause alone', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 90, ratePercent: 2.5)->create();
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.insurers.update', $insurer), ['name' => 'NSIA Bénin'])
+        ->assertSessionHasNoErrors();
+
+    expect($insurer->fresh()->name)->toBe('NSIA Bénin')
+        ->and($insurer->fresh()->penalty_trigger_days)->toBe(90)
+        ->and($insurer->fresh()->penalty_rate_bp)->toBe(250);
+});
+
+test('the management screen carries each clause', function () {
+    $withClause = Insurer::factory()->withPenalty(triggerDays: 90, ratePercent: 2.5)->create(['name' => 'NSIA']);
+    $without = Insurer::factory()->create(['name' => 'Sans clause']);
+
+    // Keyé par id et non par index : l'ordre dépend des noms, que la fabrique
+    // tire au hasard pour les assureurs créés en marge du test.
+    $this->actingAs($this->admin)
+        ->get(route('admin.insurers'))
+        ->assertInertia(function (AssertableInertia $page) use ($withClause, $without) {
+            $rows = collect($page->toArray()['props']['insurers'])->keyBy('id');
+
+            expect($page->toArray()['component'])->toBe('admin/Insurers')
+                ->and($rows[$withClause->id]['penaltyTriggerDays'])->toBe(90)
+                ->and($rows[$withClause->id]['penaltyRatePercent'])->toBe(2.5)
+                ->and($rows[$without->id]['penaltyTriggerDays'])->toBeNull()
+                ->and($rows[$without->id]['penaltyRatePercent'])->toBeNull();
+        });
+});

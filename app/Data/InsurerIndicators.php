@@ -19,6 +19,10 @@ readonly class InsurerIndicators
         public ?float $weightedDelayDays,
         /** The delay the APhaSPB records for this insurer, in days. */
         public int $standardDelayDays,
+        /** Le jour où la pénalité mord, ou null faute de convention. */
+        public ?int $penaltyTriggerDays,
+        /** Le taux par tranche de 30 jours, en pourcent, ou null. */
+        public ?float $penaltyRatePercent,
         public ?float $withinThresholdShare,
         public ?float $rejectionRate,
         public ?float $unpaidRate,

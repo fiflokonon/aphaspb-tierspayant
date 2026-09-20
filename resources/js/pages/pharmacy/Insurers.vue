@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
+import { ShieldCheck } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import InsurerChecklist from '@/components/aphaspb/InsurerChecklist.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
@@ -9,6 +10,7 @@ type Insurer = {
     name: string;
     isActive: boolean;
     declarations: number;
+    url: string;
 };
 
 const props = defineProps<{
@@ -21,6 +23,17 @@ const other = ref('');
 
 const count = computed(
     () => selected.value.length + (other.value.trim() ? 1 : 0),
+);
+
+/**
+ * Les assureurs sur lesquels il y a quelque chose à lire.
+ *
+ * Le lien vit dans un bloc à part plutôt que sur les noms de la liste à
+ * cocher : InsurerChecklist sert aussi l'onboarding, où cette page n'existe
+ * pas encore pour l'officine et où la route n'aurait rien à montrer.
+ */
+const withHistory = computed(() =>
+    props.insurers.filter((insurer) => insurer.declarations > 0),
 );
 
 /** Insurers being untied that carry a history — the only untying worth a word. */
@@ -49,7 +62,7 @@ const losing = computed(() =>
 
             <div class="intro-content">
                 <div class="intro-icon">
-                    <span>◈</span>
+                    <ShieldCheck :size="16" />
                 </div>
 
                 <div class="intro-text">
@@ -118,6 +131,21 @@ const losing = computed(() =>
                             </div>
                         </template>
                     </InsurerChecklist>
+                </div>
+
+                <div v-if="withHistory.length > 0" class="history-links">
+                    <span class="history-links-label">
+                        Consulter le détail par assureur
+                    </span>
+
+                    <Link
+                        v-for="insurer in withHistory"
+                        :key="insurer.id"
+                        :href="insurer.url"
+                        class="history-link"
+                    >
+                        {{ insurer.name }}
+                    </Link>
                 </div>
 
                 <div class="form-footer">
@@ -195,6 +223,30 @@ const losing = computed(() =>
 </template>
 
 <style scoped>
+.history-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.history-links-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.5;
+}
+
+.history-link {
+    padding: 5px 11px;
+    border: 1px solid var(--border, #e7eceb);
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+}
+
 .insurers-page {
     --apha-primary: #008f83;
     --apha-primary-dark: #006f68;

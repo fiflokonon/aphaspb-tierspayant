@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Declarations\RecordPaymentInstalments;
 use App\Enums\DeclarationStatus;
 use App\Models\Declaration;
 use App\Models\Insurer;
@@ -122,4 +123,86 @@ test('only officines carrying an overdue invoice come back', function () {
 
     expect($found)->toHaveCount(1)
         ->and($found->first()->id)->toBe($this->pharmacy->id);
+});
+
+test('an overdue line carries no penalty when the insurer has no clause', function () {
+    $insurer = Insurer::factory()->create(['standard_delay_days' => 30]);
+    overdueCandidate($this->pharmacy, $insurer, 100);
+
+    expect($this->service->forPharmacy($this->pharmacy)[0]->penalty)->toBeNull();
+});
+
+test('an overdue line carries the penalty accrued since the trigger', function () {
+    $insurer = Insurer::factory()
+        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
+        ->create(['standard_delay_days' => 30]);
+
+    // Déposée il y a 120 jours : tranches au 60e, 90e et 120e jour, sur une
+    // base jamais entamée.
+    overdueCandidate($this->pharmacy, $insurer, 120);
+
+    expect($this->service->forPharmacy($this->pharmacy)[0]->penalty)->toBe(60_000);
+});
+
+test('an instalment lightens the penalty of an overdue line', function () {
+    $insurer = Insurer::factory()
+        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
+        ->create(['standard_delay_days' => 30]);
+
+    // Déposée il y a 120 jours, déclenchement à 60 : tranches il y a 60, 30 et
+    // 0 jours. Le versement à 45 jours tombe entre la première et la deuxième.
+    $declaration = overdueCandidate($this->pharmacy, $insurer, 120);
+
+    app(RecordPaymentInstalments::class)->handle($declaration, [[
+        'amount' => 400_000,
+        'paid_on' => CarbonImmutable::create(2026, 8, 31)->subDays(45)->toDateString(),
+    ]]);
+
+    // 20 000 sur la base entière, puis deux tranches sur 600 000.
+    expect($this->service->forPharmacy($this->pharmacy)[0]->penalty)->toBe(44_000);
+});
+
+test('an instalment received before the trigger lightens every tranche', function () {
+    $insurer = Insurer::factory()
+        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
+        ->create(['standard_delay_days' => 30]);
+
+    $declaration = overdueCandidate($this->pharmacy, $insurer, 120);
+
+    // À 70 jours, donc avant la première tranche : aucune ne voit la base
+    // entière.
+    app(RecordPaymentInstalments::class)->handle($declaration, [[
+        'amount' => 400_000,
+        'paid_on' => CarbonImmutable::create(2026, 8, 31)->subDays(70)->toDateString(),
+    ]]);
+
+    expect($this->service->forPharmacy($this->pharmacy)[0]->penalty)->toBe(36_000);
+});
+
+test('an overdue line names the insurer it belongs to', function () {
+    $insurer = Insurer::factory()->create(['name' => 'Mutuelle Bénin', 'standard_delay_days' => 30]);
+    overdueCandidate($this->pharmacy, $insurer, 100);
+
+    $line = $this->service->forPharmacy($this->pharmacy)[0];
+
+    expect($line->insurerId)->toBe($insurer->id)
+        ->and($line->insurerName)->toBe('Mutuelle Bénin');
+});
+
+test('reading the overdue lines costs three queries whatever their number', function () {
+    $insurer = Insurer::factory()
+        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
+        ->create(['standard_delay_days' => 30]);
+
+    // Espacées de 35 jours : la clé unique porte sur le mois déclaré, et six
+    // dépôts consécutifs tomberaient dans le même.
+    foreach (range(0, 5) as $step) {
+        overdueCandidate($this->pharmacy, $insurer, 100 + $step * 35);
+    }
+
+    DB::enableQueryLog();
+    $this->service->forPharmacy($this->pharmacy);
+
+    // Les délais standards distincts, les lignes en retard, leurs versements.
+    expect(DB::getQueryLog())->toHaveCount(3);
 });

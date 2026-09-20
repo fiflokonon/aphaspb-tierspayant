@@ -20,7 +20,27 @@ class InsurerFactory extends Factory
         return [
             'name' => fake()->unique()->company().' Assurances',
             'is_active' => true,
+            // Posé explicitement bien que la colonne porte le même défaut :
+            // sans cela l'instance rendue par create() garde la valeur à null
+            // jusqu'à une relecture, et tout code qui lit l'assureur sans
+            // repasser par la base voit un délai absent.
+            'standard_delay_days' => Insurer::DEFAULT_STANDARD_DELAY_DAYS,
         ];
+    }
+
+    /**
+     * A penalty clause, as a convention would spell it out.
+     *
+     * Takes a percentage because that is what a convention says; the column
+     * holds basis points, and the conversion belongs here rather than in every
+     * test that needs a clause.
+     */
+    public function withPenalty(int $triggerDays = 60, float $ratePercent = 2.0): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'penalty_trigger_days' => $triggerDays,
+            'penalty_rate_bp' => (int) round($ratePercent * 100),
+        ]);
     }
 
     /**

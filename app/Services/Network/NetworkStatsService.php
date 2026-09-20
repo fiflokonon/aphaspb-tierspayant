@@ -9,6 +9,7 @@ use App\Data\Period;
 use App\Enums\DeclarationStatus;
 use App\Models\Insurer;
 use App\Services\Settings\SettingsRepository;
+use App\Support\MonthLabel;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -36,8 +37,10 @@ class NetworkStatsService
      */
     protected const WITHIN_STANDARD_DELAY_SUM = "SUM(CASE WHEN status IN ('paid', 'partial') AND delay_days <= insurers.standard_delay_days THEN 1 ELSE 0 END) as within_threshold";
 
-    public function __construct(protected SettingsRepository $settings)
-    {
+    public function __construct(
+        protected SettingsRepository $settings,
+        protected DeclarationWindow $window,
+    ) {
         //
     }
 
@@ -51,7 +54,7 @@ class NetworkStatsService
         $minimum = $this->settings->anonymityMinPharmacies();
 
         $rows = $this->withStandardDelay($this->baseQuery($from, $to, $city))
-            ->select('insurer_id', 'insurers.standard_delay_days')
+            ->select('insurer_id', 'insurers.standard_delay_days', 'insurers.penalty_trigger_days', 'insurers.penalty_rate_bp')
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(amount_invoiced) as amount_invoiced')
@@ -63,7 +66,7 @@ class NetworkStatsService
             ->selectRaw("SUM(CASE WHEN status = 'unpaid' THEN 1 ELSE 0 END) as unpaid")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days * amount_received ELSE 0 END) as delay_weighted")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN amount_received ELSE 0 END) as delay_basis")
-            ->groupBy('insurer_id', 'insurers.standard_delay_days')
+            ->groupBy('insurer_id', 'insurers.standard_delay_days', 'insurers.penalty_trigger_days', 'insurers.penalty_rate_bp')
             ->get();
 
         $names = Insurer::query()
@@ -100,6 +103,11 @@ class NetworkStatsService
                 averageDelayDays: $settled > 0 ? round((int) $row->delay_total / $settled, 1) : null,
                 weightedDelayDays: $basis > 0 ? round((int) $row->delay_weighted / $basis, 1) : null,
                 standardDelayDays: (int) $row->standard_delay_days,
+                // Deux colonnes SQL de plus, pas une boucle : maskedInsurerCount(),
+                // que ConsoleNavigation appelle sur chaque page admin, reste
+                // aussi rapide qu'avant.
+                penaltyTriggerDays: $row->penalty_trigger_days === null ? null : (int) $row->penalty_trigger_days,
+                penaltyRatePercent: $row->penalty_rate_bp === null ? null : (float) ((int) $row->penalty_rate_bp / 100),
                 withinThresholdShare: $settled > 0 ? round((int) $row->within_threshold / $settled * 100, 1) : null,
                 rejectionRate: $total > 0 ? round((int) $row->rejected / $total * 100, 1) : null,
                 unpaidRate: $total > 0 ? round((int) $row->unpaid / $total * 100, 1) : null,
@@ -305,6 +313,70 @@ class NetworkStatsService
     }
 
     /**
+     * Le détail mois par mois des assureurs demandés, le plus récent en tête.
+     *
+     * Alimente les pages par assureur du rapport PDF. Voisine de delayTrend()
+     * sans la remplacer : celle-là ne rend qu'une moyenne de délai parce
+     * qu'elle alimente un graphique, et lui ajouter quatre colonnes ferait
+     * payer ce poids à l'écran des tendances.
+     *
+     * Les identifiants passés sont ceux que perInsurer() a déjà autorisés.
+     *
+     * **Mais l'autorisation de l'assureur ne vaut pas pour chacun de ses mois.**
+     * Le seuil de perInsurer() porte sur les officines déclarantes de toute la
+     * période ; un assureur qui en compte cinq peut n'en avoir qu'une sur un
+     * mois donné, et cette ligne-là rendrait ses chiffres exacts. Chaque ligne
+     * porte donc son propre `declaringPharmacies`, et c'est à l'appelant — qui
+     * détient le seuil — de retenir ce qui doit l'être.
+     *
+     * @param  list<int>  $insurerIds
+     * @return array<int, list<array{year: int, month: int, monthLabel: string, declaringPharmacies: int, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>
+     */
+    public function monthlyByInsurer(array $insurerIds, Period $from, Period $to, ?string $city = null): array
+    {
+        if ($insurerIds === []) {
+            return [];
+        }
+
+        $rows = $this->baseQuery($from, $to, $city)
+            ->whereIn('declarations.insurer_id', $insurerIds)
+            ->select('declarations.insurer_id', 'declarations.period_year', 'declarations.period_month')
+            ->selectRaw('COUNT(DISTINCT declarations.pharmacy_id) as declaring_pharmacies')
+            ->selectRaw('COUNT(*) as declarations')
+            ->selectRaw('SUM(declarations.amount_invoiced) as invoiced')
+            ->selectRaw('SUM(declarations.amount_received) as received')
+            ->selectRaw(
+                'AVG(CASE WHEN declarations.status IN (?, ?) THEN declarations.delay_days END) as average_delay',
+                DeclarationStatus::settledValues(),
+            )
+            ->groupBy('declarations.insurer_id', 'declarations.period_year', 'declarations.period_month')
+            ->orderByDesc('declarations.period_year')
+            ->orderByDesc('declarations.period_month')
+            ->get();
+
+        $monthly = [];
+
+        foreach ($rows as $row) {
+            $invoiced = (int) $row->invoiced;
+            $received = (int) $row->received;
+
+            $monthly[(int) $row->insurer_id][] = [
+                'year' => (int) $row->period_year,
+                'month' => (int) $row->period_month,
+                'monthLabel' => MonthLabel::short((int) $row->period_month, (int) $row->period_year),
+                'declaringPharmacies' => (int) $row->declaring_pharmacies,
+                'declarations' => (int) $row->declarations,
+                'invoiced' => $invoiced,
+                'received' => $received,
+                'outstanding' => max(0, $invoiced - $received),
+                'averageDelayDays' => $row->average_delay === null ? null : round((float) $row->average_delay, 1),
+            ];
+        }
+
+        return $monthly;
+    }
+
+    /**
      * Network-wide delay indicators over a period.
      *
      * Not derivable from perInsurer(): averaging per-insurer averages would
@@ -488,17 +560,15 @@ class NetworkStatsService
         return $query->join('insurers', 'insurers.id', '=', 'declarations.insurer_id');
     }
 
+    /**
+     * Le socle de tout agrégat réseau : la période, et la ville s'il y en a une.
+     *
+     * Délègue à DeclarationWindow, que partagent les requêtes parties d'une
+     * autre table — voir InsurerPenaltyAggregates, qui filtre
+     * `declaration_payments` sur la même fenêtre.
+     */
     protected function baseQuery(Period $from, Period $to, ?string $city = null): Builder
     {
-        return DB::table('declarations')
-            ->whereRaw(
-                '(period_year * 12 + period_month) BETWEEN ? AND ?',
-                [$from->toOrdinal(), $to->toOrdinal()],
-            )
-            ->when($city, fn (Builder $query, string $filtered) => $query->whereExists(
-                fn (Builder $sub) => $sub->from('pharmacies')
-                    ->whereColumn('pharmacies.id', 'declarations.pharmacy_id')
-                    ->where('pharmacies.city', $filtered),
-            ));
+        return $this->window->query($from, $to, $city);
     }
 }

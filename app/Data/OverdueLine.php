@@ -16,6 +16,7 @@ readonly class OverdueLine
 {
     public function __construct(
         public int $declarationId,
+        public int $insurerId,
         public string $insurerName,
         public int $periodYear,
         public int $periodMonth,
@@ -23,6 +24,13 @@ readonly class OverdueLine
         public int $ageDays,
         public int $standardDelayDays,
         public int $outstanding,
+        /**
+         * Ce que le retard a majoré, ou null si aucune clause n'a été convenue.
+         *
+         * Null et zéro disent deux choses : « pas de clause » se rend par un
+         * tiret, « une clause mais rien encore » par un zéro.
+         */
+        public ?int $penalty,
     ) {
         //
     }

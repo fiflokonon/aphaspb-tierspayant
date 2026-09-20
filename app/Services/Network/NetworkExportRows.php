@@ -5,6 +5,7 @@ namespace App\Services\Network;
 use App\Data\InsufficientData;
 use App\Data\InsurerAmounts;
 use App\Data\InsurerIndicators;
+use App\Data\InsurerPenaltyFigures;
 use App\Data\Period;
 use App\Models\Insurer;
 
@@ -34,7 +35,10 @@ class NetworkExportRows
         'declarations',
         'delai_moyen_jours',
         'delai_moyen_pondere_jours',
+        'delai_le_plus_long_jours',
         'delai_standard_jours',
+        'delai_declenchement_penalite_jours',
+        'taux_penalite_pct',
         'part_sous_seuil_pct',
         'recouvre_dans_delai_pct',
         'versements',
@@ -47,10 +51,13 @@ class NetworkExportRows
         'encaisse_fcfa',
         'encours_fcfa',
         'taux_recouvrement_pct',
+        'penalite_potentielle_fcfa',
     ];
 
-    public function __construct(protected NetworkStatsService $stats)
-    {
+    public function __construct(
+        protected NetworkStatsService $stats,
+        protected InsurerPenaltyAggregates $penalties,
+    ) {
         //
     }
 
@@ -64,6 +71,18 @@ class NetworkExportRows
         $indicators = $this->stats->perInsurer($from, $to, $city);
         $amounts = $this->stats->aggregatedByInsurer($from, $to, $city);
         $names = Insurer::query()->whereIn('id', array_keys($indicators))->pluck('name', 'id');
+
+        // Les identifiants passés ici sont ceux que perInsurer() a laissé
+        // passer : l'agrégateur n'a pas la liberté de contourner le seuil.
+        $figures = $this->penalties->forInsurers(
+            array_keys(array_filter(
+                $indicators,
+                fn (InsurerIndicators|InsufficientData $entry): bool => $entry instanceof InsurerIndicators,
+            )),
+            $from,
+            $to,
+            $city,
+        );
 
         foreach ($indicators as $insurerId => $entry) {
             $name = (string) ($names[$insurerId] ?? '');
@@ -89,7 +108,12 @@ class NetworkExportRows
                 continue;
             }
 
-            yield $this->full($name, $entry, $amount);
+            yield $this->full(
+                $name,
+                $entry,
+                $amount,
+                $figures[$insurerId] ?? new InsurerPenaltyFigures(null, null),
+            );
         }
     }
 
@@ -112,15 +136,25 @@ class NetworkExportRows
     /**
      * @return ExportRow
      */
-    protected function full(string $name, InsurerIndicators $entry, InsurerAmounts $amount): array
-    {
+    protected function full(
+        string $name,
+        InsurerIndicators $entry,
+        InsurerAmounts $amount,
+        InsurerPenaltyFigures $figures,
+    ): array {
         return [
             $name,
             $entry->declaringPharmacies,
             $entry->declarations,
             $entry->averageDelayDays,
             $entry->weightedDelayDays,
+            $figures->longestDelayDays,
             $entry->standardDelayDays,
+            // Le délai et le taux accompagnent le montant pour le rendre
+            // vérifiable : cet export finit dans un courrier adressé à
+            // l'assureur, où le chiffre doit pouvoir être refait.
+            $entry->penaltyTriggerDays,
+            $entry->penaltyRatePercent,
             $entry->withinThresholdShare,
             $entry->recoveredWithinDelayShare,
             $entry->instalments,
@@ -133,6 +167,7 @@ class NetworkExportRows
             $amount->received,
             $amount->outstanding,
             $amount->recoveryRate,
+            $figures->penalty,
         ];
     }
 }

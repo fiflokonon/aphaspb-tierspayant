@@ -23,3 +23,26 @@ export function parseFcfa(input: string): number {
 
     return digits === '' ? 0 : Number.parseInt(digits, 10);
 }
+
+/**
+ * Un montant de tableau, avec zéro rendu comme zéro et null comme un tiret.
+ *
+ * formatFcfa() rend une chaîne vide dès que la valeur est nulle ou négative,
+ * ce qui convient à un champ de saisie mais pas à une cellule : « 0 » dit
+ * « rien encaissé », une cellule vide ne dit rien. Le tiret est réservé à
+ * l'absence de donnée — typiquement une clause de pénalité jamais convenue.
+ */
+export function formatAmount(value: number | null): string {
+    if (value === null) {
+        return '—';
+    }
+
+    // formatFcfa() filtre zéro **et** les négatifs. Aucun appelant ne produit
+    // aujourd'hui de montant négatif, mais « — » y serait un mensonge et la
+    // chaîne vide un trou : on groupe la valeur absolue et on rend le signe.
+    if (value < 0) {
+        return `-${formatFcfa(-value)}`;
+    }
+
+    return value === 0 ? '0' : formatFcfa(value);
+}

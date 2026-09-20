@@ -176,3 +176,32 @@ test('an admin account cannot reach the officine insurers page', function () {
         ->get(route('pharmacy.insurers'))
         ->assertForbidden();
 });
+
+test('my insurers links only the ones carrying a history', function () {
+    $user = User::factory()->create();
+    $declared = Insurer::factory()->create(['name' => 'NSIA']);
+    $ticked = Insurer::factory()->create(['name' => 'SUNU']);
+
+    $user->currentPharmacy->insurers()->attach([$declared->id, $ticked->id]);
+
+    Declaration::factory()->create([
+        'pharmacy_id' => $user->currentPharmacy->id,
+        'insurer_id' => $declared->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+        'amount_invoiced' => 400_000,
+        'amount_received' => 400_000,
+        'delay_days' => 15,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('pharmacy.insurers'))
+        ->assertOk()
+        ->assertInertia(function (AssertableInertia $page) use ($declared, $ticked) {
+            $rows = collect($page->toArray()['props']['insurers'])->keyBy('id');
+
+            expect($rows[$declared->id]['declarations'])->toBe(1)
+                ->and($rows[$declared->id]['url'])->toBe(route('pharmacy.insurers.show', $declared->id, absolute: false))
+                ->and($rows[$ticked->id]['declarations'])->toBe(0);
+        });
+});
