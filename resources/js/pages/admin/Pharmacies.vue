@@ -273,7 +273,6 @@ const footer = computed(
     min-height: 100vh;
 
     padding: 0 10px 60px;
-
 }
 
 .pharmacies-header {
@@ -498,26 +497,6 @@ const footer = computed(
     animation: fadeUp 0.5s ease both;
 }
 
-.pharmacies-intro::after {
-    content: '';
-
-    position: absolute;
-
-    right: -70px;
-
-    top: -90px;
-
-    width: 220px;
-
-    height: 220px;
-
-    border-radius: 50%;
-
-    
-
-    pointer-events: none;
-}
-
 .intro-content {
     position: relative;
 
@@ -709,7 +688,7 @@ const footer = computed(
 
     border-radius: 10px;
 
-    background: var(--primary-soft);
+    background: var(--apha-primary-soft);
 
     color: var(--apha-primary-dark);
 

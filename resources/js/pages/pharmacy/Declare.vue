@@ -1588,23 +1588,12 @@ const officine = computed(() => {
         opacity 0.2s ease;
 }
 
-.submit-button::before {
-    content: '';
-
-    position: absolute;
-
-    inset: 0;
-
-    
-
-    transform: translateX(-120%);
-
-    transition: transform 0.65s ease;
-}
-
-.submit-button:hover::before {
-    transform: translateX(120%);
-}
+/*
+  Le balayage lumineux du bouton est retiré, pas aplati : sa seule substance
+  visible était le dégradé. Un aplat blanc à 18 % glissant sur le bouton
+  serait un rectangle gris, pire que rien. Le pseudo-élément et sa règle de
+  survol partent avec lui.
+*/
 
 .submit-button:hover:not(:disabled) {
     transform: translateY(-2px);

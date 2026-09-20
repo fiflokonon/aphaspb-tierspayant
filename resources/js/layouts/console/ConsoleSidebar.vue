@@ -163,22 +163,6 @@ defineProps<{
     overflow: hidden;
 }
 
-.sidebar-glow {
-    position: absolute;
-
-    top: -80px;
-
-    right: -80px;
-
-    width: 160px;
-
-    height: 160px;
-
-    border-radius: 50%;
-
-    pointer-events: none;
-}
-
 .apha-sidebar::before {
     content: '';
 

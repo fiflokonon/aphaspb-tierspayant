@@ -174,13 +174,12 @@ watch([period, city, insurer], reload);
                                 ? 'une seule ligne.'
                                 : 'une ligne par assureur.'
                         }}
-                        Le classeur Excel porte des cellules
-                        numériques, donc une colonne s'additionne sans
-                        conversion. Le CSV reste là pour un réimport :
-                        séparateur point-virgule, décimales à la virgule, UTF-8
-                        avec BOM pour les accents. Le PDF, lui, ne se recalcule
-                        pas : c'est le rapport mis en page, à joindre tel quel à
-                        une note ou à un courrier.
+                        Le classeur Excel porte des cellules numériques, donc
+                        une colonne s'additionne sans conversion. Le CSV reste
+                        là pour un réimport : séparateur point-virgule,
+                        décimales à la virgule, UTF-8 avec BOM pour les accents.
+                        Le PDF, lui, ne se recalcule pas : c'est le rapport mis
+                        en page, à joindre tel quel à une note ou à un courrier.
                     </p>
                 </div>
             </div>
@@ -381,26 +380,6 @@ watch([period, city, insurer], reload);
     overflow: hidden;
 
     animation: fadeUp 0.5s ease both;
-}
-
-.exports-intro::after {
-    content: '';
-
-    position: absolute;
-
-    width: 230px;
-
-    height: 230px;
-
-    right: -90px;
-
-    top: -120px;
-
-    border-radius: 50%;
-
-    
-
-    pointer-events: none;
 }
 
 .intro-main {

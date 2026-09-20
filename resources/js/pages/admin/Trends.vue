@@ -580,7 +580,6 @@ async function exportChart() {
     min-height: 100vh;
 
     padding: 0 10px 60px;
-
 }
 
 .evolution-header {
@@ -625,26 +624,6 @@ async function exportChart() {
     overflow: hidden;
 
     animation: fadeUp 0.5s ease both;
-}
-
-.evolution-intro::after {
-    content: '';
-
-    position: absolute;
-
-    right: -70px;
-
-    top: -90px;
-
-    width: 220px;
-
-    height: 220px;
-
-    border-radius: 50%;
-
-    
-
-    pointer-events: none;
 }
 
 .intro-content {
@@ -1186,7 +1165,7 @@ async function exportChart() {
 
     border-radius: 9px;
 
-    background: var(--primary-soft);
+    background: var(--apha-primary-soft);
 
     border: 1px solid rgba(0, 143, 131, 0.08);
 

@@ -614,7 +614,6 @@ function submitWhenComplete(event: Event, submit: () => void) {
     min-height: 100vh;
 
     padding: 0 10px 60px;
-
 }
 
 .insurers-header {
@@ -667,8 +666,6 @@ function submitWhenComplete(event: Event, submit: () => void) {
     height: 220px;
 
     border-radius: 50%;
-
-    
 
     pointer-events: none;
 }
@@ -858,7 +855,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 11px;
 
-    background: var(--primary-soft);
+    background: var(--apha-primary-soft);
 
     color: var(--apha-primary-dark);
 
@@ -1218,12 +1215,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 50%;
 
-    
-
     pointer-events: none;
-}
-
-.threshold-card::after {
 }
 
 .card-header {

@@ -23,7 +23,7 @@ test('no Vue file redefines the palette that app.css owns', function () {
 
         // Une *déclaration* commence la ligne ; `var(--apha-primary)` est un
         // usage et reste parfaitement légitime.
-        if (preg_match('/^\s*--apha-[a-z-]+\s*:/m', $file->getContents()) === 1) {
+        if (preg_match('/(?:^|[{;])\s*--apha-[a-z-]+\s*:/m', $file->getContents()) === 1) {
             $offenders[] = str_replace(resource_path('js').'/', '', $file->getPathname());
         }
     }
@@ -50,7 +50,7 @@ test('no Vue file shadows a theme colour token either', function () {
         'ink', 'border', 'background', 'cream',
     ];
 
-    $pattern = '/^\s*--('.implode('|', array_map('preg_quote', $owned)).')\s*:/m';
+    $pattern = '/(?:^|[{;])\s*--('.implode('|', array_map('preg_quote', $owned)).')\s*:/m';
     $offenders = [];
 
     foreach (File::allFiles(resource_path('js')) as $file) {
@@ -74,4 +74,51 @@ test('app.css is the file that does define the palette', function () {
 
     expect($css)->toContain('--apha-primary: var(--officine)')
         ->and($css)->toContain('--officine: #14764c');
+});
+
+test('every custom property a Vue file reads is actually defined somewhere', function () {
+    // La garde que ce lot appelait, et qu'il n'avait pas : son invariant est
+    // « une page dépend désormais de :root au lieu d'elle-même », et rien
+    // n'affirmait que cette dépendance se résout.
+    //
+    // Deux tokens y avaient échappé — `--apha-card` et `--apha-gold-dark`,
+    // supprimés de History.vue sans équivalent dans :root. Une variable non
+    // résolue rend la déclaration invalide : le fond tombe à `transparent`,
+    // la couleur de texte revient à celle du parent. Rien ne rougit, et ça
+    // ne se voit qu'à l'écran.
+    $css = File::get(resource_path('css/app.css'));
+    preg_match_all('/(?:^|[{;])\s*(--[a-z0-9-]+)\s*:/mi', $css, $m);
+    $global = array_flip($m[1]);
+
+    $unresolved = [];
+
+    foreach (File::allFiles(resource_path('js')) as $file) {
+        if ($file->getExtension() !== 'vue') {
+            continue;
+        }
+
+        $body = $file->getContents();
+
+        // Ce que le fichier déclare pour lui-même compte comme défini.
+        preg_match_all('/(?:^|[{;])\s*(--[a-z0-9-]+)\s*:/mi', $body, $own);
+        $known = $global + array_flip($own[1]);
+
+        // `var(--x, repli)` porte sa propre issue de secours : hors sujet.
+        preg_match_all('/var\(\s*(--[a-z0-9-]+)\s*\)/i', $body, $used);
+
+        foreach (array_unique($used[1]) as $token) {
+            // Les variables des bibliothèques et celles posées par le script
+            // ne sont pas déclarées en CSS, et c'est normal.
+            if (str_starts_with($token, '--reka-') || str_starts_with($token, '--sidebar-width')
+                || str_starts_with($token, '--row-') || str_starts_with($token, '--tw-')) {
+                continue;
+            }
+
+            if (! isset($known[$token])) {
+                $unresolved[] = str_replace(resource_path('js').'/', '', $file->getPathname()).' → '.$token;
+            }
+        }
+    }
+
+    expect($unresolved)->toBe([]);
 });

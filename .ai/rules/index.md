@@ -8,6 +8,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/Auth/** | .ai/rules/auth.md |
 | resources/js/components/aphaspb/charts/** | .ai/rules/charts.md |
 | config/joomla.php | .ai/rules/config.md |
+| resources/css/**, resources/js/** | .ai/rules/css-js.md |
 | app/Actions/Declarations/** | .ai/rules/declarations.md |
 | app/Services/Exports/** | .ai/rules/exports.md |
 | package.json, ** | .ai/rules/general.md |

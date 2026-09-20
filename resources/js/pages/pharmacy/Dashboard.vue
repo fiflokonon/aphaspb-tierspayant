@@ -881,7 +881,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     padding-bottom: 45px;
 
     color: var(--ink);
-
 }
 
 .dashboard-header {
@@ -993,24 +992,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 }
 
 /* Halo décoratif */
-
-.dashboard-intro::after {
-    content: '';
-
-    position: absolute;
-
-    width: 220px;
-    height: 220px;
-
-    right: -80px;
-    top: -110px;
-
-    border-radius: 50%;
-
-    
-
-    pointer-events: none;
-}
 
 .intro-left {
     display: flex;

@@ -674,26 +674,6 @@ watch([period, city], reload);
     animation: introAppear 0.55s ease both;
 }
 
-.network-intro::after {
-    content: '';
-
-    position: absolute;
-
-    right: -50px;
-
-    top: -80px;
-
-    width: 190px;
-
-    height: 190px;
-
-    border-radius: 50%;
-
-    
-
-    pointer-events: none;
-}
-
 .intro-content {
     display: flex;
 
@@ -957,7 +937,7 @@ watch([period, city], reload);
 
     color: var(--apha-primary-dark);
 
-    background: var(--primary-soft);
+    background: var(--apha-primary-soft);
 
     font-size: 11px;
 

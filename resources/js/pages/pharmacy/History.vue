@@ -379,7 +379,6 @@ const footer = computed(
     min-height: 100vh;
 
     padding-bottom: 60px;
-
 }
 
 .history-header {
@@ -437,6 +436,25 @@ const footer = computed(
     animation: historyIntroAppear 0.55s ease both;
 }
 
+.history-intro::after {
+    content: '';
+
+    position: absolute;
+
+    left: 0;
+    bottom: 0;
+
+    width: 100%;
+    height: 2px;
+
+    /*
+      Pas d'opacite ici. Elle valait 0.5 et compensait le pic d'un degrade ;
+      sur un filet uni deja translucide elle ramenait l'alpha effectif a
+      0,045, soit une ligne invisible.
+    */
+    background: var(--apha-border);
+}
+
 .history-intro::before {
     content: '';
 
@@ -450,25 +468,7 @@ const footer = computed(
 
     border-radius: 50%;
 
-    
-
     pointer-events: none;
-}
-
-.history-intro::after {
-    content: '';
-
-    position: absolute;
-
-    left: 0;
-    bottom: 0;
-
-    width: 100%;
-    height: 2px;
-
-    background: var(--border);
-
-    opacity: 0.5;
 }
 
 .intro-main {
@@ -770,7 +770,7 @@ const footer = computed(
 }
 
 .history-row:hover {
-    background: var(--cream-state);
+    background: var(--apha-primary-soft);
 }
 
 .insurer-cell {
@@ -796,7 +796,7 @@ const footer = computed(
 
     border-radius: 10px;
 
-    background: var(--primary-soft);
+    background: var(--apha-primary-soft);
 
     color: var(--apha-primary-dark);
 

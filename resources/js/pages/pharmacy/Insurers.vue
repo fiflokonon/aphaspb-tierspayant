@@ -296,8 +296,6 @@ const losing = computed(() =>
 
     border-radius: 50%;
 
-    
-
     pointer-events: none;
 }
 
@@ -683,21 +681,10 @@ const losing = computed(() =>
         opacity 0.25s ease;
 }
 
-.save-button::before {
-    content: '';
-
-    position: absolute;
-
-    top: 0;
-    left: -100%;
-
-    width: 60%;
-    height: 100%;
-
-    
-
-    transition: left 0.55s ease;
-}
+/*
+  Même raison que le balayage de Declare.vue : sans son dégradé, ce
+  pseudo-élément n'a plus rien à montrer.
+*/
 
 .save-button:hover:not(:disabled) {
     transform: translateY(-2px);
@@ -788,8 +775,6 @@ const losing = computed(() =>
     height: 130px;
 
     border-radius: 50%;
-
-    
 
     pointer-events: none;
 }
