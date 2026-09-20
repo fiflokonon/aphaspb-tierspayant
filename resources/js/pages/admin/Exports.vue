@@ -12,15 +12,27 @@ const props = defineProps<{
     periods: { value: string; label: string }[];
     city: string | null;
     cities: string[];
+    insurer: number | null;
+    insurers: { id: number; name: string }[];
 }>();
 
 const period = ref(props.period);
 const city = ref(props.city);
+const insurer = ref(props.insurer);
 
 const cityOptions = computed(() => [
     { value: null, label: 'Toutes les villes' },
     ...props.cities.map((one) => ({ value: one, label: one })),
 ]);
+
+const insurerOptions = computed(() => [
+    { value: null, label: 'Tous les assureurs' },
+    ...props.insurers.map((one) => ({ value: one.id, label: one.name })),
+]);
+
+const insurerName = computed(
+    () => props.insurers.find((one) => one.id === insurer.value)?.name,
+);
 
 /** Each link carries the filters, so the file matches the screen above it. */
 const hrefFor = (format: 'csv' | 'xlsx' | 'pdf') => {
@@ -28,6 +40,10 @@ const hrefFor = (format: 'csv' | 'xlsx' | 'pdf') => {
 
     if (city.value) {
         query.set('city', city.value);
+    }
+
+    if (insurer.value) {
+        query.set('insurer', String(insurer.value));
     }
 
     return `${props.downloadUrl}?${query.toString()}`;
@@ -40,9 +56,9 @@ const pdfHref = computed(() => hrefFor('pdf'));
 function reload() {
     router.get(
         '/admin/csv-exports',
-        { period: period.value, city: city.value },
+        { period: period.value, city: city.value, insurer: insurer.value },
         {
-            only: ['period', 'periodLabel', 'city'],
+            only: ['period', 'periodLabel', 'city', 'insurer'],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -50,7 +66,7 @@ function reload() {
     );
 }
 
-watch([period, city], reload);
+watch([period, city, insurer], reload);
 </script>
 
 <template>
@@ -65,12 +81,20 @@ watch([period, city], reload);
             <FilterSelect
                 v-model="period"
                 :options="periods"
+                label="Période"
                 aria-label="Filtrer par période"
             />
             <FilterSelect
                 v-model="city"
                 :options="cityOptions"
+                label="Ville"
                 aria-label="Filtrer par ville"
+            />
+            <FilterSelect
+                v-model="insurer"
+                :options="insurerOptions"
+                label="Assureur"
+                aria-label="Filtrer par assureur"
             />
         </template>
     </ConsoleHeader>
@@ -121,7 +145,12 @@ watch([period, city], reload);
 
                     <span>
                         {{ periodLabel
-                        }}{{ city ? ` · ${city}` : ' · toutes les villes' }}
+                        }}{{ city ? ` · ${city}` : ' · toutes les villes'
+                        }}{{
+                            insurerName
+                                ? ` · ${insurerName}`
+                                : ' · tous les assureurs'
+                        }}
                     </span>
                 </div>
             </div>
@@ -134,8 +163,18 @@ watch([period, city], reload);
 
                     <p>
                         <strong>{{ periodLabel }}</strong
-                        >{{ city ? ` · ${city}` : ' · toutes les villes' }}, une
-                        ligne par assureur. Le classeur Excel porte des cellules
+                        >{{ city ? ` · ${city}` : ' · toutes les villes'
+                        }}{{
+                            insurerName
+                                ? ` · ${insurerName}`
+                                : ' · tous les assureurs'
+                        }},
+                        {{
+                            insurerName
+                                ? 'une seule ligne.'
+                                : 'une ligne par assureur.'
+                        }}
+                        Le classeur Excel porte des cellules
                         numériques, donc une colonne s'additionne sans
                         conversion. Le CSV reste là pour un réimport :
                         séparateur point-virgule, décimales à la virgule, UTF-8

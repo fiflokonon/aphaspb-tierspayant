@@ -66,14 +66,16 @@ class NetworkExportRows
      *
      * @return iterable<int, ExportRow>
      */
-    public function rows(Period $from, Period $to, ?string $city = null): iterable
+    public function rows(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): iterable
     {
-        $indicators = $this->stats->perInsurer($from, $to, $city);
-        $amounts = $this->stats->aggregatedByInsurer($from, $to, $city);
+        $indicators = $this->stats->perInsurer($from, $to, $city, $insurerId);
+        $amounts = $this->stats->aggregatedByInsurer($from, $to, $city, $insurerId);
         $names = Insurer::query()->whereIn('id', array_keys($indicators))->pluck('name', 'id');
 
         // Les identifiants passés ici sont ceux que perInsurer() a laissé
         // passer : l'agrégateur n'a pas la liberté de contourner le seuil.
+        // Un assureur choisi est donc déjà seul dans cette liste, et
+        // InsurerPenaltyAggregates n'a pas besoin de connaître le filtre.
         $figures = $this->penalties->forInsurers(
             array_keys(array_filter(
                 $indicators,

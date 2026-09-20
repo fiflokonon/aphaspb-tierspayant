@@ -24,13 +24,13 @@ class NetworkXlsxExport
     /**
      * Write the workbook to $path, overwriting whatever is there.
      */
-    public function writeTo(string $path, Period $from, Period $to, ?string $city = null): void
+    public function writeTo(string $path, Period $from, Period $to, ?string $city = null, ?int $insurerId = null): void
     {
         $this->writer->write(
             $path,
             'Réseau',
             NetworkExportRows::COLUMNS,
-            $this->source->rows($from, $to, $city),
+            $this->source->rows($from, $to, $city, $insurerId),
         );
     }
 }

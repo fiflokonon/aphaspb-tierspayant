@@ -560,3 +560,31 @@ test('the aggregated amounts per insurer honour the anonymity threshold', functi
         ->and($rows[$shown->id]->recoveryRate)->toBe(70.0)
         ->and($rows[$hidden->id])->toBeInstanceOf(InsufficientData::class);
 });
+
+test('an insurer filter narrows the per-insurer aggregate to that insurer alone', function () {
+    $other = Insurer::factory()->create();
+
+    recordForDistinctPharmaciesIn($this->insurer, 2026, 8, 5);
+    recordForDistinctPharmaciesIn($other, 2026, 8, 5);
+
+    $everyone = $this->service->perInsurer(new Period(2026, 8), new Period(2026, 8));
+    $filtered = $this->service->perInsurer(new Period(2026, 8), new Period(2026, 8), null, $this->insurer->id);
+
+    expect(array_keys($everyone))->toContain($this->insurer->id, $other->id)
+        ->and(array_keys($filtered))->toBe([$this->insurer->id]);
+});
+
+test('an insurer filter narrows the network summary, which otherwise spans every insurer', function () {
+    $other = Insurer::factory()->create();
+
+    recordForDistinctPharmaciesIn($this->insurer, 2026, 8, 5);
+    recordForDistinctPharmaciesIn($other, 2026, 8, 5);
+
+    $everyone = $this->service->networkSummary(new Period(2026, 8), new Period(2026, 8));
+    $filtered = $this->service->networkSummary(new Period(2026, 8), new Period(2026, 8), null, $this->insurer->id);
+
+    // Le résumé est l'agrégat que le filtre doit le plus visiblement resserrer :
+    // c'est lui qui ouvre le document.
+    expect($everyone['declarations'])->toBe(10)
+        ->and($filtered['declarations'])->toBe(5);
+});

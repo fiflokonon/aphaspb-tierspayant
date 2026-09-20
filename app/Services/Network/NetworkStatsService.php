@@ -49,11 +49,11 @@ class NetworkStatsService
      *
      * @return array<int, InsurerIndicators|InsufficientData> keyed by insurer id
      */
-    public function perInsurer(Period $from, Period $to, ?string $city = null): array
+    public function perInsurer(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
         $minimum = $this->settings->anonymityMinPharmacies();
 
-        $rows = $this->withStandardDelay($this->baseQuery($from, $to, $city))
+        $rows = $this->withStandardDelay($this->baseQuery($from, $to, $city, $insurerId))
             ->select('insurer_id', 'insurers.standard_delay_days', 'insurers.penalty_trigger_days', 'insurers.penalty_rate_bp')
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('COUNT(*) as total')
@@ -73,7 +73,7 @@ class NetworkStatsService
             ->whereIn('id', $rows->pluck('insurer_id'))
             ->pluck('name', 'id');
 
-        $instalments = $this->instalmentAggregates($from, $to, $city);
+        $instalments = $this->instalmentAggregates($from, $to, $city, $insurerId);
 
         $indicators = [];
 
@@ -150,9 +150,9 @@ class NetworkStatsService
      *
      * @return Collection<int|string, \stdClass> aggregates keyed by insurer id
      */
-    protected function instalmentAggregates(Period $from, Period $to, ?string $city = null): Collection
+    protected function instalmentAggregates(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): Collection
     {
-        $perDeclaration = $this->withStandardDelay($this->baseQuery($from, $to, $city))
+        $perDeclaration = $this->withStandardDelay($this->baseQuery($from, $to, $city, $insurerId))
             ->join('declaration_payments', 'declaration_payments.declaration_id', '=', 'declarations.id')
             ->select('declarations.insurer_id', 'declaration_payments.declaration_id')
             ->selectRaw('COUNT(*) as instalments')
@@ -266,14 +266,14 @@ class NetworkStatsService
      *
      * @return array{insurers: array<int, array{name: string, points: array<string, float>}>, network: array<string, float>, threshold: int}
      */
-    public function delayTrend(Period $from, Period $to, ?string $city = null): array
+    public function delayTrend(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
         $eligible = array_keys(array_filter(
             $this->perInsurer($from, $to, $city),
             fn (InsurerIndicators|InsufficientData $entry): bool => $entry instanceof InsurerIndicators,
         ));
 
-        $rows = $this->baseQuery($from, $to, $city)
+        $rows = $this->baseQuery($from, $to, $city, $insurerId)
             ->whereIn('insurer_id', $eligible)
             ->whereIn('status', DeclarationStatus::settledValues())
             ->select('insurer_id', 'period_year', 'period_month')
@@ -332,13 +332,13 @@ class NetworkStatsService
      * @param  list<int>  $insurerIds
      * @return array<int, list<array{year: int, month: int, monthLabel: string, declaringPharmacies: int, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>
      */
-    public function monthlyByInsurer(array $insurerIds, Period $from, Period $to, ?string $city = null): array
+    public function monthlyByInsurer(array $insurerIds, Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
         if ($insurerIds === []) {
             return [];
         }
 
-        $rows = $this->baseQuery($from, $to, $city)
+        $rows = $this->baseQuery($from, $to, $city, $insurerId)
             ->whereIn('declarations.insurer_id', $insurerIds)
             ->select('declarations.insurer_id', 'declarations.period_year', 'declarations.period_month')
             ->selectRaw('COUNT(DISTINCT declarations.pharmacy_id) as declaring_pharmacies')
@@ -386,9 +386,9 @@ class NetworkStatsService
      *
      * @return array{declaringPharmacies: int, declarations: int, averageDelayDays: float|null, weightedDelayDays: float|null, withinThresholdShare: float|null, rejectionRate: float|null, outstandingBeyond90: int}
      */
-    public function networkSummary(Period $from, Period $to, ?string $city = null): array
+    public function networkSummary(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
-        $row = $this->withStandardDelay($this->baseQuery($from, $to, $city))
+        $row = $this->withStandardDelay($this->baseQuery($from, $to, $city, $insurerId))
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('COUNT(*) as total')
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN 1 ELSE 0 END) as settled")
@@ -410,7 +410,7 @@ class NetworkStatsService
             'weightedDelayDays' => $basis > 0 ? round((int) $row->delay_weighted / $basis, 1) : null,
             'withinThresholdShare' => $settled > 0 ? round((int) $row->within_threshold / $settled * 100, 1) : null,
             'rejectionRate' => $total > 0 ? round((int) $row->rejected / $total * 100, 1) : null,
-            'outstandingBeyond90' => $this->outstandingBeyond($from, $to, $city, 90),
+            'outstandingBeyond90' => $this->outstandingBeyond($from, $to, $city, 90, $insurerId),
         ];
     }
 
@@ -423,11 +423,11 @@ class NetworkStatsService
      *
      * @return array<int, InsurerAmounts|InsufficientData> keyed by insurer id
      */
-    public function aggregatedByInsurer(Period $from, Period $to, ?string $city = null): array
+    public function aggregatedByInsurer(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
         $minimum = $this->settings->anonymityMinPharmacies();
 
-        $rows = $this->baseQuery($from, $to, $city)
+        $rows = $this->baseQuery($from, $to, $city, $insurerId)
             ->select('insurer_id')
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('SUM(amount_invoiced) as invoiced')
@@ -473,9 +473,9 @@ class NetworkStatsService
      * Age is counted from the end of the declared month, as on the officine
      * side: the CDC stores no invoice date.
      */
-    public function outstandingBeyond(Period $from, Period $to, ?string $city, int $days): int
+    public function outstandingBeyond(Period $from, Period $to, ?string $city, int $days, ?int $insurerId = null): int
     {
-        $rows = $this->baseQuery($from, $to, $city)
+        $rows = $this->baseQuery($from, $to, $city, $insurerId)
             ->whereRaw('amount_invoiced > amount_received')
             ->select('period_year', 'period_month')
             ->selectRaw('SUM(amount_invoiced - amount_received) as outstanding')
@@ -513,9 +513,9 @@ class NetworkStatsService
      *
      * @return array{invoiced: int, received: int, outstanding: int, recoveryRate: float|null, declaringPharmacies: int}
      */
-    public function aggregatedAmounts(Period $from, Period $to, ?string $city = null): array
+    public function aggregatedAmounts(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
-        $row = $this->baseQuery($from, $to, $city)
+        $row = $this->baseQuery($from, $to, $city, $insurerId)
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('SUM(amount_invoiced) as invoiced')
             ->selectRaw('SUM(amount_received) as received')
@@ -567,8 +567,8 @@ class NetworkStatsService
      * autre table — voir InsurerPenaltyAggregates, qui filtre
      * `declaration_payments` sur la même fenêtre.
      */
-    protected function baseQuery(Period $from, Period $to, ?string $city = null): Builder
+    protected function baseQuery(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): Builder
     {
-        return $this->window->query($from, $to, $city);
+        return $this->window->query($from, $to, $city, $insurerId);
     }
 }

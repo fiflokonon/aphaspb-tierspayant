@@ -34,9 +34,9 @@ class NetworkPdfExport
         //
     }
 
-    public function document(Period $from, Period $to, ?string $city = null): PdfDocument
+    public function document(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): PdfDocument
     {
-        return Pdf::loadView('exports.network', $this->data($from, $to, $city))
+        return Pdf::loadView('exports.network', $this->data($from, $to, $city, $insurerId))
             ->setPaper('a4', 'portrait');
     }
 
@@ -45,17 +45,20 @@ class NetworkPdfExport
      *
      * @return array<string, mixed>
      */
-    protected function data(Period $from, Period $to, ?string $city): array
+    protected function data(Period $from, Period $to, ?string $city, ?int $insurerId = null): array
     {
-        $indicators = $this->stats->perInsurer($from, $to, $city);
-        $amounts = $this->stats->aggregatedByInsurer($from, $to, $city);
+        $indicators = $this->stats->perInsurer($from, $to, $city, $insurerId);
+        $amounts = $this->stats->aggregatedByInsurer($from, $to, $city, $insurerId);
         $names = Insurer::query()->whereIn('id', array_keys($indicators))->pluck('name', 'id');
 
         $rows = [];
         $withheld = [];
 
-        foreach ($indicators as $insurerId => $entry) {
-            $name = (string) ($names[$insurerId] ?? '');
+        // `$currentId` et non `$insurerId` : réutiliser le nom du paramètre le
+        // masquerait, et le filtre passé plus bas à monthlyByInsurer() et à
+        // summary() vaudrait la dernière clé parcourue.
+        foreach ($indicators as $currentId => $entry) {
+            $name = (string) ($names[$currentId] ?? '');
 
             if ($entry instanceof InsufficientData) {
                 $withheld[] = ['name' => $name, 'declaringPharmacies' => $entry->declaringPharmacies];
@@ -63,10 +66,10 @@ class NetworkPdfExport
                 continue;
             }
 
-            $amount = $amounts[$insurerId] ?? null;
+            $amount = $amounts[$currentId] ?? null;
 
             $rows[] = [
-                'insurerId' => $insurerId,
+                'insurerId' => $currentId,
                 'name' => $name,
                 'indicators' => $entry,
                 'amounts' => $amount instanceof InsurerAmounts ? $amount : null,
@@ -80,7 +83,7 @@ class NetworkPdfExport
         $allowed = array_map(fn (array $row): int => $row['insurerId'], $rows);
 
         $figures = $this->penalties->forInsurers($allowed, $from, $to, $city);
-        $monthly = $this->stats->monthlyByInsurer($allowed, $from, $to, $city);
+        $monthly = $this->stats->monthlyByInsurer($allowed, $from, $to, $city, $insurerId);
 
         foreach ($rows as $index => $row) {
             $rows[$index]['figures'] = $figures[$row['insurerId']]
@@ -94,7 +97,7 @@ class NetworkPdfExport
             <=> ($a['indicators']->averageDelayDays ?? 0));
 
         return [
-            'summary' => $this->stats->networkSummary($from, $to, $city),
+            'summary' => $this->summary($from, $to, $city, $insurerId, $withheld),
             'rows' => $rows,
             'withheld' => $withheld,
             'city' => $city,
@@ -102,6 +105,34 @@ class NetworkPdfExport
             'periodLabel' => $this->periodLabel($from, $to),
             'generatedAt' => now(),
         ];
+    }
+
+    /**
+     * Le résumé d'ouverture, retenu lorsqu'il ne parlerait que d'un assureur
+     * sous le seuil.
+     *
+     * Sans filtre, ce résumé agrège tous les assureurs : aucune officine n'y
+     * est nommable, et aucun seuil ne s'y applique — c'est délibéré et
+     * inchangé. Choisir un assureur en fait les chiffres de ce seul assureur,
+     * soit une granularité de publication nouvelle, où une unique officine
+     * déclarante rendrait sa facture exacte lisible. Le filtre ne doit pas
+     * ouvrir la porte que le reste du document tient fermée.
+     *
+     * La condition porte sur `$withheld` et non sur un `$rows` vide : un
+     * assureur qui n'a simplement rien déclaré sur la période mérite un résumé
+     * à zéro, qui se lit « rien déclaré », et non une rétention, qui se lirait
+     * « chiffres cachés ».
+     *
+     * @param  list<array{name: string, declaringPharmacies: int}>  $withheld
+     * @return array<string, mixed>|null
+     */
+    protected function summary(Period $from, Period $to, ?string $city, ?int $insurerId, array $withheld): ?array
+    {
+        if ($insurerId !== null && $withheld !== []) {
+            return null;
+        }
+
+        return $this->stats->networkSummary($from, $to, $city, $insurerId);
     }
 
     /**

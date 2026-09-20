@@ -498,3 +498,97 @@ test('the city filter re-applies the threshold inside the city', function () {
         ->and($cell('delai_le_plus_long_jours'))->toBe('')
         ->and(downloadCsv(['city' => 'Parakou']))->not->toContain('4210000');
 });
+
+test('choosing an insurer leaves only that insurer in the report', function () {
+    $chosen = Insurer::factory()->create(['name' => 'NSIA Assurances']);
+    $other = Insurer::factory()->create(['name' => 'Atlantique Assurances']);
+
+    exportDeclare($chosen, 5, ['amount_received' => 1_000_000, 'delay_days' => 44]);
+    exportDeclare($other, 5, ['amount_received' => 1_000_000, 'delay_days' => 12]);
+
+    $export = app(NetworkPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, new Period(2026, 8), new Period(2026, 8), null, $chosen->id);
+
+    expect($payload['rows'])->toHaveCount(1)
+        ->and($payload['rows'][0]['name'])->toBe('NSIA Assurances')
+        // Le résumé se resserre aussi : c'est le sens de « tout le document ».
+        ->and($payload['summary']['declarations'])->toBe(5)
+        ->and($payload['withheld'])->toBeEmpty();
+});
+
+test('choosing an insurer below the threshold withholds its summary too', function () {
+    // Le résumé n'applique aucun seuil quand il couvre tout le réseau : aucune
+    // officine n'y est nommable. Restreint à un assureur, il devient les
+    // chiffres de cet assureur — et une seule officine déclarante rendrait sa
+    // facture exacte lisible. Le filtre ne doit pas ouvrir cette porte.
+    $hidden = Insurer::factory()->create(['name' => 'Petit Assureur']);
+
+    exportDeclare($hidden, 1, ['amount_invoiced' => 7_654_321, 'amount_received' => 0]);
+
+    $export = app(NetworkPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, new Period(2026, 8), new Period(2026, 8), null, $hidden->id);
+
+    expect($payload['rows'])->toBeEmpty()
+        ->and($payload['withheld'])->toHaveCount(1)
+        ->and($payload['summary'])->toBeNull();
+});
+
+test('the chosen insurer narrows the csv to its single row', function () {
+    $chosen = Insurer::factory()->create(['name' => 'NSIA Assurances']);
+    $other = Insurer::factory()->create(['name' => 'Atlantique Assurances']);
+
+    exportDeclare($chosen, 5);
+    exportDeclare($other, 5);
+
+    $csv = downloadCsv(['insurer' => $chosen->id]);
+
+    expect($csv)->toContain('NSIA Assurances')
+        ->and($csv)->not->toContain('Atlantique Assurances');
+});
+
+test('the filename names the insurer the file covers', function () {
+    $chosen = Insurer::factory()->create(['name' => 'NSIA Assurances']);
+    exportDeclare($chosen, 5);
+
+    $disposition = $this->actingAs($this->admin)
+        ->get(route('admin.csv-exports.download', ['insurer' => $chosen->id]))
+        ->headers->get('content-disposition');
+
+    // Sans le nom, deux fichiers d'assureurs différents se ressemblent trait
+    // pour trait dans un dossier de téléchargements.
+    expect($disposition)->toContain('nsia-assurances');
+});
+
+test('the report still renders when the summary is withheld', function () {
+    // Le test de données ci-dessus prouve que `summary` vaut null ; celui-ci
+    // prouve que la vue le supporte. Sans lui, un `$summary['declarations']`
+    // resté dans le Blade ne rougirait qu'en production.
+    $hidden = Insurer::factory()->create(['name' => 'Petit Assureur']);
+    exportDeclare($hidden, 1);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.csv-exports.download', ['format' => 'pdf', 'insurer' => $hidden->id]))
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+});
+
+test('the page offers the insurers the network declared to', function () {
+    $declared = Insurer::factory()->create(['name' => 'NSIA Assurances']);
+    Insurer::factory()->create(['name' => 'Jamais Déclaré']);
+
+    exportDeclare($declared, 5);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.csv-exports'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('admin/Exports')
+            // Un assureur sans une seule déclaration ne ferait qu'un fichier
+            // vide : la liste ne propose que ce qui a de quoi être exporté.
+            ->has('insurers', 1)
+            ->where('insurers.0.name', 'NSIA Assurances')
+            ->where('insurer', null),
+        );
+});

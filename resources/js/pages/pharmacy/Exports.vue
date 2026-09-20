@@ -94,11 +94,13 @@ watch([period, insurer], reload);
             <FilterSelect
                 v-model="period"
                 :options="periods"
+                label="Période"
                 aria-label="Filtrer par période"
             />
             <FilterSelect
                 v-model="insurer"
                 :options="insurerOptions"
+                label="Assureur"
                 aria-label="Filtrer par assureur"
             />
         </template>

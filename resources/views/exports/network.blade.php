@@ -162,6 +162,14 @@
 
 <h2>Ce que le réseau a constaté</h2>
 
+@if ($summary === null)
+    <p class="lede">
+        Chiffres retenus : l'assureur choisi compte moins de
+        {{ $anonymityThreshold }} officines déclarantes sur la période.
+        Restreinte à un seul assureur, cette synthèse rendrait la facture
+        d'une officine identifiable.
+    </p>
+@else
 <p class="lede">
     {{ $summary['declarations'] }} déclarations déposées par
     {{ $summary['declaringPharmacies'] }} officines sur la période.
@@ -196,6 +204,7 @@
         </td>
     </tr>
 </table>
+@endif
 
 <div class="section">
     <h2>Assureur par assureur</h2>
