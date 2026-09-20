@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Deferred, Head, Link, router } from '@inertiajs/vue3';
-import { Clock, TriangleAlert } from '@lucide/vue';
+import { CircleCheck, Clock, TriangleAlert } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
 import ChartToolbar from '@/components/aphaspb/charts/ChartToolbar.vue';
@@ -48,15 +48,32 @@ type OverdueRow = {
 
 type OverdueSummary = {
     count: number;
-    outstanding: number;
-    penalty: number | null;
-    worst: {
-        insurerName: string;
-        monthLabel: string;
-        overdueDays: number;
-    };
     hidden: number;
     historyUrl: string;
+};
+
+type LateBand = {
+    insurerId: number;
+    insurerName: string;
+    insurerUrl: string;
+    count: number;
+    outstanding: number;
+    penalty: number | null;
+    oldestMonthLabel: string;
+    oldestOverdueDays: number;
+};
+
+type InsurerBands = {
+    late: LateBand[];
+    owing: {
+        count: number;
+        outstanding: number;
+        insurerNames: string[];
+    } | null;
+    settled: {
+        count: number;
+        insurerNames: string[];
+    } | null;
 };
 
 type JourneyPoint = {
@@ -85,6 +102,7 @@ const props = defineProps<{
     recovery: RecoveryRow[];
     overdue: OverdueRow[];
     overdueSummary: OverdueSummary | null;
+    insurerBands: InsurerBands;
     declareUrl: string;
     outstandingMonths: { label: string; url: string }[];
     filters: { insurer: number | null };
@@ -156,6 +174,10 @@ const OVERDUE_COLUMNS = [
 
 const overdueFooter =
     'Au-delà du délai convenu avec chaque assureur, compté depuis le dépôt de la facture.';
+
+// Le seul état de page ajouté : la table du détail s'ouvre à la demande,
+// puisque les bandes disent déjà qui doit quoi.
+const showOverdueTable = ref(false);
 
 const journeyArea = ref<HTMLElement | null>(null);
 const exporting = ref(false);
@@ -272,35 +294,78 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         </ConsoleHeader>
 
         <!--
-            Le bandeau nomme la pire ligne plutôt que de compter au-delà d'un
-            seuil d'ancienneté : l'encart de la barre latérale compte déjà
-            « au-delà de 60 jours » depuis la fin du mois déclaré, là où ce
-            retard-ci se compte depuis le dépôt de facture. Deux seuils voisins
-            sur deux horloges se contrediraient sous les yeux du lecteur.
+            Une bande par assureur en retard, puis une bande pour ceux qui
+            doivent dans les clous, puis une pour les soldés. Le détail va où
+            il y a quelque chose à faire ; le reste se contente de ses noms.
+
+            Les bandes nomment la plus vieille facture plutôt que de compter
+            au-delà d'un seuil d'ancienneté : ConsoleNavigation::chaseNotice()
+            compte déjà « au-delà de 60 jours » depuis la fin du mois déclaré,
+            là où ce retard-ci se compte depuis le dépôt. Deux seuils voisins
+            sur deux horloges se contrediraient.
         -->
-        <section v-if="overdueSummary" class="overdue-banner">
-            <TriangleAlert class="overdue-banner-icon" :size="20" />
+        <section
+            v-for="band in insurerBands.late"
+            :key="band.insurerId"
+            class="insurer-banner late"
+        >
+            <TriangleAlert class="insurer-banner-icon" :size="20" />
 
             <div>
-                <p class="overdue-banner-headline">
-                    {{ overdueSummary.count }} facture{{
-                        overdueSummary.count > 1 ? 's' : ''
-                    }}
-                    en retard ·
-                    {{ formatAmount(overdueSummary.outstanding) }} FCFA
+                <p class="insurer-banner-headline">
+                    <Link :href="band.insurerUrl" class="insurer-banner-name">
+                        {{ band.insurerName }}
+                    </Link>
+                    · {{ band.count }} facture{{ band.count > 1 ? 's' : '' }} en
+                    retard · {{ formatAmount(band.outstanding) }} FCFA
                 </p>
 
-                <p class="overdue-banner-detail">
-                    la plus ancienne :
-                    {{ overdueSummary.worst.insurerName }},
-                    {{ overdueSummary.worst.monthLabel }}, +{{
-                        overdueSummary.worst.overdueDays
+                <p class="insurer-banner-detail">
+                    la plus ancienne : {{ band.oldestMonthLabel }}, +{{
+                        band.oldestOverdueDays
                     }}
-                    j<template v-if="overdueSummary.penalty !== null">
+                    j<template v-if="band.penalty !== null">
                         · pénalité courue
-                        {{ formatAmount(overdueSummary.penalty) }}
-                        FCFA</template
+                        {{ formatAmount(band.penalty) }} FCFA</template
                     >
+                </p>
+            </div>
+        </section>
+
+        <section v-if="insurerBands.owing" class="insurer-banner owing">
+            <Clock class="insurer-banner-icon" :size="20" />
+
+            <div>
+                <p class="insurer-banner-headline">
+                    {{ insurerBands.owing.count }} assureur{{
+                        insurerBands.owing.count > 1 ? 's' : ''
+                    }}
+                    vous {{ insurerBands.owing.count > 1 ? 'doivent' : 'doit' }}
+                    encore ·
+                    {{ formatAmount(insurerBands.owing.outstanding) }} FCFA
+                </p>
+
+                <p class="insurer-banner-detail">
+                    dans le délai convenu :
+                    {{ insurerBands.owing.insurerNames.join(', ') }}
+                </p>
+            </div>
+        </section>
+
+        <section v-if="insurerBands.settled" class="insurer-banner settled">
+            <CircleCheck class="insurer-banner-icon" :size="20" />
+
+            <div>
+                <p class="insurer-banner-headline">
+                    {{ insurerBands.settled.count }} assureur{{
+                        insurerBands.settled.count > 1 ? 's' : ''
+                    }}
+                    à jour
+                </p>
+
+                <p class="insurer-banner-detail">
+                    tout est encaissé :
+                    {{ insurerBands.settled.insurerNames.join(', ') }}
                 </p>
             </div>
         </section>
@@ -408,7 +473,22 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         </KpiRow>
 
         <section v-if="overdue.length > 0" class="overdue-section">
+            <button
+                type="button"
+                class="overdue-toggle"
+                :aria-expanded="showOverdueTable"
+                @click="showOverdueTable = !showOverdueTable"
+            >
+                {{ showOverdueTable ? 'Masquer' : 'Voir' }} le détail
+                <template v-if="overdueSummary">
+                    ({{ overdueSummary.count }} facture{{
+                        overdueSummary.count > 1 ? 's' : ''
+                    }})
+                </template>
+            </button>
+
             <DataTable
+                v-if="showOverdueTable"
                 title="Factures en retard"
                 :columns="OVERDUE_COLUMNS"
                 :template="OVERDUE_TEMPLATE"
@@ -448,7 +528,11 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </DataTable>
 
             <p
-                v-if="overdueSummary && overdueSummary.hidden > 0"
+                v-if="
+                    showOverdueTable &&
+                    overdueSummary &&
+                    overdueSummary.hidden > 0
+                "
                 class="overdue-more"
             >
                 <Link :href="overdueSummary.historyUrl">
@@ -675,34 +759,81 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 </template>
 
 <style scoped>
-.overdue-banner {
+.insurer-banner {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
     padding: 0.875rem 1.125rem;
-    margin-bottom: 1.25rem;
-    border: 1px solid var(--terracotta);
+    margin-bottom: 0.625rem;
+    border: 1px solid;
     border-left-width: 4px;
     border-radius: 11px;
+}
+
+/* Les trois états reprennent des jetons déjà posés sur .dashboard-page. */
+.insurer-banner.late {
+    border-color: var(--terracotta);
     background: var(--terracotta-soft);
 }
 
-.overdue-banner-icon {
-    flex-shrink: 0;
-    margin-top: 0.125rem;
+.insurer-banner.late .insurer-banner-icon {
     color: var(--terracotta);
 }
 
-.overdue-banner-headline {
+.insurer-banner.owing {
+    border-color: var(--gold);
+    background: var(--gold-soft);
+}
+
+.insurer-banner.owing .insurer-banner-icon {
+    color: var(--gold);
+}
+
+.insurer-banner.settled {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.insurer-banner.settled .insurer-banner-icon {
+    color: var(--primary);
+}
+
+.insurer-banner:last-of-type {
+    margin-bottom: 1.25rem;
+}
+
+.insurer-banner-icon {
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.insurer-banner-headline {
     font-size: 0.875rem;
     font-weight: 700;
     color: var(--ink);
 }
 
-.overdue-banner-detail {
+.insurer-banner-name {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.insurer-banner-detail {
     margin-top: 0.125rem;
     font-size: 0.8125rem;
     color: color-mix(in srgb, var(--ink) 72%, transparent);
+}
+
+.overdue-toggle {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
 }
 
 .overdue-section {

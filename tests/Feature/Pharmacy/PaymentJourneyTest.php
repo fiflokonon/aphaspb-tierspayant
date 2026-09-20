@@ -202,7 +202,7 @@ test('a dashboard with nothing overdue shows no banner', function () {
         ->get(dashboardUrlFor($user))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('overdueSummary', null)
-            ->has('overdue', 0),
+            ->has('insurerBands.late', 0),
         );
 });
 
@@ -219,11 +219,13 @@ test('the banner sums the overdue invoices and names the worst', function () {
         ->get(dashboardUrlFor($user))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('overdueSummary.count', 1)
-            ->where('overdueSummary.outstanding', 1_000_000)
-            ->where('overdueSummary.penalty', 60_000)
-            ->where('overdueSummary.worst.insurerName', 'Mutuelle Bénin')
-            ->where('overdueSummary.worst.overdueDays', 90)
             ->where('overdueSummary.hidden', 0)
+            ->has('insurerBands.late', 1)
+            ->where('insurerBands.late.0.insurerName', 'Mutuelle Bénin')
+            ->where('insurerBands.late.0.count', 1)
+            ->where('insurerBands.late.0.outstanding', 1_000_000)
+            ->where('insurerBands.late.0.penalty', 60_000)
+            ->where('insurerBands.late.0.oldestOverdueDays', 90)
             ->has('overdue', 1)
             ->where('overdue.0.penalty', 60_000)
             ->where('overdue.0.overdueDays', 90)
@@ -239,7 +241,7 @@ test('an insurer without a clause leaves the penalty empty', function () {
     $this->actingAs($user)
         ->get(dashboardUrlFor($user))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('overdueSummary.penalty', null)
+            ->where('insurerBands.late.0.penalty', null)
             ->where('overdue.0.penalty', null),
         );
 });
@@ -293,4 +295,126 @@ test('the dashboard query count does not grow with the overdue invoices', functi
     // retard ne doit pas coûter une requête de plus. Un N+1 est la première
     // cause de lenteur perçue de cette application.
     expect($withSeven)->toBe($withOne);
+});
+
+test('an insurer owing inside its agreed delay is amber, never red', function () {
+    $user = User::factory()->create();
+    $insurer = Insurer::factory()->create(['name' => 'SUNU', 'standard_delay_days' => 60]);
+    $user->currentPharmacy->insurers()->attach($insurer);
+
+    // Déposée il y a 30 jours pour un délai de 60 : elle doit, mais elle est
+    // dans les clous.
+    Declaration::factory()->create([
+        'pharmacy_id' => $user->currentPharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+        'amount_invoiced' => 700_000,
+        'amount_received' => 200_000,
+        'status' => DeclarationStatus::Partial,
+        'is_status_manual' => true,
+        'invoice_deposited_on' => CarbonImmutable::create(2026, 8, 15)->subDays(30),
+        'paid_on' => CarbonImmutable::create(2026, 8, 15)->subDays(30),
+        'delay_days' => 0,
+    ]);
+
+    $this->actingAs($user)
+        ->get(dashboardUrlFor($user))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('insurerBands.late', 0)
+            ->where('insurerBands.owing.count', 1)
+            ->where('insurerBands.owing.outstanding', 500_000)
+            ->where('insurerBands.owing.insurerNames', ['SUNU'])
+            ->where('insurerBands.settled', null),
+        );
+});
+
+test('an insurer with everything collected is green', function () {
+    $user = User::factory()->create();
+    $insurer = Insurer::factory()->create(['name' => 'NSIA', 'standard_delay_days' => 30]);
+    $user->currentPharmacy->insurers()->attach($insurer);
+
+    Declaration::factory()->create([
+        'pharmacy_id' => $user->currentPharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+        'amount_invoiced' => 400_000,
+        'amount_received' => 400_000,
+        'delay_days' => 12,
+    ]);
+
+    $this->actingAs($user)
+        ->get(dashboardUrlFor($user))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('insurerBands.late', 0)
+            ->where('insurerBands.owing', null)
+            ->where('insurerBands.settled.count', 1)
+            ->where('insurerBands.settled.insurerNames', ['NSIA']),
+        );
+});
+
+test('a ticked insurer that never declared sits in no band at all', function () {
+    $user = User::factory()->create();
+    $never = Insurer::factory()->create(['name' => 'Jamais declaré']);
+    $user->currentPharmacy->insurers()->attach($never);
+
+    // Son encours vaut zéro faute de déclaration, pas parce qu'il a payé : le
+    // ranger en vert dirait « il a tout réglé » là où rien n'a été facturé.
+    $this->actingAs($user)
+        ->get(dashboardUrlFor($user))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('insurerBands.late', 0)
+            ->where('insurerBands.owing', null)
+            ->where('insurerBands.settled', null),
+        );
+});
+
+test('a late insurer is red and never also amber', function () {
+    $user = User::factory()->create();
+    $insurer = Insurer::factory()->create(['name' => 'Mixte', 'standard_delay_days' => 30]);
+    $user->currentPharmacy->insurers()->attach($insurer);
+
+    // Un mois en retard et un mois encore dans les clous, chez le même
+    // assureur : il doit apparaître une seule fois, en rouge.
+    overdueOn($user, $insurer, 120);
+
+    Declaration::factory()->create([
+        'pharmacy_id' => $user->currentPharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+        'amount_invoiced' => 300_000,
+        'amount_received' => 0,
+        'status' => DeclarationStatus::Unpaid,
+        'is_status_manual' => true,
+        'invoice_deposited_on' => CarbonImmutable::create(2026, 8, 15)->subDays(10),
+        'paid_on' => null,
+        'delay_days' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->get(dashboardUrlFor($user))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('insurerBands.late', 1)
+            ->where('insurerBands.late.0.insurerName', 'Mixte')
+            ->where('insurerBands.owing', null),
+        );
+});
+
+test('the red bands lead with the oldest invoice', function () {
+    $user = User::factory()->create();
+    $recent = Insurer::factory()->create(['name' => 'Recent', 'standard_delay_days' => 30]);
+    $ancient = Insurer::factory()->create(['name' => 'Ancien', 'standard_delay_days' => 30]);
+
+    overdueOn($user, $recent, 60);
+    overdueOn($user, $ancient, 300);
+
+    $this->actingAs($user)
+        ->get(dashboardUrlFor($user))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('insurerBands.late', 2)
+            ->where('insurerBands.late.0.insurerName', 'Ancien')
+            ->where('insurerBands.late.1.insurerName', 'Recent'),
+        );
 });
