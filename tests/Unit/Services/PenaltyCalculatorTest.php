@@ -5,6 +5,7 @@ use App\Models\Declaration;
 use App\Models\DeclarationPayment;
 use App\Models\Insurer;
 use App\Services\Declarations\PenaltyCalculator;
+use App\Support\DayNumber;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -222,4 +223,77 @@ test('a clause with only a rejected month totals zero, not null', function () {
     // se rend par un tiret qui se lirait « pas de clause ».
     expect($this->calculator->for($declaration))->toBeNull()
         ->and($this->calculator->total([$declaration]))->toBe(0);
+});
+
+test('both entry points agree on every case the Carbon one covers', function () {
+    $cases = [
+        // [facturé, encaissé, dépôt, versements [montant, date]]
+        [1_000_000, 0, '2026-05-22', []],
+        [1_000_000, 400_000, '2026-05-22', [[400_000, '2026-08-01']]],
+        [1_000_000, 1_000_000, '2026-05-22', [[1_000_000, '2026-08-25']]],
+        [1_000_000, 1_050_000, '2026-05-01', [[1_000_000, '2026-06-15'], [50_000, '2026-09-01']]],
+        [500_000, 500_000, '2026-09-19', [[500_000, '2026-09-19']]],
+    ];
+
+    foreach ($cases as [$invoiced, $received, $deposited, $payments]) {
+        $paidOn = $payments === [] ? null : CarbonImmutable::parse(end($payments)[1]);
+
+        $viaCarbon = $this->calculator->accrued(
+            amountInvoiced: $invoiced,
+            amountReceived: $received,
+            depositedOn: CarbonImmutable::parse($deposited),
+            paidOn: $paidOn,
+            triggerDays: 60,
+            rateBp: 200,
+            payments: array_map(
+                fn (array $payment): array => [
+                    'amount' => $payment[0],
+                    'paid_on' => CarbonImmutable::parse($payment[1]),
+                ],
+                $payments,
+            ),
+        );
+
+        $viaDays = $this->calculator->accruedInDays(
+            amountInvoiced: $invoiced,
+            amountReceived: $received,
+            depositedDay: DayNumber::fromDate($deposited),
+            paidDay: $paidOn === null ? null : DayNumber::fromCarbon($paidOn),
+            triggerDays: 60,
+            rateBp: 200,
+            payments: array_map(
+                fn (array $payment): array => [$payment[0], DayNumber::fromDate($payment[1])],
+                $payments,
+            ),
+        );
+
+        expect($viaDays)->toBe($viaCarbon);
+    }
+});
+
+test('a hoisted today gives the same answer as a resolved one', function () {
+    $today = DayNumber::fromDate('2026-09-19');
+
+    $resolved = $this->calculator->accruedInDays(
+        amountInvoiced: 1_000_000,
+        amountReceived: 0,
+        depositedDay: DayNumber::fromDate('2026-05-22'),
+        paidDay: null,
+        triggerDays: 60,
+        rateBp: 200,
+        payments: [],
+    );
+
+    $hoisted = $this->calculator->accruedInDays(
+        amountInvoiced: 1_000_000,
+        amountReceived: 0,
+        depositedDay: DayNumber::fromDate('2026-05-22'),
+        paidDay: null,
+        triggerDays: 60,
+        rateBp: 200,
+        payments: [],
+        today: $today,
+    );
+
+    expect($hoisted)->toBe($resolved)->and($hoisted)->toBe(60_000);
 });
