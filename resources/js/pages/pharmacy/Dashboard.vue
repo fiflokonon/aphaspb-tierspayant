@@ -175,8 +175,29 @@ const OVERDUE_COLUMNS = [
 const overdueFooter =
     'Au-delà du délai convenu avec chaque assureur, compté depuis le dépôt de la facture.';
 
-// Le seul état de page ajouté : la table du détail s'ouvre à la demande,
-// puisque les bandes disent déjà qui doit quoi.
+/**
+ * Trois bandes rouges, puis un lien pour le reste.
+ *
+ * La gravité décroît vite — les bandes sont triées par la plus vieille
+ * facture — et six bandes repoussaient les KPI et le graphique sous la ligne
+ * de flottaison d'un portable. Les trois premières portent l'essentiel.
+ */
+const LATE_BANDS_SHOWN = 3;
+
+const showAllLateBands = ref(false);
+
+const visibleLateBands = computed(() =>
+    showAllLateBands.value
+        ? props.insurerBands.late
+        : props.insurerBands.late.slice(0, LATE_BANDS_SHOWN),
+);
+
+const hiddenLateBands = computed(
+    () => props.insurerBands.late.length - visibleLateBands.value.length,
+);
+
+// La table du détail s'ouvre à la demande, puisque les bandes disent déjà qui
+// doit quoi.
 const showOverdueTable = ref(false);
 
 const journeyArea = ref<HTMLElement | null>(null);
@@ -305,70 +326,93 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             sur deux horloges se contrediraient.
         -->
         <section
-            v-for="band in insurerBands.late"
+            v-for="band in visibleLateBands"
             :key="band.insurerId"
             class="insurer-banner late"
         >
-            <TriangleAlert class="insurer-banner-icon" :size="20" />
+            <TriangleAlert class="insurer-banner-icon" :size="17" />
 
-            <div>
-                <p class="insurer-banner-headline">
-                    <Link :href="band.insurerUrl" class="insurer-banner-name">
-                        {{ band.insurerName }}
-                    </Link>
-                    · {{ band.count }} facture{{ band.count > 1 ? 's' : '' }} en
-                    retard · {{ formatAmount(band.outstanding) }} FCFA
-                </p>
-
-                <p class="insurer-banner-detail">
-                    la plus ancienne : {{ band.oldestMonthLabel }}, +{{
-                        band.oldestOverdueDays
-                    }}
-                    j<template v-if="band.penalty !== null">
-                        · pénalité courue
-                        {{ formatAmount(band.penalty) }} FCFA</template
-                    >
-                </p>
-            </div>
+            <p class="insurer-banner-line">
+                <Link :href="band.insurerUrl" class="insurer-banner-name">{{
+                    band.insurerName
+                }}</Link>
+                · {{ band.count }} facture{{ band.count > 1 ? 's' : '' }} ·
+                <strong>{{ formatAmount(band.outstanding) }} FCFA</strong> ·
+                plus ancienne {{ band.oldestMonthLabel }}
+                <span class="insurer-banner-days"
+                    >+{{ band.oldestOverdueDays }} j</span
+                ><template v-if="band.penalty !== null">
+                    · pénalité {{ formatAmount(band.penalty) }}</template
+                >
+            </p>
         </section>
 
         <section v-if="insurerBands.owing" class="insurer-banner owing">
-            <Clock class="insurer-banner-icon" :size="20" />
+            <Clock class="insurer-banner-icon" :size="17" />
 
-            <div>
-                <p class="insurer-banner-headline">
-                    {{ insurerBands.owing.count }} assureur{{
-                        insurerBands.owing.count > 1 ? 's' : ''
+            <p class="insurer-banner-line">
+                {{ insurerBands.owing.count }} assureur{{
+                    insurerBands.owing.count > 1 ? 's' : ''
+                }}
+                dans le délai convenu ·
+                <strong
+                    >{{
+                        formatAmount(insurerBands.owing.outstanding)
                     }}
-                    vous {{ insurerBands.owing.count > 1 ? 'doivent' : 'doit' }}
-                    encore ·
-                    {{ formatAmount(insurerBands.owing.outstanding) }} FCFA
-                </p>
-
-                <p class="insurer-banner-detail">
-                    dans le délai convenu :
-                    {{ insurerBands.owing.insurerNames.join(', ') }}
-                </p>
-            </div>
+                    FCFA</strong
+                >
+                · {{ insurerBands.owing.insurerNames.join(', ') }}
+            </p>
         </section>
 
         <section v-if="insurerBands.settled" class="insurer-banner settled">
-            <CircleCheck class="insurer-banner-icon" :size="20" />
+            <CircleCheck class="insurer-banner-icon" :size="17" />
 
-            <div>
-                <p class="insurer-banner-headline">
-                    {{ insurerBands.settled.count }} assureur{{
-                        insurerBands.settled.count > 1 ? 's' : ''
-                    }}
-                    à jour
-                </p>
-
-                <p class="insurer-banner-detail">
-                    tout est encaissé :
-                    {{ insurerBands.settled.insurerNames.join(', ') }}
-                </p>
-            </div>
+            <p class="insurer-banner-line">
+                {{ insurerBands.settled.count }} assureur{{
+                    insurerBands.settled.count > 1 ? 's' : ''
+                }}
+                à jour · {{ insurerBands.settled.insurerNames.join(', ') }}
+            </p>
         </section>
+
+        <!--
+            Les deux commandes vivent sous la dernière bande, pas plus bas :
+            un bouton « voir le détail » flottant entre les KPI et le graphique
+            ne disait pas à quoi il se rapportait.
+        -->
+        <div
+            v-if="hiddenLateBands > 0 || overdue.length > 0"
+            class="bands-footer"
+        >
+            <button
+                v-if="hiddenLateBands > 0"
+                type="button"
+                class="bands-footer-action"
+                @click="showAllLateBands = true"
+            >
+                et {{ hiddenLateBands }} autre{{
+                    hiddenLateBands > 1 ? 's' : ''
+                }}
+                assureur{{ hiddenLateBands > 1 ? 's' : '' }} en retard
+            </button>
+
+            <button
+                v-if="overdue.length > 0"
+                type="button"
+                class="bands-footer-action"
+                :aria-expanded="showOverdueTable"
+                @click="showOverdueTable = !showOverdueTable"
+            >
+                {{ showOverdueTable ? 'Masquer' : 'Voir' }} le détail<template
+                    v-if="overdueSummary"
+                >
+                    ({{ overdueSummary.count }} facture{{
+                        overdueSummary.count > 1 ? 's' : ''
+                    }})</template
+                >
+            </button>
+        </div>
 
         <section class="dashboard-intro">
             <div class="intro-left">
@@ -472,21 +516,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </div>
         </KpiRow>
 
-        <section v-if="overdue.length > 0" class="overdue-section">
-            <button
-                type="button"
-                class="overdue-toggle"
-                :aria-expanded="showOverdueTable"
-                @click="showOverdueTable = !showOverdueTable"
-            >
-                {{ showOverdueTable ? 'Masquer' : 'Voir' }} le détail
-                <template v-if="overdueSummary">
-                    ({{ overdueSummary.count }} facture{{
-                        overdueSummary.count > 1 ? 's' : ''
-                    }})
-                </template>
-            </button>
-
+        <section v-if="showOverdueTable" class="overdue-section">
             <DataTable
                 v-if="showOverdueTable"
                 title="Factures en retard"
@@ -612,95 +642,46 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </div>
         </section>
 
-        <div class="analysis-grid">
-            <section class="dashboard-card analysis-card">
-                <div class="card-header">
-                    <div class="card-title-group">
-                        <div class="card-icon gold">
-                            <Clock :size="16" />
-                        </div>
+        <section class="dashboard-card analysis-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <div class="card-icon gold">
+                        <Clock :size="16" />
+                    </div>
 
-                        <div>
-                            <h2>Encours par ancienneté</h2>
+                    <div>
+                        <h2>Encours par ancienneté</h2>
 
-                            <p>
-                                Ancienneté comptée depuis la fin du mois
-                                déclaré.
-                            </p>
-                        </div>
+                        <p>Ancienneté comptée depuis la fin du mois déclaré.</p>
                     </div>
                 </div>
+            </div>
 
-                <div class="ageing-list">
-                    <div
-                        v-for="band in ageing"
-                        :key="band.label"
-                        class="ageing-row"
-                    >
-                        <div class="ageing-label">
-                            {{ band.label }}
-                        </div>
+            <div class="ageing-list">
+                <div
+                    v-for="band in ageing"
+                    :key="band.label"
+                    class="ageing-row"
+                >
+                    <div class="ageing-label">
+                        {{ band.label }}
+                    </div>
 
-                        <div class="ageing-progress">
-                            <span
-                                class="ageing-progress-fill"
-                                :style="{
-                                    width: `${ageingTotal === 0 ? 0 : (band.amount / ageingTotal) * 100}%`,
-                                }"
-                            ></span>
-                        </div>
+                    <div class="ageing-progress">
+                        <span
+                            class="ageing-progress-fill"
+                            :style="{
+                                width: `${ageingTotal === 0 ? 0 : (band.amount / ageingTotal) * 100}%`,
+                            }"
+                        ></span>
+                    </div>
 
-                        <div class="ageing-value">
-                            {{ formatMillions(band.amount) }}
-                        </div>
+                    <div class="ageing-value">
+                        {{ formatMillions(band.amount) }}
                     </div>
                 </div>
-            </section>
-
-            <section class="dashboard-card analysis-card">
-                <div class="card-header">
-                    <div class="card-title-group">
-                        <div class="card-icon terracotta">
-                            <span>F</span>
-                        </div>
-
-                        <div>
-                            <h2>Qui vous doit le plus</h2>
-
-                            <p>
-                                Reste dû par assureur, sur les 12 derniers mois.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="owed-list">
-                    <div
-                        v-for="(entry, index) in owed"
-                        :key="entry.insurerName"
-                        class="owed-row"
-                    >
-                        <div class="owed-rank">
-                            {{ String(index + 1).padStart(2, '0') }}
-                        </div>
-
-                        <div class="owed-name">
-                            {{ entry.insurerName }}
-                        </div>
-
-                        <div v-if="entry.outstanding === 0" class="owed-status">
-                            <span class="status-check"> ✓ </span>
-
-                            À JOUR
-                        </div>
-
-                        <div v-else class="owed-amount">
-                            {{ formatMillions(entry.outstanding) }}
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
+            </div>
+        </section>
 
         <div class="dashboard-footnote">
             <div class="footnote-icon">i</div>
@@ -762,9 +743,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .insurer-banner {
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.875rem 1.125rem;
-    margin-bottom: 0.625rem;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    margin-bottom: 0.375rem;
     border: 1px solid;
     border-left-width: 4px;
     border-radius: 11px;
@@ -798,19 +779,29 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     color: var(--primary);
 }
 
-.insurer-banner:last-of-type {
-    margin-bottom: 1.25rem;
-}
-
 .insurer-banner-icon {
     flex-shrink: 0;
     margin-top: 0.125rem;
 }
 
-.insurer-banner-headline {
-    font-size: 0.875rem;
-    font-weight: 700;
+.insurer-banner-line {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.45;
     color: var(--ink);
+}
+
+.insurer-banner-line strong {
+    font-weight: 700;
+}
+
+.insurer-banner-days {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+
+.insurer-banner.late .insurer-banner-days {
+    color: var(--terracotta);
 }
 
 .insurer-banner-name {
@@ -818,13 +809,14 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     text-underline-offset: 2px;
 }
 
-.insurer-banner-detail {
-    margin-top: 0.125rem;
-    font-size: 0.8125rem;
-    color: color-mix(in srgb, var(--ink) 72%, transparent);
+.bands-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    margin: 0.5rem 0 1.25rem;
 }
 
-.overdue-toggle {
+.bands-footer-action {
     padding: 0;
     border: 0;
     background: none;
@@ -834,6 +826,10 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     text-decoration: underline;
     text-underline-offset: 2px;
     cursor: pointer;
+}
+
+.bands-footer-action:hover {
+    color: var(--ink);
 }
 
 .overdue-section {
@@ -1396,14 +1392,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     padding: 0 17px 17px;
 }
 
-.analysis-grid {
-    display: grid;
-
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-
-    gap: 12px;
-}
-
 .analysis-card {
     min-width: 0;
 
@@ -1485,16 +1473,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-weight: 750;
 
     color: var(--ink);
-}
-
-.owed-list {
-    display: flex;
-
-    flex-direction: column;
-
-    margin-top: 15px;
-
-    padding: 0 18px;
 }
 
 .owed-row {
@@ -1734,10 +1712,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     .intro-status {
         align-self: flex-start;
     }
-
-    .analysis-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 640px) {
@@ -1815,8 +1789,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         padding: 0 11px 12px;
     }
 
-    .ageing-list,
-    .owed-list {
+    .ageing-list {
         padding: 0 14px;
     }
 
@@ -1832,18 +1805,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     .ageing-value {
         font-size: 9.5px;
-    }
-
-    .owed-row {
-        min-height: 40px;
-    }
-
-    .owed-name {
-        font-size: 10px;
-    }
-
-    .owed-amount {
-        font-size: 8.5px;
     }
 
     .dashboard-footnote {
