@@ -787,6 +787,17 @@ defineProps<{
         flex-shrink: 0;
     }
 
+    /*
+     * Le halo est calibré pour le rail vertical du bureau : `right: -80px`
+     * sur une barre de 212 px, contenue par son `overflow: hidden`. Ici la
+     * barre passe en pleine largeur et en `overflow: visible`, et le halo
+     * déborde alors de 80 px hors de la page — une barre de défilement
+     * horizontale sur chaque écran de la console.
+     */
+    .sidebar-glow {
+        display: none;
+    }
+
     .apha-notices {
         display: none;
     }

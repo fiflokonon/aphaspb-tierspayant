@@ -134,6 +134,29 @@ defineProps<{
 }
 
 /* =============================================================
+   SOUS LE POINT DE BASCULE DE LA BARRE
+============================================================= */
+
+@media (max-width: 1023px) {
+    /*
+     * Sans cette ligne, le contenu part hors écran à droite.
+     *
+     * Sous 1024 px, ConsoleSidebar passe en `width: 100%` — bordure basse,
+     * navigation en rangée, pied masqué : tout y dit « empilé ». Mais elle
+     * garde le `flex-shrink: 0` de sa règle de base, et .app-shell reste une
+     * rangée. La barre réclame donc toute la largeur sans céder, .app-content
+     * — en `flex: 1`, donc `flex-basis: 0%` — est écrasé à zéro, et ses
+     * enfants à largeur minimale débordent hors du viewport.
+     *
+     * Le symptôme est une page blanche avec une barre de défilement
+     * horizontale : le contenu existe, il commence juste après la barre.
+     */
+    .app-shell {
+        flex-direction: column;
+    }
+}
+
+/* =============================================================
    PETITS ÉCRANS
 ============================================================= */
 
