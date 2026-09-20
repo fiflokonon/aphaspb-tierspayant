@@ -213,10 +213,17 @@ survit, démoté sous le titre ; le conteneur disparaît.
 
 | Lot | Contenu | Fichiers principaux |
 |---|---|---|
-| 1 | Palette unifiée et accentuée, alias `--apha-*` centralisés, suppression des 7 copies, dégradés retirés, échelle typographique | `app.css`, les 7 pages porteuses de copies, les 11 fichiers à dégradés |
+| 1 | Palette unifiée et accentuée, alias `--apha-*` centralisés, suppression des 7 copies, dégradés retirés, **définition** de l'échelle typographique | `app.css`, les 7 pages porteuses de copies, les 11 fichiers à dégradés |
 | 2 | Coquille : icônes, repli, serif dans l'en-tête, slot `#hero`, bandeau sous 1024 px | `ConsoleNavigation.php`, `ConsoleSidebar.vue`, `ConsoleHeader.vue`, `ConsoleLayout.vue` |
 | 3 | Tableau de bord officine : bandes rouge plein, ambre dilué, panneaux vides, couleurs en dur remplacées | `pharmacy/Dashboard.vue`, `PaymentJourneyController.php` si les tons remontent du serveur |
 | 4 | Les seize autres écrans, alignés sur le socle | le reste de `resources/js/pages` |
+
+**L'échelle typographique est définie au lot 1, appliquée aux lots 2 à 4.**
+Correction apportée à la rédaction du plan : les tailles vivent sur les
+éléments, pas dans les tokens. Les appliquer au lot 1 reviendrait à toucher la
+coquille et les vingt écrans, ce qui viderait le découpage de son sens. Le lot
+1 pose donc les tokens `--text-*` ; chaque écran les adopte quand il est
+repris.
 
 Chaque lot est livrable et vérifiable seul.
 
