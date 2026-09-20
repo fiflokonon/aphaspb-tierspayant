@@ -22,7 +22,7 @@ beforeEach(function () {
  *
  * @param  array<string, mixed>  $attributes
  */
-function networkDeclare(Insurer $insurer, int $month, array $attributes = []): Declaration
+function penaltyDeclare(Insurer $insurer, int $month, array $attributes = []): Declaration
 {
     return Declaration::factory()->create([
         'pharmacy_id' => Pharmacy::factory(),
@@ -41,7 +41,7 @@ function networkDeclare(Insurer $insurer, int $month, array $attributes = []): D
  *
  * @return array<string, mixed>
  */
-function neverPaid(int $daysAgo): array
+function neverSettled(int $daysAgo): array
 {
     return [
         'amount_received' => 0,
@@ -55,7 +55,7 @@ function neverPaid(int $daysAgo): array
 
 test('an insurer with no clause has no penalty but still has a longest delay', function () {
     $insurer = Insurer::factory()->create(['standard_delay_days' => 30]);
-    networkDeclare($insurer, 7, ['delay_days' => 44]);
+    penaltyDeclare($insurer, 7, ['delay_days' => 44]);
 
     $figures = $this->aggregates->forInsurers([$insurer->id], ...$this->bounds);
 
@@ -66,7 +66,7 @@ test('an insurer with no clause has no penalty but still has a longest delay', f
 test('an insurer under a clause with nothing accrued reads zero, not null', function () {
     $insurer = Insurer::factory()->withPenalty(triggerDays: 90, ratePercent: 2.0)->create();
     // Réglée en 20 jours : la pénalité ne se déclenche qu'au 90e.
-    networkDeclare($insurer, 8);
+    penaltyDeclare($insurer, 8);
 
     expect($this->aggregates->forInsurers([$insurer->id], ...$this->bounds)[$insurer->id]->penalty)
         ->toBe(0);
@@ -78,7 +78,7 @@ test('the penalty sums across the officines of one insurer', function () {
     // Deux officines, chacune une facture de 1 000 000 déposée il y a 120
     // jours et jamais réglée : trois tranches à 20 000 chacune, deux fois.
     foreach ([1, 2] as $month) {
-        networkDeclare($insurer, $month, neverPaid(120));
+        penaltyDeclare($insurer, $month, neverSettled(120));
     }
 
     expect($this->aggregates->forInsurers([$insurer->id], ...$this->bounds)[$insurer->id]->penalty)
@@ -90,7 +90,7 @@ test('the longest delay agrees with the per-declaration implementation', functio
 
     // Un mois soldé tard, un partiellement réglé qui traîne, un impayé, un
     // rejeté : les quatre cas que LongestDelay distingue.
-    networkDeclare($insurer, 3, ['delay_days' => 55]);
+    penaltyDeclare($insurer, 3, ['delay_days' => 55]);
 
     Declaration::factory()->instalments([['amount' => 100_000, 'paid_on' => '2026-01-10']])->create([
         'pharmacy_id' => Pharmacy::factory(),
@@ -101,8 +101,8 @@ test('the longest delay agrees with the per-declaration implementation', functio
         'invoice_deposited_on' => '2026-01-01',
     ]);
 
-    networkDeclare($insurer, 4, neverPaid(150));
-    networkDeclare($insurer, 5, [...neverPaid(400), 'status' => DeclarationStatus::Rejected]);
+    penaltyDeclare($insurer, 4, neverSettled(150));
+    penaltyDeclare($insurer, 5, [...neverSettled(400), 'status' => DeclarationStatus::Rejected]);
 
     $viaSql = $this->aggregates->forInsurers([$insurer->id], ...$this->bounds)[$insurer->id]->longestDelayDays;
 
@@ -120,8 +120,8 @@ test('an insurer absent from the allowed list is absent from the result', functi
     $allowed = Insurer::factory()->withPenalty()->create();
     $hidden = Insurer::factory()->withPenalty()->create();
 
-    networkDeclare($allowed, 7);
-    networkDeclare($hidden, 7);
+    penaltyDeclare($allowed, 7);
+    penaltyDeclare($hidden, 7);
 
     $figures = $this->aggregates->forInsurers([$allowed->id], ...$this->bounds);
 
@@ -143,7 +143,7 @@ test('an insurer with no declaration at all still gets an entry', function () {
 
 test('a period outside the window contributes nothing', function () {
     $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
-    networkDeclare($insurer, 1, ['delay_days' => 300]);
+    penaltyDeclare($insurer, 1, ['delay_days' => 300]);
 
     $figures = $this->aggregates->forInsurers([$insurer->id], new Period(2026, 6), new Period(2026, 9));
 
@@ -181,13 +181,13 @@ test('the city filter narrows the aggregate like every other network read', func
 test('the query count stays flat however many declarations there are', function () {
     $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
 
-    networkDeclare($insurer, 1);
+    penaltyDeclare($insurer, 1);
     DB::enableQueryLog();
     $this->aggregates->forInsurers([$insurer->id], ...$this->bounds);
     $withOne = count(DB::getQueryLog());
 
     foreach (range(2, 12) as $month) {
-        networkDeclare($insurer, $month);
+        penaltyDeclare($insurer, $month);
     }
 
     DB::flushQueryLog();

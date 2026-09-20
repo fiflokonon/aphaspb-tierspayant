@@ -53,7 +53,7 @@ class NetworkStatsService
         $minimum = $this->settings->anonymityMinPharmacies();
 
         $rows = $this->withStandardDelay($this->baseQuery($from, $to, $city))
-            ->select('insurer_id', 'insurers.standard_delay_days')
+            ->select('insurer_id', 'insurers.standard_delay_days', 'insurers.penalty_trigger_days', 'insurers.penalty_rate_bp')
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(amount_invoiced) as amount_invoiced')
@@ -65,7 +65,7 @@ class NetworkStatsService
             ->selectRaw("SUM(CASE WHEN status = 'unpaid' THEN 1 ELSE 0 END) as unpaid")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days * amount_received ELSE 0 END) as delay_weighted")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN amount_received ELSE 0 END) as delay_basis")
-            ->groupBy('insurer_id', 'insurers.standard_delay_days')
+            ->groupBy('insurer_id', 'insurers.standard_delay_days', 'insurers.penalty_trigger_days', 'insurers.penalty_rate_bp')
             ->get();
 
         $names = Insurer::query()
@@ -102,6 +102,11 @@ class NetworkStatsService
                 averageDelayDays: $settled > 0 ? round((int) $row->delay_total / $settled, 1) : null,
                 weightedDelayDays: $basis > 0 ? round((int) $row->delay_weighted / $basis, 1) : null,
                 standardDelayDays: (int) $row->standard_delay_days,
+                // Deux colonnes SQL de plus, pas une boucle : maskedInsurerCount(),
+                // que ConsoleNavigation appelle sur chaque page admin, reste
+                // aussi rapide qu'avant.
+                penaltyTriggerDays: $row->penalty_trigger_days === null ? null : (int) $row->penalty_trigger_days,
+                penaltyRatePercent: $row->penalty_rate_bp === null ? null : (float) ((int) $row->penalty_rate_bp / 100),
                 withinThresholdShare: $settled > 0 ? round((int) $row->within_threshold / $settled * 100, 1) : null,
                 rejectionRate: $total > 0 ? round((int) $row->rejected / $total * 100, 1) : null,
                 unpaidRate: $total > 0 ? round((int) $row->unpaid / $total * 100, 1) : null,
