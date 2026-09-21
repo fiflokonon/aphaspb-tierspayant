@@ -751,13 +751,31 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 }
 
 /* Les trois états reprennent des jetons déjà posés sur .dashboard-page. */
+
+/*
+  Rouge plein, décidé par le client contre l'avis consigné dans la spec :
+  trois blocs de force égale ne se distinguent plus les uns des autres. Le
+  blanc sur --terracotta donne 4,82:1, au-dessus du seuil AA de 4,5:1 mais
+  sans marge — ne pas éclaircir --terracotta sans recalculer.
+*/
 .insurer-banner.late {
-    border-color: var(--terracotta);
-    background: var(--terracotta-soft);
+    border-color: var(--terracotta-dark);
+    background: var(--terracotta);
+
+    color: #fff;
+}
+
+/*
+  Le nom est un lien, le montant un <strong>, le retard un <span> : sans
+  ces règles, chacun garderait sa couleur d'encre sur le fond rouge.
+*/
+.insurer-banner.late .insurer-banner-name,
+.insurer-banner.late strong {
+    color: #fff;
 }
 
 .insurer-banner.late .insurer-banner-icon {
-    color: var(--terracotta);
+    color: #fff;
 }
 
 .insurer-banner.owing {
@@ -799,8 +817,14 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-weight: 700;
 }
 
+/*
+  Blanc, pas terracotta : depuis que la bande est un aplat rouge, cette
+  règle-ci écrivait le chiffre en #d13b22 sur #d13b22. Elle vient après la
+  règle groupée ci-dessus, à spécificité égale, donc elle l'emportait — le
+  retard devenait invisible.
+*/
 .insurer-banner.late .insurer-banner-days {
-    color: var(--terracotta);
+    color: #fff;
 }
 
 .insurer-banner-name {
