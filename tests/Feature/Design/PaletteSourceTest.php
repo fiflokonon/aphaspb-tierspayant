@@ -132,12 +132,8 @@ test('a cleaned file writes no colour literal', function () {
     // La liste s'allonge à chaque lot plutôt que de viser tout le dépôt : les
     // écrans du lot 4 portent encore des dizaines d'occurrences de turquoise,
     // et une garde qui rougit en permanence ne protège rien.
-    // `css/app.css` est volontairement absent : hors de :root et de @theme, il
-    // ne contient plus que le bloc [data-sidebar='sidebar'], du CSS mort qui
-    // cible les composants shadcn ui/sidebar — présents mais importés nulle
-    // part. Le supprimer est une décision à prendre, pas un effet de bord de
-    // cette garde.
     $cleaned = [
+        'css/app.css',
         'js/layouts/console/ConsoleHeader.vue',
         'js/layouts/console/ConsoleLayout.vue',
         'js/layouts/console/ConsoleSidebar.vue',
@@ -154,13 +150,26 @@ test('a cleaned file writes no colour literal', function () {
     foreach ($cleaned as $relative) {
         $body = File::get(resource_path($relative));
 
-        // Seul le bloc <style> est concerné : une couleur passée en chaîne à
-        // une bibliothèque de graphiques ne peut pas citer un token CSS.
-        $at = strpos($body, '<style');
-        $body = $at === false ? '' : substr($body, $at);
+        if (str_ends_with($relative, '.vue')) {
+            // Seul le bloc <style> est concerné : une couleur passée en
+            // chaîne à une bibliothèque de graphiques ne peut pas citer un
+            // token CSS.
+            $at = strpos($body, '<style');
+            $body = $at === false ? '' : substr($body, $at);
+        }
 
-        // Les commentaires citent volontiers les anciennes valeurs.
+        // Les commentaires d'abord, et ce n'est pas un détail d'ordre : ils
+        // citent volontiers les anciennes valeurs, et surtout un commentaire
+        // contenant « @theme » faisait filer le `[^{]*` du dépouillement
+        // ci-dessous jusqu'à l'accolade suivante — avalant la règle d'après.
+        // La garde passait alors au vert sur un fichier fautif.
         $body = preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $body);
+
+        if (! str_ends_with($relative, '.vue')) {
+            // app.css a le droit de définir la palette : c'est son travail.
+            // Tout le reste du fichier, en revanche, doit citer un token.
+            $body = preg_replace('/(:root|@theme[^{]*)\s*\{.*?\n\}/s', '', $body);
+        }
 
         // La fonction est capturée en entier, pas seulement son ouverture :
         // sans cela, `rgb(255 255 255 / .16)` remonte comme « rgb(2 » et on ne
