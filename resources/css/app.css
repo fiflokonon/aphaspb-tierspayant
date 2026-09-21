@@ -221,6 +221,23 @@
     --apha-border: rgb(20 29 24 / 0.11);
     --apha-card: var(--card);
     --apha-gold-dark: var(--gold-dark);
+
+    /*
+      Les surfaces du socle. La spec remplace la bordure 1 px par une ombre
+      basse : une bordure dessine un rectangle, une ombre pose un plan. Les
+      valeurs sont celles de la spec, au chiffre près.
+
+      Trois rayons et pas un : une carte (12), une bande d'alerte (11), un
+      élément de navigation (9). Un rayon unique sur des objets de tailles si
+      différentes se lit comme une erreur de mesure.
+    */
+    --surface-shadow:
+        0 1px 2px rgb(20 29 24 / 0.06), 0 6px 18px -10px rgb(20 29 24 / 0.16);
+    --surface-shadow-raised:
+        0 2px 4px rgb(20 29 24 / 0.07), 0 14px 30px -12px rgb(20 29 24 / 0.22);
+    --radius-card: 12px;
+    --radius-band: 11px;
+    --radius-nav: 9px;
 }
 
 @layer base {
