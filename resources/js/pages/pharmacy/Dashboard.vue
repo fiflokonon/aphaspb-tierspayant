@@ -10,11 +10,10 @@ import OutstandingDonutChart from '@/components/aphaspb/charts/OutstandingDonutC
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
-import KpiCard from '@/components/aphaspb/KpiCard.vue';
-import KpiRow from '@/components/aphaspb/KpiRow.vue';
 import PrimaryAction from '@/components/aphaspb/PrimaryAction.vue';
 import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue';
 import { useQueryState } from '@/composables/useQueryState';
+import DashboardKpis from '@/components/aphaspb/DashboardKpis.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 import { exportChartToPng } from '@/lib/chartPng';
 import { rankSlices } from '@/lib/donut';
@@ -22,7 +21,6 @@ import { formatAmount } from '@/lib/fcfa';
 import { formatMillions } from '@/lib/millions';
 import type { DashboardInvitation } from '@/types';
 import { isChartType } from '@/types/aphaspb';
-import type { KpiTone } from '@/types/aphaspb';
 
 type RecoveryRow = {
     insurerId: number;
@@ -259,22 +257,6 @@ async function exportJourney() {
     }
 }
 
-const recoveryTone = (rate: number | null): KpiTone => {
-    if (rate === null) {
-        return 'neutral';
-    }
-
-    return rate >= 80 ? 'good' : rate >= 60 ? 'warn' : 'bad';
-};
-
-const delayTone = (days: number | null): KpiTone => {
-    if (days === null) {
-        return 'neutral';
-    }
-
-    return days <= 30 ? 'good' : days <= 60 ? 'warn' : 'bad';
-};
-
 const RECOVERY_TEMPLATE = '1.9fr 1fr 1fr 1fr .9fr';
 const RECOVERY_COLUMNS = [
     'ASSUREUR',
@@ -297,6 +279,14 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     <div class="dashboard-page">
         <ConsoleHeader title="Parcours des paiements" class="dashboard-header">
+            <template #hero>
+                <DashboardKpis
+                    :summary="summary"
+                    surface="band"
+                    class="kpis-band"
+                />
+            </template>
+
             <template #action>
                 <PrimaryAction
                     label="+ Nouvelle déclaration"
@@ -436,59 +426,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </div>
         </section>
 
-        <KpiRow :columns="3" class="dashboard-kpis">
-            <div class="dashboard-kpi-wrapper">
-                <div class="kpi-side-accent"></div>
-
-                <KpiCard
-                    label="FACTURÉ SUR 12 MOIS"
-                    :value="formatMillions(summary.invoiced)"
-                    unit="FCFA"
-                    :hint="`${summary.insurers} assureurs · ${summary.declarations} déclarations`"
-                />
-
-                <div class="kpi-icon">
-                    <span>₣</span>
-                </div>
-            </div>
-
-            <div class="dashboard-kpi-wrapper">
-                <div class="kpi-side-accent teal"></div>
-
-                <KpiCard
-                    label="TAUX DE RECOUVREMENT"
-                    :value="
-                        summary.recoveryRate?.toLocaleString('fr-FR') ?? '—'
-                    "
-                    unit="%"
-                    :tone="recoveryTone(summary.recoveryRate)"
-                    :hint="`${formatMillions(summary.received)} FCFA encaissés`"
-                />
-
-                <div class="kpi-icon teal">
-                    <span>✓</span>
-                </div>
-            </div>
-
-            <div class="dashboard-kpi-wrapper">
-                <div class="kpi-side-accent gold"></div>
-
-                <KpiCard
-                    label="VOTRE DÉLAI MOYEN"
-                    :value="
-                        summary.weightedDelayDays?.toLocaleString('fr-FR') ??
-                        '—'
-                    "
-                    unit="jours"
-                    :tone="delayTone(summary.weightedDelayDays)"
-                    hint="pondéré par les montants reçus"
-                />
-
-                <div class="kpi-icon gold">
-                    <Clock :size="16" />
-                </div>
-            </div>
-        </KpiRow>
+        <DashboardKpis :summary="summary" surface="light" class="kpis-page" />
 
         <section v-if="showOverdueTable" class="overdue-section">
             <DataTable
@@ -814,6 +752,24 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     font-size: 12.5px;
     line-height: 1.5;
+}
+
+/*
+  Deux emplacements, jamais les deux visibles. `display: none` — et non
+  `visibility` ou une position hors écran — pour que l'emplacement masqué
+  quitte aussi l'arbre d'accessibilité : un lecteur d'écran ne doit pas
+  énoncer les trois chiffres deux fois.
+*/
+@media (max-width: 1023px) {
+    .kpis-page {
+        display: none;
+    }
+}
+
+@media (min-width: 1024px) {
+    .kpis-band {
+        display: none;
+    }
 }
 
 .bands {
