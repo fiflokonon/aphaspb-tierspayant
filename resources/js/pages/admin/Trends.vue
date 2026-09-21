@@ -232,7 +232,7 @@ async function exportChart() {
     <div class="network-evolution-page">
         <ConsoleHeader
             eyebrow="RÉSEAU DES OFFICINES · BÉNIN"
-            :title="periodLabel"
+            title="Évolution du réseau"
             class="evolution-header"
         >
             <template #filters>
@@ -251,36 +251,6 @@ async function exportChart() {
                 </div>
             </template>
         </ConsoleHeader>
-
-        <section class="evolution-intro">
-            <div class="intro-content">
-                <div class="intro-icon">
-                    <span class="trend-icon"> ↗ </span>
-                </div>
-
-                <div class="intro-text">
-                    <span class="intro-eyebrow">
-                        OBSERVATOIRE DES PAIEMENTS
-                    </span>
-
-                    <h1>Évolution du réseau</h1>
-
-                    <p>
-                        Analysez l'évolution des montants facturés, encaissés et
-                        en cours, ainsi que les délais de paiement des
-                        assureurs.
-                    </p>
-                </div>
-            </div>
-
-            <div class="intro-status">
-                <span class="status-dot"></span>
-
-                <span>
-                    {{ periodLabel }}
-                </span>
-            </div>
-        </section>
 
         <KpiRow :columns="4" class="evolution-kpis">
             <div class="metric-wrapper">
@@ -594,156 +564,6 @@ async function exportChart() {
     align-items: center;
 
     gap: 8px;
-}
-
-.evolution-intro {
-    position: relative;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 25px;
-
-    margin: 16px 0 22px;
-
-    padding: 22px 25px;
-
-    border: 1px solid var(--apha-border);
-
-    border-radius: 18px;
-
-    background: #fff;
-
-    /* box-shadow:
-        0 8px 30px
-        rgba(35, 70, 68, .035); */
-
-    overflow: hidden;
-
-    animation: fadeUp 0.5s ease both;
-}
-
-.intro-content {
-    position: relative;
-
-    z-index: 1;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 15px;
-}
-
-.intro-icon {
-    width: 48px;
-
-    height: 48px;
-
-    flex-shrink: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    border-radius: 14px;
-
-    background: var(--apha-primary);
-
-    color: white;
-
-    box-shadow: 0 8px 18px rgba(0, 143, 131, 0.18);
-}
-
-.trend-icon {
-    font-size: 22px;
-
-    font-weight: 800;
-}
-
-.intro-text {
-    display: flex;
-
-    flex-direction: column;
-}
-
-.intro-eyebrow {
-    margin-bottom: 3px;
-
-    color: var(--apha-primary);
-
-    font-size: 8.5px;
-
-    font-weight: 850;
-
-    letter-spacing: 0.14em;
-}
-
-.intro-text h1 {
-    margin: 0;
-
-    color: var(--apha-ink);
-
-    font-size: 20px;
-
-    font-weight: 800;
-
-    letter-spacing: -0.025em;
-}
-
-.intro-text p {
-    max-width: 720px;
-
-    margin-top: 4px;
-
-    color: var(--apha-muted);
-
-    font-size: 10.5px;
-
-    line-height: 1.55;
-}
-
-.intro-status {
-    position: relative;
-
-    z-index: 2;
-
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 7px;
-
-    padding: 8px 11px;
-
-    border: 1px solid rgba(0, 143, 131, 0.08);
-
-    border-radius: 30px;
-
-    background: var(--apha-primary-soft);
-
-    color: var(--apha-primary-dark);
-
-    font-size: 9px;
-
-    font-weight: 700;
-
-    white-space: nowrap;
-}
-
-.status-dot {
-    width: 6px;
-
-    height: 6px;
-
-    border-radius: 50%;
-
-    background: var(--apha-primary);
 }
 
 .evolution-kpis {
@@ -1363,10 +1183,6 @@ async function exportChart() {
         padding-right: 6px;
     }
 
-    .evolution-intro {
-        padding: 20px;
-    }
-
     .trend-header {
         gap: 15px;
     }
@@ -1375,40 +1191,6 @@ async function exportChart() {
 @media (max-width: 760px) {
     .network-evolution-page {
         padding: 0 4px 50px;
-    }
-
-    .evolution-intro {
-        align-items: flex-start;
-
-        flex-direction: column;
-
-        margin-top: 10px;
-
-        padding: 17px;
-
-        border-radius: 15px;
-    }
-
-    .intro-status {
-        width: 100%;
-
-        justify-content: center;
-    }
-
-    .intro-icon {
-        width: 41px;
-
-        height: 41px;
-
-        border-radius: 11px;
-    }
-
-    .intro-text h1 {
-        font-size: 17px;
-    }
-
-    .intro-text p {
-        font-size: 9.5px;
     }
 
     /* GRAPH */
@@ -1459,10 +1241,6 @@ async function exportChart() {
 }
 
 @media (max-width: 520px) {
-    .intro-content {
-        align-items: flex-start;
-    }
-
     .trend-title-row {
         align-items: flex-start;
     }

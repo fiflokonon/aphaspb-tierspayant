@@ -152,7 +152,7 @@ watch([period, city], reload);
     <div class="network-page">
         <ConsoleHeader
             eyebrow="RÉSEAU DES OFFICINES · BÉNIN"
-            :title="periodLabel"
+            title="Performance du réseau"
             class="network-header"
         >
             <template #filters>
@@ -207,33 +207,6 @@ watch([period, city], reload);
                 </div>
             </template>
         </ConsoleHeader>
-
-        <section class="network-intro">
-            <div class="intro-content">
-                <div class="intro-icon">
-                    <span>◉</span>
-                </div>
-
-                <div>
-                    <span class="intro-label">
-                        OBSERVATOIRE DES PAIEMENTS
-                    </span>
-
-                    <h1>Performance du réseau</h1>
-
-                    <p>
-                        Suivez les délais de règlement et les indicateurs de
-                        paiement des assureurs du réseau.
-                    </p>
-                </div>
-            </div>
-
-            <div class="privacy-badge">
-                <span class="privacy-dot"></span>
-
-                <span> Données anonymisées </span>
-            </div>
-        </section>
 
         <KpiRow :columns="3" class="network-kpis">
             <!-- KPI 1 -->
@@ -444,15 +417,11 @@ watch([period, city], reload);
             </DataTable>
         </section>
 
-        <div class="network-footnote">
-            <div class="footnote-icon">i</div>
-
-            <p>
-                Les indicateurs sont calculés à partir des déclarations
-                transmises par les officines participantes. Les données
-                individuelles ne sont jamais exposées.
-            </p>
-        </div>
+        <p class="page-source">
+            Les indicateurs sont calculés à partir des déclarations transmises
+            par les officines participantes. Les données individuelles ne sont
+            jamais exposées.
+        </p>
     </div>
 </template>
 
@@ -642,144 +611,6 @@ watch([period, city], reload);
     box-shadow:
         0 6px 16px
         rgba(0,143,131,.10); */
-}
-
-.network-intro {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 20px;
-
-    margin: 10px 0 26px;
-
-    padding: 22px 24px;
-
-    background: #fff;
-
-    border: 1px solid var(--apha-border);
-
-    border-radius: 18px;
-    /* 
-    box-shadow:
-        0 8px 30px
-        rgba(35,70,68,.035); */
-
-    overflow: hidden;
-
-    position: relative;
-
-    animation: introAppear 0.55s ease both;
-}
-
-.intro-content {
-    display: flex;
-
-    align-items: center;
-
-    gap: 16px;
-}
-
-.intro-icon {
-    width: 48px;
-
-    height: 48px;
-
-    flex-shrink: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    border-radius: 14px;
-
-    color: white;
-
-    background: var(--apha-primary);
-
-    box-shadow: 0 8px 18px rgba(0, 143, 131, 0.18);
-
-    animation: iconFloat 3s ease-in-out infinite;
-}
-
-.intro-icon span {
-    font-size: 19px;
-}
-
-.intro-label {
-    display: block;
-
-    font-size: 9px;
-
-    font-weight: 800;
-
-    letter-spacing: 0.12em;
-
-    color: var(--apha-primary);
-
-    margin-bottom: 3px;
-}
-
-.intro-content h1 {
-    font-size: 20px;
-
-    font-weight: 750;
-
-    letter-spacing: -0.025em;
-
-    color: var(--apha-ink);
-}
-
-.intro-content p {
-    margin-top: 4px;
-
-    font-size: 11px;
-
-    color: var(--apha-muted);
-}
-
-.privacy-badge {
-    position: relative;
-
-    z-index: 2;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 7px;
-
-    padding: 8px 11px;
-
-    background: var(--apha-primary-soft);
-
-    color: var(--apha-primary-dark);
-
-    border-radius: 30px;
-
-    font-size: 10px;
-
-    font-weight: 650;
-
-    white-space: nowrap;
-}
-
-.privacy-dot {
-    width: 7px;
-
-    height: 7px;
-
-    border-radius: 50%;
-
-    background: var(--apha-primary);
-
-    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
-
-    animation: statusPulse 2.2s infinite;
 }
 
 .network-kpis {
@@ -1074,68 +905,17 @@ watch([period, city], reload);
     transform: translate(1px, -1px);
 }
 
-.network-footnote {
-    display: flex;
-
-    align-items: flex-start;
-
-    gap: 9px;
-
-    margin-top: 14px;
-
-    padding: 12px 15px;
-
-    border-radius: 12px;
-
-    background: rgba(0, 143, 131, 0.035);
-
-    border: 1px solid rgba(0, 143, 131, 0.07);
-}
-
-.footnote-icon {
-    width: 18px;
-
-    height: 18px;
-
-    flex-shrink: 0;
-
-    border-radius: 50%;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    background: var(--apha-primary);
-
-    color: white;
-
-    font-size: 10px;
-
-    font-weight: 800;
-}
-
-.network-footnote p {
-    font-size: 10px;
-
-    line-height: 1.5;
+/*
+  Une ligne de métadonnée, plus un panneau : la phrase mérite d'être lisible,
+  pas d'occuper une bande avec une icône « i ».
+*/
+.page-source {
+    margin-top: 16px;
 
     color: var(--apha-muted);
-}
 
-@keyframes introAppear {
-    from {
-        opacity: 0;
-
-        transform: translateY(8px);
-    }
-
-    to {
-        opacity: 1;
-
-        transform: translateY(0);
-    }
+    font-size: 12.5px;
+    line-height: 1.5;
 }
 
 @keyframes cardAppear {
@@ -1163,43 +943,6 @@ watch([period, city], reload);
         opacity: 1;
 
         transform: translateY(0);
-    }
-}
-
-@keyframes iconFloat {
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-3px);
-    }
-}
-
-@keyframes statusPulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0.25);
-    }
-
-    70% {
-        box-shadow: 0 0 0 5px rgba(0, 143, 131, 0);
-    }
-
-    100% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0);
-    }
-}
-
-@media (max-width: 900px) {
-    .network-intro {
-        align-items: flex-start;
-
-        flex-direction: column;
-    }
-
-    .privacy-badge {
-        align-self: flex-start;
     }
 }
 
@@ -1240,42 +983,6 @@ watch([period, city], reload);
         padding-bottom: 80px;
     }
 
-    .network-intro {
-        margin-top: 5px;
-
-        padding: 17px;
-
-        border-radius: 14px;
-    }
-
-    .intro-content {
-        align-items: flex-start;
-    }
-
-    .intro-icon {
-        width: 40px;
-
-        height: 40px;
-
-        border-radius: 11px;
-    }
-
-    .intro-content h1 {
-        font-size: 17px;
-    }
-
-    .intro-content p {
-        font-size: 10px;
-
-        line-height: 1.5;
-    }
-
-    .privacy-badge {
-        width: 100%;
-
-        justify-content: center;
-    }
-
     .header-actions {
         gap: 5px;
     }
@@ -1302,10 +1009,6 @@ watch([period, city], reload);
         border-radius: 14px;
 
         padding: 2px;
-    }
-
-    .network-footnote {
-        margin-top: 10px;
     }
 }
 

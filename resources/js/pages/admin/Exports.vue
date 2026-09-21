@@ -100,31 +100,6 @@ watch([period, city, insurer], reload);
     </ConsoleHeader>
 
     <div class="exports-page">
-        <section class="exports-intro">
-            <div class="intro-main">
-                <div class="intro-icon">
-                    <span class="download-symbol">↓</span>
-                </div>
-
-                <div class="intro-copy">
-                    <span class="intro-eyebrow"> EXPORT DES DONNÉES </span>
-
-                    <h1>Statistiques agrégées</h1>
-
-                    <p>
-                        Exportez les indicateurs du réseau par assureur dans un
-                        format optimisé pour Excel et les notes de plaidoyer.
-                    </p>
-                </div>
-            </div>
-
-            <div class="privacy-badge">
-                <span class="privacy-dot"></span>
-
-                <span> Données anonymisées </span>
-            </div>
-        </section>
-
         <section class="export-card">
             <div class="card-accent"></div>
 
@@ -292,14 +267,10 @@ watch([period, city, insurer], reload);
             </div>
         </section>
 
-        <div class="export-footnote">
-            <span class="footnote-icon"> i </span>
-
-            <span>
-                Les données exportées restent agrégées afin de préserver
-                l'anonymat des officines participantes.
-            </span>
-        </div>
+        <p class="page-source">
+            Les données exportées restent agrégées afin de préserver l'anonymat
+            des officines participantes.
+        </p>
     </div>
 </template>
 
@@ -348,180 +319,6 @@ watch([period, city, insurer], reload);
 
 :deep(.exports-header) {
     position: relative;
-}
-
-.exports-intro {
-    position: relative;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 30px;
-
-    width: 100%;
-
-    margin-bottom: 20px;
-
-    padding: 24px 28px;
-
-    border: 1px solid var(--apha-border);
-
-    border-radius: 18px;
-
-    background: #fff;
-
-    /* box-shadow:
-        0 8px 30px
-        rgba(35, 70, 68, .035); */
-
-    overflow: hidden;
-
-    animation: fadeUp 0.5s ease both;
-}
-
-.intro-main {
-    position: relative;
-
-    z-index: 1;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 16px;
-}
-
-.intro-icon {
-    width: 50px;
-
-    height: 50px;
-
-    flex-shrink: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    border-radius: 14px;
-
-    color: #ffffff;
-
-    background: var(--apha-primary);
-
-    /* box-shadow:
-        0 8px 18px
-        rgba(0, 143, 131, .18); */
-
-    transition:
-        transform 0.3s ease,
-        box-shadow 0.3s ease;
-}
-
-.exports-intro:hover .intro-icon {
-    transform: translateY(-2px) rotate(2deg);
-
-    box-shadow: 0 11px 22px rgba(0, 143, 131, 0.22);
-}
-
-.download-symbol {
-    font-size: 22px;
-
-    font-weight: 800;
-
-    line-height: 1;
-}
-
-.intro-copy {
-    display: flex;
-
-    flex-direction: column;
-}
-
-.intro-eyebrow {
-    display: block;
-
-    margin-bottom: 3px;
-
-    color: var(--apha-primary);
-
-    font-size: 9px;
-
-    font-weight: 800;
-
-    letter-spacing: 0.13em;
-}
-
-.intro-copy h1 {
-    margin: 0;
-
-    color: var(--apha-ink);
-
-    font-size: 21px;
-
-    font-weight: 800;
-
-    letter-spacing: -0.03em;
-}
-
-.intro-copy p {
-    max-width: 700px;
-
-    margin-top: 5px;
-
-    color: var(--apha-muted);
-
-    font-size: 11px;
-
-    line-height: 1.55;
-}
-
-.privacy-badge {
-    position: relative;
-
-    z-index: 2;
-
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-    flex-shrink: 0;
-
-    padding: 8px 12px;
-
-    border: 1px solid rgba(0, 143, 131, 0.08);
-
-    border-radius: 30px;
-
-    background: var(--apha-primary-soft);
-
-    color: var(--apha-primary-dark);
-
-    font-size: 10px;
-
-    font-weight: 700;
-
-    white-space: nowrap;
-}
-
-.privacy-dot {
-    width: 7px;
-
-    height: 7px;
-
-    border-radius: 50%;
-
-    background: var(--apha-primary);
-
-    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
-
-    animation: statusPulse 2.2s infinite;
 }
 
 .export-card {
@@ -1177,46 +974,17 @@ watch([period, city, insurer], reload);
     font-weight: 750;
 }
 
-.export-footnote {
-    display: flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-    margin-top: 11px;
-
-    padding: 9px 12px;
+/*
+  Une ligne de métadonnée, plus un panneau : la phrase mérite d'être lisible,
+  pas d'occuper une bande avec une icône « i ».
+*/
+.page-source {
+    margin-top: 16px;
 
     color: var(--apha-light);
 
-    font-size: 9px;
-
-    line-height: 1.45;
-}
-
-.footnote-icon {
-    width: 16px;
-
-    height: 16px;
-
-    flex-shrink: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    border-radius: 50%;
-
-    background: #e9eeee;
-
-    color: var(--apha-muted);
-
-    font-size: 9px;
-
-    font-weight: 800;
+    font-size: 12.5px;
+    line-height: 1.5;
 }
 
 @keyframes fadeUp {
@@ -1233,29 +1001,11 @@ watch([period, city, insurer], reload);
     }
 }
 
-@keyframes statusPulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0.25);
-    }
-
-    70% {
-        box-shadow: 0 0 0 5px rgba(0, 143, 131, 0);
-    }
-
-    100% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0);
-    }
-}
-
 @media (max-width: 900px) {
     .exports-page {
         padding-left: 6px;
 
         padding-right: 6px;
-    }
-
-    .exports-intro {
-        padding: 21px;
     }
 
     .export-card {
@@ -1276,20 +1026,6 @@ watch([period, city, insurer], reload);
         margin-top: 15px;
 
         padding: 0 4px 50px;
-    }
-
-    .exports-intro {
-        align-items: flex-start;
-
-        flex-direction: column;
-
-        padding: 18px;
-
-        border-radius: 15px;
-    }
-
-    .privacy-badge {
-        align-self: flex-start;
     }
 
     /* CARD */
@@ -1332,38 +1068,6 @@ watch([period, city, insurer], reload);
 }
 
 @media (max-width: 520px) {
-    .intro-main {
-        align-items: flex-start;
-
-        gap: 11px;
-    }
-
-    .intro-icon {
-        width: 40px;
-
-        height: 40px;
-
-        border-radius: 11px;
-    }
-
-    .download-symbol {
-        font-size: 19px;
-    }
-
-    .intro-copy h1 {
-        font-size: 17px;
-    }
-
-    .intro-copy p {
-        font-size: 10px;
-    }
-
-    .privacy-badge {
-        width: 100%;
-
-        justify-content: center;
-    }
-
     .export-card {
         padding: 16px;
     }
@@ -1418,12 +1122,6 @@ watch([period, city, insurer], reload);
 
     .privacy-content p {
         font-size: 9.5px;
-    }
-
-    .export-footnote {
-        align-items: flex-start;
-
-        font-size: 8.5px;
     }
 }
 

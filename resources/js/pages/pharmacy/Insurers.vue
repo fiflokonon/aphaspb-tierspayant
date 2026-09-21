@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
-import { ShieldCheck } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import InsurerChecklist from '@/components/aphaspb/InsurerChecklist.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
@@ -52,33 +51,6 @@ const losing = computed(() =>
 
     <div class="insurers-page">
         <ConsoleHeader title="Mes assureurs" class="insurers-header" />
-
-        <section class="insurers-intro">
-            <div class="intro-glow"></div>
-
-            <div class="intro-content">
-                <div class="intro-icon">
-                    <ShieldCheck :size="16" />
-                </div>
-
-                <div class="intro-text">
-                    <span class="intro-label"> CONFIGURATION DU RÉSEAU </span>
-
-                    <h1>Vos assureurs partenaires</h1>
-
-                    <p>
-                        Sélectionnez les assureurs avec lesquels votre officine
-                        travaille. Ils vous seront proposés lors de vos
-                        déclarations mensuelles.
-                    </p>
-                </div>
-            </div>
-
-            <div class="intro-badge">
-                <span class="badge-dot"></span>
-                <span>Configuration active</span>
-            </div>
-        </section>
 
         <div class="insurers-layout">
             <Form
@@ -256,155 +228,6 @@ const losing = computed(() =>
 .insurers-header {
     position: relative;
     z-index: 2;
-}
-
-.insurers-intro {
-    position: relative;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 24px;
-
-    margin-top: 16px;
-    margin-bottom: 22px;
-
-    padding: 23px 25px;
-
-    overflow: hidden;
-
-    border: 1px solid var(--apha-border);
-    border-radius: 18px;
-
-    background: #fff;
-
-    /* box-shadow:
-        0 8px 30px rgba(35, 70, 68, 0.035); */
-
-    animation: introAppear 0.55s ease both;
-}
-
-.intro-glow {
-    position: absolute;
-
-    right: -70px;
-    top: -90px;
-
-    width: 210px;
-    height: 210px;
-
-    border-radius: 50%;
-
-    pointer-events: none;
-}
-
-.intro-content {
-    position: relative;
-    z-index: 1;
-
-    display: flex;
-    align-items: center;
-
-    gap: 16px;
-}
-
-.intro-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    width: 50px;
-    height: 50px;
-
-    flex-shrink: 0;
-
-    border-radius: 15px;
-
-    color: #ffffff;
-
-    background: var(--apha-primary);
-
-    box-shadow: 0 8px 20px rgba(0, 143, 131, 0.18);
-
-    animation: iconFloat 3s ease-in-out infinite;
-}
-
-.intro-icon span {
-    font-size: 20px;
-}
-
-.intro-label {
-    display: block;
-
-    margin-bottom: 4px;
-
-    color: var(--apha-primary);
-
-    font-size: 9px;
-    font-weight: 800;
-
-    letter-spacing: 0.13em;
-}
-
-.intro-text h1 {
-    color: var(--apha-ink);
-
-    font-size: 20px;
-    line-height: 1.2;
-
-    font-weight: 750;
-
-    letter-spacing: -0.025em;
-}
-
-.intro-text p {
-    max-width: 680px;
-
-    margin-top: 5px;
-
-    color: var(--apha-muted);
-
-    font-size: 11px;
-    line-height: 1.5;
-}
-
-.intro-badge {
-    position: relative;
-    z-index: 1;
-
-    display: flex;
-    align-items: center;
-
-    gap: 8px;
-
-    flex-shrink: 0;
-
-    padding: 8px 12px;
-
-    border-radius: 30px;
-
-    background: var(--apha-primary-soft);
-
-    color: var(--apha-primary-dark);
-
-    font-size: 10px;
-    font-weight: 700;
-
-    white-space: nowrap;
-}
-
-.badge-dot {
-    width: 7px;
-    height: 7px;
-
-    border-radius: 50%;
-
-    background: var(--apha-primary);
-
-    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
-
-    animation: statusPulse 2.2s infinite;
 }
 
 .insurers-layout {
@@ -877,18 +700,6 @@ const losing = computed(() =>
     }
 }
 
-@keyframes introAppear {
-    from {
-        opacity: 0;
-        transform: translateY(9px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 @keyframes cardAppear {
     from {
         opacity: 0;
@@ -910,31 +721,6 @@ const losing = computed(() =>
     to {
         opacity: 1;
         transform: translateX(0);
-    }
-}
-
-@keyframes iconFloat {
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-3px);
-    }
-}
-
-@keyframes statusPulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0.25);
-    }
-
-    70% {
-        box-shadow: 0 0 0 5px rgba(0, 143, 131, 0);
-    }
-
-    100% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0);
     }
 }
 
@@ -971,18 +757,6 @@ const losing = computed(() =>
 }
 
 @media (max-width: 700px) {
-    .insurers-intro {
-        align-items: flex-start;
-
-        flex-direction: column;
-
-        padding: 18px;
-    }
-
-    .intro-badge {
-        align-self: flex-start;
-    }
-
     .card-header {
         padding: 21px 18px 18px;
     }
@@ -991,25 +765,6 @@ const losing = computed(() =>
 @media (max-width: 560px) {
     .insurers-page {
         padding-bottom: 80px;
-    }
-
-    .intro-content {
-        align-items: flex-start;
-    }
-
-    .intro-icon {
-        width: 42px;
-        height: 42px;
-
-        border-radius: 12px;
-    }
-
-    .intro-text h1 {
-        font-size: 17px;
-    }
-
-    .intro-text p {
-        font-size: 10px;
     }
 
     .card-header {
@@ -1045,25 +800,12 @@ const losing = computed(() =>
 }
 
 @media (max-width: 400px) {
-    .insurers-intro {
-        border-radius: 14px;
-    }
-
     .insurers-card {
         border-radius: 14px;
     }
 
     .info-card {
         border-radius: 14px;
-    }
-
-    .intro-icon {
-        width: 39px;
-        height: 39px;
-    }
-
-    .intro-text h1 {
-        font-size: 16px;
     }
 }
 

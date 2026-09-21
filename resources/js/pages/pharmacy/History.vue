@@ -128,30 +128,6 @@ const footer = computed(
             </template>
         </ConsoleHeader>
 
-        <section class="history-intro">
-            <div class="intro-main">
-                <div class="intro-icon">
-                    <span class="icon-history">↺</span>
-                </div>
-
-                <div class="intro-text">
-                    <span class="intro-eyebrow"> SUIVI ADMINISTRATIF </span>
-
-                    <h1>Vos déclarations</h1>
-
-                    <p>
-                        Retrouvez l'ensemble de vos déclarations mensuelles,
-                        leurs statuts et les montants enregistrés.
-                    </p>
-                </div>
-            </div>
-
-            <div class="intro-badge">
-                <span class="badge-dot"></span>
-                <span> Données personnelles </span>
-            </div>
-        </section>
-
         <section class="history-table-section">
             <div class="table-top-line"></div>
 
@@ -406,180 +382,6 @@ const footer = computed(
     transform: translateY(-1px);
 
     box-shadow: 0 7px 18px rgba(35, 70, 68, 0.06);
-}
-
-.history-intro {
-    position: relative;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 24px;
-
-    margin-top: 12px;
-    margin-bottom: 24px;
-
-    padding: 21px 23px;
-
-    overflow: hidden;
-
-    border: 1px solid var(--apha-border);
-
-    border-radius: 18px;
-
-    background: #fff;
-
-    /* box-shadow:
-        0 9px 30px rgba(35, 70, 68, 0.035); */
-
-    animation: historyIntroAppear 0.55s ease both;
-}
-
-.history-intro::after {
-    content: '';
-
-    position: absolute;
-
-    left: 0;
-    bottom: 0;
-
-    width: 100%;
-    height: 2px;
-
-    /*
-      Pas d'opacite ici. Elle valait 0.5 et compensait le pic d'un degrade ;
-      sur un filet uni deja translucide elle ramenait l'alpha effectif a
-      0,045, soit une ligne invisible.
-    */
-    background: var(--apha-border);
-}
-
-.history-intro::before {
-    content: '';
-
-    position: absolute;
-
-    right: -65px;
-    top: -90px;
-
-    width: 220px;
-    height: 220px;
-
-    border-radius: 50%;
-
-    pointer-events: none;
-}
-
-.intro-main {
-    position: relative;
-    z-index: 1;
-
-    display: flex;
-    align-items: center;
-
-    gap: 15px;
-}
-
-.intro-icon {
-    width: 49px;
-    height: 49px;
-
-    flex-shrink: 0;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 14px;
-
-    color: #ffffff;
-
-    background: var(--apha-primary);
-
-    /* box-shadow:
-        0 8px 20px rgba(0, 143, 131, 0.17); */
-
-    animation: iconFloat 3s ease-in-out infinite;
-}
-
-.icon-history {
-    display: block;
-
-    font-size: 23px;
-    line-height: 1;
-
-    transform: rotate(-20deg);
-}
-
-.intro-text {
-    display: flex;
-    flex-direction: column;
-}
-
-.intro-eyebrow {
-    margin-bottom: 3px;
-
-    color: var(--apha-primary);
-
-    font-size: 9px;
-    font-weight: 800;
-
-    letter-spacing: 0.13em;
-}
-
-.intro-text h1 {
-    color: var(--apha-ink);
-
-    font-size: 20px;
-    font-weight: 750;
-
-    letter-spacing: -0.025em;
-}
-
-.intro-text p {
-    margin-top: 4px;
-
-    color: var(--apha-muted);
-
-    font-size: 11px;
-    line-height: 1.45;
-}
-
-.intro-badge {
-    position: relative;
-    z-index: 2;
-
-    display: flex;
-    align-items: center;
-
-    gap: 8px;
-
-    padding: 8px 12px;
-
-    border-radius: 30px;
-
-    background: var(--apha-primary-soft);
-
-    color: var(--apha-primary-dark);
-
-    font-size: 10px;
-    font-weight: 700;
-
-    white-space: nowrap;
-}
-
-.badge-dot {
-    width: 7px;
-    height: 7px;
-
-    border-radius: 50%;
-
-    background: var(--apha-primary);
-
-    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
-
-    animation: badgePulse 2.2s infinite;
 }
 
 .history-table-section {
@@ -1146,18 +948,6 @@ const footer = computed(
     line-height: 1.45;
 }
 
-@keyframes historyIntroAppear {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 @keyframes tableAppear {
     from {
         opacity: 0;
@@ -1206,41 +996,7 @@ const footer = computed(
     }
 }
 
-@keyframes iconFloat {
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-3px);
-    }
-}
-
-@keyframes badgePulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0.24);
-    }
-
-    70% {
-        box-shadow: 0 0 0 5px rgba(0, 143, 131, 0);
-    }
-
-    100% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0);
-    }
-}
-
 @media (max-width: 900px) {
-    .history-intro {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .intro-badge {
-        align-self: flex-start;
-    }
-
     .table-heading {
         align-items: flex-start;
         flex-direction: column;
@@ -1266,10 +1022,6 @@ const footer = computed(
         display: none;
     }
 
-    .history-intro {
-        padding: 18px;
-    }
-
     .table-heading {
         padding: 18px 17px 15px;
     }
@@ -1286,44 +1038,6 @@ const footer = computed(
 @media (max-width: 640px) {
     .history-page {
         padding-bottom: 80px;
-    }
-
-    .history-intro {
-        margin-top: 6px;
-        margin-bottom: 17px;
-
-        border-radius: 14px;
-
-        padding: 16px;
-    }
-
-    .intro-main {
-        align-items: flex-start;
-    }
-
-    .intro-icon {
-        width: 41px;
-        height: 41px;
-
-        border-radius: 11px;
-    }
-
-    .icon-history {
-        font-size: 19px;
-    }
-
-    .intro-text h1 {
-        font-size: 17px;
-    }
-
-    .intro-text p {
-        font-size: 10px;
-    }
-
-    .intro-badge {
-        width: 100%;
-
-        justify-content: center;
     }
 
     .history-table-section {
@@ -1364,18 +1078,6 @@ const footer = computed(
 }
 
 @media (max-width: 400px) {
-    .intro-main {
-        gap: 11px;
-    }
-
-    .intro-text h1 {
-        font-size: 16px;
-    }
-
-    .intro-text p {
-        max-width: 240px;
-    }
-
     .table-heading {
         padding-left: 14px;
         padding-right: 14px;
