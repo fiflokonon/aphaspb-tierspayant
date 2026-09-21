@@ -122,3 +122,60 @@ test('every custom property a Vue file reads is actually defined somewhere', fun
 
     expect($unresolved)->toBe([]);
 });
+
+test('a cleaned file writes no colour literal', function () {
+    // La dérive est revenue par là : les tokens étaient propres, et 293
+    // hexadécimaux vivaient dans les pages. Interdire le littéral est le seul
+    // moyen de rendre le nettoyage durable — les trois premiers cas
+    // n'interdisent que de *redéclarer* un token, pas d'en réécrire la valeur.
+    //
+    // La liste s'allonge à chaque lot plutôt que de viser tout le dépôt : les
+    // écrans du lot 4 portent encore des dizaines d'occurrences de turquoise,
+    // et une garde qui rougit en permanence ne protège rien.
+    // `css/app.css` est volontairement absent : hors de :root et de @theme, il
+    // ne contient plus que le bloc [data-sidebar='sidebar'], du CSS mort qui
+    // cible les composants shadcn ui/sidebar — présents mais importés nulle
+    // part. Le supprimer est une décision à prendre, pas un effet de bord de
+    // cette garde.
+    $cleaned = [
+        'js/layouts/console/ConsoleHeader.vue',
+        'js/layouts/console/ConsoleLayout.vue',
+        'js/layouts/console/ConsoleSidebar.vue',
+        'js/pages/pharmacy/Dashboard.vue',
+        'js/components/aphaspb/DashboardKpis.vue',
+        'js/components/aphaspb/KpiCard.vue',
+    ];
+
+    $offenders = [];
+
+    foreach ($cleaned as $relative) {
+        $body = File::get(resource_path($relative));
+
+        // Seul le bloc <style> est concerné : une couleur passée en chaîne à
+        // une bibliothèque de graphiques ne peut pas citer un token CSS.
+        $at = strpos($body, '<style');
+        $body = $at === false ? '' : substr($body, $at);
+
+        // Les commentaires citent volontiers les anciennes valeurs.
+        $body = preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $body);
+
+        // La fonction est capturée en entier, pas seulement son ouverture :
+        // sans cela, `rgb(255 255 255 / .16)` remonte comme « rgb(2 » et on ne
+        // peut plus distinguer le blanc d'une teinte.
+        preg_match_all('/#[0-9a-f]{3,8}\b|rgba?\([^)]*\)/i', $body, $found);
+
+        foreach ($found[0] as $literal) {
+            // Le blanc et le noir ne sont pas des teintes de charte.
+            $canonical = preg_replace('/[\s,]+/', ' ', strtolower($literal));
+
+            if (preg_match('/^#(fff|ffffff|000|000000)$/', $canonical) === 1
+                || preg_match('/^rgba?\( ?(255 255 255|0 0 0)\b/', $canonical) === 1) {
+                continue;
+            }
+
+            $offenders[] = $relative.' → '.$literal;
+        }
+    }
+
+    expect($offenders)->toBe([]);
+});
