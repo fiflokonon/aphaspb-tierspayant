@@ -177,13 +177,13 @@ watch(collapsed, writeCollapsed);
 .apha-sidebar {
     /*
       --muted et --light sont ici des couleurs de TEXTE. Le thème réserve
-      --muted à une surface (#faf8f3) : les retirer rendrait ce texte presque
+      --muted à une surface presque blanche : les retirer rendrait ce texte
       blanc. À renommer au lot 3 ou 4, pas à supprimer.
     */
-    --muted: #788585;
-    --light: #a2adad;
+    --muted: color-mix(in srgb, var(--ink) 55%, transparent);
+    --light: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    --background-soft: #f7faf9;
+    --background-soft: var(--cream-state);
 
     position: sticky;
 
@@ -220,7 +220,7 @@ watch(collapsed, writeCollapsed);
 
     border-right: 1px solid var(--border);
 
-    box-shadow: 8px 0 30px rgba(35, 70, 68, 0.035);
+    box-shadow: 8px 0 30px color-mix(in srgb, var(--ink) 3.5%, transparent);
 
     overflow: hidden;
 }
@@ -254,7 +254,7 @@ watch(collapsed, writeCollapsed);
 
     padding: 2px 4px 12px;
 
-    border-bottom: 1px solid rgba(35, 70, 68, 0.07);
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
 .apha-brand {
@@ -294,9 +294,9 @@ watch(collapsed, writeCollapsed);
 
     background: var(--primary-soft);
 
-    border: 1px solid rgba(0, 143, 131, 0.12);
+    border: 1px solid color-mix(in srgb, var(--officine) 12%, transparent);
 
-    box-shadow: 0 5px 14px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 5px 14px color-mix(in srgb, var(--officine) 8%, transparent);
 
     transition:
         transform 0.3s ease,
@@ -306,7 +306,7 @@ watch(collapsed, writeCollapsed);
 .apha-brand:hover .apha-logo-wrap {
     transform: rotate(-4deg) scale(1.05);
 
-    box-shadow: 0 8px 18px rgba(0, 143, 131, 0.14);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--officine) 14%, transparent);
 }
 
 .apha-logo {
@@ -380,7 +380,7 @@ watch(collapsed, writeCollapsed);
 
     background: var(--gold);
 
-    box-shadow: 0 0 0 3px rgba(215, 163, 61, 0.08);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold-mid) 8%, transparent);
 }
 
 .apha-navigation {
@@ -432,7 +432,8 @@ watch(collapsed, writeCollapsed);
 
     scrollbar-width: thin;
 
-    scrollbar-color: rgba(0, 143, 131, 0.14) transparent;
+    scrollbar-color: color-mix(in srgb, var(--officine) 14%, transparent)
+        transparent;
 }
 
 .apha-nav::-webkit-scrollbar {
@@ -444,7 +445,7 @@ watch(collapsed, writeCollapsed);
 }
 
 .apha-nav::-webkit-scrollbar-thumb {
-    background: rgba(0, 143, 131, 0.14);
+    background: color-mix(in srgb, var(--officine) 14%, transparent);
 
     border-radius: 10px;
 }
@@ -490,7 +491,7 @@ watch(collapsed, writeCollapsed);
 .apha-nav-item:hover {
     color: var(--primary-dark);
 
-    background: rgba(0, 143, 131, 0.055);
+    background: color-mix(in srgb, var(--officine) 5.5%, transparent);
 
     transform: translateX(2px);
 }
@@ -526,7 +527,7 @@ watch(collapsed, writeCollapsed);
 
     border-radius: 7px;
 
-    background: #f5f8f7;
+    background: var(--cream-state);
 
     transition:
         background 0.22s ease,
@@ -613,7 +614,7 @@ watch(collapsed, writeCollapsed);
 
     padding-top: 10px;
 
-    border-top: 1px solid rgba(35, 70, 68, 0.07);
+    border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
 .notice-label {
@@ -635,7 +636,8 @@ watch(collapsed, writeCollapsed);
 
     scrollbar-width: thin;
 
-    scrollbar-color: rgba(0, 143, 131, 0.15) transparent;
+    scrollbar-color: color-mix(in srgb, var(--officine) 15%, transparent)
+        transparent;
 }
 
 .apha-notices-list::-webkit-scrollbar {
@@ -647,7 +649,7 @@ watch(collapsed, writeCollapsed);
 }
 
 .apha-notices-list::-webkit-scrollbar-thumb {
-    background: rgba(0, 143, 131, 0.15);
+    background: color-mix(in srgb, var(--officine) 15%, transparent);
 
     border-radius: 10px;
 }
@@ -714,9 +716,9 @@ watch(collapsed, writeCollapsed);
 
     border-radius: 8px;
 
-    background: rgba(0, 143, 131, 0.035);
+    background: color-mix(in srgb, var(--officine) 3.5%, transparent);
 
-    color: #9aa5a5;
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
     font-size: 7px;
 
@@ -734,7 +736,7 @@ watch(collapsed, writeCollapsed);
 
     background: var(--primary);
 
-    box-shadow: 0 0 0 3px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--officine) 8%, transparent);
 
     animation: sidebarPulse 2.5s ease-in-out infinite;
 }
@@ -742,11 +744,13 @@ watch(collapsed, writeCollapsed);
 @keyframes sidebarPulse {
     0%,
     100% {
-        box-shadow: 0 0 0 3px rgba(0, 143, 131, 0.08);
+        box-shadow: 0 0 0 3px
+            color-mix(in srgb, var(--officine) 8%, transparent);
     }
 
     50% {
-        box-shadow: 0 0 0 5px rgba(0, 143, 131, 0.02);
+        box-shadow: 0 0 0 5px
+            color-mix(in srgb, var(--officine) 2%, transparent);
     }
 }
 
