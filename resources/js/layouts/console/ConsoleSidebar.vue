@@ -675,18 +675,6 @@ watch(collapsed, writeCollapsed);
     margin-bottom: 3px;
 }
 
-.apha-notices-list :deep(.p-4) {
-    padding: 8px !important;
-}
-
-.apha-notices-list :deep(.p-5) {
-    padding: 8px !important;
-}
-
-.apha-notices-list :deep(.p-6) {
-    padding: 8px !important;
-}
-
 .apha-sidebar-footer {
     position: relative;
 

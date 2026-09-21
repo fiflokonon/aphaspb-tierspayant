@@ -1204,7 +1204,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     font-family: 'JetBrains Mono', monospace;
 
-    font-size: 8.5px;
+    font-size: 12.5px;
     font-weight: 700;
 
     color: var(--light);
@@ -1238,7 +1238,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: var(--terracotta);
 
-    font-size: 9.5px;
+    font-size: 12.5px;
     font-weight: 750;
 }
 
@@ -1253,7 +1253,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: var(--primary);
 
-    font-size: 8.5px;
+    font-size: 12.5px;
     font-weight: 800;
 }
 
@@ -1271,7 +1271,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: var(--primary);
 
-    font-size: 9px;
+    font-size: 12.5px;
 }
 
 @keyframes cardAppear {

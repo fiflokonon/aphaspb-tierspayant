@@ -126,28 +126,23 @@ test('every custom property a Vue file reads is actually defined somewhere', fun
 test('a cleaned file writes no colour literal', function () {
     // La dérive est revenue par là : les tokens étaient propres, et 293
     // hexadécimaux vivaient dans les pages. Interdire le littéral est le seul
-    // moyen de rendre le nettoyage durable — les trois premiers cas
-    // n'interdisent que de *redéclarer* un token, pas d'en réécrire la valeur.
+    // moyen de rendre le nettoyage durable — les autres cas n'interdisent que
+    // de *redéclarer* un token, pas d'en réécrire la valeur.
     //
-    // La liste s'allonge à chaque lot plutôt que de viser tout le dépôt : les
-    // écrans du lot 4 portent encore des dizaines d'occurrences de turquoise,
-    // et une garde qui rougit en permanence ne protège rien.
-    $cleaned = [
-        'css/app.css',
-        'js/layouts/console/ConsoleHeader.vue',
-        'js/layouts/console/ConsoleLayout.vue',
-        'js/layouts/console/ConsoleSidebar.vue',
-        'js/pages/pharmacy/Dashboard.vue',
-        'js/components/aphaspb/DashboardKpis.vue',
-        // KpiCard n'est pas dans la liste : il n'a pas de bloc <style>, ses
-        // couleurs sont des utilitaires Tailwind, et la garde ne lit que le
-        // <style>. L'y inscrire annoncerait une couverture qu'elle ne peut
-        // structurellement pas donner.
-    ];
+    // La liste des fichiers couverts a disparu au lot 4 : elle s'allongeait à
+    // chaque lot, et tant qu'elle existait elle disait « le reste n'est pas
+    // garanti ». La garde couvre désormais resources/js en entier.
+    $files = ['css/app.css'];
+
+    foreach (File::allFiles(resource_path('js')) as $file) {
+        if ($file->getExtension() === 'vue') {
+            $files[] = 'js/'.str_replace(resource_path('js').'/', '', $file->getPathname());
+        }
+    }
 
     $offenders = [];
 
-    foreach ($cleaned as $relative) {
+    foreach ($files as $relative) {
         $body = File::get(resource_path($relative));
 
         if (str_ends_with($relative, '.vue')) {
