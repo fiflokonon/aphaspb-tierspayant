@@ -381,10 +381,18 @@ const footer = computed(
 .filter-wrapper:hover {
     transform: translateY(-1px);
 
-    box-shadow: 0 7px 18px color-mix(in srgb, var(--ink) 6%, transparent);
+    box-shadow: var(--surface-shadow-raised);
 }
 
 .history-table-section {
+    /*
+      Les 22 px que portait le panneau d'introduction supprimé. Sans eux, le
+      liseré d'accent de 3 px vient se coller sous le titre serif et se lit
+      comme un soulignement mal posé — 1 px d'écart sur l'historique, la jambe
+      du « q » touchait le trait. Même valeur que .exports-page, la référence.
+    */
+    margin-top: 22px;
+
     position: relative;
 
     overflow: hidden;
@@ -744,7 +752,7 @@ const footer = computed(
 
     font-weight: 700;
 
-    color: var(--gold-dark);
+    color: var(--gold-ink);
 
     white-space: nowrap;
 }

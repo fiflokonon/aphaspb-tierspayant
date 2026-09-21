@@ -11,9 +11,7 @@ defineProps<{
 <template>
     <Head title="Compte en conflit" />
 
-    <div
-        class="flex min-h-screen justify-center bg-[#fdf8ef] px-4 py-8 sm:py-14"
-    >
+    <div class="flex min-h-screen justify-center bg-cream px-4 py-8 sm:py-14">
         <div class="w-full max-w-[420px]">
             <div class="overflow-hidden rounded-[14px] bg-card shadow-sm">
                 <div class="px-[22px] pt-[26px] pb-6">

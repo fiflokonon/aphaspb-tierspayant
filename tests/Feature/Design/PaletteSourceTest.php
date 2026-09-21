@@ -131,7 +131,15 @@ test('a cleaned file writes no colour literal', function () {
     //
     // La liste des fichiers couverts a disparu au lot 4 : elle s'allongeait à
     // chaque lot, et tant qu'elle existait elle disait « le reste n'est pas
-    // garanti ». La garde couvre désormais resources/js en entier.
+    // garanti ».
+    //
+    // Ce que la garde couvre exactement, et rien de plus : les blocs <style>
+    // de tout resources/js, plus les valeurs arbitraires Tailwind
+    // (`bg-[#…]`, `text-[#…]`, `border-[#…]`, forme générale `-[#…]`) sur le
+    // fichier entier. Elle a longtemps annoncé « resources/js en entier » en
+    // ne lisant que le <style> : quatre littéraux vivaient hors de sa portée
+    // dans des classes Tailwind, et c'est ce commentaire trop généreux qui
+    // les a rendus invisibles à trois revues de suite.
     $files = ['css/app.css'];
 
     foreach (File::allFiles(resource_path('js')) as $file) {
@@ -144,11 +152,19 @@ test('a cleaned file writes no colour literal', function () {
 
     foreach ($files as $relative) {
         $body = File::get(resource_path($relative));
+        $literals = [];
 
         if (str_ends_with($relative, '.vue')) {
-            // Seul le bloc <style> est concerné : une couleur passée en
-            // chaîne à une bibliothèque de graphiques ne peut pas citer un
-            // token CSS.
+            // Les valeurs arbitraires Tailwind vivent dans le template, hors
+            // de tout bloc <style> : on les cherche donc sur le fichier
+            // entier, commentaires retirés.
+            $whole = preg_replace(['#/\*.*?\*/#s', '#<!--.*?-->#s'], '', $body);
+            preg_match_all('/-\[\s*(#[0-9a-f]{3,8})\b/i', $whole, $arbitrary);
+            $literals = $arbitrary[1];
+
+            // Pour le reste, seul le bloc <style> est concerné : une couleur
+            // passée en chaîne à une bibliothèque de graphiques ne peut pas
+            // citer un token CSS.
             $at = strpos($body, '<style');
             $body = $at === false ? '' : substr($body, $at);
         }
@@ -171,7 +187,7 @@ test('a cleaned file writes no colour literal', function () {
         // peut plus distinguer le blanc d'une teinte.
         preg_match_all('/#[0-9a-f]{3,8}\b|rgba?\([^)]*\)/i', $body, $found);
 
-        foreach ($found[0] as $literal) {
+        foreach (array_merge($literals, $found[0]) as $literal) {
             // Le blanc et le noir ne sont pas des teintes de charte.
             $canonical = preg_replace('/[\s,]+/', ' ', strtolower($literal));
 

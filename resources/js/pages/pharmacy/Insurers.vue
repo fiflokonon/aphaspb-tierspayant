@@ -231,6 +231,14 @@ const losing = computed(() =>
 }
 
 .insurers-layout {
+    /*
+      Les 22 px que portait le panneau d'introduction supprimé. Sans eux, le
+      liseré d'accent de 3 px vient se coller sous le titre serif et se lit
+      comme un soulignement mal posé — 1 px d'écart sur l'historique, la jambe
+      du « q » touchait le trait. Même valeur que .exports-page, la référence.
+    */
+    margin-top: 22px;
+
     display: grid;
 
     grid-template-columns:

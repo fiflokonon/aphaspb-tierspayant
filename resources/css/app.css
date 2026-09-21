@@ -144,6 +144,15 @@
     --gold-mid: #e0a516;
     --gold-soft: color-mix(in srgb, var(--gold-mid) var(--soft-mix), #fff);
     --gold-dark: #b07c1a;
+    /*
+      Le doré de texte, distinct du doré de décor.
+
+      --gold-dark (#b07c1a) mesure 3,09:1 sur --gold-soft : sous AA. Cette valeur
+      est celle que les pages écrivaient déjà en clair avant le lot, et elle donne
+      4,92:1 sur --gold-soft comme 5,6:1 sur blanc. Un doré qui porte du texte et
+      un doré qui remplit une forme n'ont pas les mêmes contraintes.
+    */
+    --gold-ink: #80601f;
     --terracotta: #d13b22;
     --terracotta-dark: #ad2c16;
     --terracotta-soft: color-mix(

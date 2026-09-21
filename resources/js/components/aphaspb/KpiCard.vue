@@ -24,12 +24,18 @@ const props = withDefaults(
 </script>
 
 <template>
+    <!--
+      Une carte de chiffre est une surface : pas de bordure, --radius-card et
+      --surface-shadow, comme DataTable. Sur le bandeau vert (`band`) elle ne
+      prend ni l'un ni l'autre — le fond porte déjà la couleur, et une ombre
+      posée sur un aplat sombre ne se lit pas.
+    -->
     <div
-        class="rounded-[11px] py-[15px]"
+        class="py-[15px]"
         :class="
             surface === 'band'
                 ? 'bg-transparent px-0'
-                : 'border border-border bg-card px-4'
+                : 'rounded-[var(--radius-card)] bg-card px-4 shadow-[var(--surface-shadow)]'
         "
     >
         <div

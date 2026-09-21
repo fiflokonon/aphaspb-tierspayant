@@ -792,7 +792,14 @@ watch([period, city, insurer], reload);
 
     background: var(--cream-state);
 
-    color: color-mix(in srgb, var(--ink) 55%, transparent);
+    /*
+      65 % et non les 55 % du gris secondaire : ce texte se pose sur --cream-state,
+      où 55 % tombe à 3,81:1. Les 55 % restent la valeur du reste de l'application
+      et sont eux aussi sous AA — leur relèvement global est une décision de charte
+      en attente, qui touche tous les écrans. En attendant, on ne dégrade pas un
+      texte qui était conforme.
+    */
+    color: color-mix(in srgb, var(--ink) 65%, transparent);
 
     font-family:
         ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -875,7 +882,7 @@ watch([period, city, insurer], reload);
 
     background: color-mix(in srgb, var(--gold-mid) 14%, transparent);
 
-    color: var(--gold-dark);
+    color: var(--gold-ink);
 
     font-size: 15px;
 
@@ -893,7 +900,7 @@ watch([period, city, insurer], reload);
 
     margin-bottom: 3px;
 
-    color: var(--gold-dark);
+    color: var(--gold-ink);
 
     font-size: 9.5px;
 
@@ -915,7 +922,21 @@ watch([period, city, insurer], reload);
 .privacy-content p {
     margin-top: 5px;
 
-    color: color-mix(in srgb, var(--ink) 55%, transparent);
+    /*
+      65 % et non les 55 % du gris secondaire : ce texte se pose sur --cream-state,
+      où 55 % tombe à 3,81:1. Les 55 % restent la valeur du reste de l'application
+      et sont eux aussi sous AA — leur relèvement global est une décision de charte
+      en attente, qui touche tous les écrans. En attendant, on ne dégrade pas un
+      texte qui était conforme.
+    */
+    /*
+      Précision propre à cette règle : son fond n'est pas --cream-state mais
+      --gold-soft, celui de .privacy-card. Mesuré sur ce fond réel, les 55 %
+      donnaient 3,69:1 et les 65 % donnent 5,01:1 — même conclusion, chiffres
+      différents. Un commentaire qui nomme le mauvais fond est ce que M4
+      reproche à la garde.
+    */
+    color: color-mix(in srgb, var(--ink) 65%, transparent);
 
     font-size: 12.5px;
 
@@ -923,7 +944,7 @@ watch([period, city, insurer], reload);
 }
 
 .privacy-content strong {
-    color: var(--gold-dark);
+    color: var(--gold-ink);
 
     font-weight: 850;
 }
@@ -949,7 +970,7 @@ watch([period, city, insurer], reload);
 
     background: rgba(255, 255, 255, 0.62);
 
-    color: var(--gold-dark);
+    color: var(--gold-ink);
 }
 
 .privacy-shield span {

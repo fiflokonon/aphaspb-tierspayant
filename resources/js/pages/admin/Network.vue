@@ -641,7 +641,7 @@ watch([period, city], reload);
 .kpi-wrapper:hover {
     transform: translateY(-4px);
 
-    box-shadow: 0 14px 30px color-mix(in srgb, var(--ink) 7%, transparent);
+    box-shadow: var(--surface-shadow-raised);
 }
 
 .kpi-accent {

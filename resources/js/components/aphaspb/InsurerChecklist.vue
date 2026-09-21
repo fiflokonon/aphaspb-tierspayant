@@ -96,7 +96,7 @@ function toggle(id: number) {
                 v-model="search"
                 type="search"
                 placeholder="Rechercher un assureur…"
-                class="mt-[13px] h-[42px] w-full rounded-[10px] bg-[#f3f1eb] px-3 text-[12.5px] text-ink outline-none placeholder:text-ink/40"
+                class="mt-[13px] h-[42px] w-full rounded-[10px] bg-cream-header px-3 text-[12.5px] text-ink outline-none placeholder:text-ink/40"
             />
         </div>
 

@@ -1038,7 +1038,7 @@ const officine = computed(() => {
 
     background: var(--gold-soft);
 
-    color: var(--gold-dark);
+    color: var(--gold-ink);
 
     font-family: monospace;
 
@@ -1215,7 +1215,7 @@ const officine = computed(() => {
 
     background: var(--gold-soft);
 
-    color: var(--gold-dark);
+    color: var(--gold-ink);
 
     font-weight: 800;
 }
@@ -1520,7 +1520,7 @@ const officine = computed(() => {
 
     background: var(--gold-soft);
 
-    color: var(--gold-dark);
+    color: var(--gold-ink);
 
     font-size: 13px;
 }
@@ -1816,7 +1816,7 @@ const officine = computed(() => {
         width: 23px;
         height: 23px;
 
-        font-size: 7px;
+        font-size: 12.5px;
     }
 
     .form-panel-summary {

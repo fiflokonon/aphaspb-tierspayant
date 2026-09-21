@@ -362,11 +362,12 @@ watch(collapsed, writeCollapsed);
 
     font-family: 'JetBrains Mono', monospace;
 
-    font-size: 8px;
+    /* L'échelle du socle pour une étiquette capitale : 9,5 px / 0,14em. */
+    font-size: 9.5px;
 
     font-weight: 700;
 
-    letter-spacing: 0.08em;
+    letter-spacing: 0.14em;
 
     text-transform: uppercase;
 }
@@ -408,7 +409,8 @@ watch(collapsed, writeCollapsed);
 
     color: var(--light);
 
-    font-size: 7px;
+    /* L'échelle du socle pour une étiquette capitale : 9,5 px / 0,14em. */
+    font-size: 9.5px;
 
     font-weight: 800;
 

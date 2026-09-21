@@ -585,7 +585,7 @@ async function exportChart() {
 .metric-wrapper:hover {
     transform: translateY(-3px);
 
-    box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 6.5%, transparent);
+    box-shadow: var(--surface-shadow-raised);
 }
 
 .metric-accent {
@@ -673,7 +673,7 @@ async function exportChart() {
 .gold-icon {
     background: var(--gold-soft);
 
-    color: var(--gold-dark);
+    color: var(--gold-ink);
 }
 
 .trend-card {
@@ -799,7 +799,7 @@ async function exportChart() {
 
     background: var(--gold-soft);
 
-    color: var(--gold-dark);
+    color: var(--gold-ink);
 
     font-size: 12.5px;
 

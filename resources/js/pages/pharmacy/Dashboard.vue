@@ -1261,7 +1261,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 
     .ageing-value {
-        font-size: 9.5px;
+        font-size: 12.5px;
     }
 }
 
