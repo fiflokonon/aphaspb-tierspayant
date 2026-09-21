@@ -470,7 +470,7 @@ watch(collapsed, writeCollapsed);
 
     padding: 7px 9px;
 
-    border-radius: 10px;
+    border-radius: var(--radius-nav);
 
     color: var(--muted);
 

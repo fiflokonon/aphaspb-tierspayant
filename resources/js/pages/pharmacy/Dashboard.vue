@@ -656,7 +656,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     margin-bottom: 0.5rem;
     border: 1px solid;
     border-left-width: 4px;
-    border-radius: 11px;
+    border-radius: var(--radius-band);
 }
 
 /* Les trois états reprennent des jetons déjà posés sur .dashboard-page. */
@@ -867,9 +867,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     padding: 18px 22px;
 
-    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
 
-    border-radius: 17px;
+    box-shadow: var(--surface-shadow);
 
     background: var(--gold-soft);
 }
@@ -917,7 +917,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border: 1px solid color-mix(in srgb, var(--gold-mid) 45%, transparent);
 
-    border-radius: 10px;
+    border-radius: var(--radius-nav);
 
     background: #ffffff;
 
@@ -958,11 +958,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     background: #ffffff;
 
-    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
 
-    border-radius: 17px;
-
-    box-shadow: 0 8px 30px color-mix(in srgb, var(--ink) 3.5%, transparent);
+    box-shadow: var(--surface-shadow);
 
     overflow: hidden;
 
@@ -970,7 +968,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 }
 
 .dashboard-card:hover {
-    box-shadow: 0 12px 32px color-mix(in srgb, var(--ink) 5.5%, transparent);
+    box-shadow: var(--surface-shadow-raised);
 }
 
 .card-top-line {
@@ -1038,7 +1036,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .card-header h2 {
     margin: 0;
 
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 750;
 
     color: var(--ink);
@@ -1047,7 +1045,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .card-header p {
     margin-top: 3px;
 
-    font-size: 10.5px;
+    font-size: 12.5px;
 
     line-height: 1.45;
 
@@ -1068,8 +1066,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: var(--muted);
 
-    font-size: 9px;
+    font-size: 9.5px;
     font-weight: 700;
+    letter-spacing: 0.14em;
 
     white-space: nowrap;
 }
@@ -1124,6 +1123,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-size: 9.5px;
 
     font-weight: 600;
+    letter-spacing: 0.14em;
 
     color: var(--muted);
 }
@@ -1221,7 +1221,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     white-space: nowrap;
 
-    font-size: 10.5px;
+    font-size: 14px;
     font-weight: 650;
 
     color: var(--ink);
@@ -1317,10 +1317,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         padding-bottom: 70px;
     }
 
-    .dashboard-card {
-        border-radius: 14px;
-    }
-
     .card-header {
         align-items: flex-start;
 
@@ -1336,14 +1332,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         height: 34px;
 
         border-radius: 10px;
-    }
-
-    .card-header h2 {
-        font-size: 12px;
-    }
-
-    .card-header p {
-        font-size: 9.5px;
     }
 
     .card-badge {
@@ -1362,10 +1350,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         grid-template-columns: 55px minmax(0, 1fr) 68px;
 
         gap: 7px;
-    }
-
-    .ageing-label {
-        font-size: 8.5px;
     }
 
     .ageing-value {

@@ -49,11 +49,11 @@ const props = withDefaults(
             "
         >
             <div
-                class="font-extrabold"
+                class="font-serif"
                 :class="
                     surface === 'band'
-                        ? 'text-[15px]/none whitespace-nowrap text-white min-[380px]:text-[19px]/none'
-                        : `text-[28px]/none ${kpiToneClass[props.tone]}`
+                        ? 'text-[15px]/none whitespace-nowrap text-white min-[380px]:text-[21px]/none'
+                        : `text-[29px]/none ${kpiToneClass[props.tone]}`
                 "
             >
                 {{ value }}
