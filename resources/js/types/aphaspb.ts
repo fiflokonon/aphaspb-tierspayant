@@ -6,7 +6,7 @@ export type KpiTone = 'neutral' | 'good' | 'warn' | 'bad';
 export const kpiToneClass: Record<KpiTone, string> = {
     neutral: 'text-ink',
     good: 'text-officine',
-    warn: 'text-gold-dark',
+    warn: 'text-gold-ink',
     bad: 'text-terracotta-dark',
 };
 
@@ -21,7 +21,7 @@ export type DeclarationStatus = 'paid' | 'partial' | 'unpaid' | 'rejected';
 
 export const statusChipClass: Record<DeclarationStatus, string> = {
     paid: 'text-officine bg-officine/[0.12]',
-    partial: 'text-gold-dark bg-gold/[0.18]',
+    partial: 'text-gold-ink bg-gold/[0.18]',
     unpaid: 'text-ink/60 bg-ink/[0.07]',
     rejected: 'text-terracotta-dark bg-terracotta/[0.12]',
 };

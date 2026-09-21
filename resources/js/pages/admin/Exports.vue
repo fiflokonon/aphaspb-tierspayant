@@ -923,18 +923,12 @@ watch([period, city, insurer], reload);
     margin-top: 5px;
 
     /*
-      65 % et non les 55 % du gris secondaire : ce texte se pose sur --cream-state,
-      où 55 % tombe à 3,81:1. Les 55 % restent la valeur du reste de l'application
-      et sont eux aussi sous AA — leur relèvement global est une décision de charte
-      en attente, qui touche tous les écrans. En attendant, on ne dégrade pas un
-      texte qui était conforme.
-    */
-    /*
-      Précision propre à cette règle : son fond n'est pas --cream-state mais
-      --gold-soft, celui de .privacy-card. Mesuré sur ce fond réel, les 55 %
-      donnaient 3,69:1 et les 65 % donnent 5,01:1 — même conclusion, chiffres
-      différents. Un commentaire qui nomme le mauvais fond est ce que M4
-      reproche à la garde.
+      65 % et non les 55 % du gris secondaire : ce texte se pose sur
+      --gold-soft, le fond de .privacy-card, où 55 % tombe à 3,69:1. À 65 % il
+      donne 5,01:1. Les 55 % restent la valeur du reste de l'application et
+      sont eux aussi sous AA — leur relèvement global est une décision de
+      charte en attente, qui touche tous les écrans. En attendant, on ne
+      dégrade pas un texte qui était conforme.
     */
     color: color-mix(in srgb, var(--ink) 65%, transparent);
 

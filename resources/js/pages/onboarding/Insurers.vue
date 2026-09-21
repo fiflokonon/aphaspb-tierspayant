@@ -38,7 +38,7 @@ const label = computed(() =>
         >
             <template #heading>
                 <div
-                    class="font-mono text-[10.5px]/none font-semibold tracking-[0.06em] text-gold-dark"
+                    class="font-mono text-[10.5px]/none font-semibold tracking-[0.06em] text-gold-ink"
                 >
                     ÉTAPE 2 SUR 2
                 </div>
