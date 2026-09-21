@@ -1173,106 +1173,14 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     color: var(--ink);
 }
 
-.owed-row {
-    display: flex;
-
-    align-items: center;
-
-    gap: 9px;
-
-    min-height: 42px;
-
-    border-bottom: 1px solid color-mix(in srgb, var(--ink) 5.5%, transparent);
-
-    transition:
-        padding 0.2s ease,
-        background 0.2s ease;
-}
-
-.owed-row:last-child {
-    border-bottom: 0;
-}
-
-.owed-row:hover {
-    padding-left: 5px;
-}
-
-.owed-rank {
-    width: 24px;
-
-    flex-shrink: 0;
-
-    font-family: 'JetBrains Mono', monospace;
-
-    font-size: 12.5px;
-    font-weight: 700;
-
-    color: var(--light);
-}
-
-.owed-name {
-    min-width: 0;
-
-    flex: 1;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
-
-    font-size: 14px;
-    font-weight: 650;
-
-    color: var(--ink);
-}
-
-.owed-amount {
-    flex-shrink: 0;
-
-    padding: 5px 8px;
-
-    border-radius: 7px;
-
-    background: var(--terracotta-soft);
-
-    color: var(--terracotta);
-
-    font-size: 12.5px;
-    font-weight: 750;
-}
-
-.owed-status {
-    display: flex;
-
-    align-items: center;
-
-    gap: 5px;
-
-    flex-shrink: 0;
-
-    color: var(--primary);
-
-    font-size: 12.5px;
-    font-weight: 800;
-}
-
-.status-check {
-    width: 17px;
-    height: 17px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 50%;
-
-    background: var(--primary-soft);
-
-    color: var(--primary);
-
-    font-size: 12.5px;
-}
+/*
+  Les règles `.owed-*` et `.status-check` ont vécu ici jusqu'au 21/09/2026.
+  Elles habillaient une liste « Top débiteurs » remplacée depuis par le
+  graphique en anneau : plus aucun template de `resources/js` ne cite ces
+  classes. Le lot 4 les a d'abord *agrandies* au titre de la règle des 10 px,
+  avant de constater qu'elles ne rendaient rien — retailler du code mort le
+  laisse mort et le fait paraître vivant.
+*/
 
 @keyframes cardAppear {
     from {
@@ -1360,14 +1268,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 @media (max-width: 400px) {
     .ageing-row {
         grid-template-columns: 50px minmax(0, 1fr) 60px;
-    }
-
-    .owed-rank {
-        display: none;
-    }
-
-    .owed-row:hover {
-        padding-left: 0;
     }
 }
 
