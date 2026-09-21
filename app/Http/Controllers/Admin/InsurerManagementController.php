@@ -55,6 +55,13 @@ class InsurerManagementController extends Controller
                 'standard_delay_days',
                 Insurer::DEFAULT_STANDARD_DELAY_DAYS,
             ),
+            // Pas de garde sur la présence, contrairement à update() : là-bas
+            // l'absence signifie « inchangé » parce que l'écran édite un champ
+            // à la fois, ici elle signifie « pas de clause », ce qui est déjà
+            // la valeur par défaut des deux colonnes. `integer()` rend 0 sur
+            // une clé absente, d'où le `?: null`.
+            'penalty_trigger_days' => $request->integer('penalty_trigger_days') ?: null,
+            'penalty_rate_bp' => $this->rateInBasisPoints($request),
         ]);
 
         return to_route('admin.insurers');

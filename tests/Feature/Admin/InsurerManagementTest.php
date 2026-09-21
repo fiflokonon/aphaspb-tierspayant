@@ -278,3 +278,53 @@ test('the management screen carries each clause', function () {
                 ->and($rows[$without->id]['penaltyRatePercent'])->toBeNull();
         });
 });
+
+test('an insurer is created with its penalty clause', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.insurers.store'), [
+            'name' => 'Assurance Conventionnée',
+            'standard_delay_days' => 45,
+            'penalty_trigger_days' => 90,
+            'penalty_rate_percent' => 2.5,
+        ])
+        ->assertRedirect(route('admin.insurers'));
+
+    $insurer = Insurer::query()->where('name', 'Assurance Conventionnée')->sole();
+
+    expect($insurer->standard_delay_days)->toBe(45)
+        ->and($insurer->penalty_trigger_days)->toBe(90)
+        // Le pourcentage saisi arrive en points de base, comme à la mise à
+        // jour : la base de données ne connaît que ceux-là.
+        ->and($insurer->penalty_rate_bp)->toBe(250);
+});
+
+test('an insurer created without a clause has neither of its two columns', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.insurers.store'), ['name' => 'Sans convention'])
+        ->assertRedirect(route('admin.insurers'));
+
+    $insurer = Insurer::query()->where('name', 'Sans convention')->sole();
+
+    expect($insurer->penalty_trigger_days)->toBeNull()
+        ->and($insurer->penalty_rate_bp)->toBeNull()
+        ->and($insurer->hasPenaltyClause())->toBeFalse();
+});
+
+test('a half clause is refused at creation, in both directions', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.insurers.store'), [
+            'name' => 'Déclenchement seul',
+            'penalty_trigger_days' => 90,
+        ])
+        ->assertSessionHasErrors('penalty_rate_percent');
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.insurers.store'), [
+            'name' => 'Taux seul',
+            'penalty_rate_percent' => 2.5,
+        ])
+        ->assertSessionHasErrors('penalty_trigger_days');
+
+    // Une demi-clause ne doit pas non plus créer l'assureur au passage.
+    expect(Insurer::query()->whereIn('name', ['Déclenchement seul', 'Taux seul'])->count())->toBe(0);
+});

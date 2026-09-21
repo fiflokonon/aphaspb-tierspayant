@@ -122,7 +122,58 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
                             <span class="input-suffix"> j </span>
                         </div>
+                    </div>
 
+                    <!--
+                        La clause de pénalité sur sa propre ligne, et non à la
+                        suite du nom : elle est facultative, et la mettre au
+                        même rang que le nom laisserait croire qu'il faut la
+                        remplir. Les deux champs se valident l'un l'autre côté
+                        serveur — une moitié seule est refusée avec son
+                        message, il n'y a donc rien à garder ici, contrairement
+                        à l'édition en ligne qui soumet à chaque `change`.
+                    -->
+                    <div class="form-row penalty-row">
+                        <span class="penalty-legend">
+                            Clause de pénalité · facultative
+                        </span>
+
+                        <div class="input-wrapper delay-input-wrapper">
+                            <input
+                                name="penalty_trigger_days"
+                                type="number"
+                                min="1"
+                                max="365"
+                                placeholder="—"
+                                aria-label="Déclenchement de la pénalité, en jours"
+                                class="modern-input"
+                            />
+
+                            <span class="input-suffix"> j </span>
+                        </div>
+
+                        <div class="input-wrapper delay-input-wrapper">
+                            <input
+                                name="penalty_rate_percent"
+                                type="number"
+                                min="0.01"
+                                max="100"
+                                step="0.01"
+                                placeholder="—"
+                                aria-label="Taux de pénalité, en pourcent"
+                                class="modern-input"
+                            />
+
+                            <span class="input-suffix"> % </span>
+                        </div>
+
+                        <!--
+                            Le bouton ferme le formulaire, il ne le coupe pas
+                            en deux : sous 700 px `.form-row` passe en colonne,
+                            et le laisser sur la première ligne le plaçait
+                            avant la clause de pénalité — on pouvait valider
+                            sans avoir vu les deux derniers champs.
+                        -->
                         <button
                             type="submit"
                             :disabled="processing"
@@ -136,6 +187,18 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
                     <p v-if="errors.name" class="form-error">
                         {{ errors.name }}
+                    </p>
+
+                    <p v-if="errors.standard_delay_days" class="form-error">
+                        {{ errors.standard_delay_days }}
+                    </p>
+
+                    <p v-if="errors.penalty_trigger_days" class="form-error">
+                        {{ errors.penalty_trigger_days }}
+                    </p>
+
+                    <p v-if="errors.penalty_rate_percent" class="form-error">
+                        {{ errors.penalty_rate_percent }}
                     </p>
                 </Form>
             </div>
@@ -504,6 +567,28 @@ function submitWhenComplete(event: Event, submit: () => void) {
     display: flex;
     align-items: center;
     gap: 0.25rem;
+}
+
+.penalty-row {
+    margin-top: 8px;
+}
+
+/*
+  La légende occupe la place du champ de nom, en `flex: 1` comme lui : c'est
+  ce qui cale la fin des deux lignes sur le même bord droit. Les champs ne
+  tombent pas l'un sous l'autre pour autant — la seconde ligne en porte deux
+  et le bouton, la première un seul — et il ne faut pas chercher à les y
+  forcer : il faudrait figer la largeur du bouton, donc la faire dépendre de
+  la longueur de son libellé.
+*/
+.penalty-legend {
+    flex: 1;
+
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
+
+    font-size: 12.5px;
+
+    line-height: 1.4;
 }
 
 .input-wrapper.delay-input-wrapper {
