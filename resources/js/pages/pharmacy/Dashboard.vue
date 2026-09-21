@@ -232,7 +232,7 @@ async function exportJourney() {
                     : [
                           {
                               label: 'Facturé',
-                              color: 'rgb(23 33 28 / 0.32)',
+                              color: 'rgb(20 29 24 / 0.32)',
                               shape:
                                   chartType.value === 'bar'
                                       ? ('square' as const)
@@ -836,8 +836,8 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
       --muted à une surface (#faf8f3) : les retirer rendrait ce texte presque
       blanc. À renommer au lot 3 ou 4, pas à supprimer.
     */
-    --muted: #788585;
-    --light: #a2adad;
+    --muted: color-mix(in srgb, var(--ink) 55%, transparent);
+    --light: color-mix(in srgb, var(--ink) 38%, transparent);
 
     position: relative;
     min-height: 100vh;
@@ -907,7 +907,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     padding: 0 14px;
 
-    border: 1px solid rgba(215, 163, 61, 0.45);
+    border: 1px solid color-mix(in srgb, var(--gold-mid) 45%, transparent);
 
     border-radius: 10px;
 
@@ -927,7 +927,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .catch-up-month:hover {
     border-color: var(--gold);
 
-    background: #fffdf7;
+    background: var(--gold-soft);
 }
 
 .badge-dot {
@@ -940,7 +940,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     background: var(--primary);
 
-    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--officine) 8%, transparent);
 
     animation: statusPulse 2.2s infinite;
 }
@@ -974,7 +974,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .dashboard-kpi-wrapper:hover {
     transform: translateY(-4px);
 
-    box-shadow: 0 14px 30px rgba(35, 70, 68, 0.07);
+    box-shadow: 0 14px 30px color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
 .kpi-side-accent {
@@ -1050,7 +1050,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 17px;
 
-    box-shadow: 0 8px 30px rgba(35, 70, 68, 0.035);
+    box-shadow: 0 8px 30px color-mix(in srgb, var(--ink) 3.5%, transparent);
 
     overflow: hidden;
 
@@ -1058,7 +1058,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 }
 
 .dashboard-card:hover {
-    box-shadow: 0 12px 32px rgba(35, 70, 68, 0.055);
+    box-shadow: 0 12px 32px color-mix(in srgb, var(--ink) 5.5%, transparent);
 }
 
 .card-top-line {
@@ -1225,7 +1225,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 20px;
 
-    background: rgba(23, 33, 28, 0.07);
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
 .ageing-progress-fill {
@@ -1270,7 +1270,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     min-height: 42px;
 
-    border-bottom: 1px solid rgba(23, 33, 28, 0.055);
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 5.5%, transparent);
 
     transition:
         padding 0.2s ease,
@@ -1416,15 +1416,15 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
 @keyframes statusPulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0.25);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--officine) 25%, transparent);
     }
 
     70% {
-        box-shadow: 0 0 0 5px rgba(0, 143, 131, 0);
+        box-shadow: 0 0 0 5px transparent;
     }
 
     100% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0);
+        box-shadow: 0 0 0 0 transparent;
     }
 }
 

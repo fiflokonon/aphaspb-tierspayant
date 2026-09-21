@@ -74,12 +74,7 @@ const props = withDefaults(
         </div>
         <div
             v-else-if="(hint || $slots.hint) && surface !== 'band'"
-            class="mt-[11px]"
-            :class="
-                surface === 'band'
-                    ? 'text-[10px]/[1.35] text-white/70'
-                    : 'text-[11px]/[1.4] text-ink/50'
-            "
+            class="mt-[11px] text-[11px]/[1.4] text-ink/50"
         >
             <slot name="hint">{{ hint }}</slot>
         </div>
