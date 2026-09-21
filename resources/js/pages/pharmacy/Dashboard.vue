@@ -413,31 +413,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </div>
         </div>
 
-        <section class="dashboard-intro">
-            <div class="intro-left">
-                <div class="intro-icon">
-                    <span class="intro-pulse"></span>
-                    <span class="intro-symbol">↗</span>
-                </div>
-
-                <div class="intro-text">
-                    <span class="intro-label"> VUE D'ENSEMBLE </span>
-
-                    <h1>Suivez vos paiements</h1>
-
-                    <p>
-                        Une vision claire des montants facturés, encaissés et
-                        restant dus sur votre réseau.
-                    </p>
-                </div>
-            </div>
-
-            <div class="intro-status">
-                <span class="status-dot"></span>
-                <span> Données actualisées </span>
-            </div>
-        </section>
-
         <section v-if="outstandingMonths.length > 0" class="catch-up">
             <div class="catch-up-text">
                 <span class="catch-up-label"> MOIS À RATTRAPER </span>
@@ -682,14 +657,10 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </div>
         </section>
 
-        <div class="dashboard-footnote">
-            <div class="footnote-icon">i</div>
-
-            <p>
-                Les indicateurs sont calculés à partir des déclarations
-                transmises par les officines participantes.
-            </p>
-        </div>
+        <p class="dashboard-source">
+            Les indicateurs sont calculés à partir des déclarations transmises
+            par les officines participantes.
+        </p>
     </div>
 
     <DataTable
@@ -832,12 +803,25 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     text-underline-offset: 2px;
 }
 
+/*
+  Une ligne de métadonnée, plus un panneau : la phrase mérite d'être lisible,
+  pas d'occuper une bande pleine avec une icône « i ».
+*/
+.dashboard-source {
+    margin-top: 16px;
+
+    color: var(--muted);
+
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
 .bands {
     /* Détache le bloc de l'en-tête au-dessus : collé à elle, il se lisait
-       comme une partie du titre. La marge basse reste courte parce que
-       .dashboard-intro porte déjà la sienne — et la porte encore quand il n'y
-       a aucune bande, cas où elle seule sépare la carte de l'en-tête. */
-    margin: 1.125rem 0 0.75rem;
+       comme une partie du titre. La marge basse était courte parce que
+       .dashboard-intro portait la sienne juste en dessous ; ce panneau a été
+       retiré, donc .bands assume désormais tout l'écart. */
+    margin: 1.125rem 0 1.375rem;
 }
 
 .bands-footer {
@@ -990,145 +974,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     background: #fffdf7;
 }
 
-.dashboard-intro {
-    position: relative;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 20px;
-
-    margin: 0 0 22px;
-
-    padding: 20px 22px;
-
-    border: 1px solid var(--border);
-
-    border-radius: 17px;
-
-    /* box-shadow:
-        0 8px 28px rgba(35, 70, 68, 0.035); */
-
-    overflow: hidden;
-
-    animation: dashboardFade 0.55s ease both;
-}
-
-/* Halo décoratif */
-
-.intro-left {
-    display: flex;
-    align-items: center;
-
-    gap: 15px;
-
-    position: relative;
-    z-index: 1;
-}
-
-.intro-icon {
-    position: relative;
-
-    width: 48px;
-    height: 48px;
-
-    flex-shrink: 0;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 14px;
-
-    color: #ffffff;
-
-    background: var(--primary);
-
-    /* box-shadow:
-        0 9px 20px rgba(0, 143, 131, .18); */
-
-    animation: iconFloat 3s ease-in-out infinite;
-}
-
-.intro-symbol {
-    position: relative;
-    z-index: 2;
-
-    font-size: 18px;
-    font-weight: 800;
-}
-
-.intro-pulse {
-    position: absolute;
-
-    inset: 8px;
-
-    border: 1px solid rgba(255, 255, 255, 0.28);
-
-    border-radius: 10px;
-
-    animation: pulseIcon 2.5s infinite;
-}
-
-.intro-label {
-    display: block;
-
-    margin-bottom: 3px;
-
-    font-size: 9px;
-    font-weight: 800;
-
-    letter-spacing: 0.13em;
-
-    color: var(--primary);
-}
-
-.intro-text h1 {
-    margin: 0;
-
-    font-size: 19px;
-    font-weight: 750;
-
-    letter-spacing: -0.025em;
-
-    color: var(--ink);
-}
-
-.intro-text p {
-    margin-top: 4px;
-
-    font-size: 11px;
-
-    line-height: 1.5;
-
-    color: var(--muted);
-}
-
-.intro-status {
-    position: relative;
-    z-index: 2;
-
-    display: flex;
-    align-items: center;
-
-    gap: 7px;
-
-    padding: 8px 11px;
-
-    border-radius: 30px;
-
-    background: var(--primary-soft);
-
-    color: var(--primary-dark);
-
-    font-size: 9.5px;
-    font-weight: 700;
-
-    white-space: nowrap;
-}
-
-.status-dot,
 .badge-dot {
     width: 7px;
     height: 7px;
@@ -1561,54 +1406,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-size: 9px;
 }
 
-.dashboard-footnote {
-    display: flex;
-
-    align-items: flex-start;
-
-    gap: 9px;
-
-    margin-top: 13px;
-
-    padding: 11px 14px;
-
-    border: 1px solid rgba(0, 143, 131, 0.07);
-
-    border-radius: 12px;
-
-    background: rgba(0, 143, 131, 0.035);
-}
-
-.footnote-icon {
-    width: 18px;
-    height: 18px;
-
-    flex-shrink: 0;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 50%;
-
-    background: var(--primary);
-
-    color: #ffffff;
-
-    font-size: 9px;
-    font-weight: 800;
-}
-
-.dashboard-footnote p {
-    margin: 0;
-
-    font-size: 9.5px;
-
-    line-height: 1.5;
-
-    color: var(--muted);
-}
-
 @keyframes dashboardFade {
     from {
         opacity: 0;
@@ -1688,53 +1485,11 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 }
 
 @media (max-width: 900px) {
-    .dashboard-intro {
-        align-items: flex-start;
-
-        flex-direction: column;
-    }
-
-    .intro-status {
-        align-self: flex-start;
-    }
 }
 
 @media (max-width: 640px) {
     .dashboard-page {
         padding-bottom: 70px;
-    }
-
-    .dashboard-intro {
-        margin-top: 7px;
-
-        padding: 16px;
-
-        border-radius: 14px;
-    }
-
-    .intro-left {
-        align-items: flex-start;
-    }
-
-    .intro-icon {
-        width: 41px;
-        height: 41px;
-
-        border-radius: 11px;
-    }
-
-    .intro-text h1 {
-        font-size: 17px;
-    }
-
-    .intro-text p {
-        font-size: 10px;
-    }
-
-    .intro-status {
-        width: 100%;
-
-        justify-content: center;
     }
 
     .dashboard-card {
@@ -1791,25 +1546,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     .ageing-value {
         font-size: 9.5px;
     }
-
-    .dashboard-footnote {
-        padding: 10px 12px;
-    }
 }
 
 @media (max-width: 400px) {
-    .dashboard-intro {
-        padding: 14px;
-    }
-
-    .intro-text h1 {
-        font-size: 16px;
-    }
-
-    .intro-text p {
-        font-size: 9.5px;
-    }
-
     .ageing-row {
         grid-template-columns: 50px minmax(0, 1fr) 60px;
     }
