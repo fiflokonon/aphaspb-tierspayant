@@ -404,7 +404,7 @@ const losing = computed(() =>
 
     border-top: 1px solid var(--border);
 
-    background: #fbfcfc;
+    background: var(--cream-state);
 }
 
 .message {
@@ -446,13 +446,13 @@ const losing = computed(() =>
 .message-error {
     box-shadow: var(--surface-shadow);
 
-    background: rgba(197, 82, 69, 0.06);
+    background: color-mix(in srgb, var(--terracotta) 6%, transparent);
 
-    color: #9f4035;
+    color: var(--terracotta-dark);
 }
 
 .message-error .message-icon {
-    background: #c55245;
+    background: var(--terracotta);
     color: white;
 }
 

@@ -426,7 +426,7 @@ watch([period, city, insurer], reload);
 
     border-radius: 9px;
 
-    background: #f8fcfb;
+    background: var(--cream-state);
 
     color: var(--primary-dark);
 
@@ -536,7 +536,7 @@ watch([period, city, insurer], reload);
 
     border-radius: var(--radius-card);
 
-    background: #fcfdfd;
+    background: var(--cream-state);
 
     box-shadow: var(--surface-shadow);
 
@@ -746,7 +746,7 @@ watch([period, city, insurer], reload);
 
     padding: 5px 9px;
 
-    border: 1px solid #e8eeee;
+    border: 1px solid var(--border);
 
     border-radius: 7px;
 
@@ -786,13 +786,13 @@ watch([period, city, insurer], reload);
 
     padding: 0 9px;
 
-    border: 1px solid #e8eeee;
+    border: 1px solid var(--border);
 
     border-radius: 7px;
 
-    background: #fafcfc;
+    background: var(--cream-state);
 
-    color: #687575;
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
     font-family:
         ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -875,7 +875,7 @@ watch([period, city, insurer], reload);
 
     background: color-mix(in srgb, var(--gold-mid) 14%, transparent);
 
-    color: #aa7b22;
+    color: var(--gold-dark);
 
     font-size: 15px;
 
@@ -893,7 +893,7 @@ watch([period, city, insurer], reload);
 
     margin-bottom: 3px;
 
-    color: #a07829;
+    color: var(--gold-dark);
 
     font-size: 9.5px;
 
@@ -915,7 +915,7 @@ watch([period, city, insurer], reload);
 .privacy-content p {
     margin-top: 5px;
 
-    color: #756f62;
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
     font-size: 12.5px;
 
@@ -923,7 +923,7 @@ watch([period, city, insurer], reload);
 }
 
 .privacy-content strong {
-    color: #80601f;
+    color: var(--gold-dark);
 
     font-weight: 850;
 }
@@ -949,7 +949,7 @@ watch([period, city, insurer], reload);
 
     background: rgba(255, 255, 255, 0.62);
 
-    color: #9a7027;
+    color: var(--gold-dark);
 }
 
 .privacy-shield span {

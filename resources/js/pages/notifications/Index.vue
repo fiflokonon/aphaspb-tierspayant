@@ -179,10 +179,10 @@ const empty = computed(() => props.notifications.items.total === 0);
 }
 
 .notifications-card {
-    border: 1px solid rgba(35, 70, 68, 0.09);
-    border-radius: 14px;
+    border-radius: var(--radius-card);
     background: #fff;
     padding: 16px;
+    box-shadow: var(--surface-shadow);
 }
 
 .notification-list {
@@ -203,13 +203,13 @@ const empty = computed(() => props.notifications.items.total === 0);
 }
 
 .notification-row:hover {
-    background: rgba(35, 70, 68, 0.03);
+    background: color-mix(in srgb, var(--ink) 3%, transparent);
 }
 
 /* Le non-lu se signale par un fond, pas par une graisse : la liste mélange des
    titres de longueurs très différentes et le gras les fait sauter. */
 .notification-row.unread {
-    background: rgba(0, 143, 131, 0.045);
+    background: color-mix(in srgb, var(--officine) 4.5%, transparent);
 }
 
 .tone-dot {
@@ -231,7 +231,7 @@ const empty = computed(() => props.notifications.items.total === 0);
     font-size: 13.5px;
     font-weight: 600;
     line-height: 1.35;
-    color: #17211c;
+    color: var(--ink);
 
     text-decoration: none;
 }
@@ -245,7 +245,7 @@ a.row-title:hover {
 
     font-size: 12.5px;
     line-height: 1.45;
-    color: rgba(23, 33, 28, 0.62);
+    color: color-mix(in srgb, var(--ink) 62%, transparent);
 }
 
 .row-meta {
@@ -256,12 +256,12 @@ a.row-title:hover {
     gap: 10px;
 
     font-size: 11px;
-    color: rgba(23, 33, 28, 0.45);
+    color: color-mix(in srgb, var(--ink) 45%, transparent);
 }
 
 .tag {
     border-radius: 5px;
-    background: rgba(35, 70, 68, 0.07);
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
     padding: 2px 6px;
 
     font-size: 10px;
@@ -271,7 +271,7 @@ a.row-title:hover {
 .mark-read {
     font-size: 11px;
     font-weight: 600;
-    color: rgba(0, 143, 131, 0.9);
+    color: color-mix(in srgb, var(--officine) 90%, transparent);
 }
 
 .mark-read:hover {
@@ -290,14 +290,14 @@ a.row-title:hover {
     height: 28px;
     width: 28px;
 
-    color: rgba(23, 33, 28, 0.25);
+    color: color-mix(in srgb, var(--ink) 25%, transparent);
 }
 
 .empty-title {
     margin-top: 10px;
     font-size: 14px;
     font-weight: 600;
-    color: #17211c;
+    color: var(--ink);
 }
 
 .empty-body {
@@ -305,6 +305,6 @@ a.row-title:hover {
     max-width: 340px;
     font-size: 12.5px;
     line-height: 1.5;
-    color: rgba(23, 33, 28, 0.55);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 </style>

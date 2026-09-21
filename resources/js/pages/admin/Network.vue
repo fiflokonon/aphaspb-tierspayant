@@ -577,7 +577,7 @@ watch([period, city], reload);
 .action-sort:hover {
     border-color: color-mix(in srgb, var(--officine) 25%, transparent);
 
-    background: #fafcfc;
+    background: var(--cream-state);
 
     color: var(--primary-dark);
 
@@ -845,7 +845,7 @@ watch([period, city], reload);
 }
 
 .delay-alert .delay-value {
-    color: #c55245;
+    color: var(--terracotta);
 }
 
 .rate-cell {
@@ -855,7 +855,7 @@ watch([period, city], reload);
 }
 
 .rate-alert {
-    color: #c55245;
+    color: var(--terracotta);
 }
 
 .unpaid-cell {

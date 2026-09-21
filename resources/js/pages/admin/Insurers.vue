@@ -667,7 +667,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .insurer-avatar.inactive {
-    background: #f1f3f3;
+    background: var(--cream-state);
 
     border-color: color-mix(in srgb, var(--ink) 7%, transparent);
 
@@ -731,7 +731,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .mini-status-dot.inactive {
-    background: #a5aeae;
+    background: color-mix(in srgb, var(--ink) 38%, transparent);
 }
 
 .edit-form {
@@ -804,7 +804,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .edit-cancel {
-    background: #f3f4f4;
+    background: var(--cream-state);
 
     color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
@@ -863,7 +863,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .status-badge.inactive {
     border: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
 
-    background: #f2f4f4;
+    background: var(--cream-state);
 
     color: color-mix(in srgb, var(--ink) 48%, transparent);
 }
@@ -881,7 +881,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .status-badge.inactive .status-badge-dot {
-    background: #9ba5a5;
+    background: color-mix(in srgb, var(--ink) 38%, transparent);
 }
 
 .actions-cell {
@@ -939,19 +939,19 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .action-button.rename:hover {
     border-color: color-mix(in srgb, var(--officine) 20%, transparent);
 
-    background: #dff3ef;
+    background: var(--officine-soft);
 }
 
 .action-button.deactivate {
-    border-color: rgba(197, 82, 69, 0.1);
+    border-color: color-mix(in srgb, var(--terracotta) 10%, transparent);
 
-    background: rgba(197, 82, 69, 0.045);
+    background: color-mix(in srgb, var(--terracotta) 4.5%, transparent);
 
-    color: #b34e43;
+    color: var(--terracotta-dark);
 }
 
 .action-button.deactivate:hover {
-    background: rgba(197, 82, 69, 0.09);
+    background: color-mix(in srgb, var(--terracotta) 9%, transparent);
 }
 
 .action-button.activate {
@@ -1272,7 +1272,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .form-error {
     margin-top: 7px;
 
-    color: #b34e43;
+    color: var(--terracotta-dark);
 
     font-size: 12.5px;
 

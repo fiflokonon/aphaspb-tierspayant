@@ -368,7 +368,7 @@ const footer = computed(
 
     border-radius: 50%;
 
-    background: #f1f4f3;
+    background: var(--cream-state);
 
     color: color-mix(in srgb, var(--ink) 55%, transparent);
 
@@ -623,7 +623,7 @@ const footer = computed(
 
     border-radius: 6px;
 
-    background: #f4f7f6;
+    background: var(--cream-state);
 
     color: color-mix(in srgb, var(--ink) 55%, transparent);
 

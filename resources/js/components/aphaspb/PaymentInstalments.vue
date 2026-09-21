@@ -154,7 +154,7 @@ function remove(index: number): void {
 
     padding-top: 16px;
 
-    border-top: 1px solid rgb(36 51 51 / 0.09);
+    border-top: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
 }
 
 .instalments-eyebrow {
@@ -166,7 +166,7 @@ function remove(index: number): void {
 
     letter-spacing: 0.05em;
 
-    color: rgb(36 51 51 / 0.5);
+    color: color-mix(in srgb, var(--ink) 50%, transparent);
 }
 
 .instalments-help {
@@ -178,7 +178,7 @@ function remove(index: number): void {
 
     line-height: 1.5;
 
-    color: rgb(36 51 51 / 0.55);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .instalments-error {
@@ -196,7 +196,7 @@ function remove(index: number): void {
 
     padding: 14px;
 
-    border: 1px dashed rgb(36 51 51 / 0.16);
+    border: 1px dashed color-mix(in srgb, var(--ink) 16%, transparent);
 
     border-radius: 12px;
 
@@ -204,7 +204,7 @@ function remove(index: number): void {
 
     line-height: 1.5;
 
-    color: rgb(36 51 51 / 0.5);
+    color: color-mix(in srgb, var(--ink) 50%, transparent);
 }
 
 .instalments-list {
@@ -242,7 +242,7 @@ function remove(index: number): void {
 
     border-radius: 999px;
 
-    background: rgb(36 51 51 / 0.06);
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
 
     font-family: var(--font-mono, ui-monospace, monospace);
 
@@ -250,7 +250,7 @@ function remove(index: number): void {
 
     font-weight: 700;
 
-    color: rgb(36 51 51 / 0.55);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .instalment-fields {
@@ -279,7 +279,7 @@ function remove(index: number): void {
 
     border-radius: 8px;
 
-    color: rgb(36 51 51 / 0.4);
+    color: color-mix(in srgb, var(--ink) 40%, transparent);
 
     transition:
         color 120ms ease,
@@ -287,7 +287,7 @@ function remove(index: number): void {
 }
 
 .instalment-remove:hover {
-    background: rgb(36 51 51 / 0.06);
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
 
     color: var(--terracotta-dark);
 }
@@ -311,7 +311,7 @@ function remove(index: number): void {
 
     padding: 8px 12px;
 
-    border: 1px solid rgb(36 51 51 / 0.14);
+    border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
 
     border-radius: 10px;
 
@@ -323,7 +323,7 @@ function remove(index: number): void {
 }
 
 .instalment-add:hover {
-    border-color: rgb(36 51 51 / 0.28);
+    border-color: color-mix(in srgb, var(--ink) 28%, transparent);
 }
 
 .instalments-totals {
@@ -348,7 +348,7 @@ function remove(index: number): void {
 }
 
 .instalments-outstanding {
-    color: rgb(36 51 51 / 0.5);
+    color: color-mix(in srgb, var(--ink) 50%, transparent);
 }
 
 @media (min-width: 640px) {

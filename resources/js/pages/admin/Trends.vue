@@ -609,11 +609,11 @@ async function exportChart() {
 }
 
 .metric-accent.success {
-    background: #4b9b79;
+    background: var(--officine);
 }
 
 .metric-accent.danger {
-    background: #c55245;
+    background: var(--terracotta);
 }
 
 .metric-accent.gold {
@@ -659,21 +659,21 @@ async function exportChart() {
 }
 
 .success-icon {
-    background: #eaf6f0;
+    background: var(--officine-soft);
 
-    color: #43866a;
+    color: var(--officine-dark);
 }
 
 .danger-icon {
-    background: #fcedea;
+    background: var(--terracotta-soft);
 
-    color: #b64d42;
+    color: var(--terracotta-dark);
 }
 
 .gold-icon {
     background: var(--gold-soft);
 
-    color: #b0842b;
+    color: var(--gold-dark);
 }
 
 .trend-card {
@@ -799,7 +799,7 @@ async function exportChart() {
 
     background: var(--gold-soft);
 
-    color: #94702a;
+    color: var(--gold-dark);
 
     font-size: 12.5px;
 
@@ -851,7 +851,7 @@ async function exportChart() {
 
     border-radius: var(--radius-card);
 
-    background: #fafcfc;
+    background: var(--cream-state);
 
     box-shadow: var(--surface-shadow);
 }
@@ -1055,7 +1055,7 @@ async function exportChart() {
 }
 
 .outstanding-cell .amount-value {
-    color: #b64d42;
+    color: var(--terracotta-dark);
 }
 
 .recovery-cell {
@@ -1077,7 +1077,7 @@ async function exportChart() {
 }
 
 .recovery-danger {
-    color: #b64d42;
+    color: var(--terracotta-dark);
 }
 
 .recovery-bar {
@@ -1091,7 +1091,7 @@ async function exportChart() {
 
     border-radius: 5px;
 
-    background: #edf1f0;
+    background: var(--border);
 }
 
 .recovery-fill {
@@ -1220,7 +1220,7 @@ async function exportChart() {
 
         padding-top: 8px;
 
-        border-top: 1px solid #edf1f0;
+        border-top: 1px solid var(--border);
     }
 
     /* TABLE */

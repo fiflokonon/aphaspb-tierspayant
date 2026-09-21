@@ -993,7 +993,7 @@ const officine = computed(() => {
 .progress-track {
     height: 3px;
 
-    background: #eef3f2;
+    background: var(--cream-state);
 }
 
 .progress-value {
@@ -1038,7 +1038,7 @@ const officine = computed(() => {
 
     background: var(--gold-soft);
 
-    color: #a97819;
+    color: var(--gold-dark);
 
     font-family: monospace;
 
@@ -1176,7 +1176,7 @@ const officine = computed(() => {
 
     border-radius: 11px;
 
-    background: #fafcfc;
+    background: var(--cream-state);
 
     color: var(--muted);
 
@@ -1215,7 +1215,7 @@ const officine = computed(() => {
 
     background: var(--gold-soft);
 
-    color: #a97819;
+    color: var(--gold-dark);
 
     font-weight: 800;
 }
@@ -1315,7 +1315,7 @@ const officine = computed(() => {
 }
 
 .note-textarea::placeholder {
-    color: #aab5b3;
+    color: var(--light);
 }
 
 .note-footer {
@@ -1483,7 +1483,7 @@ const officine = computed(() => {
 }
 
 .error-card p strong {
-    color: #a8391f;
+    color: var(--terracotta-dark);
 }
 
 .delay-card {
@@ -1520,7 +1520,7 @@ const officine = computed(() => {
 
     background: var(--gold-soft);
 
-    color: #a97819;
+    color: var(--gold-dark);
 
     font-size: 13px;
 }

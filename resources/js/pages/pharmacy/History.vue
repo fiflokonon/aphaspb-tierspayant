@@ -466,7 +466,7 @@ const footer = computed(
 
     border-radius: 11px;
 
-    background: #f5fbf9;
+    background: var(--cream-state);
 
     white-space: nowrap;
 }
@@ -498,7 +498,7 @@ const footer = computed(
 
     border-bottom: 1px solid color-mix(in srgb, var(--ink) 5.5%, transparent);
 
-    background: rgba(248, 251, 250, 0.65);
+    background: color-mix(in srgb, var(--cream-state) 65%, transparent);
 }
 
 .filter-status {
@@ -677,7 +677,7 @@ const footer = computed(
 }
 
 .amount-cell.outstanding.has-outstanding {
-    color: #c55245;
+    color: var(--terracotta);
 
     font-weight: 750;
 }
