@@ -138,7 +138,7 @@
       seuls sur un écran, ils ne se lisaient pas comme des couleurs. Mesuré au
       pixel le 21/09/2026 : une bande d'alerte sortait à #fdf0ed.
     */
-    --soft-mix: 45%;
+    --soft-mix: 22%;
     --officine-soft: color-mix(in srgb, var(--officine) var(--soft-mix), #fff);
     --gold: #f0c53f;
     --gold-mid: #e0a516;

@@ -213,7 +213,8 @@ watch(collapsed, writeCollapsed);
 
     padding: 15px 11px 11px;
 
-    background: #fff;
+    /* Crème chaud, comme la maquette : le blanc cru cassait la chaleur. */
+    background: var(--cream-header);
 
     color: var(--ink);
 
@@ -494,14 +495,18 @@ watch(collapsed, writeCollapsed);
     transform: translateX(2px);
 }
 
+/*
+  Vert plein, texte blanc, comme la maquette validée.
+
+  L'état actif était une pastille vert très pâle à texte vert, avec deux
+  ombres turquoise héritées : de loin, rien ne distinguait l'écran courant
+  des autres. Un ancrage plein est ce qui donne sa couleur à la barre ; les
+  surfaces d'accompagnement peuvent rester discrètes une fois qu'il existe.
+*/
 .apha-nav-item.active {
-    color: var(--primary-dark);
+    color: #fff;
 
-    background: var(--primary-soft);
-
-    box-shadow:
-        inset 3px 0 0 var(--primary),
-        0 4px 12px rgba(0, 143, 131, 0.05);
+    background: var(--primary);
 
     font-weight: 750;
 }
@@ -555,13 +560,11 @@ watch(collapsed, writeCollapsed);
 }
 
 .apha-nav-item.active .apha-nav-icon {
-    background: rgba(0, 143, 131, 0.13);
+    background: rgb(255 255 255 / 0.16);
 }
 
 .apha-nav-item.active .apha-nav-dot {
-    background: var(--primary);
-
-    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
+    background: #fff;
 }
 
 .apha-nav-label {
