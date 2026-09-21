@@ -7,6 +7,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/js/components/aphaspb/** | .ai/rules/aphaspb.md |
 | app/Http/Controllers/Auth/** | .ai/rules/auth.md |
 | resources/js/components/aphaspb/charts/** | .ai/rules/charts.md |
+| resources/js/pages/pharmacy/Dashboard.vue, resources/js/components/aphaspb/KpiCard.vue | .ai/rules/components-aphaspb.md |
 | config/joomla.php | .ai/rules/config.md |
 | resources/css/**, resources/js/** | .ai/rules/css-js.md |
 | app/Actions/Declarations/** | .ai/rules/declarations.md |
