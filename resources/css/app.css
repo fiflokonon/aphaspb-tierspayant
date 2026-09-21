@@ -129,14 +129,28 @@
     --ink: #141d18;
     --officine: #14764c;
     --officine-dark: #0e5a3a;
-    --officine-soft: #e6f3ec;
+    /*
+      Les fonds « soft » sont dérivés de leur teinte, pas écrits à la main :
+      une seule valeur, --soft-mix, règle leur intensité pour tout le canvas.
+
+      Ils valaient #e6f3ec / #fdf7e6 / #fdf0ed — du blanc à peine teinté. Dans
+      les maquettes ils passaient, parce qu'ils côtoyaient une bande pleine ;
+      seuls sur un écran, ils ne se lisaient pas comme des couleurs. Mesuré au
+      pixel le 21/09/2026 : une bande d'alerte sortait à #fdf0ed.
+    */
+    --soft-mix: 45%;
+    --officine-soft: color-mix(in srgb, var(--officine) var(--soft-mix), #fff);
     --gold: #f0c53f;
     --gold-mid: #e0a516;
-    --gold-soft: #fdf7e6;
+    --gold-soft: color-mix(in srgb, var(--gold-mid) var(--soft-mix), #fff);
     --gold-dark: #b07c1a;
     --terracotta: #d13b22;
     --terracotta-dark: #ad2c16;
-    --terracotta-soft: #fdf0ed;
+    --terracotta-soft: color-mix(
+        in srgb,
+        var(--terracotta) var(--soft-mix),
+        #fff
+    );
     --cream: #fdfbf7;
     --cream-header: #f7f5f0;
     --cream-state: #faf8f3;

@@ -70,7 +70,11 @@ defineProps<{
      * Même ambiance que les pages Statistiques réseau :
      * blanc cassé + halo turquoise très léger.
      */
-    background: #f7f9f9;
+    /*
+      Le crème de la charte, pas le gris froid hérité : #f7f9f9 tirait sur le
+      bleu et refroidissait tout le canvas, cartes blanches comprises.
+    */
+    background: var(--cream);
 
     color: #243333;
 }
