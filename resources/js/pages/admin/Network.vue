@@ -37,7 +37,6 @@ const props = defineProps<{
     indicators: Indicator[];
     summary: Summary;
     period: string;
-    periodLabel: string;
     periods: { value: string; label: string }[];
     city: string | null;
     cities: string[];
@@ -135,7 +134,7 @@ function reload() {
         '/admin/network',
         { period: period.value, city: city.value },
         {
-            only: ['indicators', 'summary', 'period', 'periodLabel', 'city'],
+            only: ['indicators', 'summary', 'period', 'city'],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -429,9 +428,9 @@ watch([period, city], reload);
 .delay-standard {
     display: block;
 
-    font-size: 10.5px;
+    font-size: 12.5px;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 }
 
 .network-page {
@@ -485,13 +484,13 @@ watch([period, city], reload);
 
     padding: 0 12px;
 
-    border: 1px solid var(--apha-border);
+    border: 1px solid var(--border);
 
     border-radius: 10px;
 
     background: #ffffff;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 10px;
 
@@ -532,15 +531,15 @@ watch([period, city], reload);
 }
 
 .action-export {
-    background: var(--apha-primary);
+    background: var(--primary);
 
-    border-color: var(--apha-primary);
+    border-color: var(--primary);
 
     color: #ffffff;
 
     /* box-shadow:
         0 5px 14px
-        rgba(0,143,131,.16); */
+        color-mix(in srgb, var(--officine) 16%, transparent); */
 }
 
 .action-export .action-icon {
@@ -550,9 +549,9 @@ watch([period, city], reload);
 }
 
 .action-export:hover {
-    background: var(--apha-primary-dark);
+    background: var(--primary-dark);
 
-    border-color: var(--apha-primary-dark);
+    border-color: var(--primary-dark);
 
     color: #ffffff;
 
@@ -560,27 +559,27 @@ watch([period, city], reload);
 
     /* box-shadow:
         0 8px 18px
-        rgba(0,143,131,.20); */
+        color-mix(in srgb, var(--officine) 20%, transparent); */
 }
 
 .action-sort {
     background: #ffffff;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 }
 
 .action-sort .action-icon {
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary);
+    color: var(--primary);
 }
 
 .action-sort:hover {
-    border-color: rgba(0, 143, 131, 0.25);
+    border-color: color-mix(in srgb, var(--officine) 25%, transparent);
 
     background: #fafcfc;
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
     transform: translateY(-1px);
 }
@@ -588,29 +587,29 @@ watch([period, city], reload);
 .action-edit {
     background: #fff;
 
-    border-color: rgba(0, 143, 131, 0.18);
+    border-color: color-mix(in srgb, var(--officine) 18%, transparent);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .action-edit .action-icon {
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary);
+    color: var(--primary);
 }
 
 .action-edit:hover {
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    border-color: rgba(0, 143, 131, 0.35);
+    border-color: color-mix(in srgb, var(--officine) 35%, transparent);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
     transform: translateY(-1px);
     /* 
     box-shadow:
         0 6px 16px
-        rgba(0,143,131,.10); */
+        color-mix(in srgb, var(--officine) 10%, transparent); */
 }
 
 .network-kpis {
@@ -642,7 +641,7 @@ watch([period, city], reload);
 .kpi-wrapper:hover {
     transform: translateY(-4px);
 
-    box-shadow: 0 14px 30px rgba(35, 70, 68, 0.07);
+    box-shadow: 0 14px 30px color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
 .kpi-accent {
@@ -656,7 +655,7 @@ watch([period, city], reload);
 
     width: 3px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     border-radius: 0 4px 4px 0;
 
@@ -664,7 +663,7 @@ watch([period, city], reload);
 }
 
 .kpi-accent.gold {
-    background: var(--apha-gold);
+    background: var(--gold-mid);
 }
 
 .kpi-decoration {
@@ -680,9 +679,9 @@ watch([period, city], reload);
 
     border-radius: 11px;
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary);
+    color: var(--primary);
 
     display: flex;
 
@@ -696,9 +695,9 @@ watch([period, city], reload);
 }
 
 .kpi-decoration.gold {
-    background: var(--apha-gold-soft);
+    background: var(--gold-soft);
 
-    color: var(--apha-gold);
+    color: var(--gold-mid);
 }
 
 .kpi-wrapper:hover .kpi-decoration {
@@ -710,13 +709,11 @@ watch([period, city], reload);
 
     background: white;
 
-    border: 1px solid var(--apha-border);
-
-    border-radius: 18px;
+    border-radius: var(--radius-card);
 
     padding: 4px;
 
-    box-shadow: 0 8px 30px rgba(35, 70, 68, 0.035);
+    box-shadow: var(--surface-shadow);
 
     animation: tableAppear 0.65s ease both;
 
@@ -734,7 +731,7 @@ watch([period, city], reload);
 
     height: 3px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     opacity: 0.9;
 }
@@ -766,15 +763,15 @@ watch([period, city], reload);
 
     justify-content: center;
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
     font-size: 11px;
 
     font-weight: 800;
 
-    border: 1px solid rgba(0, 143, 131, 0.08);
+    border: 1px solid color-mix(in srgb, var(--officine) 8%, transparent);
 
     transition:
         transform 0.25s ease,
@@ -784,7 +781,7 @@ watch([period, city], reload);
 .insurer-row:hover .insurer-avatar {
     transform: scale(1.08);
 
-    box-shadow: 0 5px 12px rgba(0, 143, 131, 0.12);
+    box-shadow: 0 5px 12px color-mix(in srgb, var(--officine) 12%, transparent);
 }
 
 .insurer-name {
@@ -798,13 +795,13 @@ watch([period, city], reload);
 .insurer-name span {
     font-weight: 650;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 }
 
 .insurer-name small {
-    font-size: 9px;
+    font-size: 12.5px;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 }
 
 .pharmacy-count {
@@ -818,13 +815,13 @@ watch([period, city], reload);
 .count-number {
     font-weight: 700;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 }
 
 .count-label {
-    font-size: 9px;
+    font-size: 12.5px;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 }
 
 .delay-cell {
@@ -838,13 +835,13 @@ watch([period, city], reload);
 .delay-value {
     font-weight: 750;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 }
 
 .delay-unit {
-    font-size: 9px;
+    font-size: 12.5px;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 }
 
 .delay-alert .delay-value {
@@ -854,7 +851,7 @@ watch([period, city], reload);
 .rate-cell {
     font-weight: 650;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 }
 
 .rate-alert {
@@ -862,7 +859,7 @@ watch([period, city], reload);
 }
 
 .unpaid-cell {
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .threshold-edit {
@@ -874,9 +871,9 @@ watch([period, city], reload);
 
     margin-left: 3px;
 
-    color: var(--apha-primary);
+    color: var(--primary);
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     font-weight: 750;
 
@@ -896,7 +893,7 @@ watch([period, city], reload);
 }
 
 .threshold-edit:hover {
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
     gap: 6px;
 }
@@ -912,7 +909,7 @@ watch([period, city], reload);
 .page-source {
     margin-top: 16px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
     font-size: 12.5px;
     line-height: 1.5;
@@ -994,7 +991,7 @@ watch([period, city], reload);
 
         gap: 5px;
 
-        font-size: 9px;
+        font-size: 12.5px;
     }
 
     .action-icon {
@@ -1006,8 +1003,6 @@ watch([period, city], reload);
     }
 
     .table-section {
-        border-radius: 14px;
-
         padding: 2px;
     }
 }
@@ -1018,7 +1013,7 @@ watch([period, city], reload);
 
         gap: 4px;
 
-        font-size: 8px;
+        font-size: 12.5px;
     }
 
     .action-icon {

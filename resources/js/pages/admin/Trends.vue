@@ -585,7 +585,7 @@ async function exportChart() {
 .metric-wrapper:hover {
     transform: translateY(-3px);
 
-    box-shadow: 0 12px 28px rgba(35, 70, 68, 0.065);
+    box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 6.5%, transparent);
 }
 
 .metric-accent {
@@ -605,7 +605,7 @@ async function exportChart() {
 }
 
 .metric-accent.primary {
-    background: var(--apha-primary);
+    background: var(--primary);
 }
 
 .metric-accent.success {
@@ -617,7 +617,7 @@ async function exportChart() {
 }
 
 .metric-accent.gold {
-    background: var(--apha-gold);
+    background: var(--gold-mid);
 }
 
 .metric-icon {
@@ -653,9 +653,9 @@ async function exportChart() {
 }
 
 .primary-icon {
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary);
+    color: var(--primary);
 }
 
 .success-icon {
@@ -671,7 +671,7 @@ async function exportChart() {
 }
 
 .gold-icon {
-    background: var(--apha-gold-soft);
+    background: var(--gold-soft);
 
     color: #b0842b;
 }
@@ -687,13 +687,11 @@ async function exportChart() {
 
     padding: 4px;
 
-    border: 1px solid var(--apha-border);
-
-    border-radius: 18px;
+    border-radius: var(--radius-card);
 
     background: #ffffff;
 
-    box-shadow: 0 9px 32px rgba(35, 70, 68, 0.04);
+    box-shadow: var(--surface-shadow);
 
     animation: fadeUp 0.6s ease 0.05s both;
 }
@@ -709,7 +707,7 @@ async function exportChart() {
 
     height: 3px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 }
 
 .trend-header {
@@ -723,7 +721,7 @@ async function exportChart() {
 
     padding: 24px 22px 17px;
 
-    border-bottom: 1px solid var(--apha-border);
+    border-bottom: 1px solid var(--border);
 }
 
 .trend-title-row {
@@ -749,9 +747,9 @@ async function exportChart() {
 
     border-radius: 10px;
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary);
+    color: var(--primary);
 
     font-size: 15px;
 
@@ -761,9 +759,9 @@ async function exportChart() {
 .trend-heading h2 {
     margin: 0;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
-    font-size: 15px;
+    font-size: 17px;
 
     font-weight: 800;
 
@@ -775,9 +773,9 @@ async function exportChart() {
 
     margin: 9px 0 0;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 10px;
+    font-size: 12.5px;
 
     line-height: 1.5;
 }
@@ -795,15 +793,15 @@ async function exportChart() {
 
     padding: 0 11px;
 
-    border: 1px solid rgba(215, 163, 61, 0.2);
+    border: 1px solid color-mix(in srgb, var(--gold-mid) 20%, transparent);
 
     border-radius: 8px;
 
-    background: var(--apha-gold-soft);
+    background: var(--gold-soft);
 
     color: #94702a;
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     font-weight: 750;
 
@@ -817,7 +815,7 @@ async function exportChart() {
 
     border-radius: 4px;
 
-    background: var(--apha-gold);
+    background: var(--gold-mid);
 }
 
 .chart-toolbar {
@@ -851,11 +849,11 @@ async function exportChart() {
 
     padding: 11px 13px;
 
-    border: 1px solid #edf1f0;
-
-    border-radius: 10px;
+    border-radius: var(--radius-card);
 
     background: #fafcfc;
+
+    box-shadow: var(--surface-shadow);
 }
 
 .trend-info {
@@ -865,9 +863,9 @@ async function exportChart() {
 
     gap: 6px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 8.5px;
+    font-size: 12.5px;
 
     font-weight: 650;
 }
@@ -881,11 +879,11 @@ async function exportChart() {
 }
 
 .legend-dot.network {
-    background: var(--apha-primary);
+    background: var(--primary);
 }
 
 .legend-dot.threshold {
-    background: var(--apha-gold);
+    background: var(--gold-mid);
 }
 
 .trend-context {
@@ -899,17 +897,17 @@ async function exportChart() {
 }
 
 .context-label {
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 7px;
+    font-size: 9.5px;
 
     font-weight: 850;
 
-    letter-spacing: 0.08em;
+    letter-spacing: 0.14em;
 }
 
 .trend-context strong {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 11px;
 
@@ -917,9 +915,9 @@ async function exportChart() {
 }
 
 .trend-context small {
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 8px;
+    font-size: 12.5px;
 }
 
 .amounts-section {
@@ -931,13 +929,11 @@ async function exportChart() {
 
     padding: 4px;
 
-    border: 1px solid var(--apha-border);
-
-    border-radius: 18px;
+    border-radius: var(--radius-card);
 
     background: #ffffff;
 
-    box-shadow: 0 8px 30px rgba(35, 70, 68, 0.035);
+    box-shadow: var(--surface-shadow);
 
     animation: fadeUp 0.65s ease 0.1s both;
 }
@@ -953,7 +949,7 @@ async function exportChart() {
 
     height: 3px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     opacity: 0.8;
 }
@@ -985,11 +981,11 @@ async function exportChart() {
 
     border-radius: 9px;
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    border: 1px solid rgba(0, 143, 131, 0.08);
+    border: 1px solid color-mix(in srgb, var(--officine) 8%, transparent);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
     font-size: 10px;
 
@@ -1005,7 +1001,7 @@ async function exportChart() {
 }
 
 .insurer-name {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 11px;
 
@@ -1013,9 +1009,9 @@ async function exportChart() {
 }
 
 .insurer-details small {
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 8px;
+    font-size: 12.5px;
 }
 
 .pharmacy-cell {
@@ -1027,15 +1023,15 @@ async function exportChart() {
 }
 
 .pharmacy-number {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-weight: 750;
 }
 
 .pharmacy-label {
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 8px;
+    font-size: 12.5px;
 }
 
 .amount-cell {
@@ -1047,15 +1043,15 @@ async function exportChart() {
 }
 
 .amount-value {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-weight: 700;
 }
 
 .amount-unit {
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 8px;
+    font-size: 12.5px;
 }
 
 .outstanding-cell .amount-value {
@@ -1071,13 +1067,13 @@ async function exportChart() {
 }
 
 .recovery-value span {
-    font-size: 8px;
+    font-size: 12.5px;
 
     font-weight: 600;
 }
 
 .recovery-success {
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .recovery-danger {
@@ -1121,11 +1117,11 @@ async function exportChart() {
 
     padding: 11px 14px;
 
-    border: 1px solid rgba(0, 143, 131, 0.07);
+    border-radius: var(--radius-card);
 
-    border-radius: 11px;
+    background: color-mix(in srgb, var(--officine) 2.5%, transparent);
 
-    background: rgba(0, 143, 131, 0.025);
+    box-shadow: var(--surface-shadow);
 }
 
 .footnote-icon {
@@ -1143,7 +1139,7 @@ async function exportChart() {
 
     border-radius: 50%;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     color: #ffffff;
 
@@ -1155,9 +1151,9 @@ async function exportChart() {
 .evolution-footnote p {
     margin: 0;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     line-height: 1.5;
 }
@@ -1195,10 +1191,6 @@ async function exportChart() {
 
     /* GRAPH */
 
-    .trend-card {
-        border-radius: 15px;
-    }
-
     .trend-header {
         align-items: flex-start;
 
@@ -1234,8 +1226,6 @@ async function exportChart() {
     /* TABLE */
 
     .amounts-section {
-        border-radius: 15px;
-
         padding: 2px;
     }
 }
@@ -1251,14 +1241,6 @@ async function exportChart() {
         height: 31px;
     }
 
-    .trend-heading h2 {
-        font-size: 13px;
-    }
-
-    .trend-heading p {
-        font-size: 9px;
-    }
-
     .threshold-badge {
         width: 100%;
 
@@ -1267,10 +1249,6 @@ async function exportChart() {
 
     .evolution-footnote {
         padding: 9px 11px;
-    }
-
-    .evolution-footnote p {
-        font-size: 8.5px;
     }
 }
 

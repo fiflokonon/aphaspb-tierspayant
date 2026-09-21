@@ -274,7 +274,7 @@ const footer = computed(
 
     height: 42px;
 
-    border: 1px solid var(--apha-border);
+    border: 1px solid var(--border);
 
     border-radius: 10px;
 
@@ -282,7 +282,7 @@ const footer = computed(
 
     /* box-shadow:
         0 3px 10px
-        rgba(35, 70, 68, .025); */
+        color-mix(in srgb, var(--ink) 2.5%, transparent); */
 
     transition:
         border-color 0.2s ease,
@@ -290,11 +290,11 @@ const footer = computed(
 }
 
 .search-box:focus-within {
-    border-color: rgba(0, 143, 131, 0.35);
+    border-color: color-mix(in srgb, var(--officine) 35%, transparent);
 
     /* box-shadow:
         0 0 0 3px
-        rgba(0, 143, 131, .07); */
+        color-mix(in srgb, var(--officine) 7%, transparent); */
 }
 
 .search-icon {
@@ -308,7 +308,7 @@ const footer = computed(
 
     flex-shrink: 0;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
     font-size: 18px;
 
@@ -328,7 +328,7 @@ const footer = computed(
 
     background: transparent;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 11px;
 
@@ -336,7 +336,7 @@ const footer = computed(
 }
 
 .search-input::placeholder {
-    color: rgba(36, 51, 51, 0.38);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
     font-weight: 450;
 }
@@ -370,7 +370,7 @@ const footer = computed(
 
     background: #f1f4f3;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
     font-size: 14px;
 
@@ -382,9 +382,9 @@ const footer = computed(
 }
 
 .clear-search:hover {
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .city-filter {
@@ -396,7 +396,7 @@ const footer = computed(
 
     height: 42px;
 
-    border: 1px solid var(--apha-border);
+    border: 1px solid var(--border);
 
     border-radius: 10px;
 
@@ -412,9 +412,9 @@ const footer = computed(
 
     z-index: 2;
 
-    color: var(--apha-primary);
+    color: var(--primary);
 
-    font-size: 8px;
+    font-size: 12.5px;
 
     pointer-events: none;
 }
@@ -434,7 +434,7 @@ const footer = computed(
 
     background: transparent;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 10.5px;
 
@@ -450,13 +450,11 @@ const footer = computed(
 
     padding: 4px;
 
-    border: 1px solid var(--apha-border);
-
-    border-radius: 18px;
+    border-radius: var(--radius-card);
 
     background: #ffffff;
 
-    box-shadow: 0 8px 30px rgba(35, 70, 68, 0.035);
+    box-shadow: var(--surface-shadow);
 
     animation: fadeUp 0.6s ease 0.05s both;
 }
@@ -472,7 +470,7 @@ const footer = computed(
 
     height: 3px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     opacity: 0.9;
 }
@@ -504,13 +502,13 @@ const footer = computed(
 
     justify-content: center;
 
-    border: 1px solid rgba(0, 143, 131, 0.08);
+    border: 1px solid color-mix(in srgb, var(--officine) 8%, transparent);
 
     border-radius: 10px;
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
     font-size: 11px;
 
@@ -524,7 +522,7 @@ const footer = computed(
 .pharmacy-row:hover .pharmacy-avatar {
     transform: scale(1.06);
 
-    box-shadow: 0 5px 12px rgba(0, 143, 131, 0.1);
+    box-shadow: 0 5px 12px color-mix(in srgb, var(--officine) 10%, transparent);
 }
 
 .pharmacy-name-content {
@@ -542,7 +540,7 @@ const footer = computed(
 
     overflow: hidden;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 11.5px;
 
@@ -560,9 +558,9 @@ const footer = computed(
 
     gap: 4px;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 8px;
+    font-size: 12.5px;
 
     font-weight: 550;
 }
@@ -574,7 +572,7 @@ const footer = computed(
 
     border-radius: 50%;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 }
 
 .city-cell {
@@ -584,7 +582,7 @@ const footer = computed(
 
     gap: 7px;
 
-    color: rgba(36, 51, 51, 0.62);
+    color: color-mix(in srgb, var(--ink) 62%, transparent);
 
     font-size: 11px;
 
@@ -592,9 +590,9 @@ const footer = computed(
 }
 
 .city-marker {
-    color: var(--apha-primary);
+    color: var(--primary);
 
-    font-size: 7px;
+    font-size: 12.5px;
 }
 
 .license-cell {
@@ -604,7 +602,7 @@ const footer = computed(
 
     gap: 7px;
 
-    color: rgba(36, 51, 51, 0.62);
+    color: color-mix(in srgb, var(--ink) 62%, transparent);
 
     font-family:
         ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -627,7 +625,7 @@ const footer = computed(
 
     background: #f4f7f6;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
     font-size: 9px;
 
@@ -641,7 +639,7 @@ const footer = computed(
 
     gap: 7px;
 
-    color: rgba(36, 51, 51, 0.6);
+    color: color-mix(in srgb, var(--ink) 60%, transparent);
 
     font-size: 10.5px;
 
@@ -649,7 +647,7 @@ const footer = computed(
 }
 
 .date-icon {
-    color: var(--apha-primary);
+    color: var(--primary);
 
     font-size: 13px;
 }
@@ -667,7 +665,7 @@ const footer = computed(
 
     padding: 35px 20px;
 
-    border-top: 1px solid rgba(36, 51, 51, 0.06);
+    border-top: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
 
     text-align: center;
 }
@@ -685,21 +683,21 @@ const footer = computed(
 
     margin-bottom: 11px;
 
-    border: 1px solid rgba(0, 143, 131, 0.08);
+    border: 1px solid color-mix(in srgb, var(--officine) 8%, transparent);
 
     border-radius: 14px;
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary);
+    color: var(--primary);
 
     font-size: 20px;
 }
 
 .empty-title {
-    color: var(--apha-ink);
+    color: var(--ink);
 
-    font-size: 13px;
+    font-size: 12.5px;
 
     font-weight: 750;
 }
@@ -709,9 +707,9 @@ const footer = computed(
 
     margin: 5px 0 13px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 10px;
+    font-size: 12.5px;
 
     line-height: 1.5;
 }
@@ -721,15 +719,15 @@ const footer = computed(
 
     padding: 0 13px;
 
-    border: 1px solid rgba(0, 143, 131, 0.15);
+    border: 1px solid color-mix(in srgb, var(--officine) 15%, transparent);
 
     border-radius: 8px;
 
     background: #ffffff;
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     font-weight: 700;
 
@@ -741,9 +739,9 @@ const footer = computed(
 }
 
 .empty-reset:hover {
-    border-color: rgba(0, 143, 131, 0.3);
+    border-color: color-mix(in srgb, var(--officine) 30%, transparent);
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 }
 
 .pagination-wrapper {
@@ -763,11 +761,11 @@ const footer = computed(
 
     padding: 11px 14px;
 
-    border: 1px solid rgba(0, 143, 131, 0.07);
+    border-radius: var(--radius-card);
 
-    border-radius: 11px;
+    background: color-mix(in srgb, var(--officine) 2.5%, transparent);
 
-    background: rgba(0, 143, 131, 0.025);
+    box-shadow: var(--surface-shadow);
 }
 
 .footnote-icon {
@@ -785,7 +783,7 @@ const footer = computed(
 
     border-radius: 50%;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     color: #ffffff;
 
@@ -797,9 +795,9 @@ const footer = computed(
 .pharmacies-footnote p {
     margin: 0;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     line-height: 1.5;
 }
@@ -864,8 +862,6 @@ const footer = computed(
     /* TABLE */
 
     .pharmacies-section {
-        border-radius: 15px;
-
         padding: 2px;
     }
 
@@ -902,11 +898,11 @@ const footer = computed(
 
     .city-cell,
     .date-cell {
-        font-size: 9.5px;
+        font-size: 12.5px;
     }
 
     .license-cell {
-        font-size: 9px;
+        font-size: 12.5px;
     }
 
     .empty-state {

@@ -288,11 +288,11 @@ watch([period, city, insurer], reload);
 .download-button-secondary {
     min-width: 0;
 
-    border: 1px solid var(--apha-border);
+    border: 1px solid var(--border);
 
     background: #ffffff;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     box-shadow: none;
 }
@@ -330,13 +330,11 @@ watch([period, city, insurer], reload);
 
     padding: 28px;
 
-    border: 1px solid var(--apha-border);
-
-    border-radius: 18px;
+    border-radius: var(--radius-card);
 
     background: #ffffff;
 
-    box-shadow: 0 10px 35px rgba(35, 70, 68, 0.045);
+    box-shadow: var(--surface-shadow);
 
     animation: fadeUp 0.6s ease 0.05s both;
 }
@@ -352,7 +350,7 @@ watch([period, city, insurer], reload);
 
     height: 3px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 }
 
 .export-card-header {
@@ -366,7 +364,7 @@ watch([period, city, insurer], reload);
 
     padding-bottom: 20px;
 
-    border-bottom: 1px solid var(--apha-border);
+    border-bottom: 1px solid var(--border);
 }
 
 .card-heading {
@@ -378,9 +376,9 @@ watch([period, city, insurer], reload);
 
     margin-bottom: 5px;
 
-    color: var(--apha-primary);
+    color: var(--primary);
 
-    font-size: 8.5px;
+    font-size: 9.5px;
 
     font-weight: 850;
 
@@ -390,7 +388,7 @@ watch([period, city, insurer], reload);
 .export-card-header h2 {
     margin: 0;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 17px;
 
@@ -404,9 +402,9 @@ watch([period, city, insurer], reload);
 
     margin-top: 5px;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 10px;
+    font-size: 12.5px;
 
     line-height: 1.5;
 }
@@ -424,15 +422,15 @@ watch([period, city, insurer], reload);
 
     padding: 0 12px;
 
-    border: 1px solid rgba(0, 143, 131, 0.12);
+    border: 1px solid color-mix(in srgb, var(--officine) 12%, transparent);
 
     border-radius: 9px;
 
     background: #f8fcfb;
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     font-weight: 750;
 
@@ -446,7 +444,7 @@ watch([period, city, insurer], reload);
 
     border-radius: 50%;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 }
 
 .export-description {
@@ -460,11 +458,11 @@ watch([period, city, insurer], reload);
 
     padding: 14px 15px;
 
-    border: 1px solid rgba(0, 143, 131, 0.08);
+    border-radius: var(--radius-card);
 
-    border-radius: 12px;
+    background: color-mix(in srgb, var(--officine) 3.5%, transparent);
 
-    background: rgba(0, 143, 131, 0.035);
+    box-shadow: var(--surface-shadow);
 }
 
 .description-icon {
@@ -482,7 +480,7 @@ watch([period, city, insurer], reload);
 
     border-radius: 50%;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     color: #ffffff;
 
@@ -500,9 +498,9 @@ watch([period, city, insurer], reload);
 
     margin-bottom: 3px;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
-    font-size: 10px;
+    font-size: 12.5px;
 
     font-weight: 750;
 }
@@ -510,15 +508,15 @@ watch([period, city, insurer], reload);
 .export-description p {
     margin: 0;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 10.5px;
+    font-size: 12.5px;
 
     line-height: 1.55;
 }
 
 .export-description strong {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-weight: 800;
 }
@@ -536,21 +534,17 @@ watch([period, city, insurer], reload);
 
     padding: 15px;
 
-    border: 1px solid var(--apha-border);
-
-    border-radius: 13px;
+    border-radius: var(--radius-card);
 
     background: #fcfdfd;
 
-    transition:
-        border-color 0.2s ease,
-        box-shadow 0.2s ease;
+    box-shadow: var(--surface-shadow);
+
+    transition: box-shadow 0.2s ease;
 }
 
 .download-area:hover {
-    border-color: rgba(0, 143, 131, 0.16);
-
-    box-shadow: 0 5px 18px rgba(35, 70, 68, 0.035);
+    box-shadow: var(--surface-shadow-raised);
 }
 
 .download-info {
@@ -576,17 +570,17 @@ watch([period, city, insurer], reload);
 
     justify-content: center;
 
-    border: 1px solid rgba(0, 143, 131, 0.09);
+    border: 1px solid color-mix(in srgb, var(--officine) 9%, transparent);
 
     border-radius: 11px;
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .file-icon span {
-    font-size: 9px;
+    font-size: 12.5px;
 
     font-weight: 900;
 
@@ -600,7 +594,7 @@ watch([period, city, insurer], reload);
 .file-title {
     display: block;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 11px;
 
@@ -612,9 +606,9 @@ watch([period, city, insurer], reload);
 
     margin-top: 3px;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 9px;
+    font-size: 12.5px;
 }
 
 .separator {
@@ -638,11 +632,11 @@ watch([period, city, insurer], reload);
 
     padding: 0 14px;
 
-    border: 1px solid var(--apha-primary);
+    border: 1px solid var(--primary);
 
     border-radius: 10px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     color: #ffffff;
 
@@ -652,7 +646,7 @@ watch([period, city, insurer], reload);
 
     text-decoration: none;
 
-    box-shadow: 0 6px 15px rgba(0, 143, 131, 0.15);
+    box-shadow: 0 6px 15px color-mix(in srgb, var(--officine) 15%, transparent);
 
     transition:
         transform 0.2s ease,
@@ -664,13 +658,13 @@ watch([period, city, insurer], reload);
 .download-button:hover {
     transform: translateY(-2px);
 
-    background: var(--apha-primary-dark);
+    background: var(--primary-dark);
 
-    border-color: var(--apha-primary-dark);
+    border-color: var(--primary-dark);
 
     color: #ffffff;
 
-    box-shadow: 0 10px 22px rgba(0, 143, 131, 0.2);
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--officine) 20%, transparent);
 }
 
 .download-button:active {
@@ -720,7 +714,7 @@ watch([period, city, insurer], reload);
 
     padding-top: 21px;
 
-    border-top: 1px solid var(--apha-border);
+    border-top: 1px solid var(--border);
 }
 
 .columns-header {
@@ -736,7 +730,7 @@ watch([period, city, insurer], reload);
 .columns-title-group h3 {
     margin: 0;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 12.5px;
 
@@ -756,11 +750,11 @@ watch([period, city, insurer], reload);
 
     border-radius: 7px;
 
-    background: #f7f9f9;
+    background: var(--cream-state);
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     font-weight: 750;
 }
@@ -768,7 +762,7 @@ watch([period, city, insurer], reload);
 .columns-count span {
     font-weight: 600;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 }
 
 .columns-list {
@@ -803,7 +797,7 @@ watch([period, city, insurer], reload);
     font-family:
         ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     transition:
         border-color 0.2s ease,
@@ -819,7 +813,7 @@ watch([period, city, insurer], reload);
 
     border-radius: 50%;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     opacity: 0.55;
 }
@@ -827,11 +821,11 @@ watch([period, city, insurer], reload);
 .column-tag:hover {
     transform: translateY(-1px);
 
-    border-color: rgba(0, 143, 131, 0.2);
+    border-color: color-mix(in srgb, var(--officine) 20%, transparent);
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .column-tag:hover .column-dot {
@@ -853,13 +847,11 @@ watch([period, city, insurer], reload);
 
     padding: 18px 20px;
 
-    border: 1px solid rgba(215, 163, 61, 0.25);
+    border-radius: var(--radius-card);
 
-    border-radius: 15px;
+    background: var(--gold-soft);
 
-    background: var(--apha-gold-soft);
-
-    box-shadow: 0 6px 22px rgba(130, 100, 40, 0.035);
+    box-shadow: var(--surface-shadow);
 
     animation: fadeUp 0.65s ease 0.1s both;
 }
@@ -877,11 +869,11 @@ watch([period, city, insurer], reload);
 
     justify-content: center;
 
-    border: 1px solid rgba(215, 163, 61, 0.15);
+    border: 1px solid color-mix(in srgb, var(--gold-mid) 15%, transparent);
 
     border-radius: 11px;
 
-    background: rgba(215, 163, 61, 0.14);
+    background: color-mix(in srgb, var(--gold-mid) 14%, transparent);
 
     color: #aa7b22;
 
@@ -903,17 +895,17 @@ watch([period, city, insurer], reload);
 
     color: #a07829;
 
-    font-size: 8px;
+    font-size: 9.5px;
 
     font-weight: 850;
 
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
 }
 
 .privacy-content h3 {
     margin: 0;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 12.5px;
 
@@ -925,7 +917,7 @@ watch([period, city, insurer], reload);
 
     color: #756f62;
 
-    font-size: 10px;
+    font-size: 12.5px;
 
     line-height: 1.55;
 }
@@ -951,7 +943,7 @@ watch([period, city, insurer], reload);
 
     justify-content: center;
 
-    border: 1px solid rgba(215, 163, 61, 0.22);
+    border: 1px solid color-mix(in srgb, var(--gold-mid) 22%, transparent);
 
     border-radius: 50%;
 
@@ -969,7 +961,7 @@ watch([period, city, insurer], reload);
 .privacy-shield small {
     margin-top: 1px;
 
-    font-size: 7px;
+    font-size: 12.5px;
 
     font-weight: 750;
 }
@@ -981,7 +973,7 @@ watch([period, city, insurer], reload);
 .page-source {
     margin-top: 16px;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
     font-size: 12.5px;
     line-height: 1.5;
@@ -1072,14 +1064,6 @@ watch([period, city, insurer], reload);
         padding: 16px;
     }
 
-    .export-card-header h2 {
-        font-size: 14px;
-    }
-
-    .heading-description {
-        font-size: 9.5px;
-    }
-
     .period-badge {
         width: 100%;
 
@@ -1088,10 +1072,6 @@ watch([period, city, insurer], reload);
 
     .export-description {
         padding: 11px;
-    }
-
-    .export-description p {
-        font-size: 9.5px;
     }
 
     .download-info {
@@ -1118,10 +1098,6 @@ watch([period, city, insurer], reload);
 
     .privacy-shield {
         display: none;
-    }
-
-    .privacy-content p {
-        font-size: 9.5px;
     }
 }
 

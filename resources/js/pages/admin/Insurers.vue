@@ -523,7 +523,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     font-size: 11px;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
     pointer-events: none;
 }
@@ -543,13 +543,13 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     padding: 0 8px;
 
-    border: 1.5px solid var(--apha-border);
+    border: 1.5px solid var(--border);
 
     border-radius: 8px;
 
     background: #ffffff;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 12px;
 
@@ -561,7 +561,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .row-delay-input:focus {
-    border-color: var(--apha-gold);
+    border-color: var(--gold-mid);
 }
 
 .row-delay-input:disabled {
@@ -571,7 +571,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .row-delay-unit {
     font-size: 11px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .insurers-page {
@@ -599,13 +599,11 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     overflow: hidden;
 
-    border: 1px solid var(--apha-border);
-
-    border-radius: 18px;
+    border-radius: var(--radius-card);
 
     background: #ffffff;
 
-    box-shadow: 0 8px 30px rgba(35, 70, 68, 0.035);
+    box-shadow: var(--surface-shadow);
 
     animation: fadeUp 0.6s ease 0.05s both;
 }
@@ -621,7 +619,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     height: 3px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 }
 
 .insurers-table {
@@ -651,13 +649,13 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     justify-content: center;
 
-    border: 1px solid rgba(0, 143, 131, 0.08);
+    border: 1px solid color-mix(in srgb, var(--officine) 8%, transparent);
 
     border-radius: 11px;
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
     font-size: 11px;
 
@@ -671,15 +669,15 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .insurer-avatar.inactive {
     background: #f1f3f3;
 
-    border-color: rgba(36, 51, 51, 0.07);
+    border-color: color-mix(in srgb, var(--ink) 7%, transparent);
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .insurer-row:hover .insurer-avatar:not(.inactive) {
     transform: scale(1.06);
 
-    box-shadow: 0 5px 12px rgba(0, 143, 131, 0.1);
+    box-shadow: 0 5px 12px color-mix(in srgb, var(--officine) 10%, transparent);
 }
 
 .insurer-name-content {
@@ -693,7 +691,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .insurer-name {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 11.5px;
 
@@ -701,7 +699,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .insurer-name.inactive {
-    color: rgba(36, 51, 51, 0.48);
+    color: color-mix(in srgb, var(--ink) 48%, transparent);
 }
 
 .insurer-subtitle {
@@ -711,15 +709,15 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     gap: 5px;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 8px;
+    font-size: 12.5px;
 
     font-weight: 550;
 }
 
 .insurer-subtitle.inactive {
-    color: rgba(36, 51, 51, 0.35);
+    color: color-mix(in srgb, var(--ink) 35%, transparent);
 }
 
 .mini-status-dot {
@@ -729,7 +727,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 50%;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 }
 
 .mini-status-dot.inactive {
@@ -755,13 +753,13 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     padding: 0 9px;
 
-    border: 1px solid rgba(0, 143, 131, 0.28);
+    border: 1px solid color-mix(in srgb, var(--officine) 28%, transparent);
 
     border-radius: 8px;
 
     outline: none;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     background: #ffffff;
 
@@ -769,9 +767,9 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .edit-input:focus {
-    border-color: var(--apha-primary);
+    border-color: var(--primary);
 
-    box-shadow: 0 0 0 3px rgba(0, 143, 131, 0.07);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--officine) 7%, transparent);
 }
 
 .edit-confirm,
@@ -800,15 +798,15 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .edit-confirm {
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .edit-cancel {
     background: #f3f4f4;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .pharmacy-count {
@@ -820,7 +818,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .count-number {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 12px;
 
@@ -828,9 +826,9 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .count-label {
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 8.5px;
+    font-size: 12.5px;
 }
 
 .status-badge {
@@ -847,7 +845,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
     font-family:
         ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    font-size: 8.5px;
+    font-size: 12.5px;
 
     font-weight: 750;
 
@@ -855,19 +853,19 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .status-badge.active {
-    border: 1px solid rgba(0, 143, 131, 0.1);
+    border: 1px solid color-mix(in srgb, var(--officine) 10%, transparent);
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .status-badge.inactive {
-    border: 1px solid rgba(36, 51, 51, 0.07);
+    border: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
 
     background: #f2f4f4;
 
-    color: rgba(36, 51, 51, 0.48);
+    color: color-mix(in srgb, var(--ink) 48%, transparent);
 }
 
 .status-badge-dot {
@@ -879,7 +877,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .status-badge.active .status-badge-dot {
-    background: var(--apha-primary);
+    background: var(--primary);
 }
 
 .status-badge.inactive .status-badge-dot {
@@ -913,7 +911,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     background: transparent;
 
-    font-size: 9.5px;
+    font-size: 12.5px;
 
     font-weight: 700;
 
@@ -931,15 +929,15 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .action-button.rename {
-    border-color: rgba(0, 143, 131, 0.1);
+    border-color: color-mix(in srgb, var(--officine) 10%, transparent);
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .action-button.rename:hover {
-    border-color: rgba(0, 143, 131, 0.2);
+    border-color: color-mix(in srgb, var(--officine) 20%, transparent);
 
     background: #dff3ef;
 }
@@ -957,15 +955,15 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .action-button.activate {
-    border-color: rgba(0, 143, 131, 0.1);
+    border-color: color-mix(in srgb, var(--officine) 10%, transparent);
 
     background: #ffffff;
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .action-button.activate:hover {
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 }
 
 .action-icon {
@@ -991,31 +989,11 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     overflow: hidden;
 
-    border: 1px solid var(--apha-border);
-
-    border-radius: 16px;
+    border-radius: var(--radius-card);
 
     background: #ffffff;
 
-    box-shadow: 0 7px 25px rgba(35, 70, 68, 0.03);
-}
-
-.configuration-card::after {
-    content: '';
-
-    position: absolute;
-
-    right: -55px;
-
-    bottom: -70px;
-
-    width: 150px;
-
-    height: 150px;
-
-    border-radius: 50%;
-
-    pointer-events: none;
+    box-shadow: var(--surface-shadow);
 }
 
 .card-header {
@@ -1051,15 +1029,15 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .card-icon.green {
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .card-icon.gold {
-    background: var(--apha-gold-soft);
+    background: var(--gold-soft);
 
-    color: var(--apha-gold);
+    color: var(--gold-mid);
 }
 
 .card-eyebrow {
@@ -1067,25 +1045,25 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     margin-bottom: 2px;
 
-    color: var(--apha-primary);
+    color: var(--primary);
 
-    font-size: 7.5px;
+    font-size: 9.5px;
 
     font-weight: 850;
 
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
 }
 
 .card-eyebrow.gold {
-    color: var(--apha-gold);
+    color: var(--gold-mid);
 }
 
 .card-header h2 {
     margin: 0;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
-    font-size: 13px;
+    font-size: 17px;
 
     font-weight: 750;
 
@@ -1099,9 +1077,9 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     margin: 12px 0 15px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 10px;
+    font-size: 12.5px;
 
     line-height: 1.55;
 }
@@ -1135,9 +1113,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     transform: translateY(-50%);
 
-    color: var(--apha-primary);
-
-    font-size: 8px;
+    color: var(--primary);
 
     pointer-events: none;
 }
@@ -1149,7 +1125,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     padding: 0 12px 0 29px;
 
-    border: 1px solid rgba(36, 51, 51, 0.12);
+    border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
 
     border-radius: 10px;
 
@@ -1157,7 +1133,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     background: #ffffff;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 11px;
 
@@ -1167,13 +1143,13 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .modern-input::placeholder {
-    color: rgba(36, 51, 51, 0.38);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 }
 
 .modern-input:focus {
-    border-color: rgba(0, 143, 131, 0.35);
+    border-color: color-mix(in srgb, var(--officine) 35%, transparent);
 
-    box-shadow: 0 0 0 3px rgba(0, 143, 131, 0.06);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--officine) 6%, transparent);
 }
 
 .primary-button {
@@ -1199,7 +1175,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 10px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     color: #ffffff;
 
@@ -1209,7 +1185,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     cursor: pointer;
 
-    box-shadow: 0 6px 15px rgba(0, 143, 131, 0.13);
+    box-shadow: 0 6px 15px color-mix(in srgb, var(--officine) 13%, transparent);
 
     transition:
         transform 0.2s ease,
@@ -1220,7 +1196,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .primary-button:hover {
     transform: translateY(-1px);
 
-    box-shadow: 0 8px 18px rgba(0, 143, 131, 0.18);
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--officine) 18%, transparent);
 }
 
 .primary-button:disabled {
@@ -1256,7 +1232,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     padding: 0 12px;
 
-    border: 1px solid rgba(36, 51, 51, 0.12);
+    border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
 
     border-radius: 10px;
 
@@ -1264,7 +1240,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     background: #ffffff;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 12px;
 
@@ -1276,13 +1252,13 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .number-input:focus {
-    border-color: rgba(215, 163, 61, 0.45);
+    border-color: color-mix(in srgb, var(--gold-mid) 45%, transparent);
 
-    box-shadow: 0 0 0 3px rgba(215, 163, 61, 0.07);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold-mid) 7%, transparent);
 }
 
 .days-label {
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
     font-size: 10.5px;
 
@@ -1298,7 +1274,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     color: #b34e43;
 
-    font-size: 9.5px;
+    font-size: 12.5px;
 
     line-height: 1.4;
 }
@@ -1318,11 +1294,11 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     padding: 11px;
 
-    border: 1px solid rgba(215, 163, 61, 0.15);
+    border-radius: var(--radius-card);
 
-    border-radius: 10px;
+    background: color-mix(in srgb, var(--gold-mid) 5.5%, transparent);
 
-    background: rgba(215, 163, 61, 0.055);
+    box-shadow: var(--surface-shadow);
 }
 
 .anonymity-icon {
@@ -1340,7 +1316,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 50%;
 
-    background: var(--apha-gold);
+    background: var(--gold-mid);
 
     color: #ffffff;
 
@@ -1352,15 +1328,15 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .anonymity-info p {
     margin: 0;
 
-    color: rgba(36, 51, 51, 0.6);
+    color: color-mix(in srgb, var(--ink) 60%, transparent);
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     line-height: 1.5;
 }
 
 .anonymity-info strong {
-    color: rgba(36, 51, 51, 0.78);
+    color: color-mix(in srgb, var(--ink) 78%, transparent);
 }
 
 .page-footnote {
@@ -1374,11 +1350,11 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     padding: 11px 14px;
 
-    border: 1px solid rgba(0, 143, 131, 0.07);
+    border-radius: var(--radius-card);
 
-    border-radius: 11px;
+    background: color-mix(in srgb, var(--officine) 2.5%, transparent);
 
-    background: rgba(0, 143, 131, 0.025);
+    box-shadow: var(--surface-shadow);
 }
 
 .footnote-icon {
@@ -1396,7 +1372,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 50%;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     color: #ffffff;
 
@@ -1408,9 +1384,9 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .page-footnote p {
     margin: 0;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     line-height: 1.5;
 }
