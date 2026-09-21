@@ -36,7 +36,7 @@ const props = withDefaults(
             class="font-mono font-semibold"
             :class="
                 surface === 'band'
-                    ? 'text-[8.5px]/none text-white/60'
+                    ? 'text-[8.5px]/none text-white/72 min-[380px]:text-[9.5px]/none'
                     : 'text-[10.5px]/none text-ink/[0.45]'
             "
         >
@@ -44,12 +44,16 @@ const props = withDefaults(
         </div>
         <div
             class="mt-[9px] flex items-baseline gap-[6px]"
-            :class="surface === 'band' ? 'whitespace-nowrap' : ''"
+            :class="
+                surface === 'band' ? 'flex-wrap min-[380px]:flex-nowrap' : ''
+            "
         >
             <div
-                class="text-[28px]/none font-extrabold"
+                class="font-extrabold"
                 :class="
-                    surface === 'band' ? 'text-white' : kpiToneClass[props.tone]
+                    surface === 'band'
+                        ? 'text-[15px]/none whitespace-nowrap text-white min-[380px]:text-[19px]/none'
+                        : `text-[28px]/none ${kpiToneClass[props.tone]}`
                 "
             >
                 {{ value }}
@@ -57,7 +61,7 @@ const props = withDefaults(
             <div
                 v-if="unit"
                 class="text-xs font-medium"
-                :class="surface === 'band' ? 'text-white/60' : 'text-ink/50'"
+                :class="surface === 'band' ? 'text-white/72' : 'text-ink/50'"
             >
                 {{ unit }}
             </div>
@@ -73,8 +77,13 @@ const props = withDefaults(
             />
         </div>
         <div
-            v-else-if="(hint || $slots.hint) && surface !== 'band'"
-            class="mt-[11px] text-[11px]/[1.4] text-ink/50"
+            v-else-if="hint || $slots.hint"
+            class="mt-[11px]"
+            :class="
+                surface === 'band'
+                    ? 'text-[10px]/[1.3] text-white/72'
+                    : 'text-[11px]/[1.4] text-ink/50'
+            "
         >
             <slot name="hint">{{ hint }}</slot>
         </div>

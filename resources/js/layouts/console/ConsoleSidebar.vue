@@ -718,7 +718,7 @@ watch(collapsed, writeCollapsed);
 
     background: color-mix(in srgb, var(--officine) 3.5%, transparent);
 
-    color: color-mix(in srgb, var(--ink) 38%, transparent);
+    color: var(--light);
 
     font-size: 7px;
 
@@ -866,7 +866,7 @@ watch(collapsed, writeCollapsed);
   le lien lui-même, posés seulement quand la barre est repliée.
 */
 
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
     /*
       Le repli n'existe pas ici : la barre est déjà une bande horizontale, et
       lui superposer un rail de 62 px la réduirait à un timbre-poste. Sans

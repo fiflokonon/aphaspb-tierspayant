@@ -116,60 +116,117 @@ const delayTone = (days: number | null): KpiTone => {
 
 <style scoped>
 .dashboard-kpis {
-    position: relative;
+    margin-bottom: 22px;
 }
 
 .dashboard-kpi-wrapper {
     position: relative;
+
+    overflow: hidden;
+
+    border-radius: 16px;
+
+    animation: cardAppear 0.55s ease both;
+
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.dashboard-kpi-wrapper:nth-child(2) {
+    animation-delay: 0.08s;
+}
+
+.dashboard-kpi-wrapper:nth-child(3) {
+    animation-delay: 0.16s;
+}
+
+.dashboard-kpi-wrapper:hover {
+    transform: translateY(-4px);
+
+    box-shadow: 0 14px 30px color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
 .kpi-side-accent {
     position: absolute;
+
+    z-index: 5;
+
     left: 0;
-    top: 12px;
-    bottom: 12px;
+    top: 17px;
+    bottom: 17px;
 
     width: 3px;
 
-    border-radius: 0 3px 3px 0;
+    border-radius: 0 5px 5px 0;
 
     background: var(--primary);
 }
 
 .kpi-side-accent.teal {
-    background: var(--officine-dark);
+    background: var(--primary);
 }
 
 .kpi-side-accent.gold {
-    background: var(--gold-mid);
+    background: var(--gold);
 }
 
 .kpi-icon {
     position: absolute;
-    top: 14px;
-    right: 14px;
+
+    top: 16px;
+    right: 16px;
+
+    width: 37px;
+    height: 37px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    width: 30px;
-    height: 30px;
+    border-radius: 11px;
 
-    border-radius: 9px;
-
-    background: var(--officine-soft);
+    background: var(--primary-soft);
 
     color: var(--primary);
 
-    font-size: 14px;
-    font-weight: 700;
+    pointer-events: none;
+
+    transition: transform 0.3s ease;
+}
+
+.kpi-icon.teal {
+    background: var(--primary-soft);
+
+    color: var(--primary);
 }
 
 .kpi-icon.gold {
     background: var(--gold-soft);
 
-    color: var(--gold-dark);
+    color: var(--gold);
+}
+
+.dashboard-kpi-wrapper:hover .kpi-icon {
+    transform: rotate(8deg) scale(1.08);
+}
+
+/*
+  L'animation d'entrée vit ici parce que les cartes y vivent. Copiée telle
+  quelle de Dashboard.vue lors de l'extraction : la première version de ce
+  composant l'avait réécrite de mémoire, et y avait perdu l'animation, le
+  survol, le rognage du wrapper et quatre valeurs de jeton.
+*/
+@keyframes cardAppear {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /*
@@ -181,23 +238,49 @@ const delayTone = (days: number | null): KpiTone => {
     display: none;
 }
 
-.on-band {
-    margin-top: 0;
+.on-band .dashboard-kpi-wrapper {
+    overflow: visible;
+    border-radius: 0;
+
+    /* min-width: 0 — sans quoi le min-content d'un montant long déborde la
+       piste de grille et fait défiler la page à 320 px. */
+    min-width: 0;
+}
+
+.on-band .dashboard-kpi-wrapper:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 /*
-  Les trois chiffres côte à côte dans le bandeau, même à 390 px.
+  Les trois chiffres côte à côte dans le bandeau, même à 320 px.
 
   KpiRow empile à une colonne sous 640 px, ce qui donnait un bandeau de
   450 px de haut et repoussait les bandes d'alerte hors de l'écran — le
-  défaut même que ce bandeau existe pour éviter. La maquette les met sur une
-  rangée ; KpiCard rétrécit son texte lui-même via sa prop `surface`, plutôt
-  qu'un :deep() sur ses classes utilitaires — viser un utilitaire Tailwind
-  casse au premier changement de classe.
+  défaut même que ce bandeau existe pour éviter. KpiCard rétrécit son texte
+  lui-même via sa prop `surface`, plutôt qu'un :deep() sur ses classes
+  utilitaires Tailwind.
 */
 .on-band {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
+
+    /* Le bandeau porte déjà son propre rembourrage. */
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/*
+  Le bandeau disparaît au-dessus de 1024 px, et cette règle vit ici plutôt
+  que dans la page : les deux déclarations de `display` avaient la même
+  spécificité dans deux fichiers, et seul l'ordre d'émission de Vite les
+  départageait. Un changement de découpage aurait remis les chiffres du
+  bandeau sur l'écran de bureau.
+*/
+@media (min-width: 1024px) {
+    .on-band {
+        display: none;
+    }
 }
 </style>

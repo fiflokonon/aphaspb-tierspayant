@@ -690,6 +690,8 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .insurer-banner.owing {
     border-color: var(--gold);
     background: var(--gold-soft);
+
+    color: var(--ink);
 }
 
 .insurer-banner.owing .insurer-banner-icon {
@@ -699,6 +701,8 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .insurer-banner.settled {
     border-color: var(--primary);
     background: var(--primary-soft);
+
+    color: var(--ink);
 }
 
 .insurer-banner.settled .insurer-banner-icon {
@@ -710,11 +714,17 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     margin-top: 0.125rem;
 }
 
+/*
+  Pas de `color` ici : le <p> reposait l'encre et gagnait sur le `color: #fff`
+  de la bande, qui ne vaut que par héritage. Les mots courants sortaient donc
+  en #141d18 sur #d13b22, soit 3,58:1 — sous le seuil AA, sur l'élément qui
+  porte la plus grande partie du texte. La couleur vient désormais de l'état
+  de la bande, et ce défaut ne peut plus revenir par un quatrième état.
+*/
 .insurer-banner-line {
     font-size: 0.9375rem;
     font-weight: 500;
     line-height: 1.5;
-    color: var(--ink);
 }
 
 .insurer-banner-line strong {
@@ -759,15 +769,13 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
   `visibility` ou une position hors écran — pour que l'emplacement masqué
   quitte aussi l'arbre d'accessibilité : un lecteur d'écran ne doit pas
   énoncer les trois chiffres deux fois.
-*/
-@media (max-width: 1023px) {
-    .kpis-page {
-        display: none;
-    }
-}
 
-@media (min-width: 1024px) {
-    .kpis-band {
+  Le pendant de cette règle vit dans DashboardKpis, avec le reste de son
+  style : séparées, les deux avaient la même spécificité et seul l'ordre
+  d'émission les départageait.
+*/
+@media (max-width: 1023.98px) {
+    .kpis-page {
         display: none;
     }
 }
@@ -833,7 +841,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .dashboard-page {
     /*
       --muted et --light sont ici des couleurs de TEXTE. Le thème réserve
-      --muted à une surface (#faf8f3) : les retirer rendrait ce texte presque
+      --muted à une surface presque blanche : les retirer rendrait ce texte
       blanc. À renommer au lot 3 ou 4, pas à supprimer.
     */
     --muted: color-mix(in srgb, var(--ink) 55%, transparent);
@@ -943,102 +951,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--officine) 8%, transparent);
 
     animation: statusPulse 2.2s infinite;
-}
-
-.dashboard-kpis {
-    margin-bottom: 22px;
-}
-
-.dashboard-kpi-wrapper {
-    position: relative;
-
-    overflow: hidden;
-
-    border-radius: 16px;
-
-    animation: cardAppear 0.55s ease both;
-
-    transition:
-        transform 0.3s ease,
-        box-shadow 0.3s ease;
-}
-
-.dashboard-kpi-wrapper:nth-child(2) {
-    animation-delay: 0.08s;
-}
-
-.dashboard-kpi-wrapper:nth-child(3) {
-    animation-delay: 0.16s;
-}
-
-.dashboard-kpi-wrapper:hover {
-    transform: translateY(-4px);
-
-    box-shadow: 0 14px 30px color-mix(in srgb, var(--ink) 7%, transparent);
-}
-
-.kpi-side-accent {
-    position: absolute;
-
-    z-index: 5;
-
-    left: 0;
-    top: 17px;
-    bottom: 17px;
-
-    width: 3px;
-
-    border-radius: 0 5px 5px 0;
-
-    background: var(--primary);
-}
-
-.kpi-side-accent.teal {
-    background: var(--primary);
-}
-
-.kpi-side-accent.gold {
-    background: var(--gold);
-}
-
-.kpi-icon {
-    position: absolute;
-
-    top: 16px;
-    right: 16px;
-
-    width: 37px;
-    height: 37px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 11px;
-
-    background: var(--primary-soft);
-
-    color: var(--primary);
-
-    pointer-events: none;
-
-    transition: transform 0.3s ease;
-}
-
-.kpi-icon.teal {
-    background: var(--primary-soft);
-
-    color: var(--primary);
-}
-
-.kpi-icon.gold {
-    background: var(--gold-soft);
-
-    color: var(--gold);
-}
-
-.dashboard-kpi-wrapper:hover .kpi-icon {
-    transform: rotate(8deg) scale(1.08);
 }
 
 .dashboard-card {
@@ -1362,18 +1274,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-size: 9px;
 }
 
-@keyframes dashboardFade {
-    from {
-        opacity: 0;
-        transform: translateY(7px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 @keyframes cardAppear {
     from {
         opacity: 0;
@@ -1383,34 +1283,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     to {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-@keyframes iconFloat {
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-3px);
-    }
-}
-
-@keyframes pulseIcon {
-    0% {
-        opacity: 0.3;
-        transform: scale(0.92);
-    }
-
-    50% {
-        opacity: 0.8;
-        transform: scale(1);
-    }
-
-    100% {
-        opacity: 0.3;
-        transform: scale(0.92);
     }
 }
 
@@ -1438,9 +1310,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         opacity: 1;
         transform: scaleX(1);
     }
-}
-
-@media (max-width: 900px) {
 }
 
 @media (max-width: 640px) {

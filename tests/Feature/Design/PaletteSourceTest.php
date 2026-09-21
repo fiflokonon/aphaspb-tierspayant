@@ -143,7 +143,10 @@ test('a cleaned file writes no colour literal', function () {
         'js/layouts/console/ConsoleSidebar.vue',
         'js/pages/pharmacy/Dashboard.vue',
         'js/components/aphaspb/DashboardKpis.vue',
-        'js/components/aphaspb/KpiCard.vue',
+        // KpiCard n'est pas dans la liste : il n'a pas de bloc <style>, ses
+        // couleurs sont des utilitaires Tailwind, et la garde ne lit que le
+        // <style>. L'y inscrire annoncerait une couverture qu'elle ne peut
+        // structurellement pas donner.
     ];
 
     $offenders = [];

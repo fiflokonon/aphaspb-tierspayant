@@ -111,8 +111,12 @@ const identity = computed(() => {
         justify-content: space-between;
     }
 
-    /* Sinon la grille du hero colle au titre de 34 px. */
-    .header-hero {
+    /*
+      Sinon la grille du hero colle au titre de 34 px. `:empty` en plus du
+      v-if : sur grand écran le tableau de bord remplit bien ce slot, mais
+      son contenu y est masqué, et le conteneur laissait 18 px de vide.
+    */
+    .header-hero:not(:empty) {
         margin-top: 18px;
     }
 }
@@ -126,7 +130,7 @@ const identity = computed(() => {
   claires empilées repoussent le contenu utile hors de l'écran, là où un
   bandeau tient la légende, le titre et les chiffres en un seul pavé.
 */
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
     .header-band {
         padding: 17px 18px 18px;
 
