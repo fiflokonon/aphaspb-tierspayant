@@ -381,7 +381,7 @@ const footer = computed(
 .filter-wrapper:hover {
     transform: translateY(-1px);
 
-    box-shadow: 0 7px 18px rgba(35, 70, 68, 0.06);
+    box-shadow: 0 7px 18px color-mix(in srgb, var(--ink) 6%, transparent);
 }
 
 .history-table-section {
@@ -389,13 +389,11 @@ const footer = computed(
 
     overflow: hidden;
 
-    border: 1px solid var(--apha-border);
+    border-radius: var(--radius-card);
 
-    border-radius: 18px;
+    background: var(--card);
 
-    background: var(--apha-card);
-
-    box-shadow: 0 9px 32px rgba(35, 70, 68, 0.04);
+    box-shadow: var(--surface-shadow);
 
     animation: tableAppear 0.65s ease both;
 }
@@ -409,7 +407,7 @@ const footer = computed(
     width: 100%;
     height: 3px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     opacity: 0.9;
 }
@@ -423,7 +421,7 @@ const footer = computed(
 
     padding: 22px 22px 17px;
 
-    border-bottom: 1px solid rgba(35, 70, 68, 0.07);
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
 .table-kicker {
@@ -431,16 +429,16 @@ const footer = computed(
 
     margin-bottom: 4px;
 
-    color: var(--apha-primary);
+    color: var(--primary);
 
-    font-size: 8.5px;
+    font-size: 9.5px;
     font-weight: 800;
 
-    letter-spacing: 0.13em;
+    letter-spacing: 0.14em;
 }
 
 .table-heading h2 {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 17px;
     font-weight: 750;
@@ -451,9 +449,9 @@ const footer = computed(
 .table-heading p {
     margin-top: 4px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 10.5px;
+    font-size: 12.5px;
 }
 
 .declaration-count {
@@ -464,7 +462,7 @@ const footer = computed(
 
     padding: 8px 12px;
 
-    border: 1px solid rgba(0, 143, 131, 0.1);
+    border: 1px solid color-mix(in srgb, var(--officine) 10%, transparent);
 
     border-radius: 11px;
 
@@ -474,16 +472,16 @@ const footer = computed(
 }
 
 .count-number {
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
     font-size: 16px;
     font-weight: 800;
 }
 
 .count-label {
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 9px;
+    font-size: 12.5px;
     font-weight: 600;
 }
 
@@ -498,7 +496,7 @@ const footer = computed(
 
     padding: 0 22px;
 
-    border-bottom: 1px solid rgba(35, 70, 68, 0.055);
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 5.5%, transparent);
 
     background: rgba(248, 251, 250, 0.65);
 }
@@ -509,9 +507,9 @@ const footer = computed(
 
     gap: 7px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 9.5px;
+    font-size: 12.5px;
     font-weight: 600;
 }
 
@@ -521,17 +519,17 @@ const footer = computed(
 
     border-radius: 50%;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
-    box-shadow: 0 0 0 3px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--officine) 8%, transparent);
 }
 
 .filter-summary {
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
     font-family: monospace;
 
-    font-size: 9px;
+    font-size: 12.5px;
 }
 
 .history-table-wrapper {
@@ -540,7 +538,8 @@ const footer = computed(
     overflow-x: auto;
 
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 143, 131, 0.2) transparent;
+    scrollbar-color: color-mix(in srgb, var(--officine) 20%, transparent)
+        transparent;
 }
 
 .history-table-wrapper::-webkit-scrollbar {
@@ -554,7 +553,7 @@ const footer = computed(
 .history-table-wrapper::-webkit-scrollbar-thumb {
     border-radius: 20px;
 
-    background: rgba(0, 143, 131, 0.2);
+    background: color-mix(in srgb, var(--officine) 20%, transparent);
 }
 
 .history-table {
@@ -572,7 +571,7 @@ const footer = computed(
 }
 
 .history-row:hover {
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 }
 
 .insurer-cell {
@@ -594,13 +593,13 @@ const footer = computed(
     align-items: center;
     justify-content: center;
 
-    border: 1px solid rgba(0, 143, 131, 0.1);
+    border: 1px solid color-mix(in srgb, var(--officine) 10%, transparent);
 
     border-radius: 10px;
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
     font-size: 10px;
     font-weight: 800;
@@ -613,7 +612,7 @@ const footer = computed(
 .history-row:hover .insurer-avatar {
     transform: scale(1.08) rotate(2deg);
 
-    box-shadow: 0 5px 13px rgba(0, 143, 131, 0.1);
+    box-shadow: 0 5px 13px color-mix(in srgb, var(--officine) 10%, transparent);
 }
 
 .insurer-info {
@@ -628,7 +627,7 @@ const footer = computed(
 .insurer-name {
     overflow: hidden;
 
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 11.5px;
     font-weight: 700;
@@ -638,13 +637,13 @@ const footer = computed(
 }
 
 .insurer-label {
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 8.5px;
+    font-size: 12.5px;
 }
 
 .month-cell {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 11px;
     font-weight: 650;
@@ -659,7 +658,7 @@ const footer = computed(
 }
 
 .amount-cell {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-family: monospace;
 
@@ -670,7 +669,7 @@ const footer = computed(
 }
 
 .amount-cell.received {
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .amount-cell.outstanding {
@@ -684,7 +683,7 @@ const footer = computed(
 }
 
 .amount-cell.outstanding.empty-outstanding {
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 }
 
 .history-row:hover .amount-cell.outstanding.has-outstanding {
@@ -701,19 +700,19 @@ const footer = computed(
 }
 
 .delay-value {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-weight: 750;
 }
 
 .delay-unit {
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 9px;
+    font-size: 12.5px;
 }
 
 .delay-empty {
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 }
 
 .delay-instalments {
@@ -723,13 +722,13 @@ const footer = computed(
 
     border-radius: 4px;
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     font-weight: 700;
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 }
 
 .corrections-badge {
@@ -739,13 +738,13 @@ const footer = computed(
 
     border-radius: 999px;
 
-    background: var(--apha-gold-soft);
+    background: var(--gold-soft);
 
-    font-size: 9px;
+    font-size: 12.5px;
 
     font-weight: 700;
 
-    color: var(--apha-gold-dark);
+    color: var(--gold-dark);
 
     white-space: nowrap;
 }
@@ -764,7 +763,7 @@ const footer = computed(
 
     overflow: hidden;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
     font-size: 10px;
 
@@ -775,13 +774,13 @@ const footer = computed(
 .note-icon {
     flex-shrink: 0;
 
-    color: var(--apha-gold);
+    color: var(--gold-mid);
 
-    font-size: 9px;
+    font-size: 12.5px;
 }
 
 .note-empty {
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
     font-size: 10px;
 }
@@ -800,7 +799,7 @@ const footer = computed(
 
     border-radius: 8px;
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
     font-size: 10.5px;
     font-weight: 750;
@@ -817,15 +816,15 @@ const footer = computed(
 .edit-link:hover {
     gap: 8px;
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
     transform: translateX(1px);
 }
 
 .edit-arrow {
-    color: var(--apha-primary);
+    color: var(--primary);
 
     font-size: 13px;
 
@@ -845,7 +844,7 @@ const footer = computed(
 
     padding: 45px 20px;
 
-    border-top: 1px solid rgba(35, 70, 68, 0.055);
+    border-top: 1px solid color-mix(in srgb, var(--ink) 5.5%, transparent);
 
     background: #fff;
 
@@ -862,15 +861,15 @@ const footer = computed(
 
     border-radius: 13px;
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary);
+    color: var(--primary);
 
     font-size: 22px;
 }
 
 .empty-content h3 {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 12.5px;
     font-weight: 750;
@@ -879,9 +878,9 @@ const footer = computed(
 .empty-content p {
     margin-top: 3px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 10.5px;
+    font-size: 12.5px;
 }
 
 .history-pagination {
@@ -900,11 +899,11 @@ const footer = computed(
 
     padding: 12px 15px;
 
-    border: 1px solid rgba(0, 143, 131, 0.07);
+    border-radius: var(--radius-card);
 
-    border-radius: 12px;
+    box-shadow: var(--surface-shadow);
 
-    background: rgba(0, 143, 131, 0.035);
+    background: color-mix(in srgb, var(--officine) 3.5%, transparent);
 }
 
 .footnote-icon {
@@ -919,7 +918,7 @@ const footer = computed(
 
     border-radius: 50%;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     color: #ffffff;
 
@@ -935,16 +934,16 @@ const footer = computed(
 }
 
 .footnote-title {
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
-    font-size: 9.5px;
+    font-size: 12.5px;
     font-weight: 750;
 }
 
 .footnote-content p {
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 10px;
+    font-size: 12.5px;
     line-height: 1.45;
 }
 
@@ -1040,28 +1039,8 @@ const footer = computed(
         padding-bottom: 80px;
     }
 
-    .history-table-section {
-        border-radius: 14px;
-    }
-
-    .table-heading h2 {
-        font-size: 16px;
-    }
-
-    .table-heading p {
-        font-size: 10px;
-    }
-
     .table-filter-bar {
         min-height: 36px;
-    }
-
-    .filter-status {
-        font-size: 9px;
-    }
-
-    .filter-summary {
-        font-size: 8px;
     }
 
     .empty-state {
@@ -1070,10 +1049,6 @@ const footer = computed(
         text-align: center;
 
         padding: 38px 18px;
-    }
-
-    .history-footnote {
-        border-radius: 11px;
     }
 }
 

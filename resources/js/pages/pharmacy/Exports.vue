@@ -194,19 +194,19 @@ watch([period, insurer], reload);
 
     padding-bottom: 20px;
 
-    border-bottom: 1px solid var(--apha-border, #e5ecea);
+    border-bottom: 1px solid var(--border);
 }
 
 .intro-eyebrow {
     font-family: var(--font-mono, ui-monospace, monospace);
 
-    font-size: 10px;
+    font-size: 9.5px;
 
     font-weight: 600;
 
-    letter-spacing: 0.09em;
+    letter-spacing: 0.14em;
 
-    color: var(--apha-primary, #008f83);
+    color: var(--primary);
 }
 
 .intro-copy h1 {
@@ -226,7 +226,7 @@ watch([period, insurer], reload);
 
     line-height: 1.6;
 
-    color: var(--apha-muted, #788585);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .privacy-badge {
@@ -239,7 +239,7 @@ watch([period, insurer], reload);
 
     padding: 7px 12px;
 
-    border: 1px solid var(--apha-border, #e5ecea);
+    border: 1px solid var(--border);
 
     border-radius: 999px;
 
@@ -247,7 +247,7 @@ watch([period, insurer], reload);
 
     font-weight: 600;
 
-    color: var(--apha-muted, #788585);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
     white-space: nowrap;
 }
@@ -258,7 +258,7 @@ watch([period, insurer], reload);
 
     border-radius: 999px;
 
-    background: var(--apha-gold, #d7a33d);
+    background: var(--gold-mid);
 }
 
 .formats {
@@ -281,15 +281,11 @@ watch([period, insurer], reload);
 
     padding: 16px 18px;
 
-    border: 1px solid var(--apha-border, #e5ecea);
+    border-radius: var(--radius-card);
 
-    border-radius: 14px;
+    box-shadow: var(--surface-shadow);
 
-    background: var(--apha-card, #fff);
-}
-
-.format-card-primary {
-    border-color: var(--apha-primary, #008f83);
+    background: var(--card);
 }
 
 .format-badge {
@@ -304,7 +300,7 @@ watch([period, insurer], reload);
 
     border-radius: 11px;
 
-    background: var(--apha-background, #f7f9f9);
+    background: var(--cream-state);
 
     font-family: var(--font-mono, ui-monospace, monospace);
 
@@ -312,13 +308,13 @@ watch([period, insurer], reload);
 
     font-weight: 700;
 
-    color: var(--apha-ink, #243333);
+    color: var(--ink);
 }
 
 .format-card-primary .format-badge {
-    background: var(--apha-primary-soft, #e8f6f3);
+    background: var(--primary-soft);
 
-    color: var(--apha-primary-dark, #006f68);
+    color: var(--primary-dark);
 }
 
 .format-copy {
@@ -330,7 +326,7 @@ watch([period, insurer], reload);
 .format-copy h2 {
     margin: 0;
 
-    font-size: 14px;
+    font-size: 17px;
 }
 
 .format-copy p {
@@ -338,11 +334,11 @@ watch([period, insurer], reload);
 
     max-width: 68ch;
 
-    font-size: 11.5px;
+    font-size: 12.5px;
 
     line-height: 1.55;
 
-    color: var(--apha-muted, #788585);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .format-action {
@@ -353,7 +349,7 @@ watch([period, insurer], reload);
 
     padding: 10px 16px;
 
-    border: 1px solid var(--apha-border, #e5ecea);
+    border: 1px solid var(--border);
 
     border-radius: 10px;
 
@@ -361,25 +357,25 @@ watch([period, insurer], reload);
 
     font-weight: 650;
 
-    color: var(--apha-ink, #243333);
+    color: var(--ink);
 
     white-space: nowrap;
 }
 
 .format-action:hover {
-    border-color: var(--apha-ink, #243333);
+    border-color: var(--ink);
 }
 
 .format-action-primary {
     border-color: transparent;
 
-    background: var(--apha-primary, #008f83);
+    background: var(--primary);
 
     color: #fff;
 }
 
 .format-action-primary:hover {
-    background: var(--apha-primary-dark, #006f68);
+    background: var(--primary-dark);
 
     border-color: transparent;
 }
@@ -389,7 +385,7 @@ watch([period, insurer], reload);
 
     padding-top: 20px;
 
-    border-top: 1px solid var(--apha-border, #e5ecea);
+    border-top: 1px solid var(--border);
 }
 
 .columns-header {
@@ -402,13 +398,13 @@ watch([period, insurer], reload);
 .section-label {
     font-family: var(--font-mono, ui-monospace, monospace);
 
-    font-size: 10px;
+    font-size: 9.5px;
 
     font-weight: 600;
 
-    letter-spacing: 0.09em;
+    letter-spacing: 0.14em;
 
-    color: var(--apha-muted, #788585);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .columns-count {
@@ -424,7 +420,7 @@ watch([period, insurer], reload);
 
     font-weight: 500;
 
-    color: var(--apha-muted, #788585);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .columns-lede {
@@ -432,11 +428,11 @@ watch([period, insurer], reload);
 
     max-width: 68ch;
 
-    font-size: 11.5px;
+    font-size: 12.5px;
 
     line-height: 1.55;
 
-    color: var(--apha-muted, #788585);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .columns-list {
@@ -456,16 +452,16 @@ watch([period, insurer], reload);
 .columns-list li {
     padding: 5px 10px;
 
-    border: 1px solid var(--apha-border, #e5ecea);
+    border: 1px solid var(--border);
 
     border-radius: 7px;
 
-    background: var(--apha-background, #f7f9f9);
+    background: var(--cream-state);
 
     font-family: var(--font-mono, ui-monospace, monospace);
 
     font-size: 10.5px;
 
-    color: var(--apha-ink, #243333);
+    color: var(--ink);
 }
 </style>

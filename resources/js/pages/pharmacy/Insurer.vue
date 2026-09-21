@@ -263,11 +263,10 @@ const COLUMNS = [
 <style scoped>
 .insurer-page {
     /*
-      --muted et --light sont ici des couleurs de TEXTE. Le thème réserve
-      --muted à une surface (#faf8f3) : les retirer rendrait ce texte presque
-      blanc. À renommer au lot 3 ou 4, pas à supprimer.
+      --muted est ici une couleur de TEXTE. Le thème réserve --muted à une
+      surface (#faf8f3) : la retirer rendrait ce texte presque blanc.
     */
-    --muted: #788585;
+    --muted: color-mix(in srgb, var(--ink) 55%, transparent);
 
     position: relative;
     min-height: 100vh;
@@ -278,8 +277,8 @@ const COLUMNS = [
 .convention {
     margin-top: 18px;
     padding: 13px 16px;
-    border: 1px solid var(--border);
-    border-radius: 11px;
+    border-radius: var(--radius-card);
+    box-shadow: var(--surface-shadow);
     background: #fff;
 }
 
@@ -290,7 +289,7 @@ const COLUMNS = [
 
 .convention-source {
     margin-top: 4px;
-    font-size: 11px;
+    font-size: 12.5px;
     color: var(--muted);
 }
 

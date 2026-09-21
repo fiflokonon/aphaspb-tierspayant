@@ -690,12 +690,12 @@ const officine = computed(() => {
 .insurer-terms {
     margin-top: 6px;
     font-size: 12.5px;
-    color: var(--muted, #788585);
+    color: var(--muted);
 }
 
 .insurer-terms strong {
     font-weight: 700;
-    color: var(--ink, #17211c);
+    color: var(--ink);
 }
 
 .dates {
@@ -747,7 +747,7 @@ const officine = computed(() => {
 .delay-explanation {
     margin-top: 10px;
 
-    font-size: 11px;
+    font-size: 14px;
 
     line-height: 1.45;
 
@@ -758,10 +758,10 @@ const officine = computed(() => {
     /*
       --muted et --light sont ici des couleurs de TEXTE. Le thème réserve
       --muted à une surface (#faf8f3) : les retirer rendrait ce texte presque
-      blanc. À renommer au lot 3 ou 4, pas à supprimer.
+      blanc.
     */
-    --muted: #788585;
-    --light: #a2adad;
+    --muted: color-mix(in srgb, var(--ink) 55%, transparent);
+    --light: color-mix(in srgb, var(--ink) 38%, transparent);
 
     position: relative;
     min-height: 100vh;
@@ -782,7 +782,7 @@ const officine = computed(() => {
 
     border-radius: 50%;
 
-    border: 1px solid rgba(0, 143, 131, 0.06);
+    border: 1px solid color-mix(in srgb, var(--officine) 6%, transparent);
 
     pointer-events: none;
 }
@@ -800,7 +800,7 @@ const officine = computed(() => {
 
     border-radius: 50%;
 
-    border: 1px solid rgba(215, 163, 61, 0.07);
+    border: 1px solid color-mix(in srgb, var(--gold-mid) 7%, transparent);
 
     pointer-events: none;
 }
@@ -849,7 +849,7 @@ const officine = computed(() => {
 
     border: 1px solid var(--border);
 
-    border-radius: 9px;
+    border-radius: var(--radius-nav);
 
     background: rgba(255, 255, 255, 0.75);
 
@@ -860,7 +860,7 @@ const officine = computed(() => {
 
 .back-link:hover .back-icon {
     background: var(--primary-soft);
-    border-color: rgba(0, 143, 131, 0.18);
+    border-color: color-mix(in srgb, var(--officine) 18%, transparent);
 }
 
 .header-context {
@@ -870,10 +870,10 @@ const officine = computed(() => {
 
     font-family: monospace;
 
-    font-size: 9px;
+    font-size: 9.5px;
     font-weight: 700;
 
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
 
     color: var(--light);
 }
@@ -886,7 +886,7 @@ const officine = computed(() => {
 
     background: var(--primary);
 
-    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--officine) 8%, transparent);
 
     animation: pulse 2.3s infinite;
 }
@@ -902,15 +902,11 @@ const officine = computed(() => {
 
     background: #ffffff;
 
-    border: 1px solid var(--border);
-
-    border-radius: 22px;
+    border-radius: var(--radius-card);
 
     overflow: hidden;
 
-    /* box-shadow:
-        0 20px 60px
-        rgba(35,70,68,.055); */
+    box-shadow: var(--surface-shadow);
 
     animation: shellAppear 0.6s ease both;
 }
@@ -951,14 +947,14 @@ const officine = computed(() => {
     font-size: 11px;
     font-weight: 800;
 
-    box-shadow: 0 6px 15px rgba(0, 143, 131, 0.16);
+    box-shadow: 0 6px 15px color-mix(in srgb, var(--officine) 16%, transparent);
 }
 
 .progress-label {
-    font-size: 8px;
+    font-size: 9.5px;
     font-weight: 800;
 
-    letter-spacing: 0.13em;
+    letter-spacing: 0.14em;
 
     color: var(--primary);
 }
@@ -966,7 +962,7 @@ const officine = computed(() => {
 .progress-title {
     margin-top: 3px;
 
-    font-size: 11px;
+    font-size: 12.5px;
     font-weight: 700;
 
     color: var(--ink);
@@ -1029,7 +1025,7 @@ const officine = computed(() => {
 
     border-left: 1px solid var(--border);
 
-    background: #f9fcfb;
+    background: var(--cream-state);
 }
 
 .eyebrow {
@@ -1046,10 +1042,10 @@ const officine = computed(() => {
 
     font-family: monospace;
 
-    font-size: 8.5px;
+    font-size: 9.5px;
     font-weight: 800;
 
-    letter-spacing: 0.08em;
+    letter-spacing: 0.14em;
 }
 
 .panel-intro h1 {
@@ -1108,7 +1104,7 @@ const officine = computed(() => {
 
     color: var(--muted);
 
-    font-size: 11px;
+    font-size: 14px;
 
     line-height: 1.55;
 }
@@ -1150,7 +1146,7 @@ const officine = computed(() => {
 
     font-family: monospace;
 
-    font-size: 8px;
+    font-size: 12.5px;
     font-weight: 800;
 
     transition:
@@ -1161,7 +1157,7 @@ const officine = computed(() => {
 .amount-wrapper:hover .amount-number {
     transform: translateY(-2px) rotate(-3deg);
 
-    background: rgba(0, 143, 131, 0.13);
+    background: color-mix(in srgb, var(--officine) 13%, transparent);
 }
 
 .secondary-action {
@@ -1176,7 +1172,7 @@ const officine = computed(() => {
 
     padding: 11px 13px;
 
-    border: 1px solid rgba(35, 70, 68, 0.08);
+    border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
 
     border-radius: 11px;
 
@@ -1199,7 +1195,7 @@ const officine = computed(() => {
 }
 
 .secondary-action:hover {
-    border-color: rgba(0, 143, 131, 0.18);
+    border-color: color-mix(in srgb, var(--officine) 18%, transparent);
 
     background: var(--primary-soft);
 
@@ -1276,7 +1272,7 @@ const officine = computed(() => {
 .note-description {
     color: var(--light);
 
-    font-size: 9px;
+    font-size: 12.5px;
     font-weight: 500;
 }
 
@@ -1291,7 +1287,7 @@ const officine = computed(() => {
 
     min-height: 75px;
 
-    border: 1px solid rgba(35, 70, 68, 0.12);
+    border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
 
     border-radius: 12px;
 
@@ -1313,9 +1309,9 @@ const officine = computed(() => {
 }
 
 .note-textarea:focus {
-    border-color: rgba(0, 143, 131, 0.35);
+    border-color: color-mix(in srgb, var(--officine) 35%, transparent);
 
-    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.055);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--officine) 5.5%, transparent);
 }
 
 .note-textarea::placeholder {
@@ -1330,7 +1326,7 @@ const officine = computed(() => {
 
     color: var(--light);
 
-    font-size: 8.5px;
+    font-size: 12.5px;
 }
 
 .field-error,
@@ -1339,7 +1335,7 @@ const officine = computed(() => {
 
     color: var(--terracotta-dark);
 
-    font-size: 10px;
+    font-size: 12.5px;
 }
 
 .summary-header {
@@ -1357,10 +1353,10 @@ const officine = computed(() => {
 
     font-family: monospace;
 
-    font-size: 8px;
+    font-size: 9.5px;
     font-weight: 800;
 
-    letter-spacing: 0.13em;
+    letter-spacing: 0.14em;
 }
 
 .summary-header h2 {
@@ -1368,7 +1364,7 @@ const officine = computed(() => {
 
     color: var(--ink);
 
-    font-size: 19px;
+    font-size: 17px;
     font-weight: 750;
 
     letter-spacing: -0.025em;
@@ -1400,13 +1396,11 @@ const officine = computed(() => {
 
     padding: 14px;
 
-    border: 1px solid rgba(0, 143, 131, 0.1);
-
-    border-radius: 14px;
+    border-radius: var(--radius-card);
 
     background: #ffffff;
 
-    box-shadow: 0 7px 20px rgba(35, 70, 68, 0.035);
+    box-shadow: var(--surface-shadow);
 }
 
 .status-card-glow {
@@ -1420,7 +1414,7 @@ const officine = computed(() => {
 
     border-radius: 50%;
 
-    background: rgba(0, 143, 131, 0.07);
+    background: color-mix(in srgb, var(--officine) 7%, transparent);
 
     pointer-events: none;
 }
@@ -1428,11 +1422,11 @@ const officine = computed(() => {
 .error-card {
     padding: 15px;
 
-    border: 1px solid rgba(192, 71, 47, 0.2);
+    border-radius: var(--radius-card);
 
-    border-radius: 14px;
+    box-shadow: var(--surface-shadow);
 
-    background: rgba(192, 71, 47, 0.055);
+    background: color-mix(in srgb, var(--terracotta) 5.5%, transparent);
 
     animation: errorAppear 0.35s ease both;
 }
@@ -1452,7 +1446,7 @@ const officine = computed(() => {
 
     border-radius: 8px;
 
-    background: #c0472f;
+    background: var(--terracotta);
 
     color: #ffffff;
 
@@ -1475,7 +1469,7 @@ const officine = computed(() => {
 
     color: var(--muted);
 
-    font-size: 8.5px;
+    font-size: 12.5px;
 }
 
 .error-card p {
@@ -1483,7 +1477,7 @@ const officine = computed(() => {
 
     color: var(--muted);
 
-    font-size: 10px;
+    font-size: 14px;
 
     line-height: 1.5;
 }
@@ -1497,9 +1491,9 @@ const officine = computed(() => {
 
     padding: 14px;
 
-    border: 1px solid rgba(215, 163, 61, 0.17);
+    border-radius: var(--radius-card);
 
-    border-radius: 14px;
+    box-shadow: var(--surface-shadow);
 
     background: #fff;
 
@@ -1546,7 +1540,7 @@ const officine = computed(() => {
 
     color: var(--muted);
 
-    font-size: 8.5px;
+    font-size: 12.5px;
 }
 
 .submit-area {
@@ -1580,7 +1574,7 @@ const officine = computed(() => {
 
     overflow: hidden;
 
-    box-shadow: 0 9px 22px rgba(0, 143, 131, 0.18);
+    box-shadow: 0 9px 22px color-mix(in srgb, var(--officine) 18%, transparent);
 
     transition:
         transform 0.25s ease,
@@ -1598,7 +1592,7 @@ const officine = computed(() => {
 .submit-button:hover:not(:disabled) {
     transform: translateY(-2px);
 
-    box-shadow: 0 13px 28px rgba(0, 143, 131, 0.23);
+    box-shadow: 0 13px 28px color-mix(in srgb, var(--officine) 23%, transparent);
 }
 
 .submit-button:active:not(:disabled) {
@@ -1648,7 +1642,7 @@ const officine = computed(() => {
 
     color: var(--muted);
 
-    font-size: 8.5px;
+    font-size: 12.5px;
 
     line-height: 1.45;
 
@@ -1750,15 +1744,15 @@ const officine = computed(() => {
 
 @keyframes pulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0.25);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--officine) 25%, transparent);
     }
 
     70% {
-        box-shadow: 0 0 0 5px rgba(0, 143, 131, 0);
+        box-shadow: 0 0 0 5px transparent;
     }
 
     100% {
-        box-shadow: 0 0 0 0 rgba(0, 143, 131, 0);
+        box-shadow: 0 0 0 0 transparent;
     }
 }
 
@@ -1797,16 +1791,12 @@ const officine = computed(() => {
         display: none;
     }
 
-    .declare-shell {
-        border-radius: 17px;
-    }
-
     .progress-header {
         padding: 14px 15px;
     }
 
     .later-link {
-        font-size: 9px;
+        font-size: 12.5px;
     }
 
     .form-panel {
@@ -1815,10 +1805,6 @@ const officine = computed(() => {
 
     .panel-intro h1 {
         font-size: 25px;
-    }
-
-    .intro-text {
-        font-size: 10.5px;
     }
 
     .amounts {
@@ -1851,10 +1837,6 @@ const officine = computed(() => {
         padding: 8px 8px 35px;
     }
 
-    .progress-title {
-        font-size: 10px;
-    }
-
     .later-link span {
         display: none;
     }
@@ -1867,12 +1849,8 @@ const officine = computed(() => {
         font-size: 23px;
     }
 
-    .eyebrow {
-        font-size: 7.5px;
-    }
-
     .secondary-action {
-        font-size: 9.5px;
+        font-size: 12.5px;
     }
 }
 
@@ -1893,7 +1871,7 @@ const officine = computed(() => {
 
     padding-top: 14px;
 
-    border-top: 1px solid rgb(36 51 51 / 0.09);
+    border-top: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
 }
 
 .revision-list {
@@ -1913,7 +1891,7 @@ const officine = computed(() => {
 .revision-item {
     padding: 10px 12px;
 
-    border: 1px solid rgb(36 51 51 / 0.1);
+    border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
 
     border-radius: 10px;
 
@@ -1938,7 +1916,7 @@ const officine = computed(() => {
 }
 
 .revision-author {
-    color: rgb(36 51 51 / 0.55);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .revision-origin {
@@ -1948,15 +1926,15 @@ const officine = computed(() => {
 
     border-radius: 999px;
 
-    background: rgb(36 51 51 / 0.06);
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
 
-    font-size: 9.5px;
+    font-size: 12.5px;
 
     font-weight: 650;
 
     letter-spacing: 0.03em;
 
-    color: rgb(36 51 51 / 0.5);
+    color: color-mix(in srgb, var(--ink) 50%, transparent);
 }
 
 .revision-figures {
@@ -1969,7 +1947,7 @@ const officine = computed(() => {
 
     gap: 10px;
 
-    color: rgb(36 51 51 / 0.7);
+    color: color-mix(in srgb, var(--ink) 70%, transparent);
 }
 
 .revision-status {
@@ -1984,7 +1962,7 @@ const officine = computed(() => {
 
     padding: 0 0 0 14px;
 
-    color: rgb(36 51 51 / 0.5);
+    color: color-mix(in srgb, var(--ink) 50%, transparent);
 }
 
 .revision-payments-empty {

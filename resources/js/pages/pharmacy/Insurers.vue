@@ -200,16 +200,16 @@ const losing = computed(() =>
 }
 
 .history-links-label {
-    font-size: 11px;
+    font-size: 9.5px;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     opacity: 0.5;
 }
 
 .history-link {
     padding: 5px 11px;
-    border: 1px solid var(--border, #e7eceb);
+    border: 1px solid var(--border);
     border-radius: 999px;
     font-size: 11.5px;
     font-weight: 600;
@@ -247,12 +247,11 @@ const losing = computed(() =>
 
     overflow: hidden;
 
-    border: 1px solid var(--apha-border);
-    border-radius: 18px;
+    border-radius: var(--radius-card);
 
     background: #ffffff;
 
-    box-shadow: 0 8px 30px rgba(35, 70, 68, 0.035);
+    box-shadow: var(--surface-shadow);
 
     animation: cardAppear 0.6s ease both;
 }
@@ -266,7 +265,7 @@ const losing = computed(() =>
     width: 100%;
     height: 3px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     opacity: 0.9;
 }
@@ -280,7 +279,7 @@ const losing = computed(() =>
 
     padding: 25px 26px 21px;
 
-    border-bottom: 1px solid var(--apha-border);
+    border-bottom: 1px solid var(--border);
 }
 
 .card-eyebrow {
@@ -288,18 +287,18 @@ const losing = computed(() =>
 
     margin-bottom: 6px;
 
-    color: var(--apha-primary);
+    color: var(--primary);
 
-    font-size: 9px;
+    font-size: 9.5px;
     font-weight: 800;
 
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
 }
 
 .card-header h2 {
-    color: var(--apha-ink);
+    color: var(--ink);
 
-    font-size: 18px;
+    font-size: 17px;
     line-height: 1.25;
 
     font-weight: 750;
@@ -310,9 +309,9 @@ const losing = computed(() =>
 
     margin-top: 7px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 11px;
+    font-size: 12.5px;
     line-height: 1.5;
 }
 
@@ -325,10 +324,10 @@ const losing = computed(() =>
 
     padding: 9px 12px;
 
-    border: 1px solid rgba(0, 143, 131, 0.1);
+    border: 1px solid color-mix(in srgb, var(--officine) 10%, transparent);
     border-radius: 12px;
 
-    background: var(--apha-primary-soft);
+    background: var(--primary-soft);
 
     flex-direction: column;
 
@@ -342,11 +341,11 @@ const losing = computed(() =>
 .selection-counter:hover {
     transform: translateY(-2px);
 
-    box-shadow: 0 7px 16px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 7px 16px color-mix(in srgb, var(--officine) 8%, transparent);
 }
 
 .counter-number {
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
     font-size: 18px;
     line-height: 1;
@@ -357,13 +356,13 @@ const losing = computed(() =>
 .counter-label {
     margin-top: 4px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 8px;
+    font-size: 9.5px;
     font-weight: 700;
 
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.14em;
 }
 
 .checklist-container {
@@ -380,13 +379,13 @@ const losing = computed(() =>
 
     margin-bottom: 4px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 700;
 
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.14em;
 }
 
 .checklist-dot {
@@ -395,15 +394,15 @@ const losing = computed(() =>
 
     border-radius: 50%;
 
-    background: var(--apha-gold);
+    background: var(--gold-mid);
 
-    box-shadow: 0 0 0 4px var(--apha-gold-soft);
+    box-shadow: 0 0 0 4px var(--gold-soft);
 }
 
 .form-footer {
     padding: 18px 24px 21px;
 
-    border-top: 1px solid var(--apha-border);
+    border-top: 1px solid var(--border);
 
     background: #fbfcfc;
 }
@@ -418,9 +417,9 @@ const losing = computed(() =>
 
     padding: 10px 12px;
 
-    border-radius: 11px;
+    border-radius: var(--radius-card);
 
-    font-size: 10.5px;
+    font-size: 14px;
     line-height: 1.45;
 }
 
@@ -445,7 +444,7 @@ const losing = computed(() =>
 }
 
 .message-error {
-    border: 1px solid rgba(197, 82, 69, 0.18);
+    box-shadow: var(--surface-shadow);
 
     background: rgba(197, 82, 69, 0.06);
 
@@ -458,15 +457,15 @@ const losing = computed(() =>
 }
 
 .message-warning {
-    border: 1px solid rgba(215, 163, 61, 0.18);
+    box-shadow: var(--surface-shadow);
 
-    background: var(--apha-gold-soft);
+    background: var(--gold-soft);
 
-    color: var(--apha-ink);
+    color: var(--ink);
 }
 
 .message-warning .message-icon {
-    background: var(--apha-gold);
+    background: var(--gold-mid);
     color: white;
 }
 
@@ -487,7 +486,7 @@ const losing = computed(() =>
     border: 0;
     border-radius: 12px;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
     color: #ffffff;
 
@@ -496,7 +495,7 @@ const losing = computed(() =>
 
     cursor: pointer;
 
-    box-shadow: 0 7px 18px rgba(0, 143, 131, 0.16);
+    box-shadow: 0 7px 18px color-mix(in srgb, var(--officine) 16%, transparent);
 
     transition:
         transform 0.25s ease,
@@ -512,7 +511,7 @@ const losing = computed(() =>
 .save-button:hover:not(:disabled) {
     transform: translateY(-2px);
 
-    box-shadow: 0 11px 24px rgba(0, 143, 131, 0.21);
+    box-shadow: 0 11px 24px color-mix(in srgb, var(--officine) 21%, transparent);
 }
 
 .save-button:hover:not(:disabled)::before {
@@ -561,9 +560,9 @@ const losing = computed(() =>
 .form-hint {
     margin-top: 9px;
 
-    color: var(--apha-light);
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 9.5px;
+    font-size: 12.5px;
     line-height: 1.45;
 
     text-align: center;
@@ -576,30 +575,13 @@ const losing = computed(() =>
 
     overflow: hidden;
 
-    border: 1px solid var(--apha-border);
-    border-radius: 16px;
+    border-radius: var(--radius-card);
 
     background: #fff;
 
-    box-shadow: 0 8px 26px rgba(35, 70, 68, 0.03);
+    box-shadow: var(--surface-shadow);
 
     animation: sideAppear 0.65s ease 0.1s both;
-}
-
-.info-card::after {
-    content: '';
-
-    position: absolute;
-
-    right: -45px;
-    bottom: -50px;
-
-    width: 130px;
-    height: 130px;
-
-    border-radius: 50%;
-
-    pointer-events: none;
 }
 
 .info-icon {
@@ -614,9 +596,9 @@ const losing = computed(() =>
 
     border-radius: 11px;
 
-    background: var(--apha-gold-soft);
+    background: var(--gold-soft);
 
-    color: var(--apha-gold);
+    color: var(--gold-mid);
 
     font-size: 15px;
     font-weight: 800;
@@ -627,16 +609,16 @@ const losing = computed(() =>
 
     margin-bottom: 5px;
 
-    color: var(--apha-gold);
+    color: var(--gold-mid);
 
-    font-size: 8.5px;
+    font-size: 9.5px;
     font-weight: 800;
 
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
 }
 
 .info-card h3 {
-    color: var(--apha-ink);
+    color: var(--ink);
 
     font-size: 14px;
     font-weight: 750;
@@ -645,9 +627,9 @@ const losing = computed(() =>
 .info-card p {
     margin-top: 7px;
 
-    color: var(--apha-muted);
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 10.5px;
+    font-size: 12.5px;
     line-height: 1.55;
 }
 
@@ -656,7 +638,7 @@ const losing = computed(() =>
 
     margin: 17px 0;
 
-    background: var(--apha-border);
+    background: var(--border);
 }
 
 .info-status {
@@ -668,9 +650,9 @@ const losing = computed(() =>
 
     gap: 8px;
 
-    color: var(--apha-primary-dark);
+    color: var(--primary-dark);
 
-    font-size: 9.5px;
+    font-size: 12.5px;
     font-weight: 650;
     line-height: 1.4;
 }
@@ -685,9 +667,9 @@ const losing = computed(() =>
 
     border-radius: 50%;
 
-    background: var(--apha-primary);
+    background: var(--primary);
 
-    box-shadow: 0 0 0 4px rgba(0, 143, 131, 0.08);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--officine) 8%, transparent);
 }
 
 @keyframes pageAppear {
@@ -796,16 +778,6 @@ const losing = computed(() =>
         height: 50px;
 
         font-size: 12px;
-    }
-}
-
-@media (max-width: 400px) {
-    .insurers-card {
-        border-radius: 14px;
-    }
-
-    .info-card {
-        border-radius: 14px;
     }
 }
 
