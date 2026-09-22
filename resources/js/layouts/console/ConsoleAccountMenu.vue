@@ -1,16 +1,15 @@
 <script setup lang="ts">
 /**
- * L'identité, les officines et la déconnexion, sur téléphone.
+ * L'identité, les officines et la déconnexion, à toutes les largeurs.
  *
- * Le pied de la barre latérale — qui porte ces trois choses — est masqué sous
- * 1024 px (`.apha-sidebar-footer { display: none }`). Un utilisateur sur
- * téléphone ne pouvait donc ni se déconnecter ni changer d'officine.
- *
- * Ce menu ne s'affiche que sous lg : le rail desktop garde son pied intact, et
- * son `mt-auto` — dont .ai/rules/layouts.md documente la fragilité — n'est pas
- * touché.
+ * Le seul endroit où vivent les actions de compte : le bandeau supérieur le
+ * monte à partir de lg, l'en-tête de la barre latérale en dessous. Le pied du
+ * rail les portait auparavant, et disparaissait sous 1024 px — on avait alors
+ * le nom en haut à droite et la déconnexion en bas à gauche, pour le même
+ * compte.
  */
 import { Link } from '@inertiajs/vue3';
+import { ChevronDown } from '@lucide/vue';
 import LogoutLink from '@/components/aphaspb/LogoutLink.vue';
 import {
     DropdownMenu,
@@ -27,17 +26,27 @@ defineProps<{ account: ConsoleAccount }>();
 <template>
     <DropdownMenu>
         <!--
-            Le nom, pas les initiales : ce menu ne s'affiche que sous 1024 px,
-            où la barre du haut n'existe pas et le pied de la barre latérale
-            est masqué. Il y est donc la seule trace de l'identité, et « AH »
-            obligeait à déplier pour savoir qui était connecté. Les deux
-            ensemble ne tiennent pas sur un téléphone.
+            Le nom, pas les initiales : c'est la seule trace de l'identité à
+            l'écran, et « AH » obligeait à déplier pour savoir qui était
+            connecté.
+
+            Le chevron dit que ça s'ouvre : sans lui, le nom se lit comme une
+            étiquette, et la déconnexion devient introuvable — c'est le défaut
+            qu'on vient de corriger en la sortant du pied du rail.
+
+            `lg:shrink-0` : dans le bandeau supérieur, c'est la puce d'espace
+            qui cède la place quand la rangée est trop courte. Le nom d'une
+            personne est court et stable, celui d'une officine est long et
+            porte déjà son ellipse. Sous lg, la puce n'est pas dans cette
+            rangée et le déclencheur doit pouvoir rétrécir.
         -->
         <DropdownMenuTrigger
-            class="flex h-9 min-w-0 shrink items-center rounded-[10px] border border-ink/[0.10] bg-white/80 px-[10px] text-[12px] font-bold text-ink/75 transition-colors hover:bg-cream-header"
+            class="flex h-9 min-w-0 shrink items-center gap-[6px] rounded-[10px] border border-ink/[0.10] bg-white/80 px-[10px] text-[13px] font-bold text-ink/75 transition-colors hover:bg-cream-header lg:h-10 lg:shrink-0 lg:text-[14.5px]"
             :aria-label="`Compte de ${account.name}`"
         >
             <span class="truncate">{{ account.name }}</span>
+
+            <ChevronDown class="size-[15px] shrink-0 opacity-45" />
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" class="w-56">

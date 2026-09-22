@@ -5,7 +5,6 @@ use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
-use App\Support\Fcfa;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
@@ -103,38 +102,6 @@ test('an officine never sees another officine figures', function () {
     $this->actingAs($user)
         ->get(dashboardUrlFor($user))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('summary.invoiced', 0));
-});
-
-test('the sidebar notice carries the outstanding to chase', function () {
-    $user = User::factory()->create();
-
-    Declaration::factory()->create([
-        'pharmacy_id' => $user->currentPharmacy->id,
-        'insurer_id' => Insurer::factory(),
-        'period_year' => 2026,
-        'period_month' => 4,
-        'amount_invoiced' => 800_000,
-        'amount_received' => 0,
-        'delay_days' => null,
-    ]);
-
-    $this->actingAs($user)
-        ->get(dashboardUrlFor($user))
-        ->assertInertia(function (AssertableInertia $page) {
-            $notices = collect($page->toArray()['props']['console']['notices']);
-
-            expect($notices)->toHaveCount(1)
-                ->and($notices[0]['title'])->toBe('Encours à relancer')
-                ->and($notices[0]['body'])->toContain(Fcfa::format(800_000));
-        });
-});
-
-test('an officine with nothing outstanding gets no chase notice', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->get(dashboardUrlFor($user))
-        ->assertInertia(fn (AssertableInertia $page) => $page->has('console.notices', 0));
 });
 
 test('an admin account cannot reach the officine dashboard', function () {

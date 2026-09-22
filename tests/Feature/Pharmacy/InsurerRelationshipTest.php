@@ -302,22 +302,53 @@ test('a ticked insurer with nothing declared offers no export link', function ()
     // l'officine sans le dire.
     $this->actingAs($user)
         ->get(route('pharmacy.insurers.show', $insurer))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('exportUrl', null));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('exportUrls', null));
 });
 
-test('an insurer with a history offers an export filtered on it', function () {
+test('an insurer with a history offers the three formats, filtered on it', function () {
     $user = User::factory()->create();
     $insurer = Insurer::factory()->create();
 
     settledMonth($user->currentPharmacy, $insurer, 8, 400_000, 15);
 
+    $link = fn (string $format): string => route('pharmacy.data-exports.download', [
+        'insurer' => $insurer->id,
+        'period' => 'last-12-months',
+        'format' => $format,
+    ], absolute: false);
+
     $this->actingAs($user)
         ->get(route('pharmacy.insurers.show', $insurer))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where(
-            'exportUrl',
-            route('pharmacy.data-exports.download', [
-                'insurer' => $insurer->id,
-                'period' => 'last-12-months',
-            ], absolute: false),
-        ));
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('exportUrls.pdf', $link('pdf'))
+            ->where('exportUrls.xlsx', $link('xlsx'))
+            ->where('exportUrls.csv', $link('csv')),
+        );
+});
+
+test('each format the insurer screen offers downloads in that format', function () {
+    $user = User::factory()->create();
+    $insurer = Insurer::factory()->create();
+
+    settledMonth($user->currentPharmacy, $insurer, 8, 400_000, 15);
+
+    $urls = $this->actingAs($user)
+        ->get(route('pharmacy.insurers.show', $insurer))
+        ->viewData('page')['props']['exportUrls'];
+
+    $types = [
+        'csv' => 'text/csv; charset=UTF-8',
+        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'pdf' => 'application/pdf',
+    ];
+
+    // Les liens de l'écran, suivis tels quels : c'est la chaîne entière —
+    // paramètre `format` compris — qui doit tenir, pas seulement le contrôleur
+    // d'export appelé à la main.
+    foreach ($types as $format => $type) {
+        $this->actingAs($user->fresh())
+            ->get($urls[$format])
+            ->assertOk()
+            ->assertHeader('content-type', $type);
+    }
 });

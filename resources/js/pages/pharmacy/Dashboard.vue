@@ -7,13 +7,13 @@ import ChartToolbar from '@/components/aphaspb/charts/ChartToolbar.vue';
 import InvoicedVsCollectedChart from '@/components/aphaspb/charts/InvoicedVsCollectedChart.vue';
 import JourneyLineChart from '@/components/aphaspb/charts/JourneyLineChart.vue';
 import OutstandingDonutChart from '@/components/aphaspb/charts/OutstandingDonutChart.vue';
+import DashboardKpis from '@/components/aphaspb/DashboardKpis.vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import PrimaryAction from '@/components/aphaspb/PrimaryAction.vue';
 import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue';
 import { useQueryState } from '@/composables/useQueryState';
-import DashboardKpis from '@/components/aphaspb/DashboardKpis.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 import { exportChartToPng } from '@/lib/chartPng';
 import { rankSlices } from '@/lib/donut';
@@ -309,10 +309,10 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             il y a quelque chose à faire ; le reste se contente de ses noms.
 
             Les bandes nomment la plus vieille facture plutôt que de compter
-            au-delà d'un seuil d'ancienneté : ConsoleNavigation::chaseNotice()
-            compte déjà « au-delà de 60 jours » depuis la fin du mois déclaré,
-            là où ce retard-ci se compte depuis le dépôt. Deux seuils voisins
-            sur deux horloges se contrediraient.
+            au-delà d'un seuil d'ancienneté : ce retard-ci se compte depuis le
+            dépôt de facture, quand les tranches d'ancienneté se comptent
+            depuis la fin du mois déclaré. Deux seuils voisins sur deux
+            horloges se contrediraient (voir .ai/rules/pages-pharmacy.md).
         -->
             <section
                 v-for="band in visibleLateBands"
@@ -1167,7 +1167,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .ageing-value {
     text-align: right;
 
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 750;
 
     color: var(--ink);
@@ -1261,7 +1261,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 
     .ageing-value {
-        font-size: 12.5px;
+        font-size: 13px;
     }
 }
 

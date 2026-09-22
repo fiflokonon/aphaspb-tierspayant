@@ -248,8 +248,9 @@ class NetworkStatsService
     /**
      * How many insurers the anonymity threshold currently hides.
      *
-     * Used by the sidebar notice, which restates the rule permanently rather
-     * than only where a hidden row happens to appear.
+     * Son seul appelant de production était l'encart « Seuil d'affichage » de
+     * la barre latérale, supprimé le 22/09/2026 : la méthode n'est plus lue
+     * que par ses tests, en attendant qu'un écran redise la règle.
      */
     public function maskedInsurerCount(): int
     {

@@ -66,11 +66,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
     <Head title="Gestion des assureurs" />
 
     <div class="insurers-page">
-        <ConsoleHeader
-            eyebrow="RÉSEAU DES OFFICINES · BÉNIN"
-            title="Gestion des assureurs"
-            class="insurers-header"
-        />
+        <ConsoleHeader title="Gestion des assureurs" class="insurers-header" />
 
         <section class="configuration-grid">
             <div class="configuration-card">
@@ -636,7 +632,8 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     color: var(--ink);
 
-    font-size: 12px;
+    /* Le nombre saisi se lit au même corps que ceux des cellules voisines. */
+    font-size: 13px;
 
     font-weight: 600;
 
@@ -905,7 +902,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .count-number {
     color: var(--ink);
 
-    font-size: 12px;
+    font-size: 13px;
 
     font-weight: 750;
 }

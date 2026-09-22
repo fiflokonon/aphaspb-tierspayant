@@ -670,7 +670,8 @@ const footer = computed(
 
     font-family: monospace;
 
-    font-size: 11px;
+    /* 13 px comme la ligne : le montant est le chiffre qu'on vient lire. */
+    font-size: 13px;
     font-weight: 650;
 
     white-space: nowrap;

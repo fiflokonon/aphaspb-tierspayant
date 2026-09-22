@@ -11,6 +11,14 @@
  * isolée se comprend par sa valeur ; dès que deux listes voisinent, cette
  * valeur ne dit plus sur quoi elle porte, et l'`aria-label` seul ne sert que
  * les lecteurs d'écran.
+ *
+ * L'étiquette et la valeur s'alignent sur leur **ligne de base**
+ * (`items-baseline`), pas sur leur centre : deux polices et deux corps
+ * différents (mono 9,5 px capitales, sans 12 px) centrés dans la même boîte ne
+ * posent pas leurs lettres à la même hauteur — mesuré 1,5 px d'écart en taille
+ * par défaut, 1,75 px en `compact`. Le chevron, lui, reste centré
+ * (`self-center`) : son ancrage absolu sans `top` hérite sinon de l'alignement
+ * du conteneur et remonte se coller au bord haut de la puce.
  */
 withDefaults(
     defineProps<{
@@ -30,7 +38,7 @@ const model = defineModel<string | number | null>({ default: null });
 
 <template>
     <div
-        class="relative flex shrink-0 items-center rounded-[10px] border border-input bg-card"
+        class="relative flex shrink-0 items-baseline rounded-[10px] border border-input bg-card"
         :class="size === 'compact' ? 'h-[32px]' : 'h-[42px]'"
     >
         <span
@@ -66,7 +74,7 @@ const model = defineModel<string | number | null>({ default: null });
             </option>
         </select>
         <span
-            class="pointer-events-none absolute right-[10px] text-[9px] text-ink/45"
+            class="pointer-events-none absolute right-[10px] self-center text-[9px] text-ink/45"
         >
             ▾
         </span>
