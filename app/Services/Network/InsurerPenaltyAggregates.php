@@ -19,9 +19,8 @@ use Illuminate\Support\Facades\DB;
  *
  * **Pourquoi pas une méthode de NetworkStatsService**, dont l'en-tête demande
  * pourtant de concentrer les agrégats : perInsurer() est appelée par
- * maskedInsurerCount(), que ConsoleNavigation invoque sur *chaque* page admin.
- * Y greffer une boucle PHP ferait payer le calcul de pénalité à l'écran des
- * pharmacies inscrites. Et tout le reste de cette classe-là est du SQL — une
+ * maskedInsurerCount() et par les écrans réseau. Y greffer une boucle PHP
+ * ferait payer le calcul de pénalité à l'écran des pharmacies inscrites. Et tout le reste de cette classe-là est du SQL — une
  * boucle sur des dizaines de milliers de lignes n'a pas la même nature.
  *
  * Quatre requêtes, quel que soit le volume : les clauses, l'agrégat de délai,

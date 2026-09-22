@@ -1,41 +1,28 @@
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
-import type { ConsoleAccount } from '@/types/console';
+import ConsoleSpaceChip from './ConsoleSpaceChip.vue';
 
-const props = defineProps<{
-    /** Repli pour l'espace réseau, qui n'a pas d'officine à annoncer. */
+defineProps<{
+    /**
+     * La légende propre à l'écran — « MON COMPTE », « CE QUI VOUS ATTEND ».
+     * L'espace, lui, n'est plus annoncé ici : il vit dans la coquille, à côté
+     * du compte (voir ConsoleSpaceChip).
+     */
     eyebrow?: string;
     title: string;
 }>();
-
-const page = usePage();
-
-/**
- * L'officine passe avant la légende de l'écran.
- *
- * Elle vient du shell et non d'une prop : cinq écrans l'affichent, et la faire
- * voyager en prop obligerait autant de contrôleurs à la répéter. Dans l'espace
- * réseau il n'y en a pas, et chaque écran garde la sienne.
- */
-const identity = computed(() => {
-    const account = (page.props.console as { account?: ConsoleAccount } | null)
-        ?.account;
-
-    if (!account?.pharmacy) {
-        return props.eyebrow ?? '';
-    }
-
-    return [account.pharmacy.name, account.pharmacy.city]
-        .filter(Boolean)
-        .join(' · ');
-});
 </script>
 
 <template>
     <div class="console-header">
         <div class="header-band">
-            <div class="header-eyebrow">{{ identity }}</div>
+            <!--
+                Sous 1024 px seulement : le bandeau supérieur, qui porte la
+                puce d'espace à partir de lg, n'existe pas ici. Même composant,
+                deux emplacements exclusifs — comme le menu de compte.
+            -->
+            <ConsoleSpaceChip class="on-band header-space" />
+
+            <div v-if="eyebrow" class="header-eyebrow">{{ eyebrow }}</div>
 
             <!--
                 Instrument Serif n'a qu'une graisse : pas de font-bold, qui
@@ -87,14 +74,32 @@ const identity = computed(() => {
     color: color-mix(in srgb, var(--ink) 72%, transparent);
 }
 
+/*
+  La puce d'espace n'apparaît ici que dans le bandeau vert : au-dessus de
+  1024 px, c'est ConsoleTopBar qui la porte, et l'afficher aux deux endroits
+  ferait deux fois le même repère sur le même écran.
+*/
+.header-space {
+    display: none;
+}
+
 .header-title {
-    margin-top: 8px;
+    /*
+      Rien au-dessus dans le cas courant : la marge n'apparaît que sous une
+      étiquette d'écran, seul élément qui précède encore le titre à partir de
+      lg. Dans le bandeau vert, c'est la puce qui pose son propre espacement.
+    */
+    margin-top: 0;
 
     font-family: var(--font-serif, ui-serif, Georgia, serif);
     font-size: 34px;
     line-height: 1.06;
 
     color: var(--ink);
+}
+
+.header-eyebrow + .header-title {
+    margin-top: 8px;
 }
 
 .header-actions {
@@ -146,6 +151,12 @@ const identity = computed(() => {
           lit toujours comme secondaire.
         */
         color: rgb(255 255 255 / 0.72);
+    }
+
+    .header-space {
+        display: inline-flex;
+
+        margin-bottom: 7px;
     }
 
     .header-title {

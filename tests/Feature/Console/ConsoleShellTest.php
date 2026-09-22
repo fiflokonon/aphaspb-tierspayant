@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\PharmacyRole;
-use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
 use App\Support\ConsoleNavigation;
@@ -9,7 +8,7 @@ use Inertia\Testing\AssertableInertia;
 
 beforeEach(fn () => useJoomlaTestKeys());
 
-test('an admin gets the admin shell with its space and both notices', function () {
+test('an admin gets the admin shell with its space', function () {
     // Asserted on a screen that will stay a screen: pointing this at whatever
     // happens to be a placeholder makes it break each time one is filled in.
     $this->actingAs(User::factory()->networkAdmin()->create())
@@ -18,10 +17,7 @@ test('an admin gets the admin shell with its space and both notices', function (
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('console.space', 'ESPACE ADMIN')
             ->has('console.nav', 5)
-            ->has('console.notices', 2)
-            ->has('console.account')
-            ->where('console.notices.0.title', 'Vue anonymisée')
-            ->where('console.notices.1.title', "Seuil d'affichage"),
+            ->has('console.account'),
         );
 });
 
@@ -37,17 +33,7 @@ test('the admin shell marks the current entry active and only that one', functio
         });
 });
 
-test('the anonymity notice states the threshold and the masked count', function () {
-    Insurer::factory()->create();
-
-    $this->actingAs(User::factory()->networkAdmin()->create())
-        ->get(route('admin.network'))
-        ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('console.notices.1.body', '5 pharmacies minimum · 0 assureur masqué ce trimestre.'),
-        );
-});
-
-test('a pharmacy gets the pharmacy shell, without space or notice', function () {
+test('a pharmacy gets the pharmacy shell, without space', function () {
     // Asserted on the dashboard rather than on a page that happens to be a
     // placeholder today: this test is about the shell, and must not break each
     // time a waiting page is filled in.
@@ -58,8 +44,7 @@ test('a pharmacy gets the pharmacy shell, without space or notice', function () 
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('console.space', null)
-            ->has('console.nav', 5)
-            ->has('console.notices', 0),
+            ->has('console.nav', 5),
         );
 });
 
@@ -124,7 +109,6 @@ test('a user in no mapped group still gets a shell with a way out', function () 
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('console.nav', 0)
-            ->has('console.notices', 0)
             ->where('console.account.logoutHref', '/auth/logout'),
         );
 });
@@ -184,6 +168,27 @@ test('an admin has no officine in the shell', function () {
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('console.account.pharmacy', null),
+        );
+});
+
+test('the shell says which space the session is in', function () {
+    // L'en-tête annonce « Vous êtes dans l'espace… », et il lui faut de quoi
+    // distinguer les deux espaces. Le libellé `console.space` ne convient pas :
+    // c'est une étiquette d'affichage de la barre latérale.
+    $this->actingAs(User::factory()->networkAdmin()->create())
+        ->get(route('admin.network'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('console.account.administrator', true),
+        );
+
+    $pharmacist = User::factory()->create();
+
+    $this->actingAs($pharmacist)
+        ->get(route('dashboard', ['current_pharmacy' => $pharmacist->currentPharmacy->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('console.account.administrator', false),
         );
 });
 

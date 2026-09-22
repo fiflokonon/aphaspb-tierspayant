@@ -230,11 +230,7 @@ async function exportChart() {
     <Head title="Évolution du réseau" />
 
     <div class="network-evolution-page">
-        <ConsoleHeader
-            eyebrow="RÉSEAU DES OFFICINES · BÉNIN"
-            title="Évolution du réseau"
-            class="evolution-header"
-        >
+        <ConsoleHeader title="Évolution du réseau" class="evolution-header">
             <template #filters>
                 <div class="header-filters">
                     <FilterSelect

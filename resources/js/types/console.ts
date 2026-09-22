@@ -6,14 +6,6 @@ export type ConsoleNavItem = {
     icon: string;
 };
 
-export type ConsoleNoticeTone = 'gold' | 'neutral';
-
-export type ConsoleNotice = {
-    tone: ConsoleNoticeTone;
-    title: string;
-    body: string;
-};
-
 export type ConsoleSwitchablePharmacy = {
     name: string;
     slug: string;
@@ -28,6 +20,8 @@ export type ConsoleCurrentPharmacy = {
 
 export type ConsoleAccount = {
     name: string;
+    /** Vrai dans l'espace réseau ; c'est l'espace qui le dit, pas le rôle. */
+    administrator: boolean;
     logoutHref: string;
     /** L'officine sur laquelle la session est ouverte ; null dans l'espace réseau. */
     pharmacy: ConsoleCurrentPharmacy | null;

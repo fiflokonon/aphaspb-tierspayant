@@ -72,11 +72,7 @@ watch([period, city, insurer], reload);
 <template>
     <Head title="Exports CSV" />
 
-    <ConsoleHeader
-        eyebrow="RÉSEAU DES OFFICINES · BÉNIN"
-        title="Exports CSV"
-        class="exports-header"
-    >
+    <ConsoleHeader title="Exports CSV" class="exports-header">
         <template #filters>
             <FilterSelect
                 v-model="period"

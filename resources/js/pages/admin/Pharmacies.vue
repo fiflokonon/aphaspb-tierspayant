@@ -81,11 +81,7 @@ const footer = computed(
     <Head title="Pharmacies inscrites" />
 
     <div class="pharmacies-page">
-        <ConsoleHeader
-            eyebrow="RÉSEAU DES OFFICINES · BÉNIN"
-            title="Pharmacies inscrites"
-            class="pharmacies-header"
-        >
+        <ConsoleHeader title="Pharmacies inscrites" class="pharmacies-header">
             <template #filters>
                 <div class="header-filters">
                     <!-- RECHERCHE -->

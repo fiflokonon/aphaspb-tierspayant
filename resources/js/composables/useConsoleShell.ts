@@ -1,23 +1,17 @@
 import { usePage } from '@inertiajs/vue3';
 import type { ComputedRef } from 'vue';
 import { computed } from 'vue';
-import type {
-    ConsoleAccount,
-    ConsoleNavItem,
-    ConsoleNotice,
-} from '@/types/console';
+import type { ConsoleAccount, ConsoleNavItem } from '@/types/console';
 
 export type ConsoleShell = {
     space: string | null;
     nav: ConsoleNavItem[];
-    notices: ConsoleNotice[];
     account: ConsoleAccount;
 };
 
 export type UseConsoleShellReturn = {
     space: ComputedRef<string | null>;
     nav: ComputedRef<ConsoleNavItem[]>;
-    notices: ComputedRef<ConsoleNotice[]>;
     account: ComputedRef<ConsoleAccount | null>;
     /** Non-lues et invitations en attente, partagées par HandleInertiaRequests. */
     notificationCount: ComputedRef<number>;
@@ -26,7 +20,7 @@ export type UseConsoleShellReturn = {
 /**
  * Read the console shell descriptor the server shares.
  *
- * Navigation and notices are built in PHP so route names and active state live
+ * The navigation is built in PHP so route names and active state live
  * in one place. The layout only renders what it is handed, and tolerates the
  * prop being absent — a page rendered outside a profile still mounts.
  */
@@ -39,7 +33,6 @@ export function useConsoleShell(): UseConsoleShellReturn {
     return {
         space: computed(() => shell.value?.space ?? null),
         nav: computed(() => shell.value?.nav ?? []),
-        notices: computed(() => shell.value?.notices ?? []),
         account: computed(() => shell.value?.account ?? null),
         notificationCount: computed(
             () => (page.props.notificationCount as number | undefined) ?? 0,

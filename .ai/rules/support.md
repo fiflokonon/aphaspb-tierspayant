@@ -1,6 +1,7 @@
 ---
 paths:
   - app/Support/DayNumber.php
+  - app/Support/ConsoleNavigation.php
 ---
 
 # Support
@@ -15,3 +16,10 @@ Trois précautions, chacune verrouillée par un test et **chacune vérifiée par
 - **`accruedInDays()` prend un `$today` optionnel** : le laisser se recalculer par ligne coûtait 406 ms sur 40 000 déclarations contre 52 une fois hissé hors de la boucle. Tout appelant qui boucle doit le passer.
 
 `floor()` plutôt qu'`intdiv()` est une **précaution, pas une nécessité** : sur une date seule, minuit UTC tombe sur un multiple exact de 86 400 et les deux rendent le même entier. Aucun test ne peut les distinguer — ne pas en écrire un qui prétendrait le faire.
+
+## L'espace de la session se lit dans `console.account.administrator`, pas dans `console.space`
+`console.space` vaut « ESPACE ADMIN » ou null : c'est une **étiquette d'affichage** de la barre latérale, pas un drapeau. Ne pas s'en servir côté front pour décider quoi que ce soit — elle changerait au premier remaniement de libellé.
+
+Le drapeau est `console.account.administrator` (bool), posé par `ConsoleNavigation::account()` depuis la Gate `manage-network`. `ConsoleHeader.vue` s'en sert pour annoncer « Vous êtes dans l'espace / ADMINISTRATEUR » là où une officine annonce son nom.
+
+Couvert par `tests/Feature/Console/ConsoleShellTest.php` (« the shell says which space the session is in »), sur les deux espaces.

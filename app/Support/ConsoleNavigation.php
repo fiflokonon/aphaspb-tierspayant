@@ -4,38 +4,26 @@ namespace App\Support;
 
 use App\Models\Pharmacy;
 use App\Models\User;
-use App\Services\Network\NetworkStatsService;
-use App\Services\Pharmacy\PharmacyStatsService;
-use App\Services\Settings\SettingsRepository;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Build the console shell's navigation and sidebar notices.
+ * Build the console shell's navigation.
  *
  * Computed server-side rather than in the layout: the server owns the route
  * names and knows which entry is current, so the front end never duplicates
  * that knowledge. The entries come from artboards 1c and 2a of the canvas.
  *
  * @phpstan-type NavItem array{label: string, href: string, active: bool, icon: string}
- * @phpstan-type Notice array{tone: string, title: string, body: string}
- * @phpstan-type Account array{name: string, logoutHref: string, pharmacy: CurrentPharmacy|null, pharmacies: list<SwitchablePharmacy>}
+ * @phpstan-type Account array{name: string, administrator: bool, logoutHref: string, pharmacy: CurrentPharmacy|null, pharmacies: list<SwitchablePharmacy>}
  * @phpstan-type CurrentPharmacy array{name: string, city: string|null}
  * @phpstan-type SwitchablePharmacy array{name: string, slug: string, switchHref: string, current: bool}
  */
 class ConsoleNavigation
 {
-    public function __construct(
-        protected SettingsRepository $settings,
-        protected NetworkStatsService $stats,
-        protected PharmacyStatsService $pharmacyStats,
-    ) {
-        //
-    }
-
     /**
      * The shell descriptor for whichever profile the user belongs to.
      *
-     * @return array{space: string|null, nav: list<NavItem>, notices: list<Notice>, account: Account}|null
+     * @return array{space: string|null, nav: list<NavItem>, account: Account}|null
      */
     public function forUser(?User $user, string $currentPath): ?array
     {
@@ -43,21 +31,24 @@ class ConsoleNavigation
             return null;
         }
 
-        $onPharmacySpace = ! Gate::forUser($user)->allows('manage-network')
+        $onNetworkSpace = Gate::forUser($user)->allows('manage-network');
+
+        $onPharmacySpace = ! $onNetworkSpace
             && Gate::forUser($user)->allows('declare-payments');
 
         $shell = match (true) {
-            Gate::forUser($user)->allows('manage-network') => $this->admin($currentPath),
+            $onNetworkSpace => $this->admin($currentPath),
             Gate::forUser($user)->allows('declare-payments') => $this->pharmacy($user, $currentPath),
-            // No space, but still a session to leave: a bare shell, so the rail
-            // renders its account footer and nothing else.
-            default => ['space' => null, 'nav' => [], 'notices' => []],
+            // Ni l'un ni l'autre : une coquille nue, sans navigation. Le
+            // compte, lui, est attaché plus bas dans tous les cas — il reste
+            // une session à quitter.
+            default => ['space' => null, 'nav' => []],
         };
 
         // Attached here rather than in each shell: the way out of a session
         // does not depend on which space the user landed in, and onboarding —
         // which renders no navigation at all — needs it just as much.
-        return [...$shell, 'account' => $this->account($user, $onPharmacySpace)];
+        return [...$shell, 'account' => $this->account($user, $onPharmacySpace, $onNetworkSpace)];
     }
 
     /**
@@ -68,10 +59,14 @@ class ConsoleNavigation
      *
      * @return Account
      */
-    protected function account(User $user, bool $onPharmacySpace): array
+    protected function account(User $user, bool $onPharmacySpace, bool $onNetworkSpace): array
     {
         return [
             'name' => $user->name,
+            // L'en-tête annonce l'espace où l'on se trouve, et c'est l'espace
+            // qui le dit — pas le libellé `space`, qui est une étiquette
+            // d'affichage et changerait au premier remaniement de la barre.
+            'administrator' => $onNetworkSpace,
             'logoutHref' => route('auth.logout', absolute: false),
             'pharmacy' => $this->currentPharmacy($user, $onPharmacySpace),
             'pharmacies' => $this->switchablePharmacies($user),
@@ -133,7 +128,7 @@ class ConsoleNavigation
     }
 
     /**
-     * @return array{space: string|null, nav: list<NavItem>, notices: list<Notice>}
+     * @return array{space: string|null, nav: list<NavItem>}
      */
     protected function admin(string $currentPath): array
     {
@@ -149,23 +144,11 @@ class ConsoleNavigation
                 // existent toujours : seule l'entrée est masquée.
                 // ['Profil & réglages', 'profile.edit'],
             ]),
-            'notices' => [
-                [
-                    'tone' => 'neutral',
-                    'title' => 'Vue anonymisée',
-                    'body' => "Aucun montant, aucune note privée, aucune déclaration individuelle n'est accessible depuis cet espace.",
-                ],
-                [
-                    'tone' => 'gold',
-                    'title' => "Seuil d'affichage",
-                    'body' => $this->anonymityNotice(),
-                ],
-            ],
         ];
     }
 
     /**
-     * @return array{space: string|null, nav: list<NavItem>, notices: list<Notice>}
+     * @return array{space: string|null, nav: list<NavItem>}
      */
     protected function pharmacy(User $user, string $currentPath): array
     {
@@ -188,31 +171,7 @@ class ConsoleNavigation
         return [
             'space' => null,
             'nav' => $this->items($currentPath, $definitions),
-            'notices' => $pharmacy === null ? [] : $this->chaseNotice($pharmacy),
         ];
-    }
-
-    /**
-     * The outstanding balance worth chasing, or nothing when all is settled.
-     *
-     * @return list<Notice>
-     */
-    protected function chaseNotice(Pharmacy $pharmacy): array
-    {
-        $outstanding = $this->pharmacyStats->summary($pharmacy, 12)['outstanding'];
-
-        if ($outstanding === 0) {
-            return [];
-        }
-
-        $old = $this->pharmacyStats->outstandingBeyond($pharmacy, 60);
-
-        return [[
-            'tone' => 'gold',
-            'title' => 'Encours à relancer',
-            'body' => Fcfa::format($outstanding).' FCFA'
-                .($old > 0 ? ', dont '.Fcfa::format($old).' au-delà de 60 jours' : ''),
-        ]];
     }
 
     /**
@@ -243,19 +202,5 @@ class ConsoleNavigation
         }
 
         return $items;
-    }
-
-    /**
-     * Restate the anonymity threshold and how many insurers it currently hides.
-     */
-    protected function anonymityNotice(): string
-    {
-        $minimum = $this->settings->anonymityMinPharmacies();
-        $masked = $this->stats->maskedInsurerCount();
-
-        // Zéro prend le singulier en français, contrairement à l'anglais.
-        $plural = $masked > 1 ? 'assureurs masqués' : 'assureur masqué';
-
-        return "{$minimum} pharmacies minimum · {$masked} {$plural} ce trimestre.";
     }
 }

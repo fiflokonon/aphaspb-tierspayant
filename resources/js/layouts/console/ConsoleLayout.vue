@@ -1,19 +1,14 @@
 <script setup lang="ts">
-import type {
-    ConsoleAccount,
-    ConsoleNavItem,
-    ConsoleNotice,
-} from '@/types/console';
+import type { ConsoleAccount, ConsoleNavItem } from '@/types/console';
 import ConsoleSidebar from './ConsoleSidebar.vue';
 import ConsoleTopBar from './ConsoleTopBar.vue';
 
 defineProps<{
     space?: string | null;
     nav: ConsoleNavItem[];
-    notices?: ConsoleNotice[];
     account?: ConsoleAccount | null;
     /**
-     * Give the page the whole phone screen: navigation and notices step aside
+     * Give the page the whole phone screen: the navigation steps aside
      * below lg. The declaration is designed as a focused flow — burying its
      * first field under 230 px of chrome defeats « déclarer en une minute ».
      * Desktop keeps the rail, where it costs nothing.
@@ -32,7 +27,6 @@ defineProps<{
         <ConsoleSidebar
             :space="space ?? null"
             :nav="nav"
-            :notices="notices ?? []"
             :account="account ?? null"
             :notification-count="notificationCount ?? 0"
             :notifications-href="notificationsHref ?? '/notifications'"
@@ -46,7 +40,7 @@ defineProps<{
             <ConsoleTopBar
                 :count="notificationCount ?? 0"
                 :href="notificationsHref ?? '/notifications'"
-                :account-name="account?.name ?? ''"
+                :account="account ?? null"
             />
 
             <slot />

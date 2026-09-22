@@ -149,11 +149,7 @@ watch([period, city], reload);
     <Head title="Statistiques réseau" />
 
     <div class="network-page">
-        <ConsoleHeader
-            eyebrow="RÉSEAU DES OFFICINES · BÉNIN"
-            title="Performance du réseau"
-            class="network-header"
-        >
+        <ConsoleHeader title="Performance du réseau" class="network-header">
             <template #filters>
                 <div class="header-filters">
                     <FilterSelect

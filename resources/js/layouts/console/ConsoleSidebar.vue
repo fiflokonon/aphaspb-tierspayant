@@ -2,22 +2,15 @@
 import { Link } from '@inertiajs/vue3';
 import { PanelLeftClose, PanelLeftOpen } from '@lucide/vue';
 import { onMounted, ref, watch } from 'vue';
-import { readCollapsed, writeCollapsed } from '@/lib/sidebarCollapsed';
 import { navIcon } from '@/lib/navIcons';
-import type {
-    ConsoleAccount,
-    ConsoleNavItem,
-    ConsoleNotice,
-} from '@/types/console';
-import ConsoleAccountFooter from './ConsoleAccountFooter.vue';
+import { readCollapsed, writeCollapsed } from '@/lib/sidebarCollapsed';
+import type { ConsoleAccount, ConsoleNavItem } from '@/types/console';
 import ConsoleAccountMenu from './ConsoleAccountMenu.vue';
 import ConsoleBell from './ConsoleBell.vue';
-import ConsoleSidebarNotice from './ConsoleSidebarNotice.vue';
 
 defineProps<{
     space: string | null;
     nav: ConsoleNavItem[];
-    notices: ConsoleNotice[];
     account: ConsoleAccount | null;
     notificationCount: number;
     notificationsHref: string;
@@ -77,8 +70,7 @@ watch(collapsed, writeCollapsed);
             <!--
                 Sous lg, cette barre EST le bandeau supérieur : la cloche et le
                 compte s'y posent plutôt que dans un second bandeau. Au-dessus,
-                la cloche vit dans ConsoleTopBar et le compte dans le pied du
-                rail, qui reste inchangé.
+                les deux vivent dans ConsoleTopBar, avec le même menu de compte.
             -->
             <div class="apha-header-actions">
                 <ConsoleBell
@@ -129,18 +121,6 @@ watch(collapsed, writeCollapsed);
             </nav>
         </div>
 
-        <div v-if="notices.length" class="apha-notices">
-            <div class="apha-section-label notice-label">INFORMATIONS</div>
-
-            <div class="apha-notices-list">
-                <ConsoleSidebarNotice
-                    v-for="notice in notices"
-                    :key="notice.title"
-                    v-bind="notice"
-                />
-            </div>
-        </div>
-
         <div class="apha-sidebar-footer">
             <button
                 type="button"
@@ -161,8 +141,6 @@ watch(collapsed, writeCollapsed);
             </button>
 
             <div class="apha-footer-line"></div>
-
-            <ConsoleAccountFooter v-if="account" :account="account" />
 
             <div class="apha-footer-status">
                 <span class="apha-status-dot"></span>
@@ -605,78 +583,6 @@ watch(collapsed, writeCollapsed);
     transform: translateX(0);
 }
 
-.apha-notices {
-    position: relative;
-
-    z-index: 2;
-
-    flex-shrink: 0;
-
-    margin-top: 10px;
-
-    padding-top: 10px;
-
-    border-top: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
-}
-
-.notice-label {
-    margin-bottom: 6px;
-}
-
-.apha-notices-list {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 5px;
-
-    max-height: 125px;
-
-    overflow-y: auto;
-
-    padding-right: 2px;
-
-    scrollbar-width: thin;
-
-    scrollbar-color: color-mix(in srgb, var(--officine) 15%, transparent)
-        transparent;
-}
-
-.apha-notices-list::-webkit-scrollbar {
-    width: 3px;
-}
-
-.apha-notices-list::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.apha-notices-list::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--officine) 15%, transparent);
-
-    border-radius: 10px;
-}
-
-.apha-notices-list :deep(*) {
-    font-size: 8.5px;
-}
-
-.apha-notices-list :deep(p) {
-    line-height: 1.3;
-
-    margin: 0;
-}
-
-.apha-notices-list :deep(h1),
-.apha-notices-list :deep(h2),
-.apha-notices-list :deep(h3),
-.apha-notices-list :deep(h4) {
-    font-size: 9px;
-
-    line-height: 1.25;
-
-    margin-bottom: 3px;
-}
-
 .apha-sidebar-footer {
     position: relative;
 
@@ -801,33 +707,10 @@ watch(collapsed, writeCollapsed);
 .apha-sidebar.collapsed .apha-nav-label,
 .apha-sidebar.collapsed .apha-nav-arrow,
 .apha-sidebar.collapsed .apha-space,
-.apha-sidebar.collapsed .apha-notices,
 .apha-sidebar.collapsed .apha-section-label,
 .apha-sidebar.collapsed .apha-footer-status,
-.apha-sidebar.collapsed .apha-collapse-label,
-.apha-sidebar.collapsed .apha-sidebar-footer :deep(.account-switcher) {
+.apha-sidebar.collapsed .apha-collapse-label {
     display: none;
-}
-
-/*
-  Le pied de compte se réduit à son bouton.
-
-  `font-size: 0` plutôt qu'un `display: none` sur le libellé : « Se
-  déconnecter » est un nœud texte nu dans le slot de LogoutLink, un composant
-  partagé par trois emplacements. Aucun sélecteur ne l'atteint, et
-  l'envelopper ici imposerait un balisage à ses deux autres appelants.
-  L'icône garde sa taille, fixée par `size-[15px]`.
-*/
-.apha-sidebar.collapsed
-    .apha-sidebar-footer
-    :deep([data-test='logout-button']) {
-    width: 44px;
-    justify-content: center;
-    gap: 0;
-    padding-left: 0;
-    padding-right: 0;
-
-    font-size: 0;
 }
 
 /* .apha-navigation est déjà en overflow: hidden ; seul .apha-nav défile. */
@@ -977,10 +860,6 @@ watch(collapsed, writeCollapsed);
      * horizontale sur chaque écran de la console.
      */
     .sidebar-glow {
-        display: none;
-    }
-
-    .apha-notices {
         display: none;
     }
 
