@@ -1,15 +1,25 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Download } from '@lucide/vue';
+import { ChevronDown, Download } from '@lucide/vue';
 import { ref, watch } from 'vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 import { formatAmount } from '@/lib/fcfa';
 import { formatMillions } from '@/lib/millions';
+
+type ExportFormat = 'pdf' | 'xlsx' | 'csv';
 
 type Relationship = {
     insurerId: number;
@@ -48,7 +58,7 @@ const props = defineProps<{
     period: string;
     periodLabel: string;
     periods: { value: string; label: string }[];
-    exportUrl: string | null;
+    exportUrls: Record<ExportFormat, string> | null;
 }>();
 
 const period = ref<string | number | null>(props.period);
@@ -67,7 +77,7 @@ watch(period, (chosen) => {
                 'months',
                 'period',
                 'periodLabel',
-                'exportUrl',
+                'exportUrls',
             ],
             preserveState: true,
             preserveScroll: true,
@@ -75,6 +85,20 @@ watch(period, (chosen) => {
         },
     );
 });
+
+/**
+ * Les mêmes formats, dans le même ordre et avec les mêmes mots que l'écran
+ * d'export : le relevé à joindre d'abord, le fichier brut en dernier.
+ */
+const EXPORT_FORMATS = [
+    { key: 'pdf', badge: 'PDF', lede: 'Relevé mis en page' },
+    { key: 'xlsx', badge: 'XLSX', lede: 'Classeur Excel' },
+    { key: 'csv', badge: 'CSV', lede: 'Fichier brut' },
+] as const satisfies readonly {
+    key: ExportFormat;
+    badge: string;
+    lede: string;
+}[];
 
 const TEMPLATE = '.9fr .9fr 1fr 1fr 1fr .9fr .9fr .7fr .9fr';
 const COLUMNS = [
@@ -104,11 +128,49 @@ const COLUMNS = [
             </template>
 
             <template #action>
-                <a v-if="exportUrl" :href="exportUrl" class="export-link">
-                    <Download :size="15" />
+                <!--
+                    Un menu plutôt que trois boutons dans l'en-tête : le geste
+                    reste « exporter », et le format est un détail qu'on choisit
+                    une fois dedans. Les trois liens portent déjà la période et
+                    l'assureur affichés — c'est ce qu'on regarde qui part dans
+                    le fichier.
+                -->
+                <DropdownMenu v-if="exportUrls">
+                    <DropdownMenuTrigger class="export-link">
+                        <Download :size="15" />
 
-                    Exporter
-                </a>
+                        Exporter
+
+                        <ChevronDown :size="14" class="export-chevron" />
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="end" class="w-60">
+                        <DropdownMenuLabel class="export-menu-title">
+                            {{ periodLabel }} · {{ relationship.insurerName }}
+                        </DropdownMenuLabel>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                            v-for="format in EXPORT_FORMATS"
+                            :key="format.key"
+                            as-child
+                        >
+                            <a
+                                :href="exportUrls[format.key]"
+                                class="export-format"
+                            >
+                                <span class="export-format-badge">
+                                    {{ format.badge }}
+                                </span>
+
+                                <span class="export-format-lede">
+                                    {{ format.lede }}
+                                </span>
+                            </a>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </template>
         </ConsoleHeader>
 
@@ -303,6 +365,48 @@ const COLUMNS = [
     background: #fff;
     font-size: 11.5px;
     font-weight: 700;
+}
+
+.export-chevron {
+    margin-left: 1px;
+    opacity: 0.45;
+}
+
+.export-menu-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.export-format {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    cursor: pointer;
+}
+
+/*
+  Le badge porte le format, le reste dit à quoi il sert : « XLSX » seul se lit
+  comme du jargon, « Classeur Excel » seul ne dit pas ce qu'on télécharge.
+*/
+.export-format-badge {
+    flex-shrink: 0;
+    min-width: 38px;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: var(--cream-state);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 9.5px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--ink);
+}
+
+.export-format-lede {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
 }
 
 .month-link {

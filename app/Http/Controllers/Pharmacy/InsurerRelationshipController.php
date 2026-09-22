@@ -46,29 +46,46 @@ class InsurerRelationshipController extends Controller
             'period' => $period->value,
             'periodLabel' => $period->describe(),
             'periods' => StatsPeriod::options(),
-            'exportUrl' => $this->exportUrl($pharmacy, $insurer, $period),
+            'exportUrls' => $this->exportUrls($pharmacy, $insurer, $period),
         ]);
     }
 
     /**
-     * Le lien d'export, seulement quand il filtrerait vraiment.
+     * Les trois formats de l'écran d'export, filtrés sur cet assureur.
      *
-     * PharmacyExportController::insurerId() ne retient le filtre que pour un
-     * assureur auquel l'officine a **déclaré**. Sur un assureur coché mais
-     * vierge — cas que cet écran ouvre volontiers — le bouton rendrait le
-     * fichier de toute l'officine sans le dire. Mieux vaut pas de bouton qu'un
-     * bouton qui exporte autre chose que ce qu'on regarde.
+     * Les mêmes que `pharmacy/Exports` : le relevé PDF, le classeur XLSX et le
+     * fichier CSV brut, servis par le même contrôleur. Un écran qui n'en
+     * offrirait qu'un obligerait à repasser par l'écran d'export pour changer
+     * de format, en y refaisant à la main le filtre qu'on a déjà sous les yeux.
+     *
+     * Les URL sont construites ici : le serveur possède les noms de route, et
+     * le format est un paramètre de la même route, pas une route par format.
+     *
+     * Rendu null — donc aucun bouton — quand le filtre ne filtrerait pas.
+     * `PharmacyExportController::insurerId()` ne le retient que pour un
+     * assureur auquel l'officine a **déclaré** ; sur un assureur coché mais
+     * vierge — cas que cet écran ouvre volontiers — les liens rendraient le
+     * fichier de toute l'officine sans le dire.
+     *
+     * @return array{pdf: string, xlsx: string, csv: string}|null
      */
-    protected function exportUrl(Pharmacy $pharmacy, Insurer $insurer, StatsPeriod $period): ?string
+    protected function exportUrls(Pharmacy $pharmacy, Insurer $insurer, StatsPeriod $period): ?array
     {
         if (! $pharmacy->declarations()->where('insurer_id', $insurer->id)->exists()) {
             return null;
         }
 
-        return route('pharmacy.data-exports.download', [
+        $link = fn (string $format): string => route('pharmacy.data-exports.download', [
             'insurer' => $insurer->id,
             'period' => $period->value,
+            'format' => $format,
         ], absolute: false);
+
+        return [
+            'pdf' => $link('pdf'),
+            'xlsx' => $link('xlsx'),
+            'csv' => $link('csv'),
+        ];
     }
 
     /**
