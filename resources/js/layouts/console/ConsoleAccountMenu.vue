@@ -11,6 +11,7 @@
 import { Link } from '@inertiajs/vue3';
 import { ChevronDown } from '@lucide/vue';
 import LogoutLink from '@/components/aphaspb/LogoutLink.vue';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,6 +19,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { getInitials } from '@/composables/useInitials';
 import type { ConsoleAccount } from '@/types/console';
 
 defineProps<{ account: ConsoleAccount }>();
@@ -28,7 +30,11 @@ defineProps<{ account: ConsoleAccount }>();
         <!--
             Le nom, pas les initiales : c'est la seule trace de l'identité à
             l'écran, et « AH » obligeait à déplier pour savoir qui était
-            connecté.
+            connecté. L'avatar vient en plus, jamais à la place : c'est le
+            repère visuel qu'on s'attend à trouver là, pas une identité. Pas
+            d'image — ni Joomla ni la table `users` n'en fournissent — donc
+            seulement les initiales, masquées aux lecteurs d'écran qui ont
+            déjà le nom juste à côté.
 
             Le chevron dit que ça s'ouvre : sans lui, le nom se lit comme une
             étiquette, et la déconnexion devient introuvable — c'est le défaut
@@ -44,6 +50,14 @@ defineProps<{ account: ConsoleAccount }>();
             class="flex h-9 min-w-0 shrink items-center gap-[6px] rounded-[10px] border border-ink/[0.10] bg-white/80 px-[10px] text-[13px] font-bold text-ink/75 transition-colors hover:bg-cream-header lg:h-10 lg:shrink-0 lg:text-[14.5px]"
             :aria-label="`Compte de ${account.name}`"
         >
+            <Avatar class="-ml-[4px] size-6 lg:size-7" aria-hidden="true">
+                <AvatarFallback
+                    class="bg-primary text-[10px] font-bold text-primary-foreground lg:text-[11px]"
+                >
+                    {{ getInitials(account.name) }}
+                </AvatarFallback>
+            </Avatar>
+
             <span class="truncate">{{ account.name }}</span>
 
             <ChevronDown class="size-[15px] shrink-0 opacity-45" />
