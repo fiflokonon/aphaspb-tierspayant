@@ -1,0 +1,142 @@
+<?php
+
+use App\Data\Period;
+use App\Enums\DeclarationStatus;
+use App\Models\Declaration;
+use App\Models\Insurer;
+use App\Models\Pharmacy;
+use App\Services\Network\NetworkPenaltyJournal;
+use App\Services\Network\NetworkPenaltyLedger;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
+
+beforeEach(function () {
+    useJoomlaTestKeys();
+    $this->travelTo(CarbonImmutable::create(2026, 9, 19));
+    $this->journal = app(NetworkPenaltyJournal::class);
+    $this->bounds = [new Period(2026, 3), new Period(2026, 9)];
+});
+
+/**
+ * $count officines neuves, chacune une facture de 1 000 000 jamais réglée.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function networkUnpaid(Insurer $insurer, int $count, int $month, string $depositedOn, array $attributes = [], array $pharmacy = []): void
+{
+    Pharmacy::factory()->count($count)->create($pharmacy)->each(fn (Pharmacy $pharmacy) => Declaration::factory()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => $month,
+        'amount_invoiced' => 1_000_000,
+        'amount_received' => 0,
+        'status' => DeclarationStatus::Unpaid,
+        'is_status_manual' => true,
+        'invoice_deposited_on' => $depositedOn,
+        'paid_on' => null,
+        'delay_days' => null,
+        ...$attributes,
+    ]));
+}
+
+test('an authorised insurer gets its monthly series', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+    networkUnpaid($insurer, 5, 3, '2026-03-31');
+
+    $series = $this->journal->for(...$this->bounds)->insurers[0];
+
+    expect($series->name)->toBe('NSIA')
+        ->and($series->month('2026-05')->accrued)->toBe(100_000)
+        ->and($series->month('2026-03')->declared)->toBe(400_000);
+});
+
+test('a month resting on too few officines is withheld, with every later cumulative', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($insurer, 5, 3, '2026-03-31');
+    // Juin : une seule officine déclarante. Sa facture court en août (30/06 + 60).
+    networkUnpaid($insurer, 1, 6, '2026-06-30');
+
+    $series = $this->journal->for(...$this->bounds)->insurers[0];
+
+    // Décor discriminant : sans rétention, juin vaudrait 100 000 couru et 0 déclaré,
+    // et le cumul de juillet 300 000.
+    expect($series->month('2026-06')->withheld)->toBeTrue()
+        ->and($series->month('2026-06')->accrued)->toBeNull()
+        ->and($series->month('2026-06')->declared)->toBeNull()
+        ->and($series->month('2026-05')->accruedCumulative)->toBe(100_000)
+        ->and($series->month('2026-07')->accrued)->toBe(100_000)
+        ->and($series->month('2026-07')->accruedCumulative)->toBeNull()
+        ->and($series->month('2026-08')->accrued)->toBe(120_000);
+});
+
+test('a masked insurer has no series but still counts in the unfiltered total', function () {
+    $shown = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    $masked = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($shown, 5, 3, '2026-03-31');
+    networkUnpaid($masked, 2, 3, '2026-03-31');
+
+    $ledger = $this->journal->for(...$this->bounds);
+
+    // Décision du 27/09/2026 : le total couvre les masqués. Ce test la verrouille.
+    expect(array_map(fn ($series) => $series->insurerId, $ledger->insurers))->toBe([$shown->id])
+        ->and($ledger->total->month('2026-05')->accrued)->toBe(140_000)
+        ->and($ledger->maskedInsurers)->toBe(1);
+});
+
+test('filtered on a masked insurer, the total is withheld too', function () {
+    $masked = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($masked, 2, 3, '2026-03-31');
+
+    $ledger = $this->journal->for(...$this->bounds, insurerId: $masked->id);
+
+    expect($ledger->insurers)->toBe([])
+        ->and(collect($ledger->total->months)->reject(fn ($month) => $month->future)->every(fn ($month) => $month->withheld))->toBeTrue();
+});
+
+test('filtered on an authorised insurer, the total follows its month-by-month withholding', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($insurer, 5, 3, '2026-03-31');
+    networkUnpaid($insurer, 1, 6, '2026-06-30');
+
+    $total = $this->journal->for(...$this->bounds, insurerId: $insurer->id)->total;
+
+    expect($total->month('2026-05')->accrued)->toBe(100_000)
+        ->and($total->month('2026-06')->withheld)->toBeTrue();
+});
+
+test('an insurer without a clause appears nowhere', function () {
+    $none = Insurer::factory()->create();
+    networkUnpaid($none, 5, 3, '2026-03-31');
+
+    $ledger = $this->journal->for(...$this->bounds);
+
+    expect($ledger->insurers)->toBe([])
+        ->and($ledger->total->month('2026-05')->accrued)->toBe(0);
+});
+
+test('the city filter narrows the ledger like every other network read', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($insurer, 5, 3, '2026-03-31', pharmacy: ['city' => 'Cotonou']);
+    networkUnpaid($insurer, 5, 3, '2026-03-31', pharmacy: ['city' => 'Parakou']);
+
+    $total = $this->journal->for(...$this->bounds, city: 'Cotonou')->total;
+
+    expect($total->month('2026-05')->accrued)->toBe(100_000);
+});
+
+test('the raw tally reads the same number of queries however many declarations there are', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($insurer, 1, 3, '2026-03-31');
+
+    DB::enableQueryLog();
+    app(NetworkPenaltyLedger::class)->tally(...$this->bounds);
+    $withOne = count(DB::getQueryLog());
+
+    networkUnpaid($insurer, 12, 4, '2026-04-30', ['amount_received' => 0]);
+    DB::flushQueryLog();
+    app(NetworkPenaltyLedger::class)->tally(...$this->bounds);
+
+    expect(count(DB::getQueryLog()))->toBe($withOne)
+        ->and($withOne)->toBe(3);
+});
