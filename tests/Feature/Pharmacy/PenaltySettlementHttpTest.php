@@ -65,3 +65,26 @@ test('putting a penalty back as due', function () {
 
     expect($declaration->fresh()->isPenaltySettled())->toBeFalse();
 });
+
+test('marking a penalty already marked that way says so instead of claiming a change', function () {
+    $user = User::factory()->create();
+    $declaration = referenceMonth($user);
+    $declaration->settlePenalty(PenaltySettlement::Waived, 32_000, $user);
+
+    $this->actingAs($user)
+        ->post(route('pharmacy.penalty-settlement.store', $declaration), ['outcome' => 'waived'])
+        ->assertInertiaFlash('toast', ['type' => 'info', 'message' => 'La pénalité de Mars 26 était déjà marquée annulée.']);
+
+    expect($declaration->revisions()->count())->toBe(0);
+});
+
+test('putting back as due a penalty that was not closed says so', function () {
+    $user = User::factory()->create();
+    $declaration = referenceMonth($user);
+
+    $this->actingAs($user)
+        ->delete(route('pharmacy.penalty-settlement.destroy', $declaration))
+        ->assertInertiaFlash('toast', ['type' => 'info', 'message' => "La pénalité de Mars 26 n'était pas close."]);
+
+    expect($declaration->revisions()->count())->toBe(0);
+});

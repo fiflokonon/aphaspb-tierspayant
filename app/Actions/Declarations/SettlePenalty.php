@@ -6,12 +6,18 @@ use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\User;
 use App\Services\Declarations\PenaltyCalculator;
+use App\Support\MonthLabel;
 
 /**
  * Clore une pénalité (payée, annulée) ou la remettre en dû.
  *
  * N'écrit pas de révision : ses deux appelants le font après coup, comme
  * DeclarationController::store() le fait après les versements.
+ *
+ * Porte aussi les messages des deux gestes, pour que l'écran assureur et le
+ * formulaire du mois disent la même chose dans les mêmes mots.
+ *
+ * @phpstan-type Toast array{type: string, message: string}
  */
 class SettlePenalty
 {
@@ -67,5 +73,54 @@ class SettlePenalty
         $declaration->clearPenaltySettlement();
 
         return true;
+    }
+
+    /**
+     * @return Toast
+     */
+    public function settledNotice(Declaration $declaration, PenaltySettlement $outcome): array
+    {
+        return ['type' => 'success', 'message' => sprintf(
+            'Pénalité de %s marquée %s.',
+            $this->month($declaration),
+            mb_strtolower($outcome->label()),
+        )];
+    }
+
+    /**
+     * Le geste n'a rien changé : la clôture demandée était déjà là.
+     *
+     * @return Toast
+     */
+    public function alreadySettledNotice(Declaration $declaration, PenaltySettlement $outcome): array
+    {
+        return ['type' => 'info', 'message' => sprintf(
+            'La pénalité de %s était déjà marquée %s.',
+            $this->month($declaration),
+            mb_strtolower($outcome->label()),
+        )];
+    }
+
+    /**
+     * @return Toast
+     */
+    public function reopenedNotice(Declaration $declaration): array
+    {
+        return ['type' => 'success', 'message' => sprintf('Pénalité de %s remise en dû.', $this->month($declaration))];
+    }
+
+    /**
+     * Le geste n'a rien changé : il n'y avait pas de clôture à lever.
+     *
+     * @return Toast
+     */
+    public function notSettledNotice(Declaration $declaration): array
+    {
+        return ['type' => 'info', 'message' => sprintf("La pénalité de %s n'était pas close.", $this->month($declaration))];
+    }
+
+    protected function month(Declaration $declaration): string
+    {
+        return MonthLabel::short($declaration->period_month, $declaration->period_year);
     }
 }

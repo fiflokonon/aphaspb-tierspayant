@@ -7,7 +7,6 @@ use App\Actions\Declarations\SettlePenalty;
 use App\Enums\PenaltySettlement;
 use App\Http\Controllers\Controller;
 use App\Models\Declaration;
-use App\Support\MonthLabel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,17 +44,20 @@ class PenaltySettlementController extends Controller
             return back();
         }
 
-        DB::transaction(function () use ($declaration, $outcome, $request) {
-            if ($this->settle->settle($declaration, $outcome, $request->user())) {
-                $this->revisions->handle($declaration->load('payments'), $request->user());
+        $settled = DB::transaction(function () use ($declaration, $outcome, $request): bool {
+            if (! $this->settle->settle($declaration, $outcome, $request->user())) {
+                return false;
             }
+
+            $this->revisions->handle($declaration->load('payments'), $request->user());
+
+            return true;
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => sprintf(
-            'Pénalité de %s marquée %s.',
-            MonthLabel::short($declaration->period_month, $declaration->period_year),
-            mb_strtolower($outcome->label()),
-        )]);
+        // Un double clic ne change rien : ne pas le célébrer comme un geste.
+        Inertia::flash('toast', $settled
+            ? $this->settle->settledNotice($declaration, $outcome)
+            : $this->settle->alreadySettledNotice($declaration, $outcome));
 
         return back();
     }
@@ -64,16 +66,19 @@ class PenaltySettlementController extends Controller
     {
         $this->ownedOrNotFound($request, $declaration);
 
-        DB::transaction(function () use ($declaration, $request) {
-            if ($this->settle->reopen($declaration)) {
-                $this->revisions->handle($declaration->load('payments'), $request->user());
+        $reopened = DB::transaction(function () use ($declaration, $request): bool {
+            if (! $this->settle->reopen($declaration)) {
+                return false;
             }
+
+            $this->revisions->handle($declaration->load('payments'), $request->user());
+
+            return true;
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => sprintf(
-            'Pénalité de %s remise en dû.',
-            MonthLabel::short($declaration->period_month, $declaration->period_year),
-        )]);
+        Inertia::flash('toast', $reopened
+            ? $this->settle->reopenedNotice($declaration)
+            : $this->settle->notSettledNotice($declaration));
 
         return back();
     }
