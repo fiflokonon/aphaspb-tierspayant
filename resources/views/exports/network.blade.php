@@ -88,6 +88,7 @@
         letter-spacing: 0.4px;
         text-transform: uppercase;
     }
+    .kpis .sub { margin-top: 3px; color: #6b7878; font-size: 7px; }
 
     .grid { margin-top: 16px; }
     .grid th {
@@ -344,7 +345,13 @@
                     <div class="value">
                         {{ $figures->penalty === null ? '—' : \App\Support\Fcfa::format($figures->penalty) }}
                     </div>
-                    <div class="label">Pénalité potentielle</div>
+                    <div class="label">Pénalité due</div>
+                    @if (($figures->recovered ?? 0) > 0 || ($figures->waived ?? 0) > 0)
+                        <div class="sub">
+                            dont recouvrée {{ \App\Support\Fcfa::format($figures->recovered ?? 0) }} ·
+                            abandonnée {{ \App\Support\Fcfa::format($figures->waived ?? 0) }}
+                        </div>
+                    @endif
                 </td>
             </tr>
         </table>

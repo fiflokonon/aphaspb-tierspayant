@@ -52,6 +52,8 @@ class NetworkExportRows
         'encours_fcfa',
         'taux_recouvrement_pct',
         'penalite_potentielle_fcfa',
+        'penalite_recouvree_fcfa',
+        'penalite_abandonnee_fcfa',
     ];
 
     public function __construct(
@@ -170,6 +172,8 @@ class NetworkExportRows
             $amount->outstanding,
             $amount->recoveryRate,
             $figures->penalty,
+            $figures->recovered,
+            $figures->waived,
         ];
     }
 }

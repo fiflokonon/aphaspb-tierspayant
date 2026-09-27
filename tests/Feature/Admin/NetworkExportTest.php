@@ -2,6 +2,7 @@
 
 use App\Data\Period;
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
@@ -252,6 +253,83 @@ test('an insurer without a clause leaves the penalty cells empty', function () {
         ->and($cell('delai_declenchement_penalite_jours'))->toBe('')
         ->and($cell('taux_penalite_pct'))->toBe('')
         ->and($cell('penalite_potentielle_fcfa'))->toBe('');
+});
+
+test('the csv carries the due, recovered and abandoned penalty amounts', function () {
+    $insurer = Insurer::factory()
+        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
+        ->create(['name' => 'NSIA', 'standard_delay_days' => 30]);
+
+    $neverSettled = fn (int $daysAgo): array => [
+        'amount_received' => 0,
+        'status' => DeclarationStatus::Unpaid,
+        'is_status_manual' => true,
+        'invoice_deposited_on' => CarbonImmutable::create(2026, 8, 15)->subDays($daysAgo),
+        'paid_on' => null,
+        'delay_days' => null,
+    ];
+
+    // Cinq officines : deux jamais réglées depuis 120 jours (60 000 chacune,
+    // encore dues), deux closes payées (20 000 chacune, recouvrées) et une
+    // close annulée (20 000, abandonnée). Le montant clos égale la courue de
+    // son propre mois — une facture déposée il y a 60 jours ne porte qu'une
+    // tranche.
+    foreach ([1, 2] as $month) {
+        Declaration::factory()->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => $month,
+            'amount_invoiced' => 1_000_000,
+            ...$neverSettled(120),
+        ]);
+    }
+
+    foreach ([3, 4] as $month) {
+        Declaration::factory()
+            ->penaltySettled(PenaltySettlement::Paid, 20_000)
+            ->create([
+                'pharmacy_id' => Pharmacy::factory(),
+                'insurer_id' => $insurer->id,
+                'period_year' => 2026,
+                'period_month' => $month,
+                'amount_invoiced' => 1_000_000,
+                ...$neverSettled(60),
+            ]);
+    }
+
+    Declaration::factory()
+        ->penaltySettled(PenaltySettlement::Waived, 20_000)
+        ->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => 5,
+            'amount_invoiced' => 1_000_000,
+            ...$neverSettled(60),
+        ]);
+
+    $rows = networkCsvRows();
+    $header = $rows[0];
+    $row = $rows[1];
+    $cell = fn (string $column): string => $row[array_search($column, $header, true)];
+
+    expect($cell('penalite_potentielle_fcfa'))->toBe('120000')
+        ->and($cell('penalite_recouvree_fcfa'))->toBe('40000')
+        ->and($cell('penalite_abandonnee_fcfa'))->toBe('20000');
+});
+
+test('a withheld insurer leaves the due, recovered and abandoned penalty columns empty too', function () {
+    exportDeclare(Insurer::factory()->withPenalty()->create(['name' => 'Trop peu retenu']), 2);
+
+    $rows = networkCsvRows();
+    $header = $rows[0];
+    $row = collect($rows)->first(fn (array $r) => in_array('Trop peu retenu', $r, true));
+    $cell = fn (string $column): string => $row[array_search($column, $header, true)];
+
+    expect($cell('penalite_potentielle_fcfa'))->toBe('')
+        ->and($cell('penalite_recouvree_fcfa'))->toBe('')
+        ->and($cell('penalite_abandonnee_fcfa'))->toBe('');
 });
 
 test('an insurer under the anonymity threshold gets no penalty figure either', function () {

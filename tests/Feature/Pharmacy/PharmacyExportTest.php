@@ -1,6 +1,7 @@
 <?php
 
 use App\Data\Period;
+use App\Enums\PenaltySettlement;
 use App\Enums\PharmacyRole;
 use App\Models\Declaration;
 use App\Models\Insurer;
@@ -332,4 +333,90 @@ test('the pages agree with the summary table they follow', function () {
     expect($payload['insurerPages'][0]['penalty'])->toBe($payload['perInsurer'][0]['penalty'])
         ->and($payload['insurerPages'][0]['longestDelayDays'])->toBe($payload['perInsurer'][0]['longestDelayDays'])
         ->and($payload['insurerPages'][0]['outstanding'])->toBe($payload['perInsurer'][0]['outstanding']);
+});
+
+test('a settled month leaves the due at zero and carries the closing figures', function () {
+    [$user] = exportingOfficine();
+    $declaration = referenceMonth($user);
+
+    $this->travelTo(CarbonImmutable::create(2026, 8, 5));
+    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+    $this->travelTo(CarbonImmutable::create(2026, 8, 15));
+
+    $rows = csvRowsFor($user);
+    $header = $rows[0];
+    $row = collect($rows)->first(fn (array $r) => in_array('NSIA', $r, true));
+    $cell = fn (string $column): string => $row[array_search($column, $header, true)];
+
+    expect($cell('penalite_fcfa'))->toBe('32000')
+        ->and($cell('penalite_statut'))->toBe('payee')
+        ->and($cell('penalite_close_fcfa'))->toBe('32000')
+        ->and($cell('penalite_close_le'))->toBe('2026-08-05')
+        ->and($cell('penalite_due_fcfa'))->toBe('0');
+});
+
+test('an unsettled month under a clause reads due, with the due equal to the accrued', function () {
+    [$user] = exportingOfficine();
+    referenceMonth($user);
+
+    $rows = csvRowsFor($user);
+    $header = $rows[0];
+    $row = collect($rows)->first(fn (array $r) => in_array('NSIA', $r, true));
+    $cell = fn (string $column): string => $row[array_search($column, $header, true)];
+
+    expect($cell('penalite_statut'))->toBe('due')
+        ->and($cell('penalite_close_fcfa'))->toBe('')
+        ->and($cell('penalite_close_le'))->toBe('')
+        ->and($cell('penalite_fcfa'))->toBe('32000')
+        ->and($cell('penalite_due_fcfa'))->toBe('32000');
+});
+
+test('an insurer without a clause leaves the four new penalty cells empty', function () {
+    [$user, $pharmacy, $insurer] = exportingOfficine();
+    declareSplit($pharmacy, $insurer);
+
+    $rows = csvRowsFor($user);
+    $header = $rows[0];
+    $row = $rows[1];
+    $cell = fn (string $column): string => $row[array_search($column, $header, true)];
+
+    expect($cell('penalite_statut'))->toBe('')
+        ->and($cell('penalite_close_fcfa'))->toBe('')
+        ->and($cell('penalite_close_le'))->toBe('')
+        ->and($cell('penalite_due_fcfa'))->toBe('');
+});
+
+test('the pdf totals read the due, zero once the only month is settled', function () {
+    [$user] = exportingOfficine();
+    $declaration = referenceMonth($user);
+
+    $this->travelTo(CarbonImmutable::create(2026, 8, 5));
+    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+    $this->travelTo(CarbonImmutable::create(2026, 8, 15));
+
+    $export = app(PharmacyPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, $user->currentPharmacy, new Period(2025, 9), new Period(2026, 8), null);
+
+    expect($payload['totals']['penalty'])->toBe(0)
+        ->and($payload['perInsurer'][0]['penalty'])->toBe(0);
+
+    $page = collect($payload['insurerPages'])->firstWhere('name', 'NSIA');
+
+    expect($page['penalty'])->toBe(0)
+        ->and($page['months'][0]['settlementLabel'])->toBe('Payée');
+});
+
+test('the pdf month keeps a null settlement label when nothing was closed', function () {
+    [$user] = exportingOfficine();
+    referenceMonth($user);
+
+    $export = app(PharmacyPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, $user->currentPharmacy, new Period(2025, 9), new Period(2026, 8), null);
+
+    $page = collect($payload['insurerPages'])->firstWhere('name', 'NSIA');
+
+    expect($page['penalty'])->toBe(32_000)
+        ->and($page['months'][0]['settlementLabel'])->toBeNull();
 });

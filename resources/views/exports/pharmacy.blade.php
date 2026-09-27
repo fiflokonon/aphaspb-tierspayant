@@ -138,6 +138,17 @@
         font-size: 7.5px;
     }
 
+    .settlement-chip {
+        display: inline-block;
+        margin-top: 2px;
+        padding: 1px 5px;
+        border-radius: 7px;
+        font-size: 6.8px;
+        font-weight: bold;
+        background: #e8f6f3;
+        color: #006f68;
+    }
+
     .section { margin-top: 20px; }
     .section-break { page-break-before: always; }
 </style>
@@ -242,7 +253,7 @@
                 <th>Recouvrement</th>
                 <th>Délai moyen</th>
                 <th>Délai max</th>
-                <th>Pénalité</th>
+                <th>Pénalité due</th>
                 <th>Versements</th>
             </tr>
         </thead>
@@ -401,7 +412,7 @@
                     <div class="value">
                         {{ $page['penalty'] === null ? '—' : \App\Support\Fcfa::format($page['penalty']) }}
                     </div>
-                    <div class="label">Pénalité réclamable</div>
+                    <div class="label">Pénalité due</div>
                 </td>
             </tr>
         </table>
@@ -416,7 +427,7 @@
                     <th>Reste dû</th>
                     <th class="text">Dépôt</th>
                     <th>Délai</th>
-                    <th>Pénalité</th>
+                    <th>Pénalité due</th>
                 </tr>
             </thead>
             <tbody>
@@ -431,7 +442,12 @@
                         <td class="{{ $month['delayDays'] !== null && $month['delayDays'] > $page['standardDelayDays'] ? 'late' : '' }}">
                             {{ $month['delayDays'] === null ? '—' : $month['delayDays'].' j' }}
                         </td>
-                        <td>{{ $month['penalty'] === null ? '—' : \App\Support\Fcfa::format($month['penalty']) }}</td>
+                        <td>
+                            {{ $month['penalty'] === null ? '—' : \App\Support\Fcfa::format($month['penalty']) }}
+                            @if ($month['settlementLabel'])
+                                <div class="settlement-chip">{{ $month['settlementLabel'] }}</div>
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
             </tbody>

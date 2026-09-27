@@ -5,6 +5,7 @@ namespace App\Services\Network;
 use App\Data\InsurerPenaltyFigures;
 use App\Data\Period;
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use App\Services\Declarations\PenaltyCalculator;
 use App\Support\DayNumber;
 use Illuminate\Support\Facades\DB;
@@ -47,17 +48,22 @@ class InsurerPenaltyAggregates
 
         $clauses = $this->clauses($insurerIds);
         $delays = $this->longestDelays($insurerIds, $from, $to, $city);
-        $penalties = $this->penaltiesByInsurer(array_keys($clauses), $clauses, $from, $to, $city);
+        $totals = $this->penaltiesByInsurer(array_keys($clauses), $clauses, $from, $to, $city);
 
         $figures = [];
 
         foreach ($insurerIds as $insurerId) {
+            $hasClause = isset($clauses[$insurerId]);
+            [$due, $recovered, $waived] = $totals[$insurerId] ?? [0, 0, 0];
+
             $figures[$insurerId] = new InsurerPenaltyFigures(
                 // La décision null/zéro se prend sur la convention, pas sur les
                 // lignes : un assureur sous contrat dont rien n'a couru doit
                 // lire « 0 », pas « — » qui signifierait « pas de contrat ».
-                penalty: isset($clauses[$insurerId]) ? ($penalties[$insurerId] ?? 0) : null,
+                penalty: $hasClause ? $due : null,
                 longestDelayDays: $delays[$insurerId] ?? null,
+                recovered: $hasClause ? $recovered : null,
+                waived: $hasClause ? $waived : null,
             );
         }
 
@@ -143,9 +149,14 @@ class InsurerPenaltyAggregates
      * Un assureur sans clause n'entre pas dans la requête : si deux assureurs
      * sur huit ont une convention pénalisante, on lit un quart des lignes.
      *
+     * Une déclaration close ne recalcule rien : son montant clos est un fait
+     * (§7.1), pas une valeur à retrouver par l'algorithme des tranches. Il
+     * vient alimenter « recouvrée » ou « abandonnée » selon l'issue, jamais
+     * « due ».
+     *
      * @param  list<int>  $insurerIds  ceux qui portent une clause
      * @param  array<int, array{0: int, 1: int}>  $clauses
-     * @return array<int, int>
+     * @return array<int, array{0: int, 1: int, 2: int}> due, recouvrée, abandonnée
      */
     protected function penaltiesByInsurer(array $insurerIds, array $clauses, Period $from, Period $to, ?string $city): array
     {
@@ -172,6 +183,8 @@ class InsurerPenaltyAggregates
                 'declarations.amount_received',
                 'declarations.invoice_deposited_on',
                 'declarations.paid_on',
+                'declarations.penalty_settlement',
+                'declarations.penalty_settled_amount',
             )
             // cursor() et non get() : à 40 000 lignes, la collection
             // matérialisée coûte plus que tout le reste du calcul.
@@ -179,9 +192,23 @@ class InsurerPenaltyAggregates
 
         foreach ($declarations as $declaration) {
             $insurerId = (int) $declaration->insurer_id;
+            $totals[$insurerId] ??= [0, 0, 0];
+
+            if ($declaration->penalty_settlement !== null) {
+                $amount = (int) $declaration->penalty_settled_amount;
+
+                if ($declaration->penalty_settlement === PenaltySettlement::Paid->value) {
+                    $totals[$insurerId][1] += $amount;
+                } else {
+                    $totals[$insurerId][2] += $amount;
+                }
+
+                continue;
+            }
+
             [$triggerDays, $rateBp] = $clauses[$insurerId];
 
-            $totals[$insurerId] = ($totals[$insurerId] ?? 0) + $this->penalties->accruedInDays(
+            $totals[$insurerId][0] += $this->penalties->accruedInDays(
                 amountInvoiced: (int) $declaration->amount_invoiced,
                 amountReceived: (int) $declaration->amount_received,
                 depositedDay: DayNumber::fromDate((string) $declaration->invoice_deposited_on),

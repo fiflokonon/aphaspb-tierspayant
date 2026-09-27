@@ -3,6 +3,7 @@
 namespace App\Services\Pharmacy;
 
 use App\Data\Period;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Pharmacy;
 use App\Services\Declarations\PenaltyCalculator;
@@ -47,6 +48,10 @@ class PharmacyExportRows
         'delai_declenchement_penalite_jours',
         'taux_penalite_pct',
         'penalite_fcfa',
+        'penalite_statut',
+        'penalite_close_fcfa',
+        'penalite_close_le',
+        'penalite_due_fcfa',
         'versements',
         'detail_versements',
         'corrections',
@@ -113,6 +118,10 @@ class PharmacyExportRows
             $declaration->insurer->penalty_trigger_days,
             $declaration->insurer->penaltyRatePercent(),
             $this->penalties->for($declaration),
+            $this->settlementStatus($declaration),
+            $declaration->penalty_settled_amount,
+            $declaration->penalty_settled_on?->toDateString(),
+            $this->penalties->due($declaration),
             $declaration->payments->count(),
             // Les versements tiennent dans une cellule plutôt que d'éclater
             // chaque déclaration sur plusieurs lignes : le fichier reste une
@@ -121,6 +130,22 @@ class PharmacyExportRows
             max(0, $declaration->revisions_count - 1),
             $declaration->private_note,
         ];
+    }
+
+    /**
+     * « due », « payee » ou « annulee » ; null sans clause, comme le montant.
+     *
+     * Null ≠ « due » : le premier dit « pas de convention », le second « une
+     * convention, rien n'est clos ». Confondre les deux ferait lire une
+     * pénalité due là où il n'y a pas de clause à réclamer.
+     */
+    protected function settlementStatus(Declaration $declaration): ?string
+    {
+        if ($declaration->penalty_settlement !== null) {
+            return $declaration->penalty_settlement === PenaltySettlement::Paid ? 'payee' : 'annulee';
+        }
+
+        return $this->penalties->for($declaration) === null ? null : 'due';
     }
 
     /**
