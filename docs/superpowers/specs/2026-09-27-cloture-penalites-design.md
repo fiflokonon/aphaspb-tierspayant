@@ -279,3 +279,16 @@ Décidés pendant l'exécution. Là où ils contredisent les sections précéden
   closes dans la même transaction. Chaque clôture levée (cas B, y compris
   clause retirée) laisse une révision signée de l'administrateur, qui voit
   « N pénalité(s) close(s) rouvertes : le montant a changé avec la clause. »
+- **§7.3 / §7.4 (revue, tranché le 27/09/2026) — fuite croisée export /
+  journal** — la due / recouvrée / abandonnée de période de l'export réseau,
+  moins les mois publiés du journal réseau du même périmètre, rendait un mois
+  que le journal retient (en entier ou dans son découpage). L'export réseau
+  (CSV, XLSX, PDF) retient donc ces trois chiffres, ensemble, dès que la
+  série de l'assureur a un mois non futur retenu ou au découpage retenu ; le
+  PDF le dit dans sa note. S'ajoute à la règle de partition.
+- **§7.3 (même revue)** — la partition reste stricte pour la due : un
+  assureur autorisé sans clôture dont 1 à seuil − 1 officines ont couru une
+  pénalité garde sa due retenue, même quand le journal ne retient rien.
+- **§6 (même revue)** — l'écran officine × assureur rend **0**, pas null,
+  pour un assureur sous convention sans déclaration sur la période : la
+  clause décide (règle « clause d'abord »), un test l'épingle.
