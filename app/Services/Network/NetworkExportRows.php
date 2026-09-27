@@ -8,6 +8,7 @@ use App\Data\InsurerIndicators;
 use App\Data\InsurerPenaltyFigures;
 use App\Data\Period;
 use App\Models\Insurer;
+use App\Services\Settings\SettingsRepository;
 
 /**
  * The network statistics as rows, whatever file they end up in.
@@ -17,6 +18,12 @@ use App\Models\Insurer;
  * produce a row that says so and carries no figure at all — not a row that is
  * quietly dropped, because a missing line reads as « no data » rather than as
  * « withheld to protect an officine ».
+ *
+ * The same holds one level down for the penalty split by settlement status —
+ * due, recovered, waived. An authorised insurer may still have a single
+ * officine behind one of those parts, whose exact amount it would then name.
+ * The three columns are emptied together (« partition rule »): any one of
+ * them, next to another published figure, would give a hidden one back.
  *
  * That rule lives here, once, rather than in each writer: two export formats
  * that could disagree on who gets figures would be the leak itself.
@@ -59,6 +66,7 @@ class NetworkExportRows
     public function __construct(
         protected NetworkStatsService $stats,
         protected InsurerPenaltyAggregates $penalties,
+        protected SettingsRepository $settings,
     ) {
         //
     }
@@ -73,6 +81,7 @@ class NetworkExportRows
         $indicators = $this->stats->perInsurer($from, $to, $city, $insurerId);
         $amounts = $this->stats->aggregatedByInsurer($from, $to, $city, $insurerId);
         $names = Insurer::query()->whereIn('id', array_keys($indicators))->pluck('name', 'id');
+        $minimum = $this->settings->anonymityMinPharmacies();
 
         // Les identifiants passés ici sont ceux que perInsurer() a laissé
         // passer : l'agrégateur n'a pas la liberté de contourner le seuil.
@@ -117,6 +126,7 @@ class NetworkExportRows
                 $entry,
                 $amount,
                 $figures[$insurerId] ?? new InsurerPenaltyFigures(null, null),
+                $minimum,
             );
         }
     }
@@ -145,7 +155,13 @@ class NetworkExportRows
         InsurerIndicators $entry,
         InsurerAmounts $amount,
         InsurerPenaltyFigures $figures,
+        int $minimum,
     ): array {
+        // Les trois ensemble, jamais une seule : une part publiée à côté d'une
+        // part cachée finit toujours par la rendre, par différence avec un
+        // autre chiffre publié ailleurs (PDF, journal).
+        $splitWithheld = $figures->splitPharmacies->restsOnFewerThan($minimum);
+
         return [
             $name,
             $entry->declaringPharmacies,
@@ -171,9 +187,9 @@ class NetworkExportRows
             $amount->received,
             $amount->outstanding,
             $amount->recoveryRate,
-            $figures->penalty,
-            $figures->recovered,
-            $figures->waived,
+            $splitWithheld ? null : $figures->penalty,
+            $splitWithheld ? null : $figures->recovered,
+            $splitWithheld ? null : $figures->waived,
         ];
     }
 }

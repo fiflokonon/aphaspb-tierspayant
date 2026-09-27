@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
@@ -113,6 +114,33 @@ test('a withheld month keeps its row, emptied and explained', function () {
         ->and($july[array_search('dont_payee', $columns)])->toBe('0')
         ->and($july[array_search('reste_due', $columns)])->toBe('100000')
         ->and($july[array_search('retenu', $columns)])->toBe('cumul interrompu par un mois retenu');
+});
+
+test('a month whose status split is withheld keeps its accrued figure and says why the split is empty', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+    networkLedgerDeclare($insurer, 4);
+    // La cinquième officine solde le 14/06 et annule : une tranche de 20 000 en mai.
+    Declaration::factory()
+        ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-06-14']])
+        ->penaltySettled(PenaltySettlement::Waived, 20_000)
+        ->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => 3,
+            'amount_invoiced' => 1_000_000,
+            'invoice_deposited_on' => '2026-03-31',
+        ]);
+
+    $rows = networkLedgerCsv(User::factory()->networkAdmin()->create());
+    $columns = NetworkPenaltyLedgerRows::COLUMNS;
+    $may = array_values(array_filter($rows, fn (array $row) => $row[0] === '2026-05' && $row[1] === 'NSIA'))[0];
+
+    expect($may[array_search('penalite_courue', $columns)])->toBe('100000')
+        ->and($may[array_search('dont_payee', $columns)])->toBe('')
+        ->and($may[array_search('dont_annulee', $columns)])->toBe('')
+        ->and($may[array_search('reste_due', $columns)])->toBe('')
+        ->and($may[array_search('retenu', $columns)])->toBe('payée / annulée / due : une part sur moins de 5 officines');
 });
 
 test('the network file never names an officine', function () {

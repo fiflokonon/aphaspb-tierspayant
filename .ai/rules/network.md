@@ -78,3 +78,12 @@ Deux tests le tiennent : un sur les données (`summary` vaut null), un sur le **
 - Filtrée sur un assureur masqué, la série totale est retenue en bloc ; sur un assureur autorisé, elle suit sa rétention mois par mois.
 
 `NetworkPenaltyLedger::tally()` coûte trois requêtes quel que soit le volume (test dédié).
+
+## Le découpage par statut de clôture relève aussi du seuil
+Due / recouvrée / abandonnée (`InsurerPenaltyAggregates` → exports réseau) et `accruedPaid` / `accruedWaived` / `accruedDue` (journal) désagrègent un assureur autorisé : une officine qui annule seule publierait son montant exact.
+
+**Règle de partition** (27/09/2026) : le découpage n'est publié que si chaque part **non vide** repose sur ≥ seuil officines distinctes ; sinon les trois parts tombent **ensemble** (null), la courue / le couru du mois restant publiés. Une seule part cachée se retrouverait par différence avec les autres.
+
+- Les agrégats exposent `PenaltySplitPharmacies` (compté dans le curseur existant : toujours 4 requêtes) ; `NetworkExportRows` / `NetworkPdfExport` décident via `restsOnFewerThan()`. CSV/XLSX : cellules vides ; PDF : « retenu » + une ligne d'explication.
+- Journal : `PenaltyTally::ledger(..., $splitWithheld)` passe les officines de chaque part et, pour le total, celles des parts cachées des séries publiées (mois retenus ou découpages retenus) ; `NetworkPenaltyJournal` retient, séries **et** total, filtre ou non. `PenaltyLedgerMonth::splitWithheld` dit « retenu » à l'écran et dans les exports. Toujours 3 requêtes.
+- Le journal officine n'est pas concerné (l'officine lit ses propres chiffres).

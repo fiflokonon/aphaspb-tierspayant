@@ -3,6 +3,7 @@
 namespace App\Services\Network;
 
 use App\Data\InsurerPenaltyFigures;
+use App\Data\PenaltySplitPharmacies;
 use App\Data\Period;
 use App\Enums\DeclarationStatus;
 use App\Enums\PenaltySettlement;
@@ -17,6 +18,10 @@ use Illuminate\Support\Facades\DB;
  * autorisés par NetworkStatsService::perInsurer(). Un assureur sous le seuil
  * n'est pas filtré à la sortie : il n'entre jamais dans la requête. C'est plus
  * sûr qu'une retenue de plus, et ça évite de calculer pour rien.
+ *
+ * Le découpage par statut (due / recouvrée / abandonnée) est une granularité
+ * plus fine que cette clairance de période : il expose ses officines par part
+ * (`splitPharmacies`) et laisse l'appelant retenir.
  *
  * **Pourquoi pas une méthode de NetworkStatsService**, dont l'en-tête demande
  * pourtant de concentrer les agrégats : perInsurer() est appelée par
@@ -54,7 +59,7 @@ class InsurerPenaltyAggregates
 
         foreach ($insurerIds as $insurerId) {
             $hasClause = isset($clauses[$insurerId]);
-            [$due, $recovered, $waived] = $totals[$insurerId] ?? [0, 0, 0];
+            [$due, $recovered, $waived, $pharmacies] = $totals[$insurerId] ?? [0, 0, 0, [[], [], []]];
 
             $figures[$insurerId] = new InsurerPenaltyFigures(
                 // La décision null/zéro se prend sur la convention, pas sur les
@@ -64,6 +69,11 @@ class InsurerPenaltyAggregates
                 longestDelayDays: $delays[$insurerId] ?? null,
                 recovered: $hasClause ? $recovered : null,
                 waived: $hasClause ? $waived : null,
+                splitPharmacies: new PenaltySplitPharmacies(
+                    due: count($pharmacies[0]),
+                    paid: count($pharmacies[1]),
+                    waived: count($pharmacies[2]),
+                ),
             );
         }
 
@@ -154,9 +164,14 @@ class InsurerPenaltyAggregates
      * vient alimenter « recouvrée » ou « abandonnée » selon l'issue, jamais
      * « due ».
      *
+     * Les officines de chaque part sont comptées dans la même passe : le
+     * découpage par statut désagrège l'assureur, et l'appelant doit pouvoir
+     * le retenir (règle « seuil à chaque granularité »). Une officine ne
+     * compte dans une part que si elle y apporte un montant.
+     *
      * @param  list<int>  $insurerIds  ceux qui portent une clause
      * @param  array<int, array{0: int, 1: int}>  $clauses
-     * @return array<int, array{0: int, 1: int, 2: int}> due, recouvrée, abandonnée
+     * @return array<int, array{0: int, 1: int, 2: int, 3: array{0: array<int, true>, 1: array<int, true>, 2: array<int, true>}}> due, recouvrée, abandonnée, officines de chaque part
      */
     protected function penaltiesByInsurer(array $insurerIds, array $clauses, Period $from, Period $to, ?string $city): array
     {
@@ -179,6 +194,7 @@ class InsurerPenaltyAggregates
             ->select(
                 'declarations.id',
                 'declarations.insurer_id',
+                'declarations.pharmacy_id',
                 'declarations.amount_invoiced',
                 'declarations.amount_received',
                 'declarations.invoice_deposited_on',
@@ -192,15 +208,17 @@ class InsurerPenaltyAggregates
 
         foreach ($declarations as $declaration) {
             $insurerId = (int) $declaration->insurer_id;
-            $totals[$insurerId] ??= [0, 0, 0];
+            $pharmacyId = (int) $declaration->pharmacy_id;
+            $totals[$insurerId] ??= [0, 0, 0, [[], [], []]];
 
             if ($declaration->penalty_settlement !== null) {
                 $amount = (int) $declaration->penalty_settled_amount;
+                $part = $declaration->penalty_settlement === PenaltySettlement::Paid->value ? 1 : 2;
 
-                if ($declaration->penalty_settlement === PenaltySettlement::Paid->value) {
-                    $totals[$insurerId][1] += $amount;
-                } else {
-                    $totals[$insurerId][2] += $amount;
+                $totals[$insurerId][$part] += $amount;
+
+                if ($amount > 0) {
+                    $totals[$insurerId][3][$part][$pharmacyId] = true;
                 }
 
                 continue;
@@ -208,7 +226,7 @@ class InsurerPenaltyAggregates
 
             [$triggerDays, $rateBp] = $clauses[$insurerId];
 
-            $totals[$insurerId][0] += $this->penalties->accruedInDays(
+            $accrued = $this->penalties->accruedInDays(
                 amountInvoiced: (int) $declaration->amount_invoiced,
                 amountReceived: (int) $declaration->amount_received,
                 depositedDay: DayNumber::fromDate((string) $declaration->invoice_deposited_on),
@@ -220,6 +238,12 @@ class InsurerPenaltyAggregates
                 payments: $payments[$declaration->id] ?? [],
                 today: $today,
             );
+
+            $totals[$insurerId][0] += $accrued;
+
+            if ($accrued > 0) {
+                $totals[$insurerId][3][0][$pharmacyId] = true;
+            }
         }
 
         return $totals;

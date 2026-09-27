@@ -24,6 +24,7 @@ function month(
         accruedDue: 0,
         declaredDue: 0,
         withheld: false,
+        splitWithheld: false,
         ...values,
     };
 }

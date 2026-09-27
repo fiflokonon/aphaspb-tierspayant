@@ -98,8 +98,95 @@ test('a withheld month blanks what was paid, waived and what remains due', funct
         ->and($june->declaredDue)->toBeNull()
         ->and($series->month('2026-07')->accruedDue)->toBe(100_000)
         ->and($series->month('2026-07')->accruedPaid)->toBe(0)
-        ->and($series->month('2026-08')->accruedPaid)->toBe(20_000)
-        ->and($series->month('2026-08')->accruedDue)->toBe(100_000);
+        // Août : la tranche close de cette officine y tombe. Le mois est
+        // publié (six officines), mais sa part payée ne repose que sur elle :
+        // tout le découpage par statut est retenu avec elle.
+        ->and($series->month('2026-08')->accrued)->toBe(120_000)
+        ->and($series->month('2026-08')->accruedPaid)->toBeNull()
+        ->and($series->month('2026-08')->accruedDue)->toBeNull();
+});
+
+/**
+ * $count officines neuves, chacune une facture de mars soldée le 14/06 et
+ * close : une tranche de 20 000 le 30/05, rien ensuite. Le montant clos égale
+ * la courue, comme l'exige la réconciliation.
+ */
+function networkSettled(Insurer $insurer, int $count, PenaltySettlement $outcome): void
+{
+    foreach (range(1, $count) as $ignored) {
+        Declaration::factory()
+            ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-06-14']])
+            ->penaltySettled($outcome, 20_000)
+            ->create([
+                'pharmacy_id' => Pharmacy::factory(),
+                'insurer_id' => $insurer->id,
+                'period_year' => 2026,
+                'period_month' => 3,
+                'amount_invoiced' => 1_000_000,
+                'invoice_deposited_on' => '2026-03-31',
+            ]);
+    }
+}
+
+test('a month whose waived part rests on one officine withholds its whole status split', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    // Cinq officines en mai : quatre dues, une qui annule.
+    networkUnpaid($insurer, 4, 3, '2026-03-31');
+    networkSettled($insurer, 1, PenaltySettlement::Waived);
+
+    $ledger = $this->journal->for(...$this->bounds);
+    $may = $ledger->insurers[0]->month('2026-05');
+    $totalMay = $ledger->total->month('2026-05');
+
+    // Sans la règle : annulée 20 000, l'exacte pénalité d'une officine.
+    expect($may->withheld)->toBeFalse()
+        ->and($may->accrued)->toBe(100_000)
+        ->and($may->accruedCumulative)->toBe(100_000)
+        ->and($may->accruedWaived)->toBeNull()
+        ->and($may->accruedPaid)->toBeNull()
+        ->and($may->accruedDue)->toBeNull()
+        ->and($totalMay->accrued)->toBe(100_000)
+        ->and($totalMay->accruedWaived)->toBeNull()
+        ->and($totalMay->accruedDue)->toBeNull()
+        // Juin ne porte que la due de quatre officines, sans rien de clos :
+        // une part sous le seuil reste une part sous le seuil.
+        ->and($ledger->insurers[0]->month('2026-06')->accruedDue)->toBeNull();
+});
+
+test('a status split whose parts all rest on enough officines is published', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($insurer, 5, 3, '2026-03-31');
+    networkSettled($insurer, 5, PenaltySettlement::Paid);
+
+    $ledger = $this->journal->for(...$this->bounds);
+    $may = $ledger->insurers[0]->month('2026-05');
+
+    expect($may->accrued)->toBe(200_000)
+        ->and($may->accruedPaid)->toBe(100_000)
+        ->and($may->accruedWaived)->toBe(0)
+        ->and($may->accruedDue)->toBe(100_000)
+        ->and($ledger->total->month('2026-05')->accruedPaid)->toBe(100_000);
+});
+
+test('the unfiltered total withholds its status split when a withheld split of a published insurer would be its hidden part', function () {
+    $first = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    $second = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($first, 5, 3, '2026-03-31');
+    networkSettled($first, 5, PenaltySettlement::Waived);
+    // Le second : quatre dues, une annulée — son découpage est retenu.
+    networkUnpaid($second, 4, 3, '2026-03-31');
+    networkSettled($second, 1, PenaltySettlement::Waived);
+
+    $ledger = $this->journal->for(...$this->bounds);
+    $totalMay = $ledger->total->month('2026-05');
+
+    // Le total repose sur six annulations : sa propre part passe le seuil.
+    // Mais total − premier assureur rendrait l'annulation de la seule
+    // officine du second.
+    expect($totalMay->accrued)->toBe(300_000)
+        ->and($totalMay->accruedWaived)->toBeNull()
+        ->and($totalMay->accruedPaid)->toBeNull()
+        ->and($totalMay->accruedDue)->toBeNull();
 });
 
 test('a masked insurer has no series but still counts in the unfiltered total', function () {

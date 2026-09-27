@@ -103,6 +103,8 @@ export type PenaltyLedgerMonth = {
     accruedDue: number | null;
     /** La pénalité non close des factures de ce mois déclaré. */
     declaredDue: number | null;
+    /** Payée, annulée et due retenues ensemble (une part sous le seuil), le couru publié. */
+    splitWithheld: boolean;
 };
 
 export type PenaltyLedgerSeries = {

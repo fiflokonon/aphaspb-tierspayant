@@ -270,7 +270,12 @@ test('the due excludes settled declarations while recovered and waived total the
     // puisque le montant clos égale exactement la courue de son mois.
     expect($figures->penalty)->toBe(120_000)
         ->and($figures->recovered)->toBe(40_000)
-        ->and($figures->waived)->toBe(20_000);
+        ->and($figures->waived)->toBe(20_000)
+        // Les officines derrière chaque part : l'appelant qui détient le seuil
+        // en décide, pas l'agrégateur.
+        ->and($figures->splitPharmacies->due)->toBe(2)
+        ->and($figures->splitPharmacies->paid)->toBe(2)
+        ->and($figures->splitPharmacies->waived)->toBe(1);
 });
 
 test('the query count stays flat however many declarations there are', function () {

@@ -284,15 +284,13 @@ function settledCoveredMonth(Insurer $insurer, int $month, PenaltySettlement $ou
         ]);
 }
 
-test('the csv carries the due, recovered and abandoned penalty amounts', function () {
-    $insurer = Insurer::factory()
-        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
-        ->create(['name' => 'NSIA', 'standard_delay_days' => 30]);
-
-    // Cinq officines : deux jamais réglées depuis 120 jours (60 000 chacune,
-    // encore dues), deux closes payées (20 000 chacune, recouvrées) et une
-    // close annulée (20 000, abandonnée).
-    foreach ([1, 2] as $month) {
+/**
+ * $count officines, chacune une facture de 1 000 000 déposée il y a 120 jours
+ * et jamais réglée : trois tranches de 20 000, soit 60 000 encore dues.
+ */
+function unpaidPenaltyMonths(Insurer $insurer, int $count, int $month): void
+{
+    foreach (range(1, $count) as $ignored) {
         Declaration::factory()->create([
             'pharmacy_id' => Pharmacy::factory(),
             'insurer_id' => $insurer->id,
@@ -307,21 +305,115 @@ test('the csv carries the due, recovered and abandoned penalty amounts', functio
             'delay_days' => null,
         ]);
     }
+}
 
-    foreach ([3, 4] as $month) {
-        settledCoveredMonth($insurer, $month, PenaltySettlement::Paid, 20_000);
+/**
+ * La cellule d'un assureur, par nom de colonne.
+ *
+ * @param  array<string, mixed>  $query
+ * @return Closure(string): string
+ */
+function networkCsvCell(string $insurerName, array $query = []): Closure
+{
+    $rows = networkCsvRows($query);
+    $header = $rows[0];
+    $row = collect($rows)->first(fn (array $r) => in_array($insurerName, $r, true));
+
+    return fn (string $column): string => $row[array_search($column, $header, true)];
+}
+
+test('the csv carries the due, recovered and abandoned penalty amounts', function () {
+    $insurer = Insurer::factory()
+        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
+        ->create(['name' => 'NSIA', 'standard_delay_days' => 30]);
+
+    // Chaque part repose sur cinq officines : cinq jamais réglées (60 000
+    // chacune, encore dues), cinq closes payées et cinq closes annulées
+    // (20 000 chacune).
+    unpaidPenaltyMonths($insurer, 5, 2);
+
+    foreach (range(1, 5) as $ignored) {
+        settledCoveredMonth($insurer, 3, PenaltySettlement::Paid, 20_000);
+        settledCoveredMonth($insurer, 4, PenaltySettlement::Waived, 20_000);
     }
 
-    settledCoveredMonth($insurer, 5, PenaltySettlement::Waived, 20_000);
+    $cell = networkCsvCell('NSIA');
 
-    $rows = networkCsvRows();
-    $header = $rows[0];
-    $row = $rows[1];
-    $cell = fn (string $column): string => $row[array_search($column, $header, true)];
+    expect($cell('penalite_potentielle_fcfa'))->toBe('300000')
+        ->and($cell('penalite_recouvree_fcfa'))->toBe('100000')
+        ->and($cell('penalite_abandonnee_fcfa'))->toBe('100000');
+});
 
-    expect($cell('penalite_potentielle_fcfa'))->toBe('120000')
-        ->and($cell('penalite_recouvree_fcfa'))->toBe('40000')
-        ->and($cell('penalite_abandonnee_fcfa'))->toBe('20000');
+test('an empty part does not withhold the status split', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    // Cinq dues, cinq payées, aucune annulée : la part vide ne repose sur
+    // personne, elle ne désigne donc personne.
+    unpaidPenaltyMonths($insurer, 5, 2);
+
+    foreach (range(1, 5) as $ignored) {
+        settledCoveredMonth($insurer, 3, PenaltySettlement::Paid, 20_000);
+    }
+
+    $cell = networkCsvCell('NSIA');
+
+    expect($cell('penalite_potentielle_fcfa'))->toBe('300000')
+        ->and($cell('penalite_recouvree_fcfa'))->toBe('100000')
+        ->and($cell('penalite_abandonnee_fcfa'))->toBe('0');
+});
+
+test('the status split is withheld together when one of its parts rests on too few officines', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    // Cinq officines, l'assureur passe le seuil. Une seule annule : publiée,
+    // sa part abandonnée serait sa pénalité exacte (20 000), et la due, qui
+    // repose sur quatre, le serait aussi par différence.
+    unpaidPenaltyMonths($insurer, 4, 2);
+    settledCoveredMonth($insurer, 4, PenaltySettlement::Waived, 20_000);
+
+    $cell = networkCsvCell('NSIA');
+
+    expect($cell('officines_declarantes'))->toBe('5')
+        ->and($cell('facture_fcfa'))->toBe('5000000')
+        ->and($cell('penalite_potentielle_fcfa'))->toBe('')
+        ->and($cell('penalite_recouvree_fcfa'))->toBe('')
+        ->and($cell('penalite_abandonnee_fcfa'))->toBe('');
+});
+
+test('the report withholds the status split with the same rule, and says so', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    unpaidPenaltyMonths($insurer, 4, 2);
+    settledCoveredMonth($insurer, 4, PenaltySettlement::Waived, 20_000);
+
+    $export = app(NetworkPdfExport::class);
+    $payload = (new ReflectionMethod($export, 'data'))->invoke($export, new Period(2026, 1), new Period(2026, 8), null);
+    $html = view('exports.network', $payload)->render();
+
+    expect($payload['rows'][0]['splitWithheld'])->toBeTrue()
+        ->and($html)->toContain('Pénalité due')
+        ->and($html)->toContain('retenu')
+        ->and($html)->toContain('répartition due / recouvrée / abandonnée retenue')
+        ->and($html)->not->toContain(Fcfa::format(20_000))
+        ->and($html)->not->toContain(Fcfa::format(240_000));
+});
+
+test('the report publishes the status split when every part rests on enough officines', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    unpaidPenaltyMonths($insurer, 5, 2);
+
+    foreach (range(1, 5) as $ignored) {
+        settledCoveredMonth($insurer, 3, PenaltySettlement::Paid, 20_000);
+    }
+
+    $export = app(NetworkPdfExport::class);
+    $payload = (new ReflectionMethod($export, 'data'))->invoke($export, new Period(2026, 1), new Period(2026, 8), null);
+    $html = view('exports.network', $payload)->render();
+
+    expect($payload['rows'][0]['splitWithheld'])->toBeFalse()
+        ->and($html)->toContain(Fcfa::format(300_000))
+        ->and($html)->toContain('dont recouvrée '.Fcfa::format(100_000));
 });
 
 test('a withheld insurer leaves the due, recovered and abandoned penalty columns empty too', function () {

@@ -262,6 +262,16 @@ Décidés pendant l'exécution. Là où ils contredisent les sections précéden
   (`dueTotal()`), pas ligne par ligne.
 - **§6.4** — confirmé sans changement : les chiffres du tableau de bord ne
   couvrent que les mois ouverts, qui ne peuvent pas être clos.
+- **§7.3 / §7.4 (revue, tranché le 27/09/2026)** — « mêmes assureurs
+  autorisés, même rétention » ne suffisait pas : le découpage par statut
+  désagrège un assureur autorisé, et une officine qui annule seule publiait
+  son montant exact. **Règle de partition** : due / recouvrée / abandonnée
+  (exports réseau) et `accruedPaid` / `accruedWaived` / `accruedDue` (journal
+  réseau, séries et total) ne sont publiées que si chaque part non vide
+  repose sur au moins le seuil d'officines ; sinon les trois sont retenues
+  ensemble, la courue restant publiée. Le total retient aussi son découpage
+  quand les parts cachées des séries publiées tomberaient sous le seuil. Le
+  journal officine n'est pas concerné.
 - **Trou connu, laissé ouvert** — modifier la clause d'un assureur
   (`InsurerManagementController::update()`) ne réconcilie aucune déclaration
   déjà close.

@@ -4,6 +4,7 @@ namespace App\Services\Network;
 
 use App\Data\InsufficientData;
 use App\Data\PenaltyLedger;
+use App\Data\PenaltySplitPharmacies;
 use App\Data\Period;
 use App\Services\Settings\SettingsRepository;
 use Illuminate\Support\Collection;
@@ -26,7 +27,11 @@ use stdClass;
  *   total lui-même n'y repose que sur quelques officines — décision du même
  *   jour, prise après revue ;
  * - filtrée sur un assureur, la série totale devient ses chiffres : retenue en
- *   bloc s'il est masqué, sinon mois par mois comme sa série.
+ *   bloc s'il est masqué, sinon mois par mois comme sa série ;
+ * - le découpage par statut d'un mois publié (payée, annulée, due) est une
+ *   granularité de plus : ses trois parts sont retenues ensemble dès qu'une
+ *   part non vide repose sur 1 à seuil − 1 officines, séries et total
+ *   compris (règle de partition, 27/09/2026).
  */
 class NetworkPenaltyJournal
 {
@@ -95,6 +100,12 @@ class NetworkPenaltyJournal
                 return $belowMinimum($accruedPharmacies) || $belowMinimum($declaredPharmacies);
             },
             $masked,
+            // Règle de partition : payée, annulée et due tombent ensemble dès
+            // qu'une part non vide repose sur trop peu d'officines. Pour le
+            // total, aussi quand les parts cachées des séries publiées le
+            // feraient : total − séries visibles les rendrait.
+            fn (?int $seriesInsurer, PenaltySplitPharmacies $own, PenaltySplitPharmacies $hidden): bool => $own->restsOnFewerThan($minimum)
+                || $hidden->restsOnFewerThan($minimum),
         );
     }
 

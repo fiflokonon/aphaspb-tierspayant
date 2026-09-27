@@ -343,10 +343,20 @@
                     {{-- Un tiret dit « pas de convention », un zéro dit « une
                          convention, rien à réclamer ». --}}
                     <div class="value">
-                        {{ $figures->penalty === null ? '—' : \App\Support\Fcfa::format($figures->penalty) }}
+                        @if ($row['splitWithheld'])
+                            retenu
+                        @else
+                            {{ $figures->penalty === null ? '—' : \App\Support\Fcfa::format($figures->penalty) }}
+                        @endif
                     </div>
                     <div class="label">Pénalité due</div>
-                    @if (($figures->recovered ?? 0) > 0 || ($figures->waived ?? 0) > 0)
+                    @if ($row['splitWithheld'])
+                        {{-- Une part publiée à côté d'une part cachée la rendrait
+                             par différence : les trois tombent ensemble. --}}
+                        <div class="sub">
+                            répartition due / recouvrée / abandonnée retenue : une part repose sur moins de {{ $anonymityThreshold }} officines
+                        </div>
+                    @elseif (($figures->recovered ?? 0) > 0 || ($figures->waived ?? 0) > 0)
                         <div class="sub">
                             dont recouvrée {{ \App\Support\Fcfa::format($figures->recovered ?? 0) }} ·
                             abandonnée {{ \App\Support\Fcfa::format($figures->waived ?? 0) }}

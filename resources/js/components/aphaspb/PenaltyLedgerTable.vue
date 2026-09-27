@@ -53,6 +53,9 @@ const COLUMNS: { key: AmountKey; label: string }[] = [
     { key: 'accruedDue', label: 'Reste due' },
 ];
 
+/** Le découpage par statut : retenu en bloc quand une part est sous le seuil. */
+const SPLIT_KEYS: AmountKey[] = ['accruedPaid', 'accruedWaived', 'accruedDue'];
+
 const cell = (
     month: PenaltyLedgerMonth | undefined,
     key: AmountKey,
@@ -62,6 +65,11 @@ const cell = (
     }
 
     if (month.withheld) {
+        return 'retenu';
+    }
+
+    // Le couru reste publié ; seules ses trois parts tombent ensemble.
+    if (month.splitWithheld && SPLIT_KEYS.includes(key)) {
         return 'retenu';
     }
 

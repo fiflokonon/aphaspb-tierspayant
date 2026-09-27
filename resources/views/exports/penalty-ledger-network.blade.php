@@ -11,6 +11,10 @@
     $money = fn (\App\Data\PenaltyLedgerMonth $month, ?int $value): string => $month->withheld
         ? 'retenu'
         : ($value === null ? '—' : \App\Support\Fcfa::format($value));
+    // Payée, annulée et due retenues ensemble, le couru restant publié.
+    $split = fn (\App\Data\PenaltyLedgerMonth $month, ?int $value): string => $month->splitWithheld
+        ? 'retenu'
+        : $money($month, $value);
     // Un cumul vide sur un mois publié vient d'un mois retenu plus tôt.
     $cumulative = fn (\App\Data\PenaltyLedgerMonth $month): string => ! $month->withheld && $month->accruedCumulative === null
         ? 'interrompu'
@@ -193,8 +197,9 @@
     Pénalité courue : ce qui est tombé pendant le mois, toutes factures
     confondues. Factures du mois : la pénalité, à ce jour, des factures de ce
     mois déclaré. Dont payée, dont annulée : la part du couru dont la pénalité
-    a été close ; reste due : ce qui peut encore être réclamé. Le mois en cours
-    est partiel.
+    a été close ; reste due : ce qui peut encore être réclamé. Ces trois parts
+    sont retenues ensemble (« retenu ») quand l'une d'elles repose sur moins de
+    {{ $anonymityThreshold }} officines. Le mois en cours est partiel.
     @if ($ledger->maskedInsurers > 0)
         Le total couvre aussi {{ $ledger->maskedInsurers }} assureur(s) masqué(s)
         sous le seuil d'anonymat, qui n'ont pas de page propre.
@@ -225,9 +230,9 @@
                 <td>{{ $money($month, $month->accrued) }}</td>
                 <td>{{ $cumulative($month) }}</td>
                 <td>{{ $money($month, $month->declared) }}</td>
-                <td>{{ $money($month, $month->accruedPaid) }}</td>
-                <td>{{ $money($month, $month->accruedWaived) }}</td>
-                <td>{{ $money($month, $month->accruedDue) }}</td>
+                <td>{{ $split($month, $month->accruedPaid) }}</td>
+                <td>{{ $split($month, $month->accruedWaived) }}</td>
+                <td>{{ $split($month, $month->accruedDue) }}</td>
             </tr>
         @endforeach
     </tbody>
@@ -261,9 +266,9 @@
                         <td>{{ $money($month, $month->accrued) }}</td>
                         <td>{{ $cumulative($month) }}</td>
                         <td>{{ $money($month, $month->declared) }}</td>
-                        <td>{{ $money($month, $month->accruedPaid) }}</td>
-                        <td>{{ $money($month, $month->accruedWaived) }}</td>
-                        <td>{{ $money($month, $month->accruedDue) }}</td>
+                        <td>{{ $split($month, $month->accruedPaid) }}</td>
+                        <td>{{ $split($month, $month->accruedWaived) }}</td>
+                        <td>{{ $split($month, $month->accruedDue) }}</td>
                     </tr>
                 @endforeach
             </tbody>
