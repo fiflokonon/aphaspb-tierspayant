@@ -44,7 +44,7 @@ test('a pharmacy gets the pharmacy shell, without space', function () {
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('console.space', null)
-            ->has('console.nav', 5),
+            ->has('console.nav', 6),
         );
 });
 

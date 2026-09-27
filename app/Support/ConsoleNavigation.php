@@ -162,6 +162,7 @@ class ConsoleNavigation
 
         $definitions[] = ['Déclarer ce mois', 'pharmacy.declare', [], 'file-plus-2'];
         $definitions[] = ['Historique', 'pharmacy.history', [], 'history'];
+        $definitions[] = ['Journal des pénalités', 'pharmacy.penalty-ledger', [], 'receipt'];
         $definitions[] = ['Mes assureurs', 'pharmacy.insurers', [], 'building-2'];
         $definitions[] = ['Exporter mes données', 'pharmacy.data-exports', [], 'download'];
         // Retirée de la navigation le 31/08/2026. L'écran et sa route existent

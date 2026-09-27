@@ -23,6 +23,7 @@ use App\Http\Controllers\Pharmacy\InsurerRelationshipController;
 use App\Http\Controllers\Pharmacy\PaymentJourneyController;
 use App\Http\Controllers\Pharmacy\PharmacyExportController;
 use App\Http\Controllers\Pharmacy\PharmacyInsurersController as MyInsurersController;
+use App\Http\Controllers\Pharmacy\PharmacyPenaltyLedgerController;
 use App\Http\Middleware\EnsurePharmacyMembership;
 use Illuminate\Support\Facades\Route;
 
@@ -77,6 +78,10 @@ Route::middleware(['auth', 'can:declare-payments', 'onboarded'])
         // le typage expando et refuse `.url()` et `.form`.
         Route::get('exports', [PharmacyExportController::class, 'index'])->name('data-exports');
         Route::get('exports/download', [PharmacyExportController::class, 'download'])->name('data-exports.download');
+        // « penalty-ledger » et non « penalties » seul : le nom dit ce qu'est
+        // l'écran, et aucun segment ne heurte un global JS côté Wayfinder.
+        Route::get('penalties', [PharmacyPenaltyLedgerController::class, 'index'])->name('penalty-ledger');
+        Route::get('penalties/download', [PharmacyPenaltyLedgerController::class, 'download'])->name('penalty-ledger.download');
     });
 
 Route::prefix('{current_pharmacy}')
