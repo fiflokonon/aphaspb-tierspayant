@@ -69,10 +69,10 @@ class PenaltyTally
     /** @var array<string, array<int, true>> */
     protected array $totalDeclaredPharmacies = [];
 
-    /** @var array<int, array<string, array{due: array<int, true>, paid: array<int, true>, waived: array<int, true>}>> */
+    /** @var array<int, array<string, array{due?: array<int, true>, paid?: array<int, true>, waived?: array<int, true>}>> */
     protected array $splitPharmacies = [];
 
-    /** @var array<string, array{due: array<int, true>, paid: array<int, true>, waived: array<int, true>}> */
+    /** @var array<string, array{due?: array<int, true>, paid?: array<int, true>, waived?: array<int, true>}> */
     protected array $totalSplitPharmacies = [];
 
     protected int $firstDay;
