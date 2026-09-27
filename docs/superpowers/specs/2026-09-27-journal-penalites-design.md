@@ -1,7 +1,7 @@
 # Journal des pénalités — évolution mensuelle, écrans et exports
 
 Date : 27/09/2026
-Statut : spec validée en séance, à relire avant plan d'implémentation
+Statut : implémentée le 27/09/2026 — le §10 consigne les écarts décidés au plan et à l'exécution
 
 > Suite des lots A et B des pénalités de retard. Ces deux lots calculent une
 > pénalité **cumulée** : par assureur, par bande de retard, par période. Ce lot
@@ -327,3 +327,37 @@ Vérification finale : `composer ci:check` en entier.
 - Ajout du journal dans les exports PDF officine et réseau existants. Il vit
   sur sa propre page.
 - Notifications sur l'évolution des pénalités.
+
+## 10. Écarts avec la version validée
+
+Décidés au plan ou pendant l'exécution. Là où ils contredisent les sections
+précédentes, **ce sont eux qui font foi**.
+
+- **§3.1** — `accruedInDays()` est la somme de `tranches()` : pas de boucle
+  nue conservée. La suite `InsurerPenaltyAggregatesTest`, inchangée et verte,
+  montre que le total n'a pas bougé.
+- **§4.1** — `PharmacyPenaltyLedger` lit en **query builder**, pas en
+  Eloquent : `private_note` n'est jamais chargée, et le résultat est le même.
+- **§4.2 / §4.3** — l'accumulation et la construction des DTO vivent dans
+  `App\Services\Declarations\PenaltyTally`. `NetworkPenaltyLedger` rend un
+  décompte brut (trois requêtes), `NetworkPenaltyJournal` décide du seuil.
+  `PenaltyLedgerMonth` porte un champ `future` : un mois futur de la période
+  vaut null, jamais zéro.
+- **§5.1** — la bascule d'horloge et le filtre assureur de la carte filtrent
+  **dans le navigateur** : toutes les séries sont déjà dans la charge
+  différée, comme sur l'écran des tendances. Pas de rechargement partiel. Un
+  seul assureur affiché ne trace pas son cumul : le cumul vit dans le tableau.
+  La mise en forme des séries (`resources/js/lib/penaltySeries.ts`) est
+  couverte par Vitest.
+- **§5.2** — la colonne « Encours pénalisable » est hors lot (confirmé en
+  séance).
+- **§6** — **un mois retenu vide aussi tous les cumuls suivants** :
+  cumul(M) − cumul(M−1) rendrait exactement le mois caché.
+- **§7.3** — contrôleurs `Pharmacy\PharmacyPenaltyLedgerController` et
+  `Admin\NetworkPenaltyLedgerController`, sur le modèle des contrôleurs
+  d'export existants.
+- **§8** — le test à espion est remplacé par « a masked insurer has no series
+  but still counts in the unfiltered total » : l'accumulateur reçoit
+  volontairement tous les assureurs, pour le total, et c'est la publication
+  qui filtre.
+

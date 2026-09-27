@@ -22,3 +22,10 @@ Conséquence : **`delay_days !== null` ne veut pas dire « mois réglé »**. Te
 `LongestDelay::for()` a porté ce bug : il lisait `$declaration->delay_days ?? $this->openAge(...)`, et le `??` court-circuitait la branche « encours » exactement sur le cas le plus grave. L'ordre correct est l'inverse — l'encours d'abord, le délai en repli — et un test qui force `delay_days` à null pour un mois partiellement payé décrit un état que la production ne produit jamais : il passe par une porte dérobée et ne prouve rien.
 
 Corollaire pour `PenaltyCalculator::total()` : décider du null sur `hasPenaltyClause()` de l'assureur, pas sur le retour de `for()`, qui rend aussi null pour un mois rejeté ou jamais déposé. Sinon un assureur sous convention affiche « — », qui se lit « pas de clause ».
+
+## Le journal des pénalités lit plus large que la période
+La vue « pénalité courue » ne peut pas filtrer sur le mois déclaré : une facture de janvier encore impayée court en septembre. `PenaltyLedgerWindow` lit donc, en plus des mois de la période, toute facture déposée avant sa fin et pas soldée avant son début ; `PenaltyTally` écarte ensuite les tranches hors période. Bornes : `< premier jour du mois suivant` et `>= premier jour`, jamais `<= dernier jour` (les dates remontent avec une heure).
+
+`accruedInDays()` est la somme de `tranches()` : un seul algorithme pour le total et le journal. Ne pas y remettre une boucle propre.
+
+`PenaltyTally` ne fait aucune requête et ne retient rien : il compte les officines derrière chaque mois et laisse la décision à l'appelant (closure `$withheld`).

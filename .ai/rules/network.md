@@ -67,3 +67,13 @@ La condition porte sur `$withheld` non vide, pas sur un `$rows` vide : un assure
 Le filtre lui-même vit dans `DeclarationWindow::apply()`, seul goulot des neuf agrégats. `InsurerPenaltyAggregates` ne le reçoit pas : son `whereIn` sur les assureurs autorisés le restreint déjà.
 
 Deux tests le tiennent : un sur les données (`summary` vaut null), un sur le **rendu** — sans ce second, un `$summary['declarations']` resté dans le Blade ne rougirait qu'en production. Vérifié par mutation : la garde neutralisée, la vue rend un 500.
+
+## Journal des pénalités : cumul vidé après un mois retenu, total sans seuil
+`NetworkPenaltyJournal` est le seul point de décision du seuil pour le journal ; écrans et exports passent tous par lui.
+
+- Un mois retenu vide **tous les cumuls suivants** de la série : cumul(M) − cumul(M−1) = couru(M), le rendrait déductible.
+- Un mois est retenu si ses officines contributrices (couru **ou** mois déclaré) sont entre 1 et seuil − 1. Zéro officine = zéro publié, pas retenu.
+- Série totale non filtrée : **tous** les assureurs sous convention, masqués compris, sans seuil — décision client du 27/09/2026, risque de déduction par différence accepté. Verrouillé par `a masked insurer has no series but still counts in the unfiltered total`.
+- Filtrée sur un assureur masqué, la série totale est retenue en bloc ; sur un assureur autorisé, elle suit sa rétention mois par mois.
+
+`NetworkPenaltyLedger::tally()` coûte trois requêtes quel que soit le volume (test dédié).
