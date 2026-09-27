@@ -95,7 +95,6 @@ test('a withheld month blanks what was paid, waived and what remains due', funct
         ->and($june->accruedPaid)->toBeNull()
         ->and($june->accruedWaived)->toBeNull()
         ->and($june->accruedDue)->toBeNull()
-        ->and($june->declaredDue)->toBeNull()
         ->and($series->month('2026-07')->accruedDue)->toBe(100_000)
         ->and($series->month('2026-07')->accruedPaid)->toBe(0)
         // Août : la tranche close de cette officine y tombe. Le mois est

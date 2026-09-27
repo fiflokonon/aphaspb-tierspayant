@@ -32,8 +32,6 @@ readonly class PenaltyLedgerMonth
         public ?int $accruedWaived = null,
         /** Le couru de ce mois moins ce qui a été payé ou annulé. */
         public ?int $accruedDue = null,
-        /** La pénalité des factures de ce mois déclaré qui n'est pas close. */
-        public ?int $declaredDue = null,
         /** Payée, annulée et due retenues ensemble, le couru publié. */
         public bool $splitWithheld = false,
     ) {
@@ -41,7 +39,7 @@ readonly class PenaltyLedgerMonth
     }
 
     /**
-     * @return array{month: string, label: string, current: bool, future: bool, accrued: int|null, accruedCumulative: int|null, declared: int|null, withheld: bool, accruedPaid: int|null, accruedWaived: int|null, accruedDue: int|null, declaredDue: int|null, splitWithheld: bool}
+     * @return array{month: string, label: string, current: bool, future: bool, accrued: int|null, accruedCumulative: int|null, declared: int|null, withheld: bool, accruedPaid: int|null, accruedWaived: int|null, accruedDue: int|null, splitWithheld: bool}
      */
     public function toArray(): array
     {
@@ -57,7 +55,6 @@ readonly class PenaltyLedgerMonth
             'accruedPaid' => $this->accruedPaid,
             'accruedWaived' => $this->accruedWaived,
             'accruedDue' => $this->accruedDue,
-            'declaredDue' => $this->declaredDue,
             'splitWithheld' => $this->splitWithheld,
         ];
     }

@@ -183,7 +183,6 @@ test('a paid penalty goes to the month of each tranche, and to its declared mont
         }
 
         expect($series->month('2026-03')->declared)->toBe(80_000)
-            ->and($series->month('2026-03')->declaredDue)->toBe(0)
             // Le cumul reste celui du couru : la clôture ne le réécrit pas.
             ->and($series->month('2026-08')->accruedCumulative)->toBe(80_000);
     }
@@ -208,8 +207,7 @@ test('an unsettled penalty stays due in full', function () {
     $series = $tally->ledger([1 => 'NSIA'])->insurers[0];
 
     expect($series->month('2026-05')->accruedDue)->toBe($series->month('2026-05')->accrued)
-        ->and($series->month('2026-05')->accruedDue)->toBe(40_000)
-        ->and($series->month('2026-03')->declaredDue)->toBe(160_000);
+        ->and($series->month('2026-05')->accruedDue)->toBe(40_000);
 });
 
 test('a future or withheld month has no settled or due figure either', function () {
@@ -221,8 +219,7 @@ test('a future or withheld month has no settled or due figure either', function 
     foreach (['2026-05', '2026-10'] as $key) {
         expect($series->month($key)->accruedPaid)->toBeNull()
             ->and($series->month($key)->accruedWaived)->toBeNull()
-            ->and($series->month($key)->accruedDue)->toBeNull()
-            ->and($series->month($key)->declaredDue)->toBeNull();
+            ->and($series->month($key)->accruedDue)->toBeNull();
     }
 
     expect($series->month('2026-05')->withheld)->toBeTrue()

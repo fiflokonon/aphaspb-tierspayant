@@ -22,7 +22,6 @@ function month(
         accruedPaid: 0,
         accruedWaived: 0,
         accruedDue: 0,
-        declaredDue: 0,
         withheld: false,
         splitWithheld: false,
         ...values,

@@ -245,10 +245,11 @@ Décidés pendant l'exécution. Là où ils contredisent les sections précéden
 **ce sont eux qui font foi**.
 
 - **§7.4** — les noms suivent le plan, pas la lettre du §7.4 : la ligne du
-  journal porte `accruedPaid`, `accruedWaived`, `accruedDue`, `declaredDue`
-  (pas `settledPaid` / `penalite_payee`), et les exports `dont_payee`,
-  `dont_annulee`, `reste_due`. `declaredDue` ne sort d'aucune colonne
-  d'export ni d'aucun graphe : il ne vit que dans la donnée du journal.
+  journal porte `accruedPaid`, `accruedWaived`, `accruedDue` (pas
+  `settledPaid` / `penalite_payee`), et les exports `dont_payee`,
+  `dont_annulee`, `reste_due`. La vue « mois déclaré » ne se découpe pas par
+  statut : le `declaredDue` d'abord prévu ne sortait d'aucune colonne ni
+  d'aucun graphe, il a été retiré en revue avec ses compteurs.
 - **§6.1 (revue)** — le tableau du journal s'élargit (largeur minimale
   880 px, défilement horizontal) plutôt que de cacher les trois nouvelles
   colonnes sur écran étroit : une colonne absente se lirait « rien couru »,

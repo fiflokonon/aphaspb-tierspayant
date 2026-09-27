@@ -153,7 +153,5 @@ test('a penalty closed as paid is read from the declaration and leaves nothing d
     expect($series->month('2026-07')->accrued)->toBe(40_000)
         ->and($series->month('2026-07')->accruedPaid)->toBe(20_000)
         ->and($series->month('2026-07')->accruedDue)->toBe(20_000)
-        ->and($series->month('2026-03')->declared)->toBe(80_000)
-        ->and($series->month('2026-03')->declaredDue)->toBe(0)
-        ->and($series->month('2026-04')->declaredDue)->toBe($series->month('2026-04')->declared);
+        ->and($series->month('2026-03')->declared)->toBe(80_000);
 });

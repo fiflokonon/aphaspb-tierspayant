@@ -40,7 +40,6 @@ type PenaltyChoice = 'due' | 'paid' | 'waived';
 type Penalty = {
     accrued: number | null;
     settlement: Exclude<PenaltyChoice, 'due'> | null;
-    settledAmount: number | null;
     covered: boolean;
 };
 

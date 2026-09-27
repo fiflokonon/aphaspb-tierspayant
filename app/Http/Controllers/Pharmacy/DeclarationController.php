@@ -90,7 +90,6 @@ class DeclarationController extends Controller
                 'penalty' => [
                     'accrued' => $penalties->for($declaration),
                     'settlement' => $declaration->penalty_settlement?->value,
-                    'settledAmount' => $declaration->penalty_settled_amount,
                     'covered' => $declaration->isFullyCovered(),
                 ],
                 'payments' => $declaration->payments->map(fn ($payment): array => [

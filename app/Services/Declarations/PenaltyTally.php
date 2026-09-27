@@ -26,8 +26,9 @@ use Closure;
  * rétention appartient à l'appelant qui détient le seuil.
  *
  * Une pénalité close suit les mêmes horloges : chacune de ses tranches va
- * aussi à « payée » ou « annulée » de son mois, et toute sa somme au clos de
- * son mois déclaré. La due est ce qui reste une fois les deux retirées.
+ * aussi à « payée » ou « annulée » de son mois ; la due du couru est ce qui
+ * reste une fois les deux retirées. La vue « mois déclaré » ne se découpe pas
+ * par statut.
  *
  * Ce découpage par statut désagrège le mois : il compte aussi les officines
  * derrière chaque part (due, payée, annulée), et laisse l'appelant le retenir
@@ -50,14 +51,14 @@ class PenaltyTally
     /** @var array<int, array<string, array<int, true>>> */
     protected array $declaredPharmacies = [];
 
-    /** @var array<int, array{paid: array<string, int>, waived: array<string, int>, declared: array<string, int>}> */
+    /** @var array<int, array{paid: array<string, int>, waived: array<string, int>}> */
     protected array $settled = [];
 
     /** @var array<string, int> */
     protected array $totalAccrued = [];
 
-    /** @var array{paid: array<string, int>, waived: array<string, int>, declared: array<string, int>} */
-    protected array $totalSettled = ['paid' => [], 'waived' => [], 'declared' => []];
+    /** @var array{paid: array<string, int>, waived: array<string, int>} */
+    protected array $totalSettled = ['paid' => [], 'waived' => []];
 
     /** @var array<string, int> */
     protected array $totalDeclared = [];
@@ -114,7 +115,7 @@ class PenaltyTally
         ?PenaltySettlement $settlement = null,
     ): void {
         $this->insurers[$insurerId] = true;
-        $this->settled[$insurerId] ??= ['paid' => [], 'waived' => [], 'declared' => []];
+        $this->settled[$insurerId] ??= ['paid' => [], 'waived' => []];
         $bucket = $settlement === PenaltySettlement::Waived ? 'waived' : 'paid';
 
         $tranches = $this->penalties->tranches(
@@ -135,11 +136,6 @@ class PenaltyTally
             $this->declaredPharmacies[$insurerId][$month][$pharmacyId] = true;
             $this->totalDeclared[$month] = ($this->totalDeclared[$month] ?? 0) + $sum;
             $this->totalDeclaredPharmacies[$month][$pharmacyId] = true;
-
-            if ($settlement !== null) {
-                $this->settled[$insurerId]['declared'][$month] = ($this->settled[$insurerId]['declared'][$month] ?? 0) + $sum;
-                $this->totalSettled['declared'][$month] = ($this->totalSettled['declared'][$month] ?? 0) + $sum;
-            }
         }
 
         foreach ($tranches as [$day, $amount]) {
@@ -214,7 +210,7 @@ class PenaltyTally
                 $this->declared[$insurerId] ?? [],
                 $this->accruedPharmacies[$insurerId] ?? [],
                 $this->declaredPharmacies[$insurerId] ?? [],
-                $this->settled[$insurerId] ?? ['paid' => [], 'waived' => [], 'declared' => []],
+                $this->settled[$insurerId] ?? ['paid' => [], 'waived' => []],
                 $this->splitPharmacies[$insurerId] ?? [],
                 $withheld,
                 $splitWithheld,
@@ -263,7 +259,7 @@ class PenaltyTally
      * @param  array<string, int>  $declared
      * @param  array<string, array<int, true>>  $accruedPharmacies
      * @param  array<string, array<int, true>>  $declaredPharmacies
-     * @param  array{paid: array<string, int>, waived: array<string, int>, declared: array<string, int>}  $settled
+     * @param  array{paid: array<string, int>, waived: array<string, int>}  $settled
      * @param  array<string, array{due?: array<int, true>, paid?: array<int, true>, waived?: array<int, true>}>  $split
      * @param  array<string, array<int, true>>  $hiddenAccrued
      * @param  array<string, array<int, true>>  $hiddenDeclared
@@ -340,7 +336,6 @@ class PenaltyTally
                 accruedPaid: $isSplitWithheld ? null : $paid,
                 accruedWaived: $isSplitWithheld ? null : $waived,
                 accruedDue: $isSplitWithheld ? null : ($accrued[$key] ?? 0) - $paid - $waived,
-                declaredDue: $isSplitWithheld ? null : ($declared[$key] ?? 0) - ($settled['declared'][$key] ?? 0),
                 splitWithheld: $isSplitWithheld,
             );
         }
