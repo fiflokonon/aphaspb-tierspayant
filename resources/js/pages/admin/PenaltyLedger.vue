@@ -110,8 +110,16 @@ const FORMATS = [
                     <ChartSkeleton :height="320" />
                 </template>
 
+                <!--
+                    Sans assureur sous convention, un tableau de zéros ne dirait
+                    rien de plus que la carte au-dessus : il se tait.
+                -->
                 <PenaltyLedgerTable
-                    v-if="penaltyTrend"
+                    v-if="
+                        penaltyTrend &&
+                        (penaltyTrend.insurers.length > 0 ||
+                            penaltyTrend.maskedInsurers > 0)
+                    "
                     :ledger="penaltyTrend"
                 />
 
