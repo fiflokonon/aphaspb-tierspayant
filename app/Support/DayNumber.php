@@ -83,4 +83,16 @@ class DayNumber
     {
         return self::fromCarbon(CarbonImmutable::now());
     }
+
+    /**
+     * Le mois calendaire d'un numéro de jour, au format `AAAA-MM`.
+     *
+     * gmdate() et non Carbon : appelé une fois par tranche dans la boucle du
+     * journal réseau, pour la même raison que tout ce fichier existe. En UTC,
+     * comme fromDate() : le numéro de jour a été compté depuis minuit UTC.
+     */
+    public static function monthKey(int $day): string
+    {
+        return gmdate('Y-m', $day * self::SECONDS_PER_DAY);
+    }
 }

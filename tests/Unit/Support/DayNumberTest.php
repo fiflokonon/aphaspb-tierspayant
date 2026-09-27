@@ -78,3 +78,13 @@ test('a date carrying a time truncates down to its day', function () {
     expect(DayNumber::fromDate('2026-09-19 23:59:59'))->toBe(DayNumber::fromDate('2026-09-19'))
         ->and(DayNumber::fromDate('2026-09-19 00:00:01'))->toBe(DayNumber::fromDate('2026-09-19'));
 });
+
+test('a day number knows its calendar month, at both ends of the month and of the year', function (string $date, string $month) {
+    expect(DayNumber::monthKey(DayNumber::fromDate($date)))->toBe($month);
+})->with([
+    ['2026-05-31', '2026-05'],
+    ['2026-06-01', '2026-06'],
+    ['2025-12-31', '2025-12'],
+    ['2026-01-01', '2026-01'],
+    ['2028-02-29', '2028-02'],
+]);
