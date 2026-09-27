@@ -65,6 +65,9 @@ class SaveDeclarationRequest extends FormRequest
                 'after_or_equal:invoice_deposited_on',
             ],
             'private_note' => ['nullable', 'string', 'max:150'],
+            // Absent = pas de changement. Jamais écrit tel quel : store() le
+            // confronte à l'état d'avant, puis passe par SettlePenalty.
+            'penalty_settlement' => ['nullable', Rule::in(['due', 'paid', 'waived'])],
         ];
     }
 
@@ -190,6 +193,18 @@ class SaveDeclarationRequest extends FormRequest
         }
 
         return $instalments;
+    }
+
+    /**
+     * Le choix « Pénalité de ce mois », ou null s'il n'a pas été envoyé.
+     *
+     * « due » remet la pénalité en dû ; « paid » / « waived » la closent.
+     */
+    public function penaltyChoice(): ?string
+    {
+        $choice = $this->input('penalty_settlement');
+
+        return is_string($choice) && $choice !== '' ? $choice : null;
     }
 
     /**

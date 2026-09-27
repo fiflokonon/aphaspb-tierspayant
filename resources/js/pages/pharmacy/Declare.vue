@@ -9,7 +9,7 @@ import DerivedStatusNotice from '@/components/aphaspb/DerivedStatusNotice.vue';
 import PaymentInstalments from '@/components/aphaspb/PaymentInstalments.vue';
 import type { Instalment } from '@/components/aphaspb/PaymentInstalments.vue';
 import PeriodPicker from '@/components/aphaspb/PeriodPicker.vue';
-import { formatFcfa } from '@/lib/fcfa';
+import { formatAmount, formatFcfa } from '@/lib/fcfa';
 import type { DeclarationStatus, SelectablePeriod } from '@/types/aphaspb';
 import type { ConsoleAccount } from '@/types/console';
 
@@ -30,6 +30,15 @@ type Revision = {
     payments: { amount: number; paid_on: string; delay_days: number | null }[];
 };
 
+type PenaltyChoice = 'due' | 'paid' | 'waived';
+
+type Penalty = {
+    accrued: number | null;
+    settlement: Exclude<PenaltyChoice, 'due'> | null;
+    settledAmount: number | null;
+    covered: boolean;
+};
+
 type Declaration = {
     amount_invoiced: number;
     amount_received: number;
@@ -40,6 +49,7 @@ type Declaration = {
     delay_days: number | null;
     private_note: string | null;
     payments: Payment[];
+    penalty: Penalty;
     revisions: Revision[];
 };
 
@@ -77,6 +87,29 @@ const instalments = ref<Instalment[]>(
 const received = computed(() =>
     instalments.value.reduce((sum, line) => sum + line.amount, 0),
 );
+/**
+ * La pénalité courue du mois, montrée seulement quand il y en a une.
+ *
+ * Le choix repart pré-rempli sur l'état enregistré ; le serveur ne l'applique
+ * que s'il diffère de cet état, pour qu'une correction qui a levé la clôture
+ * ne soit pas aussitôt reclose par le même envoi.
+ */
+const penalty = computed(() =>
+    (props.declaration?.penalty?.accrued ?? 0) > 0
+        ? props.declaration!.penalty
+        : null,
+);
+
+const PENALTY_CHOICES: { value: PenaltyChoice; label: string }[] = [
+    { value: 'due', label: 'Due' },
+    { value: 'paid', label: 'Payée par l’assureur' },
+    { value: 'waived', label: 'Annulée' },
+];
+
+const penaltyChoice = ref<PenaltyChoice>(
+    props.declaration?.penalty?.settlement ?? 'due',
+);
+
 const note = ref(props.declaration?.private_note ?? '');
 const noteOpen = ref(!!props.declaration?.private_note);
 const rejected = ref(props.declaration?.status === 'rejected');
@@ -370,6 +403,37 @@ const officine = computed(() => {
                         :max-date="dateBounds.latest"
                         :errors="errors"
                     />
+
+                    <fieldset v-if="penalty" class="penalty-panel">
+                        <legend class="penalty-legend">
+                            Pénalité de ce mois ·
+                            {{ formatAmount(penalty.accrued) }} F
+                        </legend>
+
+                        <p v-if="!penalty.covered" class="penalty-hint">
+                            Possible une fois le mois entièrement réglé.
+                        </p>
+
+                        <div class="penalty-choices">
+                            <label
+                                v-for="choice in PENALTY_CHOICES"
+                                :key="choice.value"
+                                class="penalty-choice"
+                            >
+                                <input
+                                    v-model="penaltyChoice"
+                                    type="radio"
+                                    name="penalty_settlement"
+                                    :value="choice.value"
+                                />
+                                {{ choice.label }}
+                            </label>
+                        </div>
+
+                        <p v-if="errors.penalty_settlement" class="field-error">
+                            {{ errors.penalty_settlement }}
+                        </p>
+                    </fieldset>
 
                     <button
                         type="button"
@@ -1278,6 +1342,59 @@ const officine = computed(() => {
 
 .note-content {
     margin-top: 10px;
+}
+
+.penalty-panel {
+    margin-top: 14px;
+
+    border: 0;
+
+    padding: 0;
+}
+
+.penalty-legend {
+    padding: 0;
+
+    color: var(--ink);
+
+    font-size: 10.5px;
+    font-weight: 700;
+}
+
+.penalty-hint {
+    margin-top: 4px;
+
+    color: var(--light);
+
+    font-size: 12.5px;
+}
+
+.penalty-choices {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px 16px;
+
+    margin-top: 10px;
+}
+
+.penalty-choice {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    color: var(--ink);
+
+    font-size: 12.5px;
+
+    cursor: pointer;
+}
+
+.penalty-choice input {
+    accent-color: var(--officine);
 }
 
 .note-textarea {
