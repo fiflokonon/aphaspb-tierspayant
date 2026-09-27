@@ -10,6 +10,7 @@ import PaymentInstalments from '@/components/aphaspb/PaymentInstalments.vue';
 import type { Instalment } from '@/components/aphaspb/PaymentInstalments.vue';
 import PeriodPicker from '@/components/aphaspb/PeriodPicker.vue';
 import { formatAmount, formatFcfa } from '@/lib/fcfa';
+import { revisionPenaltyLine } from '@/lib/revisionPenalty';
 import type { DeclarationStatus, SelectablePeriod } from '@/types/aphaspb';
 import type { ConsoleAccount } from '@/types/console';
 
@@ -222,25 +223,9 @@ const historyLabel = computed(() =>
         : 'Historique',
 );
 
-/**
- * Ce que la révision dit de la pénalité, ou null si elle n'en dit rien.
- *
- * Une clôture se lit « Pénalité payée · 32 000 F » ; son retour à rien,
- * après une clôture, « Pénalité remise en dû ». Les révisions vont du plus
- * récent au plus ancien : la précédente est donc la suivante du tableau.
- */
+/** Voir revisionPenaltyLine() : seule une révision où la clôture change en parle. */
 function penaltyLine(index: number): string | null {
-    const revision = revisions.value[index];
-
-    if (revision.penaltySettlementLabel !== null) {
-        return `Pénalité ${revision.penaltySettlementLabel.toLowerCase()} · ${formatAmount(revision.penaltySettledAmount)} F`;
-    }
-
-    const previous = revisions.value[index + 1];
-
-    return previous !== undefined && previous.penaltySettlement !== null
-        ? 'Pénalité remise en dû'
-        : null;
+    return revisionPenaltyLine(revisions.value, index);
 }
 
 const historyOpen = ref(false);
