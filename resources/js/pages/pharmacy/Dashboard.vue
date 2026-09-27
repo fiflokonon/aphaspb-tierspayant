@@ -11,6 +11,7 @@ import DashboardKpis from '@/components/aphaspb/DashboardKpis.vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
+import PenaltyTrendCard from '@/components/aphaspb/PenaltyTrendCard.vue';
 import PrimaryAction from '@/components/aphaspb/PrimaryAction.vue';
 import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue';
 import { useQueryState } from '@/composables/useQueryState';
@@ -21,6 +22,7 @@ import { formatAmount } from '@/lib/fcfa';
 import { formatMillions } from '@/lib/millions';
 import type { DashboardInvitation } from '@/types';
 import { isChartType } from '@/types/aphaspb';
+import type { PenaltyLedger } from '@/types/aphaspb';
 
 type RecoveryRow = {
     insurerId: number;
@@ -105,6 +107,7 @@ const props = defineProps<{
     outstandingMonths: { label: string; url: string }[];
     filters: { insurer: number | null };
     journey?: JourneyPoint[];
+    penaltyTrend?: PenaltyLedger;
     pendingInvitations?: DashboardInvitation[];
 }>();
 
@@ -553,6 +556,12 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 </Deferred>
             </div>
         </section>
+
+        <PenaltyTrendCard
+            :ledger="penaltyTrend"
+            :subtitle="pharmacyName"
+            filename="aphaspb-penalites-officine"
+        />
 
         <section class="dashboard-card analysis-card">
             <div class="card-header">

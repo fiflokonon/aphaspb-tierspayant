@@ -12,13 +12,14 @@ import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import InsufficientDataRow from '@/components/aphaspb/InsufficientDataRow.vue';
 import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
+import PenaltyTrendCard from '@/components/aphaspb/PenaltyTrendCard.vue';
 import { useQueryId, useQueryState } from '@/composables/useQueryState';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 import { exportChartToPng } from '@/lib/chartPng';
 import { rankSlices } from '@/lib/donut';
 import { formatMillions } from '@/lib/millions';
 import { CHART_COLORS, isChartType } from '@/types/aphaspb';
-import type { KpiTone } from '@/types/aphaspb';
+import type { KpiTone, PenaltyLedger } from '@/types/aphaspb';
 
 type AmountRow = {
     insurerId: number;
@@ -56,6 +57,7 @@ const props = defineProps<{
     city: string | null;
     cities: string[];
     trend?: Trend;
+    penaltyTrend?: PenaltyLedger;
 }>();
 
 const TEMPLATE = '1.9fr .9fr 1fr 1fr .9fr';
@@ -108,6 +110,7 @@ function reload() {
                 'summary',
                 'amounts',
                 'trend',
+                'penaltyTrend',
                 'period',
                 'periodLabel',
                 'city',
@@ -423,6 +426,12 @@ async function exportChart() {
                 </div>
             </div>
         </section>
+
+        <PenaltyTrendCard
+            :ledger="penaltyTrend"
+            :subtitle="`${periodLabel}${city === null ? '' : ` · ${city}`}`"
+            filename="aphaspb-penalites-reseau"
+        />
 
         <section class="amounts-section">
             <div class="amounts-top-line"></div>

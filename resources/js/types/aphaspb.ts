@@ -84,3 +84,39 @@ export const CHART_COLORS = [
 export function isChartType(value: unknown): value is ChartType {
     return value === 'bar' || value === 'line' || value === 'pie';
 }
+
+/** Un mois du journal des pénalités — miroir de App\Data\PenaltyLedgerMonth. */
+export type PenaltyLedgerMonth = {
+    month: string;
+    label: string;
+    current: boolean;
+    future: boolean;
+    accrued: number | null;
+    accruedCumulative: number | null;
+    declared: number | null;
+    withheld: boolean;
+};
+
+export type PenaltyLedgerSeries = {
+    insurerId: number | null;
+    name: string;
+    months: PenaltyLedgerMonth[];
+};
+
+export type PenaltyLedger = {
+    insurers: PenaltyLedgerSeries[];
+    total: PenaltyLedgerSeries;
+    maskedInsurers: number;
+};
+
+/** Les deux horloges du journal : le mois où la tranche tombe, ou celui de la facture. */
+export type PenaltyView = 'accrued' | 'declared';
+
+export function isPenaltyView(value: unknown): value is PenaltyView {
+    return value === 'accrued' || value === 'declared';
+}
+
+/** Le camembert n'a pas de sens pour une évolution : ligne ou barres seulement. */
+export function isLineOrBar(value: unknown): value is ChartType {
+    return value === 'line' || value === 'bar';
+}
