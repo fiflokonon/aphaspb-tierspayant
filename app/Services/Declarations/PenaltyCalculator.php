@@ -105,8 +105,17 @@ class PenaltyCalculator
      */
     public function due(Declaration $declaration): ?int
     {
-        $accrued = $this->for($declaration);
+        return $this->dueFrom($declaration, $this->for($declaration));
+    }
 
+    /**
+     * La même due, à partir d'une courue déjà calculée par for().
+     *
+     * Pour les boucles qui affichent la courue et la due d'une même ligne :
+     * les tranches ne se déroulent qu'une fois.
+     */
+    public function dueFrom(Declaration $declaration, ?int $accrued): ?int
+    {
         if ($accrued === null) {
             return null;
         }

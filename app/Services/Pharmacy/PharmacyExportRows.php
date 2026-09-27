@@ -98,6 +98,8 @@ class PharmacyExportRows
     protected function row(Declaration $declaration): array
     {
         $standard = $declaration->insurer->standard_delay_days;
+        // Une fois par ligne : le statut et la due s'en déduisent.
+        $accrued = $this->penalties->for($declaration);
 
         return [
             $declaration->period_year,
@@ -117,11 +119,11 @@ class PharmacyExportRows
             // inauditable dans un tableur.
             $declaration->insurer->penalty_trigger_days,
             $declaration->insurer->penaltyRatePercent(),
-            $this->penalties->for($declaration),
-            $this->settlementStatus($declaration),
+            $accrued,
+            $this->settlementStatus($declaration, $accrued),
             $declaration->penalty_settled_amount,
             $declaration->penalty_settled_on?->toDateString(),
-            $this->penalties->due($declaration),
+            $this->penalties->dueFrom($declaration, $accrued),
             $declaration->payments->count(),
             // Les versements tiennent dans une cellule plutôt que d'éclater
             // chaque déclaration sur plusieurs lignes : le fichier reste une
@@ -140,13 +142,13 @@ class PharmacyExportRows
      * convention, rien n'est clos ». Confondre les deux ferait lire une
      * pénalité due là où il n'y a pas de clause à réclamer.
      */
-    protected function settlementStatus(Declaration $declaration): ?string
+    protected function settlementStatus(Declaration $declaration, ?int $accrued): ?string
     {
         if ($declaration->penalty_settlement !== null) {
             return $declaration->penalty_settlement === PenaltySettlement::Paid ? 'payee' : 'annulee';
         }
 
-        return $this->penalties->for($declaration) === null ? null : 'due';
+        return $accrued === null ? null : 'due';
     }
 
     /**

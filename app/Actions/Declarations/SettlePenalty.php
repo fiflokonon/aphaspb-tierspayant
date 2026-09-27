@@ -33,6 +33,15 @@ class SettlePenalty
     {
         $declaration->loadMissing(['insurer', 'payments']);
 
+        return $this->refusalGiven($declaration, $this->penalties->for($declaration));
+    }
+
+    /**
+     * Le même refus, à partir d'une courue déjà calculée par
+     * PenaltyCalculator::for() — `insurer` préchargé.
+     */
+    public function refusalGiven(Declaration $declaration, ?int $accrued): ?string
+    {
         if (! $declaration->insurer->hasPenaltyClause()) {
             return "Cet assureur n'a pas de clause de pénalité.";
         }
@@ -41,7 +50,7 @@ class SettlePenalty
             return 'Le mois doit être entièrement réglé avant de clore sa pénalité.';
         }
 
-        if (($this->penalties->for($declaration) ?? 0) === 0) {
+        if (($accrued ?? 0) === 0) {
             return "Aucune pénalité n'a couru sur ce mois.";
         }
 
@@ -50,7 +59,10 @@ class SettlePenalty
 
     public function settle(Declaration $declaration, PenaltySettlement $outcome, User $by): bool
     {
-        if ($this->refusal($declaration) !== null) {
+        $declaration->loadMissing(['insurer', 'payments']);
+        $accrued = $this->penalties->for($declaration);
+
+        if ($this->refusalGiven($declaration, $accrued) !== null) {
             return false;
         }
 
@@ -59,7 +71,7 @@ class SettlePenalty
             return false;
         }
 
-        $declaration->settlePenalty($outcome, (int) $this->penalties->for($declaration), $by);
+        $declaration->settlePenalty($outcome, (int) $accrued, $by);
 
         return true;
     }
