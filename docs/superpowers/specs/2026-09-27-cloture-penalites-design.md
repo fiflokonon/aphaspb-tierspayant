@@ -272,6 +272,9 @@ Décidés pendant l'exécution. Là où ils contredisent les sections précéden
   ensemble, la courue restant publiée. Le total retient aussi son découpage
   quand les parts cachées des séries publiées tomberaient sous le seuil. Le
   journal officine n'est pas concerné.
-- **Trou connu, laissé ouvert** — modifier la clause d'un assureur
-  (`InsurerManagementController::update()`) ne réconcilie aucune déclaration
-  déjà close.
+- **Clause modifiée (revue, 27/09/2026)** — ce n'est plus un trou ouvert :
+  changer le déclenchement ou le taux d'un assureur
+  (`InsurerManagementController::update()`) réconcilie ses déclarations
+  closes dans la même transaction. Chaque clôture levée (cas B, y compris
+  clause retirée) laisse une révision signée de l'administrateur, qui voit
+  « N pénalité(s) close(s) rouvertes : le montant a changé avec la clause. »

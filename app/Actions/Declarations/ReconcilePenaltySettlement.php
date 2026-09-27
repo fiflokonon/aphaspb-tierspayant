@@ -11,7 +11,9 @@ use App\Services\Declarations\PenaltyCalculator;
  *
  * Appelée à la fin de RecordPaymentInstalments, par où passe tout
  * enregistrement : le hook `saving` n'a ni les versements ni l'assureur, et ne
- * peut donc pas recalculer la pénalité.
+ * peut donc pas recalculer la pénalité. Et depuis
+ * InsurerManagementController::update() quand la clause change : le montant
+ * clos ne correspond alors plus au calcul, sans qu'aucun mois soit réenregistré.
  */
 class ReconcilePenaltySettlement
 {
@@ -27,7 +29,20 @@ class ReconcilePenaltySettlement
         }
 
         // Relus, jamais pris en mémoire : les versements viennent d'être réécrits.
-        $declaration->load(['insurer', 'payments']);
+        return $this->reconcile($declaration->load(['insurer', 'payments']));
+    }
+
+    /**
+     * La même levée, sur une déclaration dont `insurer` et `payments` sont
+     * déjà à jour — un lot chargé d'avance, comme les mois clos d'un assureur
+     * dont la clause vient de changer.
+     */
+    public function reconcile(Declaration $declaration): ?PenaltyReopened
+    {
+        if (! $declaration->isPenaltySettled()) {
+            return null;
+        }
+
         $previous = (int) $declaration->penalty_settled_amount;
 
         if (! $declaration->isFullyCovered()) {

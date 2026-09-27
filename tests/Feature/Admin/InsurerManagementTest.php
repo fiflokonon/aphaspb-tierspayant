@@ -1,6 +1,7 @@
 <?php
 
 use App\Data\Period;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
@@ -327,4 +328,104 @@ test('a half clause is refused at creation, in both directions', function () {
 
     // Une demi-clause ne doit pas non plus créer l'assureur au passage.
     expect(Insurer::query()->whereIn('name', ['Déclenchement seul', 'Taux seul'])->count())->toBe(0);
+});
+
+/**
+ * Un mois clos « payé », réglé en une fois 75 jours après le dépôt : une seule
+ * tranche, celle du 60ᵉ jour, sur la facture entière. Le montant clos égale la
+ * courue sous la clause 60 jours / 2 %.
+ */
+function closedPenaltyMonth(Insurer $insurer, int $month, int $invoiced, int $settledAmount): Declaration
+{
+    $depositedOn = CarbonImmutable::create(2026, $month, 1);
+
+    return Declaration::factory()
+        ->instalments([['amount' => $invoiced, 'paid_on' => $depositedOn->addDays(75)->toDateString()]])
+        ->penaltySettled(PenaltySettlement::Paid, $settledAmount)
+        ->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => $month,
+            'amount_invoiced' => $invoiced,
+            'invoice_deposited_on' => $depositedOn,
+        ]);
+}
+
+test('changing the penalty rate lifts the closures whose amount changes, and only those', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+    // 1 000 000 à 2 % = 20 000 ; à 2,01 % = 20 100 : la clôture tombe.
+    $changed = closedPenaltyMonth($insurer, 3, 1_000_000, 20_000);
+    // 100 à 2 % = 2 ; à 2,01 % = 2 (division entière) : elle tient.
+    $unchanged = closedPenaltyMonth($insurer, 4, 100, 2);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.insurers.update', $insurer), [
+            'penalty_trigger_days' => 60,
+            'penalty_rate_percent' => 2.01,
+        ])
+        ->assertRedirect(route('admin.insurers'))
+        ->assertInertiaFlash('toast', [
+            'type' => 'info',
+            'message' => '1 pénalité(s) close(s) rouvertes : le montant a changé avec la clause.',
+        ]);
+
+    expect($changed->fresh()->penalty_settlement)->toBeNull()
+        ->and($changed->fresh()->penalty_settled_amount)->toBeNull()
+        ->and($unchanged->fresh()->penalty_settlement)->toBe(PenaltySettlement::Paid)
+        ->and($unchanged->fresh()->penalty_settled_amount)->toBe(2);
+});
+
+test('removing the penalty clause lifts every closure of that insurer', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    $other = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    $first = closedPenaltyMonth($insurer, 3, 1_000_000, 20_000);
+    $second = closedPenaltyMonth($insurer, 4, 1_000_000, 20_000);
+    $elsewhere = closedPenaltyMonth($other, 3, 1_000_000, 20_000);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.insurers.update', $insurer), [
+            'penalty_trigger_days' => '',
+            'penalty_rate_percent' => '',
+        ])
+        ->assertInertiaFlash('toast', [
+            'type' => 'info',
+            'message' => '2 pénalité(s) close(s) rouvertes : le montant a changé avec la clause.',
+        ]);
+
+    expect($first->fresh()->isPenaltySettled())->toBeFalse()
+        ->and($second->fresh()->isPenaltySettled())->toBeFalse()
+        ->and($elsewhere->fresh()->isPenaltySettled())->toBeTrue();
+});
+
+test('a closure lifted by a clause change leaves a revision signed by the admin', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    $declaration = closedPenaltyMonth($insurer, 3, 1_000_000, 20_000);
+
+    $this->actingAs($this->admin)->patch(route('admin.insurers.update', $insurer), [
+        'penalty_trigger_days' => 60,
+        'penalty_rate_percent' => 3,
+    ]);
+
+    $revision = $declaration->revisions()->latest('id')->first();
+
+    expect($revision->user_id)->toBe($this->admin->id)
+        ->and($revision->author_name)->toBe($this->admin->name)
+        ->and($revision->penalty_settlement)->toBeNull();
+});
+
+test('an update that keeps the clause touches no closure and says nothing', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    $declaration = closedPenaltyMonth($insurer, 3, 1_000_000, 20_000);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.insurers.update', $insurer), [
+            'name' => 'NSIA Bénin',
+            'penalty_trigger_days' => 60,
+            'penalty_rate_percent' => 2,
+        ])
+        ->assertInertiaFlashMissing('toast');
+
+    expect($declaration->fresh()->isPenaltySettled())->toBeTrue()
+        ->and($declaration->revisions()->count())->toBe(0);
 });
