@@ -15,3 +15,12 @@ Ordre obligatoire dans `DeclarationController::store()` : `updateOrCreate` → `
 La **note privée est volontairement absente** de la table : la trace porte sur les chiffres que le réseau lit, et en garder des copies élargirait la surface de fuite. Verrouillé par un test.
 
 La première révision est l'état d'origine, pas une correction : partout dans l'UI, le nombre affiché est `revisions_count - 1`.
+
+## Une clôture de pénalité tombe d'elle-même
+`ReconcilePenaltySettlement` est appelée à la fin de `RecordPaymentInstalments::handle()` (qui rend désormais `?PenaltyReopened`), jamais depuis le hook `saving` : celui-ci n'a ni les versements ni l'assureur.
+
+Deux motifs de levée : cas A, le mois n'est plus couvert (`uncovered`) ; cas B, `PenaltyCalculator::for()` ≠ `penalty_settled_amount` (`amountChanged`) — ce cas couvre aussi un mois clos qui vient d'être rejeté.
+
+Les quatre colonnes de clôture sont hors `#[Fillable]` : elles ne se posent et ne se lèvent que par `Declaration::settlePenalty()` / `clearPenaltySettlement()`. Ni `SettlePenalty` ni `ReconcilePenaltySettlement` n'écrivent de révision — c'est à l'appelant de le faire (`PenaltySettlementController`, `DeclarationController::store()`).
+
+Trou connu : modifier la clause d'un assureur (`InsurerManagementController::update()`) ne réconcilie aucune déclaration close. Un mois clos peut donc garder un montant clos ≠ `for()` sans être levé ; `due()` continue d'y lire 0.

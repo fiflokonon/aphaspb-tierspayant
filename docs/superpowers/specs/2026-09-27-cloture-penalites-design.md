@@ -1,7 +1,7 @@
 # Clôture des pénalités — payée ou annulée par l'officine
 
 Date : 27/09/2026
-Statut : spec validée en séance, à relire avant plan d'implémentation
+Statut : implémentée le 27/09/2026 — le §10 consigne les écarts décidés à l'exécution
 
 > Suite du journal des pénalités (spec du même jour). Jusqu'ici, une pénalité
 > courue restait acquise pour toujours, même une fois l'assureur à jour. Ce lot
@@ -238,3 +238,30 @@ Vérification finale : `composer ci:check`.
 - Clôture d'une pénalité par le réseau (admin).
 - Notification à l'assureur ou au réseau lors d'une clôture.
 - Clôture groupée de plusieurs mois en un geste.
+
+## 10. Écarts avec la version validée
+
+Décidés pendant l'exécution. Là où ils contredisent les sections précédentes,
+**ce sont eux qui font foi**.
+
+- **§7.4** — les noms suivent le plan, pas la lettre du §7.4 : la ligne du
+  journal porte `accruedPaid`, `accruedWaived`, `accruedDue`, `declaredDue`
+  (pas `settledPaid` / `penalite_payee`), et les exports `dont_payee`,
+  `dont_annulee`, `reste_due`. `declaredDue` ne sort d'aucune colonne
+  d'export ni d'aucun graphe : il ne vit que dans la donnée du journal.
+- **§6.1 (revue)** — le tableau du journal s'élargit (largeur minimale
+  880 px, défilement horizontal) plutôt que de cacher les trois nouvelles
+  colonnes sur écran étroit : une colonne absente se lirait « rien couru »,
+  ce que le journal s'interdit déjà pour une ligne retenue.
+- **§7.2** — `penalite_statut` est vide (pas « due ») quand l'assureur n'a
+  pas de clause : null dit « pas de convention », la chaîne `due` dirait
+  « une convention, rien n'est clos ». Même distinction que pour le montant.
+- **§7.1** — la due par ligne suit le même null que la courue : un mois
+  rejeté sous convention lit null, pas 0, comme `PenaltyCalculator::for()`.
+  La règle « clause d'abord » du plan ne s'applique qu'au niveau du lot
+  (`dueTotal()`), pas ligne par ligne.
+- **§6.4** — confirmé sans changement : les chiffres du tableau de bord ne
+  couvrent que les mois ouverts, qui ne peuvent pas être clos.
+- **Trou connu, laissé ouvert** — modifier la clause d'un assureur
+  (`InsurerManagementController::update()`) ne réconcilie aucune déclaration
+  déjà close.
