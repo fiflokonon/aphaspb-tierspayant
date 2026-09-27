@@ -84,6 +84,19 @@ test('a masked insurer has no series but still counts in the unfiltered total', 
         ->and($ledger->maskedInsurers)->toBe(1);
 });
 
+test('the unfiltered total is published even when it rests on fewer officines than the threshold', function () {
+    // Décor discriminant : deux officines seulement, sous le seuil de 5. Un
+    // seuil appliqué au total retiendrait mai ; la décision du 27/09/2026 dit
+    // que le total non filtré n'en a pas.
+    $masked = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($masked, 2, 3, '2026-03-31');
+
+    $may = $this->journal->for(...$this->bounds)->total->month('2026-05');
+
+    expect($may->withheld)->toBeFalse()
+        ->and($may->accrued)->toBe(40_000);
+});
+
 test('filtered on a masked insurer, the total is withheld too', function () {
     $masked = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
     networkUnpaid($masked, 2, 3, '2026-03-31');

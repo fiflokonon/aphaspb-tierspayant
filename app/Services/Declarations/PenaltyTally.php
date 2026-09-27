@@ -107,6 +107,9 @@ class PenaltyTally
         }
 
         foreach ($tranches as [$day, $amount]) {
+            // Optimisation, pas règle : une tranche hors période irait à un mois
+            // que series() ne parcourt jamais, donc invisible dans les deux cas.
+            // Aucun test ne peut distinguer les deux — ne pas en écrire un.
             if ($day < $this->firstDay || $day > $this->lastDay) {
                 continue;
             }
