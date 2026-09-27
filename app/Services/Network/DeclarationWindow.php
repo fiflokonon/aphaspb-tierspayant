@@ -39,11 +39,26 @@ class DeclarationWindow
      */
     public function apply(Builder $query, Period $from, Period $to, ?string $city = null, ?int $insurerId = null): Builder
     {
-        return $query
-            ->whereRaw(
+        return $this->narrow(
+            $query->whereRaw(
                 '(declarations.period_year * 12 + declarations.period_month) BETWEEN ? AND ?',
                 [$from->toOrdinal(), $to->toOrdinal()],
-            )
+            ),
+            $city,
+            $insurerId,
+        );
+    }
+
+    /**
+     * La ville et l'assureur seuls, sans la période.
+     *
+     * Pour le journal des pénalités, dont la fenêtre n'est pas le mois déclaré
+     * (PenaltyLedgerWindow) mais qui doit filtrer la ville exactement comme
+     * tous les autres agrégats réseau.
+     */
+    public function narrow(Builder $query, ?string $city = null, ?int $insurerId = null): Builder
+    {
+        return $query
             ->when($city, fn (Builder $inner, string $filtered) => $inner->whereExists(
                 fn (Builder $sub) => $sub->from('pharmacies')
                     ->whereColumn('pharmacies.id', 'declarations.pharmacy_id')

@@ -5,6 +5,7 @@ import {
     FilePlus2,
     History,
     LayoutDashboard,
+    Receipt,
     Store,
     TrendingUp,
 } from '@lucide/vue';
@@ -30,6 +31,7 @@ const ICONS: Record<string, Component> = {
     'chart-column': ChartColumn,
     'trending-up': TrendingUp,
     store: Store,
+    receipt: Receipt,
 };
 
 /**

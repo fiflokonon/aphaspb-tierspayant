@@ -297,3 +297,58 @@ test('a hoisted today gives the same answer as a resolved one', function () {
 
     expect($hoisted)->toBe($resolved)->and($hoisted)->toBe(60_000);
 });
+
+test('the tranches of an unpaid invoice fall every thirty days from the trigger', function () {
+    // Déposée le 31/03, déclenchement à 60 jours, 2 %, jamais réglée, on est le 19/09.
+    $tranches = $this->calculator->tranches(
+        amountInvoiced: 1_000_000,
+        amountReceived: 0,
+        depositedDay: DayNumber::fromDate('2026-03-31'),
+        paidDay: null,
+        triggerDays: 60,
+        rateBp: 200,
+        payments: [],
+    );
+
+    expect(array_map(fn (array $tranche): string => gmdate('Y-m-d', $tranche[0] * 86400), $tranches))
+        ->toBe(['2026-05-30', '2026-06-29', '2026-07-29', '2026-08-28'])
+        ->and(array_column($tranches, 1))->toBe([20_000, 20_000, 20_000, 20_000]);
+});
+
+test('the tranches always sum to the accrued penalty', function (int $received, ?string $paidOn, array $payments) {
+    $arguments = [
+        'amountInvoiced' => 1_000_000,
+        'amountReceived' => $received,
+        'depositedDay' => DayNumber::fromDate('2026-01-15'),
+        'paidDay' => $paidOn === null ? null : DayNumber::fromDate($paidOn),
+        'triggerDays' => 45,
+        'rateBp' => 250,
+        'payments' => array_map(
+            fn (array $payment): array => [$payment[0], DayNumber::fromDate($payment[1])],
+            $payments,
+        ),
+    ];
+
+    expect(array_sum(array_column($this->calculator->tranches(...$arguments), 1)))
+        ->toBe($this->calculator->accruedInDays(...$arguments))
+        ->and($this->calculator->accruedInDays(...$arguments))->toBeGreaterThan(0);
+})->with([
+    'jamais réglée' => [0, null, []],
+    'acompte puis rien' => [300_000, '2026-03-10', [[300_000, '2026-03-10']]],
+    'soldée tard' => [1_000_000, '2026-06-20', [[400_000, '2026-03-01'], [600_000, '2026-06-20']]],
+    'versement le jour d\'une tranche' => [1_000_000, '2026-04-30', [[400_000, '2026-03-01'], [600_000, '2026-04-30']]],
+]);
+
+test('a settled month stops producing tranches at its last payment', function () {
+    $tranches = $this->calculator->tranches(
+        amountInvoiced: 1_000_000,
+        amountReceived: 1_000_000,
+        depositedDay: DayNumber::fromDate('2026-03-31'),
+        paidDay: DayNumber::fromDate('2026-07-01'),
+        triggerDays: 60,
+        rateBp: 200,
+        payments: [[1_000_000, DayNumber::fromDate('2026-07-01')]],
+    );
+
+    expect($tranches)->toHaveCount(2);
+});

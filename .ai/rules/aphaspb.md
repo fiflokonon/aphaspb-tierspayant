@@ -18,3 +18,10 @@ Deux textes de polices et de corps différents (mono 9,5 px capitales pour l'ét
 Piège qui va avec : un enfant en `absolute` sans `top` (ici le chevron) tire sa position verticale de sa position statique, donc de l'`align-items` du conteneur flex. Passer le conteneur en `items-baseline` le fait remonter au bord haut de la puce. Lui remettre `self-center`.
 
 Rien ne le détecte : Vitest tourne en node sans DOM et ne voit pas le CSS. Vérification faite par capture Chrome headless (`--screenshot --force-device-scale-factor=4`) d'une page statique reprenant le markup et les woff2 de `public/build/assets`, puis mesure des bas de glyphes en pixels.
+
+## PenaltyTrendCard : clés d'URL préfixées penalty_, filtre côté navigateur
+`PenaltyTrendCard` range son état dans `penalty_view`, `penalty_chart`, `penalty_insurer` : `chart` appartient déjà au graphique voisin sur `/dashboard` et `/admin/trends`. Elle filtre assureur et horloge dans le navigateur (toutes les séries sont dans la prop différée `penaltyTrend`) ; sur les pages Journal, le filtre assureur est côté serveur et la carte reçoit `:show-insurer-filter="false"`.
+
+Sa `<Deferred data="penaltyTrend">` lit la prop de page par son nom : toute page qui monte la carte doit nommer sa prop `penaltyTrend`, et l'inclure dans `only` lors d'un rechargement partiel.
+
+La mise en forme des séries vit dans `lib/penaltySeries.ts`, testée par Vitest : un mois retenu ou futur reste null (trou), jamais zéro.

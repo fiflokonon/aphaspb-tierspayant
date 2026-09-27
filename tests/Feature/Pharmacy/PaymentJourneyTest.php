@@ -385,3 +385,32 @@ test('the red bands lead with the oldest invoice', function () {
             ->where('insurerBands.late.1.insurerName', 'Recent'),
         );
 });
+
+test('the penalty trend is deferred, then covers twelve months', function () {
+    $user = User::factory()->create();
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+
+    Declaration::factory()->create([
+        'pharmacy_id' => $user->currentPharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 3,
+        'amount_invoiced' => 1_000_000,
+        'amount_received' => 0,
+        'status' => DeclarationStatus::Unpaid,
+        'is_status_manual' => true,
+        'invoice_deposited_on' => '2026-03-31',
+        'paid_on' => null,
+        'delay_days' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->get(dashboardUrlFor($user))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->missing('penaltyTrend')
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
+                ->has('penaltyTrend.total.months', 12)
+                ->where('penaltyTrend.insurers.0.insurerId', $insurer->id)
+                ->where('penaltyTrend.total.months.9.month', '2026-06')
+                ->where('penaltyTrend.total.months.9.accrued', 20_000)));
+});

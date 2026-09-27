@@ -149,3 +149,15 @@ test('the trends entry appears in the admin navigation', function () {
                 ->and($nav->where('active', true)->pluck('label')->all())->toBe(['Évolution']);
         });
 });
+
+test('the penalty trend is a deferred prop', function () {
+    networkDeclare(Insurer::factory()->withPenalty()->create(), 5);
+
+    $this->actingAs(User::factory()->networkAdmin()->create())
+        ->get(route('admin.trends'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->missing('penaltyTrend')
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
+                ->has('penaltyTrend.insurers', 1)
+                ->has('penaltyTrend.total.months', 12)));
+});

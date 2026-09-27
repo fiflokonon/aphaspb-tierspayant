@@ -136,18 +136,11 @@ class PenaltyCalculator
     }
 
     /**
-     * Le cœur : aucun objet date, que des entiers.
+     * La somme des tranches : ce que le reste du code appelle « la pénalité ».
      *
-     * Chaque versement est une paire `[montant, numéro de jour]`, volontairement
-     * indexée plutôt que nommée : ce tableau est construit des dizaines de
-     * milliers de fois par export réseau, et des clés de chaîne y coûteraient
-     * plus que le calcul lui-même.
-     *
-     * `$today` se passe quand l'appelant boucle : DayNumber::today() traverse
-     * Carbon, et le laisser se recalculer à chaque ligne coûtait 406 ms sur
-     * 40 000 déclarations contre 52 quand il est hissé hors de la boucle.
-     * Omis, il est résolu ici — c'est ce que fait le chemin officine, qui
-     * traite des centaines de lignes et n'a rien à hisser.
+     * Un seul algorithme pour le total et pour le journal mensuel : deux
+     * boucles finiraient par diverger, et l'écart ne se verrait que le jour où
+     * le journal et le tableau de bord afficheraient deux chiffres.
      *
      * @param  list<array{0: int, 1: int}>  $payments
      */
@@ -161,6 +154,42 @@ class PenaltyCalculator
         array $payments,
         ?int $today = null,
     ): int {
+        $total = 0;
+
+        foreach ($this->tranches($amountInvoiced, $amountReceived, $depositedDay, $paidDay, $triggerDays, $rateBp, $payments, $today) as [, $amount]) {
+            $total += $amount;
+        }
+
+        return $total;
+    }
+
+    /**
+     * Chaque tranche facturée, datée. Le cœur : aucun objet date, que des entiers.
+     *
+     * Chaque versement est une paire `[montant, numéro de jour]`, volontairement
+     * indexée plutôt que nommée : ce tableau est construit des dizaines de
+     * milliers de fois par export réseau, et des clés de chaîne y coûteraient
+     * plus que le calcul lui-même. Les tranches rendues suivent la même forme.
+     *
+     * `$today` se passe quand l'appelant boucle : DayNumber::today() traverse
+     * Carbon, et le laisser se recalculer à chaque ligne coûtait 406 ms sur
+     * 40 000 déclarations contre 52 quand il est hissé hors de la boucle.
+     * Omis, il est résolu ici — c'est ce que fait le chemin officine, qui
+     * traite des centaines de lignes et n'a rien à hisser.
+     *
+     * @param  list<array{0: int, 1: int}>  $payments
+     * @return list<array{0: int, 1: int}> numéro de jour de la tranche, montant
+     */
+    public function tranches(
+        int $amountInvoiced,
+        int $amountReceived,
+        int $depositedDay,
+        ?int $paidDay,
+        int $triggerDays,
+        int $rateBp,
+        array $payments,
+        ?int $today = null,
+    ): array {
         // Un mois entièrement soldé cesse de courir au dernier versement, et ce
         // qu'il avait accumulé lui reste acquis. Un mois qui doit encore quelque
         // chose court jusqu'à aujourd'hui.
@@ -169,10 +198,10 @@ class PenaltyCalculator
             : $paidDay;
 
         if ($end === null) {
-            return 0;
+            return [];
         }
 
-        $total = 0;
+        $tranches = [];
         $tranche = $depositedDay + $triggerDays;
 
         while ($tranche <= $end) {
@@ -195,10 +224,10 @@ class PenaltyCalculator
                 break;
             }
 
-            $total += intdiv($base * $rateBp, 10_000);
+            $tranches[] = [$tranche, intdiv($base * $rateBp, 10_000)];
             $tranche += Insurer::PENALTY_TRANCHE_DAYS;
         }
 
-        return $total;
+        return $tranches;
     }
 }
