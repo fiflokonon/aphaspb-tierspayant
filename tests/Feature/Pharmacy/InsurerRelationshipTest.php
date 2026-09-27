@@ -64,6 +64,19 @@ test('nothing declared yields empty figures', function () {
         ->and($built['months'])->toBe([]);
 });
 
+test('a clause with nothing declared in the period reads zero, not null', function () {
+    $insurer = Insurer::factory()
+        ->withPenalty(triggerDays: 60, ratePercent: 2.0)
+        ->create(['standard_delay_days' => 30]);
+
+    // Clause d'abord : la convention existe, rien n'est à réclamer. Null se
+    // lirait « pas de convention ».
+    $built = $this->report->build($this->pharmacy, $insurer, ...$this->bounds);
+
+    expect($built['summary']->declarations)->toBe(0)
+        ->and($built['summary']->penalty)->toBe(0);
+});
+
 test('the longest delay can come from an open invoice rather than a settled month', function () {
     $insurer = Insurer::factory()->create(['standard_delay_days' => 30]);
 
