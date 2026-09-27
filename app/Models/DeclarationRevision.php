@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use Carbon\CarbonImmutable;
 use Database\Factories\DeclarationRevisionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -28,6 +29,8 @@ use Illuminate\Support\Carbon;
  * @property CarbonImmutable|null $paid_on
  * @property int|null $delay_days
  * @property list<array{amount: int, paid_on: string, delay_days: int|null}> $payments
+ * @property PenaltySettlement|null $penalty_settlement
+ * @property int|null $penalty_settled_amount
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Declaration $declaration
@@ -43,6 +46,8 @@ use Illuminate\Support\Carbon;
     'paid_on',
     'delay_days',
     'payments',
+    'penalty_settlement',
+    'penalty_settled_amount',
 ])]
 class DeclarationRevision extends Model
 {
@@ -64,6 +69,8 @@ class DeclarationRevision extends Model
             'amount_received' => 'integer',
             'delay_days' => 'integer',
             'payments' => 'array',
+            'penalty_settlement' => PenaltySettlement::class,
+            'penalty_settled_amount' => 'integer',
         ];
     }
 

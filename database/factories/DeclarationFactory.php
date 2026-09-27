@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Actions\Declarations\RecordPaymentInstalments;
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
@@ -145,5 +146,18 @@ class DeclarationFactory extends Factory
             'status' => DeclarationStatus::Rejected,
             'is_status_manual' => true,
         ]);
+    }
+
+    /**
+     * Une pénalité close, sans passer par SettlePenalty : pour les décors de
+     * lecture (exports, agrégats) qui n'éprouvent pas la condition du geste.
+     */
+    public function penaltySettled(PenaltySettlement $outcome, int $amount): static
+    {
+        return $this->afterCreating(fn (Declaration $declaration) => $declaration->forceFill([
+            'penalty_settlement' => $outcome,
+            'penalty_settled_amount' => $amount,
+            'penalty_settled_on' => now()->toDateString(),
+        ])->saveQuietly());
     }
 }

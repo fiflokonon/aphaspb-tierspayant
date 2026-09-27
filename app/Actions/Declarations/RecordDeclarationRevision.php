@@ -62,6 +62,8 @@ class RecordDeclarationRevision
             'paid_on' => $subject->paid_on?->toDateString(),
             'delay_days' => $subject->delay_days,
             'payments' => $payments,
+            'penalty_settlement' => $subject->penalty_settlement?->value,
+            'penalty_settled_amount' => $subject->penalty_settled_amount,
         ];
     }
 }
