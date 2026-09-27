@@ -41,7 +41,17 @@ const cell = (
         return '—';
     }
 
-    return month.withheld ? 'retenu' : formatAmount(month[key]);
+    if (month.withheld) {
+        return 'retenu';
+    }
+
+    // Un cumul vide sur un mois publié vient d'un mois retenu plus tôt :
+    // « — » dirait « pas de convention », ce qui serait faux.
+    if (key === 'accruedCumulative' && month[key] === null && !month.future) {
+        return 'interrompu';
+    }
+
+    return formatAmount(month[key]);
 };
 </script>
 

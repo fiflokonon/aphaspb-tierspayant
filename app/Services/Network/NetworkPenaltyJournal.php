@@ -40,12 +40,9 @@ class NetworkPenaltyJournal
         $indicators = $this->stats->perInsurer($from, $to, $city, $insurerId);
 
         $authorized = [];
-        $masked = 0;
 
         foreach ($indicators as $id => $entry) {
             if ($entry instanceof InsufficientData) {
-                $masked++;
-
                 continue;
             }
 
@@ -59,7 +56,16 @@ class NetworkPenaltyJournal
         $filteredIsMasked = $insurerId !== null && ($indicators[$insurerId] ?? null) instanceof InsufficientData;
         $belowMinimum = fn (int $count): bool => $count > 0 && $count < $minimum;
 
-        return $this->ledger->tally($from, $to, $city, $insurerId)->ledger(
+        $tally = $this->ledger->tally($from, $to, $city, $insurerId);
+
+        // « Masqués » au sens de ce journal : sous convention, entrés dans le
+        // total, sans série publiée. Ni un assureur sans convention (il ne
+        // pèse rien ici), ni seulement ceux que perInsurer() retient : un
+        // assureur sans déclaration dans la période mais dont une facture
+        // ancienne court encore nourrit le total sans y figurer.
+        $masked = count(array_diff($tally->insurerIds(), array_keys($authorized)));
+
+        return $tally->ledger(
             $authorized,
             function (?int $seriesInsurer, int $accruedPharmacies, int $declaredPharmacies) use ($insurerId, $filteredIsMasked, $belowMinimum): bool {
                 if ($seriesInsurer === null && $insurerId === null) {

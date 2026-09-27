@@ -101,6 +101,13 @@ test('a withheld month keeps its row, emptied and explained', function () {
     expect($june[array_search('penalite_courue', $columns)])->toBe('')
         ->and($june[array_search('penalite_mois_declare', $columns)])->toBe('')
         ->and($june[array_search('retenu', $columns)])->toBe('moins de 5 officines');
+
+    // Juillet est publié, mais son cumul trahirait juin : vidé, et dit pourquoi.
+    $july = array_values(array_filter($rows, fn (array $row) => $row[0] === '2026-07' && $row[1] === 'NSIA'))[0];
+
+    expect($july[array_search('penalite_courue', $columns)])->toBe('100000')
+        ->and($july[array_search('cumul_couru', $columns)])->toBe('')
+        ->and($july[array_search('retenu', $columns)])->toBe('cumul interrompu par un mois retenu');
 });
 
 test('the network file never names an officine', function () {

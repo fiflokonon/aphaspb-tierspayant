@@ -169,6 +169,13 @@
     </table>
 </div>
 
+@if ($ledger->insurers === [])
+    <h2>Aucun assureur sous convention de pénalité</h2>
+    <p class="lede">
+        Aucun des assureurs déclarés par l'officine ne porte de clause de
+        pénalité : il n'y a rien à reporter dans ce journal.
+    </p>
+@else
 <h2>Tous assureurs</h2>
 <p class="lede">
     Pénalité courue : ce qui est tombé pendant le mois, toutes factures
@@ -228,3 +235,4 @@
         </table>
     </div>
 @endforeach
+@endif

@@ -25,6 +25,9 @@ use Closure;
  */
 class PenaltyTally
 {
+    /** @var array<int, true> */
+    protected array $insurers = [];
+
     /** @var array<int, array<string, int>> */
     protected array $accrued = [];
 
@@ -86,6 +89,8 @@ class PenaltyTally
         int $rateBp,
         array $payments,
     ): void {
+        $this->insurers[$insurerId] = true;
+
         $tranches = $this->penalties->tranches(
             $amountInvoiced, $amountReceived, $depositedDay, $paidDay, $triggerDays, $rateBp, $payments, $this->today,
         );
@@ -121,6 +126,16 @@ class PenaltyTally
             $this->totalAccrued[$month] = ($this->totalAccrued[$month] ?? 0) + $amount;
             $this->totalAccruedPharmacies[$month][$pharmacyId] = true;
         }
+    }
+
+    /**
+     * Les assureurs dont au moins une déclaration est entrée dans le décompte.
+     *
+     * @return list<int>
+     */
+    public function insurerIds(): array
+    {
+        return array_keys($this->insurers);
     }
 
     /**

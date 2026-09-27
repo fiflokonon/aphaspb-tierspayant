@@ -63,8 +63,16 @@ const barAccessors = computed(() =>
     accessorsFor(props.series.map((_, position) => position)),
 );
 
+/**
+ * Une barre ne se pointille pas : au-delà de trois séries, la teinte reprise
+ * est éclaircie, comme la pastille de légende (opacité 0,6).
+ */
 const barColors = computed(() =>
-    props.series.map((_, position) => colorFor(position)),
+    props.series.map((_, position) =>
+        isDashed(position)
+            ? `color-mix(in srgb, ${colorFor(position)} 60%, transparent)`
+            : colorFor(position),
+    ),
 );
 
 const x = (row: PenaltyChartRow) => row.index;

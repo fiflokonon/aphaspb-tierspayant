@@ -32,6 +32,11 @@ class NetworkPenaltyLedgerRows
         $ledger = $this->journal->for($from, $to, $city, $insurerId);
         $reason = sprintf('moins de %d officines', $this->settings->anonymityMinPharmacies());
 
+        // Rien sous convention dans le réseau : aucune ligne plutôt que des zéros.
+        if ($ledger->insurers === [] && $ledger->maskedInsurers === 0) {
+            return;
+        }
+
         foreach ($ledger->total->months as $index => $total) {
             if ($total->future) {
                 continue;
@@ -62,7 +67,12 @@ class NetworkPenaltyLedgerRows
             $month->accruedCumulative,
             $month->declared,
             $month->current ? 'oui' : 'non',
-            $month->withheld ? $reason : null,
+            match (true) {
+                $month->withheld => $reason,
+                // Le cumul vide d'un mois publié vient d'un mois retenu plus tôt.
+                $month->accruedCumulative === null => 'cumul interrompu par un mois retenu',
+                default => null,
+            },
         ];
     }
 }

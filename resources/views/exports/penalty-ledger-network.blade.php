@@ -11,6 +11,10 @@
     $money = fn (\App\Data\PenaltyLedgerMonth $month, ?int $value): string => $month->withheld
         ? 'retenu'
         : ($value === null ? '—' : \App\Support\Fcfa::format($value));
+    // Un cumul vide sur un mois publié vient d'un mois retenu plus tôt.
+    $cumulative = fn (\App\Data\PenaltyLedgerMonth $month): string => ! $month->withheld && $month->accruedCumulative === null
+        ? 'interrompu'
+        : $money($month, $month->accruedCumulative);
 @endphp
 <style>
     @page { margin: 108px 34px 62px; }
@@ -166,7 +170,7 @@
     <div class="scope">
         {{ $periodLabel }}
         @if ($city) · officines de {{ $city }} @else · toutes les officines @endif
-        · aucun chiffre sous {{ $anonymityThreshold }} officines
+        · séries par assureur retenues sous {{ $anonymityThreshold }} officines
     </div>
 </div>
 
@@ -175,7 +179,9 @@
         <tr>
             <td style="text-align: left;">
                 Édité le {{ $generatedAt->translatedFormat('d/m/Y à H:i') }} ·
-                Chiffres agrégés, aucune officine n'y est identifiable.
+                Aucune officine nommée. Le total, lui, n'applique pas le seuil
+                d'anonymat (décision du 27/09/2026) : restreint à une ville ou à
+                un mois, il peut ne reposer que sur quelques officines.
             </td>
             <td style="text-align: right;">Page <span class="page-number"></span></td>
         </tr>
@@ -212,7 +218,7 @@
                     @if ($month->withheld) <span class="withheld">· sous le seuil</span> @endif
                 </td>
                 <td>{{ $money($month, $month->accrued) }}</td>
-                <td>{{ $money($month, $month->accruedCumulative) }}</td>
+                <td>{{ $cumulative($month) }}</td>
                 <td>{{ $money($month, $month->declared) }}</td>
             </tr>
         @endforeach
@@ -238,10 +244,11 @@
                     <tr>
                         <td class="text">
                             {{ $month->label }}
+                            @if ($month->current) <span class="current">· en cours</span> @endif
                             @if ($month->withheld) <span class="withheld">· sous le seuil</span> @endif
                         </td>
                         <td>{{ $money($month, $month->accrued) }}</td>
-                        <td>{{ $money($month, $month->accruedCumulative) }}</td>
+                        <td>{{ $cumulative($month) }}</td>
                         <td>{{ $money($month, $month->declared) }}</td>
                     </tr>
                 @endforeach

@@ -335,7 +335,19 @@ précédentes, **ce sont eux qui font foi**.
 
 - **§3.1** — `accruedInDays()` est la somme de `tranches()` : pas de boucle
   nue conservée. La suite `InsurerPenaltyAggregatesTest`, inchangée et verte,
-  montre que le total n'a pas bougé.
+  montre que le total n'a pas bougé. Coût mesuré en revue : le cœur passe de
+  18 à 38 ms sur 40 000 déclarations synthétiques (allocation des tableaux de
+  tranches) — négligeable devant le chargement (~350 ms), donc accepté.
+- **§6 (revue)** — `maskedInsurers` compte les assureurs **sous convention**
+  entrés dans le total sans série publiée, y compris ceux absents de
+  `perInsurer()` parce que seule une facture ancienne court encore dans la
+  période. Un assureur sans convention n'y figure jamais.
+- **§6 (revue, ouvert)** — deux déductions dépassent le risque accepté le
+  27/09 : un **mois retenu d'un assureur autorisé** se retrouve par
+  différence (total − séries visibles) quand il est seul caché ce mois-là, et
+  le **filtre ville** publie sans seuil le total d'une ville qui peut ne
+  compter qu'une officine. Le PDF réseau ne prétend plus qu'aucune officine
+  n'est identifiable ; la règle elle-même attend une décision.
 - **§4.1** — `PharmacyPenaltyLedger` lit en **query builder**, pas en
   Eloquent : `private_note` n'est jamais chargée, et le résultat est le même.
 - **§4.2 / §4.3** — l'accumulation et la construction des DTO vivent dans

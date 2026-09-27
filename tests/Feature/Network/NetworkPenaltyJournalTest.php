@@ -97,6 +97,36 @@ test('the unfiltered total is published even when it rests on fewer officines th
         ->and($may->accrued)->toBe(40_000);
 });
 
+test('only insurers that fed the total count as masked', function () {
+    $shown = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($shown, 5, 3, '2026-03-31');
+    // Deux masqués sans convention : ils ne pèsent rien dans le total. Deux et
+    // non un, pour que l'erreur inverse (l'oubli ci-dessous) ne la compense pas.
+    networkUnpaid(Insurer::factory()->create(), 1, 3, '2026-03-31');
+    networkUnpaid(Insurer::factory()->create(), 1, 3, '2026-03-31');
+    // Sous convention, sans déclaration dans la période, mais une facture de
+    // 2025 court encore : absent de perInsurer(), présent dans le total.
+    $old = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    Declaration::factory()->create([
+        'pharmacy_id' => Pharmacy::factory(),
+        'insurer_id' => $old->id,
+        'period_year' => 2025,
+        'period_month' => 12,
+        'amount_invoiced' => 1_000_000,
+        'amount_received' => 0,
+        'status' => DeclarationStatus::Unpaid,
+        'is_status_manual' => true,
+        'invoice_deposited_on' => '2025-12-31',
+        'paid_on' => null,
+        'delay_days' => null,
+    ]);
+
+    $ledger = $this->journal->for(...$this->bounds);
+
+    expect($ledger->maskedInsurers)->toBe(1)
+        ->and($ledger->total->month('2026-05')->accrued)->toBe(120_000);
+});
+
 test('filtered on a masked insurer, the total is withheld too', function () {
     $masked = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
     networkUnpaid($masked, 2, 3, '2026-03-31');

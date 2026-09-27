@@ -32,6 +32,12 @@ class PharmacyPenaltyLedgerRows
     {
         $ledger = $this->ledger->for($pharmacy, $from, $to, $insurerId);
 
+        // Sans assureur sous convention, une ligne « Tous assureurs » à zéro se
+        // lirait « convention respectée » : le fichier reste vide.
+        if ($ledger->insurers === []) {
+            return;
+        }
+
         foreach ($ledger->total->months as $index => $total) {
             if ($total->future) {
                 continue;

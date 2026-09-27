@@ -137,3 +137,20 @@ test('the three formats download with their own type and name', function (string
     ['xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
     ['pdf', 'application/pdf'],
 ]);
+
+test('without any insurer under a clause the file carries its header only', function () {
+    $user = User::factory()->create();
+    Declaration::factory()->create([
+        'pharmacy_id' => $user->currentPharmacy->id,
+        'insurer_id' => Insurer::factory(),
+        'period_year' => 2026,
+        'period_month' => 3,
+    ]);
+
+    // Une ligne « Tous assureurs » à zéro se lirait « convention respectée ».
+    expect(ledgerCsv($user, ['format' => 'csv']))->toBe([PharmacyPenaltyLedgerRows::COLUMNS]);
+
+    $this->actingAs($user)
+        ->get(route('pharmacy.penalty-ledger.download', ['format' => 'pdf']))
+        ->assertOk();
+});
