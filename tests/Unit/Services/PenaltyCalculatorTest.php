@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\DeclarationPayment;
 use App\Models\Insurer;
@@ -351,4 +352,24 @@ test('a settled month stops producing tranches at its last payment', function ()
     );
 
     expect($tranches)->toHaveCount(2);
+});
+
+test('a settled penalty is due no more, an open one is due in full', function () {
+    // Déposée le 31/03, jamais réglée, on est le 19/09 : 4 tranches de 20 000.
+    $open = declarationFor(insurerWith(60, 200), 1_000_000, '2026-03-31');
+    $settled = declarationFor(insurerWith(60, 200), 1_000_000, '2026-03-31');
+    $settled->forceFill(['penalty_settlement' => PenaltySettlement::Paid, 'penalty_settled_amount' => 80_000]);
+
+    expect($this->calculator->due($open))->toBe(80_000)
+        ->and($this->calculator->due($settled))->toBe(0)
+        ->and($this->calculator->for($settled))->toBe(80_000);
+});
+
+test('the due total keeps the null-or-zero rule of the accrued total', function () {
+    $none = declarationFor(insurerWith(null, null), 1_000_000, '2026-03-31');
+    $settled = declarationFor(insurerWith(60, 200), 1_000_000, '2026-03-31');
+    $settled->forceFill(['penalty_settlement' => PenaltySettlement::Waived, 'penalty_settled_amount' => 80_000]);
+
+    expect($this->calculator->dueTotal([$none]))->toBeNull()
+        ->and($this->calculator->dueTotal([$settled]))->toBe(0);
 });

@@ -97,6 +97,44 @@ class PenaltyCalculator
     }
 
     /**
+     * Ce qu'on peut encore réclamer : la courue, sauf si l'officine l'a close.
+     *
+     * Une clôture efface toute la pénalité et non la seule part close : le
+     * montant clos égale la courue, ReconcilePenaltySettlement le garantit en
+     * levant toute clôture dont le montant ne correspond plus.
+     */
+    public function due(Declaration $declaration): ?int
+    {
+        $accrued = $this->for($declaration);
+
+        if ($accrued === null) {
+            return null;
+        }
+
+        return $declaration->isPenaltySettled() ? 0 : $accrued;
+    }
+
+    /**
+     * La due d'un lot, avec la même règle null / zéro que total().
+     *
+     * @param  iterable<Declaration>  $declarations
+     */
+    public function dueTotal(iterable $declarations): ?int
+    {
+        $total = null;
+
+        foreach ($declarations as $declaration) {
+            if (! $declaration->insurer->hasPenaltyClause()) {
+                continue;
+            }
+
+            $total = ($total ?? 0) + ($this->due($declaration) ?? 0);
+        }
+
+        return $total;
+    }
+
+    /**
      * L'algorithme, sur des dates Carbon.
      *
      * Porte d'entrée du chemin officine, qui traite des centaines de lignes et
