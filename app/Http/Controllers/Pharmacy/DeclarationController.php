@@ -125,10 +125,13 @@ class DeclarationController extends Controller
     ): RedirectResponse {
         $pharmacy = $request->user()->currentPharmacy;
 
-        // L'état de clôture tel que le formulaire l'a affiché, lu avant toute
-        // écriture : les versements ci-dessous peuvent lever la clôture, et le
-        // choix du formulaire ne se juge que par rapport à ce qu'il montrait.
-        $before = Declaration::query()
+        // L'état de clôture que le formulaire a affiché : c'est contre lui, et
+        // non contre la base, que le choix se juge. Sinon un formulaire
+        // périmé défait en silence une clôture faite ailleurs entre-temps
+        // (écran assureur, collègue). Sans ce champ (onglet ancien, API),
+        // repli sur l'état enregistré, lu avant toute écriture : les
+        // versements ci-dessous peuvent lever la clôture.
+        $shown = $request->penaltyShown() ?? Declaration::query()
             ->where('pharmacy_id', $pharmacy->id)
             ->where('insurer_id', $request->integer('insurer_id'))
             ->where('period_year', $request->integer('period_year'))
@@ -143,7 +146,7 @@ class DeclarationController extends Controller
         // committés : la trace perd cet enregistrement, et la sauvegarde
         // suivante se compare à une révision périmée, donc enregistre une
         // correction réelle comme si c'était la précédente.
-        DB::transaction(function () use ($request, $pharmacy, $recordInstalments, $recordRevision, $settle, $before, &$notice) {
+        DB::transaction(function () use ($request, $pharmacy, $recordInstalments, $recordRevision, $settle, $shown, &$notice) {
             $declaration = Declaration::query()->updateOrCreate(
                 [
                     'pharmacy_id' => $pharmacy->id,
@@ -168,16 +171,26 @@ class DeclarationController extends Controller
             $reopened = $recordInstalments->handle($declaration, $request->instalments());
             $choice = $request->penaltyChoice();
 
-            // Le formulaire repart pré-rempli : un choix identique à l'état
-            // d'avant n'est pas un geste, et ne doit pas reclore ce que la
-            // correction vient de lever (cas B).
-            if ($choice !== null && $choice !== $before) {
+            // Le formulaire repart pré-rempli : un choix identique à ce qu'il
+            // montrait n'est pas un geste, et ne doit ni reclore ce que la
+            // correction vient de lever (cas B), ni défaire ce qu'un autre
+            // écran a fait depuis.
+            if ($choice !== null && $choice !== $shown) {
+                $month = MonthLabel::short($declaration->period_month, $declaration->period_year);
+
                 if ($choice === 'due') {
-                    $settle->reopen($declaration->fresh());
+                    if ($settle->reopen($declaration->fresh())) {
+                        $notice = ['type' => 'success', 'message' => sprintf('Pénalité de %s remise en dû.', $month)];
+                    }
                 } elseif (($refusal = $settle->refusal($declaration->fresh(['insurer', 'payments']))) !== null) {
                     $notice = ['type' => 'info', 'message' => 'Pénalité non close : '.lcfirst($refusal)];
-                } elseif ($settle->settle($declaration->fresh(['insurer', 'payments']), PenaltySettlement::from($choice), $request->user())) {
-                    $reopened = null;
+                } else {
+                    $outcome = PenaltySettlement::from($choice);
+
+                    if ($settle->settle($declaration->fresh(['insurer', 'payments']), $outcome, $request->user())) {
+                        $reopened = null;
+                        $notice = ['type' => 'success', 'message' => sprintf('Pénalité de %s marquée %s.', $month, mb_strtolower($outcome->label()))];
+                    }
                 }
             }
 

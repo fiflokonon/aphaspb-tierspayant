@@ -16,7 +16,7 @@ beforeEach(function () {
  * @param  list<array{amount: int, paid_on: string}>  $payments
  * @return array<string, mixed>
  */
-function referencePayload(int $insurerId, array $payments, ?string $settlement = null): array
+function referencePayload(int $insurerId, array $payments, ?string $settlement = null, ?string $shown = null): array
 {
     return array_filter([
         'insurer_id' => $insurerId,
@@ -26,6 +26,7 @@ function referencePayload(int $insurerId, array $payments, ?string $settlement =
         'invoice_deposited_on' => '2026-03-31',
         'payments' => $payments,
         'penalty_settlement' => $settlement,
+        'penalty_settlement_shown' => $shown,
     ], fn ($value) => $value !== null);
 }
 
@@ -66,7 +67,7 @@ test('an unchanged choice does not re-settle a penalty the correction just reope
         ->post(route('pharmacy.declare.store'), referencePayload($declaration->insurer_id, [
             ['amount' => 400_000, 'paid_on' => '2026-05-25'],
             ['amount' => 600_000, 'paid_on' => '2026-07-20'],
-        ], 'paid'))
+        ], 'paid', 'paid'))
         ->assertSessionHasNoErrors()
         ->assertInertiaFlash('toast', ['type' => 'warning', 'message' => "La pénalité de Mars 26 (NSIA) n'est plus close : son montant a changé (24\u{202F}000 F au lieu de 32\u{202F}000 F)."]);
 
@@ -80,10 +81,61 @@ test('« due » on a settled month puts it back as due', function () {
     $declaration->settlePenalty(PenaltySettlement::Waived, 32_000, $user);
 
     $this->actingAs($user)
-        ->post(route('pharmacy.declare.store'), referencePayload($declaration->insurer_id, referenceInstalments(), 'due'))
+        ->post(route('pharmacy.declare.store'), referencePayload($declaration->insurer_id, referenceInstalments(), 'due', 'waived'))
+        ->assertSessionHasNoErrors()
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Pénalité de Mars 26 remise en dû.']);
+
+    expect($declaration->fresh()->isPenaltySettled())->toBeFalse();
+});
+
+test('a stale « due » form does not undo a closure made elsewhere', function () {
+    $user = User::factory()->create();
+    $declaration = referenceMonth($user);
+    $user->currentPharmacy->insurers()->attach($declaration->insurer_id);
+
+    // Le formulaire a affiché « due » ; entre-temps, l'écran assureur a clos.
+    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+
+    $this->actingAs($user)
+        ->post(route('pharmacy.declare.store'), referencePayload($declaration->insurer_id, referenceInstalments(), 'due', 'due'))
+        ->assertSessionHasNoErrors();
+
+    expect($declaration->fresh()->penalty_settlement)->toBe(PenaltySettlement::Paid);
+});
+
+test('a stale « paid » form does not re-close a month put back as due elsewhere', function () {
+    $user = User::factory()->create();
+    $declaration = referenceMonth($user);
+    $user->currentPharmacy->insurers()->attach($declaration->insurer_id);
+
+    // Le formulaire a affiché « payée » ; entre-temps, un collègue l'a remise en dû.
+    $this->actingAs($user)
+        ->post(route('pharmacy.declare.store'), referencePayload($declaration->insurer_id, referenceInstalments(), 'paid', 'paid'))
         ->assertSessionHasNoErrors();
 
     expect($declaration->fresh()->isPenaltySettled())->toBeFalse();
+});
+
+test('the settlement choice of the form is confirmed by a toast', function () {
+    $user = User::factory()->create();
+    $declaration = referenceMonth($user);
+    $user->currentPharmacy->insurers()->attach($declaration->insurer_id);
+
+    $this->actingAs($user)
+        ->post(route('pharmacy.declare.store'), referencePayload($declaration->insurer_id, referenceInstalments(), 'waived', 'due'))
+        ->assertInertiaFlash('toast', ['type' => 'success', 'message' => 'Pénalité de Mars 26 marquée annulée.']);
+
+    expect($declaration->fresh()->penalty_settlement)->toBe(PenaltySettlement::Waived);
+});
+
+test('a shown state outside the three is rejected', function () {
+    $user = User::factory()->create();
+    $declaration = referenceMonth($user);
+    $user->currentPharmacy->insurers()->attach($declaration->insurer_id);
+
+    $this->actingAs($user)
+        ->post(route('pharmacy.declare.store'), referencePayload($declaration->insurer_id, referenceInstalments(), 'paid', 'forgiven'))
+        ->assertSessionHasErrors('penalty_settlement_shown');
 });
 
 test('the form knows the penalty of the month', function () {

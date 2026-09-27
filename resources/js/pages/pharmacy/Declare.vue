@@ -90,9 +90,11 @@ const received = computed(() =>
 /**
  * La pénalité courue du mois, montrée seulement quand il y en a une.
  *
- * Le choix repart pré-rempli sur l'état enregistré ; le serveur ne l'applique
- * que s'il diffère de cet état, pour qu'une correction qui a levé la clôture
- * ne soit pas aussitôt reclose par le même envoi.
+ * Le choix repart pré-rempli sur l'état enregistré, et cet état repart avec
+ * lui (`penalty_settlement_shown`) : le serveur n'applique le choix que s'il
+ * diffère de ce que le formulaire montrait. Une correction qui a levé la
+ * clôture n'est donc pas aussitôt reclose par le même envoi, et un formulaire
+ * resté ouvert ne défait pas une clôture faite depuis sur l'écran assureur.
  */
 const penalty = computed(() =>
     (props.declaration?.penalty?.accrued ?? 0) > 0
@@ -106,9 +108,10 @@ const PENALTY_CHOICES: { value: PenaltyChoice; label: string }[] = [
     { value: 'waived', label: 'Annulée' },
 ];
 
-const penaltyChoice = ref<PenaltyChoice>(
-    props.declaration?.penalty?.settlement ?? 'due',
-);
+const penaltyShown: PenaltyChoice =
+    props.declaration?.penalty?.settlement ?? 'due';
+
+const penaltyChoice = ref<PenaltyChoice>(penaltyShown);
 
 const note = ref(props.declaration?.private_note ?? '');
 const noteOpen = ref(!!props.declaration?.private_note);
@@ -413,6 +416,12 @@ const officine = computed(() => {
                         <p v-if="!penalty.covered" class="penalty-hint">
                             Possible une fois le mois entièrement réglé.
                         </p>
+
+                        <input
+                            type="hidden"
+                            name="penalty_settlement_shown"
+                            :value="penaltyShown"
+                        />
 
                         <div class="penalty-choices">
                             <label

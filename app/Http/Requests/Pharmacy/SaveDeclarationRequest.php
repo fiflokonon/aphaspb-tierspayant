@@ -68,6 +68,9 @@ class SaveDeclarationRequest extends FormRequest
             // Absent = pas de changement. Jamais écrit tel quel : store() le
             // confronte à l'état d'avant, puis passe par SettlePenalty.
             'penalty_settlement' => ['nullable', Rule::in(['due', 'paid', 'waived'])],
+            // L'état que le formulaire a affiché. Absent (onglet ancien, API) :
+            // store() se replie sur l'état enregistré.
+            'penalty_settlement_shown' => ['nullable', Rule::in(['due', 'paid', 'waived'])],
         ];
     }
 
@@ -205,6 +208,16 @@ class SaveDeclarationRequest extends FormRequest
         $choice = $this->input('penalty_settlement');
 
         return is_string($choice) && $choice !== '' ? $choice : null;
+    }
+
+    /**
+     * L'état de clôture que le formulaire affichait, ou null s'il ne l'a pas dit.
+     */
+    public function penaltyShown(): ?string
+    {
+        $shown = $this->input('penalty_settlement_shown');
+
+        return is_string($shown) && $shown !== '' ? $shown : null;
     }
 
     /**
