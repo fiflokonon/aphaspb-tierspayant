@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Declaration;
+use App\Models\Insurer;
+use App\Models\User;
 use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
@@ -64,6 +67,42 @@ function inertiaPropsJson(TestResponse $response): string
     $page = $response->viewData('page');
 
     return json_encode($page['props'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+}
+
+/**
+ * L'exemple de la spec : 1 000 000 F déposés le 31/03, clause 60 j / 2 %,
+ * 400 000 F le 15/06 puis 600 000 F le 20/07 → 32 000 F de pénalité.
+ *
+ * Le nom d'assureur est unique en base : un test qui crée deux mois de
+ * référence passe un second nom.
+ *
+ * @param  list<array{amount: int, paid_on: string}>|null  $instalments
+ */
+function referenceMonth(User $user, ?array $instalments = null, string $insurerName = 'NSIA'): Declaration
+{
+    return Declaration::factory()
+        ->instalments($instalments ?? referenceInstalments())
+        ->create([
+            'pharmacy_id' => $user->currentPharmacy->id,
+            'insurer_id' => Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => $insurerName])->id,
+            'period_year' => 2026,
+            'period_month' => 3,
+            'amount_invoiced' => 1_000_000,
+            'invoice_deposited_on' => '2026-03-31',
+        ])->fresh(['insurer', 'payments']);
+}
+
+/**
+ * Les deux versements qui soldent le mois de référence.
+ *
+ * @return list<array{amount: int, paid_on: string}>
+ */
+function referenceInstalments(): array
+{
+    return [
+        ['amount' => 400_000, 'paid_on' => '2026-06-15'],
+        ['amount' => 600_000, 'paid_on' => '2026-07-20'],
+    ];
 }
 
 /**

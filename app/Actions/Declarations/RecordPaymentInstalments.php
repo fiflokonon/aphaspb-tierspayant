@@ -2,6 +2,7 @@
 
 namespace App\Actions\Declarations;
 
+use App\Data\PenaltyReopened;
 use App\Models\Declaration;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -20,12 +21,17 @@ use Illuminate\Support\Facades\DB;
  */
 class RecordPaymentInstalments
 {
+    public function __construct(protected ReconcilePenaltySettlement $reconcile)
+    {
+        //
+    }
+
     /**
      * @param  list<array{amount: int, paid_on: string}>  $instalments
      */
-    public function handle(Declaration $declaration, array $instalments): void
+    public function handle(Declaration $declaration, array $instalments): ?PenaltyReopened
     {
-        DB::transaction(function () use ($declaration, $instalments) {
+        return DB::transaction(function () use ($declaration, $instalments) {
             $declaration->payments()->delete();
 
             foreach ($instalments as $instalment) {
@@ -39,6 +45,8 @@ class RecordPaymentInstalments
             }
 
             $declaration->syncFromInstalments();
+
+            return $this->reconcile->handle($declaration);
         });
     }
 }
