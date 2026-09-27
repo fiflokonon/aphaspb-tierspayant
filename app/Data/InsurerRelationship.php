@@ -35,9 +35,12 @@ readonly class InsurerRelationship
          */
         public ?int $longestDelayDays,
         /**
-         * La pénalité réclamable sur la période, mois soldés tardivement
-         * compris — là où le bandeau du tableau de bord ne compte que les
-         * factures encore en retard.
+         * La pénalité encore réclamable sur la période, mois soldés
+         * tardivement compris — là où le bandeau du tableau de bord ne compte
+         * que les factures encore en retard.
+         *
+         * Une clôture (payée ou annulée) retire son mois de ce total : c'est
+         * la **due**, pas la courue — voir PenaltyCalculator::dueTotal().
          */
         public ?int $penalty,
     ) {

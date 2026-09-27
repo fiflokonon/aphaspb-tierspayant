@@ -2,6 +2,7 @@
 
 use App\Data\Period;
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
@@ -324,6 +325,35 @@ test('an insurer with a history offers the three formats, filtered on it', funct
             ->where('exportUrls.xlsx', $link('xlsx'))
             ->where('exportUrls.csv', $link('csv')),
         );
+});
+
+test('a settled month is due no more, and says how it was closed', function () {
+    $user = User::factory()->create();
+    $declaration = referenceMonth($user);
+    $user->currentPharmacy->insurers()->attach($declaration->insurer_id);
+    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+
+    $this->actingAs($user)
+        ->get(route('pharmacy.insurers.show', $declaration->insurer_id).'?period=calendar-year')
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('relationship.penalty', 0)
+            ->where('months.0.penalty', 32_000)
+            ->where('months.0.penaltyDue', 0)
+            ->where('months.0.settlement.label', 'Payée')
+            ->where('months.0.settlement.amount', 32_000)
+            ->where('months.0.canSettle', false));
+});
+
+test('a covered month with a penalty offers the gesture, an open one does not', function () {
+    $user = User::factory()->create();
+    $covered = referenceMonth($user);
+    $user->currentPharmacy->insurers()->attach($covered->insurer_id);
+
+    $this->actingAs($user)
+        ->get(route('pharmacy.insurers.show', $covered->insurer_id).'?period=calendar-year')
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('months.0.canSettle', true)
+            ->where('months.0.settlementUrl', route('pharmacy.penalty-settlement.store', $covered, absolute: false)));
 });
 
 test('each format the insurer screen offers downloads in that format', function () {

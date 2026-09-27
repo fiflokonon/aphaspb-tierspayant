@@ -2,6 +2,7 @@
 
 namespace App\Services\Pharmacy;
 
+use App\Actions\Declarations\SettlePenalty;
 use App\Data\InsurerRelationship;
 use App\Data\Period;
 use App\Models\Declaration;
@@ -31,6 +32,7 @@ class InsurerRelationshipReport
     public function __construct(
         protected PenaltyCalculator $penalties,
         protected LongestDelay $longestDelay,
+        protected SettlePenalty $settle,
     ) {
         //
     }
@@ -83,6 +85,9 @@ class InsurerRelationshipReport
                 'invoice_deposited_on',
                 'paid_on',
                 'delay_days',
+                'penalty_settlement',
+                'penalty_settled_amount',
+                'penalty_settled_on',
             ])
             ->with('payments')
             ->where('pharmacy_id', $pharmacy->id)
@@ -123,7 +128,7 @@ class InsurerRelationshipReport
                 ) / $basis, 1)
                 : null,
             longestDelayDays: $this->longestDelay->for($declarations),
-            penalty: $this->penalties->total($declarations),
+            penalty: $this->penalties->dueTotal($declarations),
         );
     }
 
@@ -150,6 +155,15 @@ class InsurerRelationshipReport
             'delayDays' => $one->delay_days,
             'instalments' => $one->payments->count(),
             'penalty' => $this->penalties->for($one),
+            'penaltyDue' => $this->penalties->due($one),
+            'settlement' => $one->penalty_settlement === null ? null : [
+                'outcome' => $one->penalty_settlement->value,
+                'label' => $one->penalty_settlement->label(),
+                'amount' => (int) $one->penalty_settled_amount,
+                'on' => $one->penalty_settled_on?->format('d/m'),
+            ],
+            'canSettle' => ! $one->isPenaltySettled() && $this->settle->refusal($one) === null,
+            'settlementUrl' => route('pharmacy.penalty-settlement.store', $one, absolute: false),
             'editUrl' => route('pharmacy.declare', [
                 'insurer' => $insurer->id,
                 'year' => $one->period_year,
