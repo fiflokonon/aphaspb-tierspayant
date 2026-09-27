@@ -13,27 +13,34 @@ const props = defineProps<{
     period: string;
     periodLabel: string;
     periods: { value: string; label: string }[];
+    city: string | null;
+    cities: string[];
     insurer: number | null;
     insurers: { id: number; name: string }[];
     downloadUrl: string;
-    pharmacyName: string;
 }>();
 
 const period = ref(props.period);
+const city = ref(props.city);
 const insurer = ref(props.insurer);
 
+const cityOptions = computed(() => [
+    { value: null, label: 'Toutes les villes' },
+    ...props.cities.map((one) => ({ value: one, label: one })),
+]);
+
 const insurerOptions = computed(() => [
-    { value: null, label: 'Tous mes assureurs' },
+    { value: null, label: 'Tous les assureurs' },
     ...props.insurers.map((one) => ({ value: one.id, label: one.name })),
 ]);
 
 /** Le journal est différé : il doit être nommé dans `only` pour revenir. */
-watch([period, insurer], () =>
+watch([period, city, insurer], () =>
     router.get(
-        '/pharmacy/penalties',
-        { period: period.value, insurer: insurer.value },
+        '/admin/penalties',
+        { period: period.value, city: city.value, insurer: insurer.value },
         {
-            only: ['penaltyTrend', 'period', 'periodLabel', 'insurer'],
+            only: ['penaltyTrend', 'period', 'periodLabel', 'city', 'insurer'],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -44,6 +51,10 @@ watch([period, insurer], () =>
 /** Chaque lien porte les filtres : le fichier couvre l'écran, pas autre chose. */
 const hrefFor = (format: 'csv' | 'xlsx' | 'pdf') => {
     const query = new URLSearchParams({ period: period.value, format });
+
+    if (city.value) {
+        query.set('city', city.value);
+    }
 
     if (insurer.value) {
         query.set('insurer', String(insurer.value));
@@ -72,6 +83,12 @@ const FORMATS = [
                     aria-label="Filtrer par période"
                 />
                 <FilterSelect
+                    v-model="city"
+                    :options="cityOptions"
+                    label="Ville"
+                    aria-label="Filtrer par ville"
+                />
+                <FilterSelect
                     v-model="insurer"
                     :options="insurerOptions"
                     label="Assureur"
@@ -83,8 +100,8 @@ const FORMATS = [
         <div class="ledger-body">
             <PenaltyTrendCard
                 :ledger="penaltyTrend"
-                :subtitle="`${pharmacyName} · ${periodLabel}`"
-                filename="aphaspb-journal-penalites-officine"
+                :subtitle="`${periodLabel}${city === null ? '' : ` · ${city}`}`"
+                filename="aphaspb-journal-penalites-reseau"
                 :show-insurer-filter="false"
             />
 
@@ -97,6 +114,15 @@ const FORMATS = [
                     v-if="penaltyTrend"
                     :ledger="penaltyTrend"
                 />
+
+                <p
+                    v-if="penaltyTrend && penaltyTrend.maskedInsurers > 0"
+                    class="masked-note text-ink/70"
+                >
+                    Le total couvre aussi
+                    {{ penaltyTrend.maskedInsurers }} assureur(s) masqué(s) sous
+                    le seuil d'anonymat.
+                </p>
             </Deferred>
 
             <div class="exports">
@@ -122,6 +148,10 @@ const FORMATS = [
     flex-direction: column;
     gap: 20px;
     padding: 22px 0 40px;
+}
+
+.masked-note {
+    font-size: var(--text-meta);
 }
 
 .exports {

@@ -137,6 +137,7 @@ class ConsoleNavigation
             'nav' => $this->items($currentPath, [
                 ['Statistiques réseau', 'admin.network', [], 'chart-column'],
                 ['Évolution', 'admin.trends', [], 'trending-up'],
+                ['Journal des pénalités', 'admin.penalty-ledger', [], 'receipt'],
                 ['Pharmacies inscrites', 'admin.pharmacies', [], 'store'],
                 ['Gestion des assureurs', 'admin.insurers', [], 'building-2'],
                 ['Exports CSV', 'admin.csv-exports', [], 'download'],

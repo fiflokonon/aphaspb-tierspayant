@@ -16,7 +16,7 @@ test('an admin gets the admin shell with its space', function () {
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('console.space', 'ESPACE ADMIN')
-            ->has('console.nav', 5)
+            ->has('console.nav', 6)
             ->has('console.account'),
         );
 });

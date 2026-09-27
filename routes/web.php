@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AnonymityThresholdController;
 use App\Http\Controllers\Admin\InsurerManagementController;
 use App\Http\Controllers\Admin\NetworkExportController;
+use App\Http\Controllers\Admin\NetworkPenaltyLedgerController;
 use App\Http\Controllers\Admin\NetworkStatsController;
 use App\Http\Controllers\Admin\NetworkTrendsController;
 use App\Http\Controllers\Admin\RegisteredPharmaciesController;
@@ -48,6 +49,8 @@ Route::middleware(['auth', 'can:manage-network'])
         Route::patch('settings/anonymity', AnonymityThresholdController::class)->name('settings.anonymity');
         Route::get('csv-exports', [NetworkExportController::class, 'index'])->name('csv-exports');
         Route::get('csv-exports/download', [NetworkExportController::class, 'download'])->name('csv-exports.download');
+        Route::get('penalties', [NetworkPenaltyLedgerController::class, 'index'])->name('penalty-ledger');
+        Route::get('penalties/download', [NetworkPenaltyLedgerController::class, 'download'])->name('penalty-ledger.download');
     });
 
 Route::middleware(['auth', 'can:declare-payments'])
