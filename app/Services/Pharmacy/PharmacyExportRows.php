@@ -3,6 +3,7 @@
 namespace App\Services\Pharmacy;
 
 use App\Data\Period;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Pharmacy;
 use App\Services\Declarations\PenaltyCalculator;
@@ -47,6 +48,10 @@ class PharmacyExportRows
         'delai_declenchement_penalite_jours',
         'taux_penalite_pct',
         'penalite_fcfa',
+        'penalite_statut',
+        'penalite_close_fcfa',
+        'penalite_close_le',
+        'penalite_due_fcfa',
         'versements',
         'detail_versements',
         'corrections',
@@ -74,7 +79,7 @@ class PharmacyExportRows
     {
         return Declaration::query()
             ->with(['insurer:id,name,standard_delay_days,penalty_trigger_days,penalty_rate_bp', 'payments'])
-            ->withCount('revisions')
+            ->withCount(['revisions' => fn ($query) => $query->aboutFigures()])
             ->where('pharmacy_id', $pharmacy->id)
             ->whereRaw(
                 '(period_year * 12 + period_month) BETWEEN ? AND ?',
@@ -93,6 +98,8 @@ class PharmacyExportRows
     protected function row(Declaration $declaration): array
     {
         $standard = $declaration->insurer->standard_delay_days;
+        // Une fois par ligne : le statut et la due s'en déduisent.
+        $accrued = $this->penalties->for($declaration);
 
         return [
             $declaration->period_year,
@@ -112,15 +119,36 @@ class PharmacyExportRows
             // inauditable dans un tableur.
             $declaration->insurer->penalty_trigger_days,
             $declaration->insurer->penaltyRatePercent(),
-            $this->penalties->for($declaration),
+            $accrued,
+            $this->settlementStatus($declaration, $accrued),
+            $declaration->penalty_settled_amount,
+            $declaration->penalty_settled_on?->toDateString(),
+            $this->penalties->dueFrom($declaration, $accrued),
             $declaration->payments->count(),
             // Les versements tiennent dans une cellule plutôt que d'éclater
             // chaque déclaration sur plusieurs lignes : le fichier reste une
             // ligne par mois et par assureur, donc triable et sommable.
             $this->renderInstalments($declaration),
+            // État d'origine exclu ; clôtures de pénalité exclues au comptage.
             max(0, $declaration->revisions_count - 1),
             $declaration->private_note,
         ];
+    }
+
+    /**
+     * « due », « payee » ou « annulee » ; null sans clause, comme le montant.
+     *
+     * Null ≠ « due » : le premier dit « pas de convention », le second « une
+     * convention, rien n'est clos ». Confondre les deux ferait lire une
+     * pénalité due là où il n'y a pas de clause à réclamer.
+     */
+    protected function settlementStatus(Declaration $declaration, ?int $accrued): ?string
+    {
+        if ($declaration->penalty_settlement !== null) {
+            return $declaration->penalty_settlement === PenaltySettlement::Paid ? 'payee' : 'annulee';
+        }
+
+        return $accrued === null ? null : 'due';
     }
 
     /**

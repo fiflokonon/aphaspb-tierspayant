@@ -180,7 +180,9 @@
 <p class="lede">
     Pénalité courue : ce qui est tombé pendant le mois, toutes factures
     confondues. Factures du mois : la pénalité, à ce jour, des factures de ce
-    mois déclaré. Le mois en cours est partiel.
+    mois déclaré. Dont payée, dont annulée : la part du couru dont la pénalité
+    a été close ; reste due : ce qui peut encore être réclamé. Le mois en cours
+    est partiel.
 </p>
 
 <table class="grid">
@@ -190,6 +192,9 @@
             <th>Pénalité courue</th>
             <th>Cumul couru</th>
             <th>Factures du mois</th>
+            <th>Dont payée</th>
+            <th>Dont annulée</th>
+            <th>Reste due</th>
         </tr>
     </thead>
     <tbody>
@@ -203,6 +208,9 @@
                 <td>{{ $money($month->accrued) }}</td>
                 <td>{{ $money($month->accruedCumulative) }}</td>
                 <td>{{ $money($month->declared) }}</td>
+                <td>{{ $money($month->accruedPaid) }}</td>
+                <td>{{ $money($month->accruedWaived) }}</td>
+                <td>{{ $money($month->accruedDue) }}</td>
             </tr>
         @endforeach
     </tbody>
@@ -219,6 +227,9 @@
                     <th>Pénalité courue</th>
                     <th>Cumul couru</th>
                     <th>Factures du mois</th>
+                    <th>Dont payée</th>
+                    <th>Dont annulée</th>
+                    <th>Reste due</th>
                 </tr>
             </thead>
             <tbody>
@@ -229,6 +240,9 @@
                         <td>{{ $money($month->accrued) }}</td>
                         <td>{{ $money($month->accruedCumulative) }}</td>
                         <td>{{ $money($month->declared) }}</td>
+                        <td>{{ $money($month->accruedPaid) }}</td>
+                        <td>{{ $money($month->accruedWaived) }}</td>
+                        <td>{{ $money($month->accruedDue) }}</td>
                     </tr>
                 @endforeach
             </tbody>

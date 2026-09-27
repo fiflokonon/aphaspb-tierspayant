@@ -7,6 +7,8 @@ namespace App\Data;
  *
  * Null ne dit jamais zéro : il dit « pas encore » (mois futur) ou « retenu »
  * (sous le seuil d'anonymat), et `future` / `withheld` disent lequel.
+ * `splitWithheld` dit que seul le découpage par statut (payée, annulée, due)
+ * est retenu, le couru du mois restant publié.
  */
 readonly class PenaltyLedgerMonth
 {
@@ -24,12 +26,20 @@ readonly class PenaltyLedgerMonth
         /** La pénalité, à ce jour, des factures de ce mois déclaré. */
         public ?int $declared,
         public bool $withheld = false,
+        /** La part du couru de ce mois dont la pénalité a été close « payée ». */
+        public ?int $accruedPaid = null,
+        /** La part du couru de ce mois dont la pénalité a été close « annulée ». */
+        public ?int $accruedWaived = null,
+        /** Le couru de ce mois moins ce qui a été payé ou annulé. */
+        public ?int $accruedDue = null,
+        /** Payée, annulée et due retenues ensemble, le couru publié. */
+        public bool $splitWithheld = false,
     ) {
         //
     }
 
     /**
-     * @return array{month: string, label: string, current: bool, future: bool, accrued: int|null, accruedCumulative: int|null, declared: int|null, withheld: bool}
+     * @return array{month: string, label: string, current: bool, future: bool, accrued: int|null, accruedCumulative: int|null, declared: int|null, withheld: bool, accruedPaid: int|null, accruedWaived: int|null, accruedDue: int|null, splitWithheld: bool}
      */
     public function toArray(): array
     {
@@ -42,6 +52,10 @@ readonly class PenaltyLedgerMonth
             'accruedCumulative' => $this->accruedCumulative,
             'declared' => $this->declared,
             'withheld' => $this->withheld,
+            'accruedPaid' => $this->accruedPaid,
+            'accruedWaived' => $this->accruedWaived,
+            'accruedDue' => $this->accruedDue,
+            'splitWithheld' => $this->splitWithheld,
         ];
     }
 }

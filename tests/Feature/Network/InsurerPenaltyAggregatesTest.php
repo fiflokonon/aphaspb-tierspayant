@@ -2,6 +2,7 @@
 
 use App\Data\Period;
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
@@ -204,6 +205,77 @@ test('the city filter narrows the aggregate like every other network read', func
 
     expect($figures[$insurer->id]->longestDelayDays)->toBe(44)
         ->and($figures[$insurer->id]->penalty)->toBe(0);
+});
+
+test('an insurer with no clause reads three nulls, not just the penalty', function () {
+    $insurer = Insurer::factory()->create(['standard_delay_days' => 30]);
+    penaltyDeclare($insurer, 7, ['delay_days' => 44]);
+
+    $figures = $this->aggregates->forInsurers([$insurer->id], ...$this->bounds)[$insurer->id];
+
+    expect($figures->penalty)->toBeNull()
+        ->and($figures->recovered)->toBeNull()
+        ->and($figures->waived)->toBeNull();
+});
+
+/**
+ * Un mois clos, réglé en une fois — condition du geste remplie (§5.1) : la
+ * facture est couverte à 100 % avant la clôture, contrairement à
+ * neverSettled(), qui décrit un mois que l'application refuserait de clore.
+ *
+ * Le versement tombe le 75ᵉ jour après le dépôt : la première tranche (jour
+ * 60) est déjà passée et non soldée — elle porte donc 20 000 F — mais la
+ * deuxième (jour 90) n'est jamais atteinte. Le montant clos égale exactement
+ * cette courue, comme l'exige ReconcilePenaltySettlement.
+ */
+function aggregatesSettledCoveredMonth(Insurer $insurer, int $month, PenaltySettlement $outcome, int $amount): Declaration
+{
+    $depositedOn = CarbonImmutable::create(2026, $month, 1);
+
+    return Declaration::factory()
+        ->instalments([
+            ['amount' => 1_000_000, 'paid_on' => $depositedOn->addDays(75)->toDateString()],
+        ])
+        ->penaltySettled($outcome, $amount)
+        ->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => $month,
+            'amount_invoiced' => 1_000_000,
+            'invoice_deposited_on' => $depositedOn,
+        ]);
+}
+
+test('the due excludes settled declarations while recovered and waived total them', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+
+    // Cinq officines : deux jamais réglées (60 000 chacune, encore dues), deux
+    // closes payées (20 000 chacune, recouvrées) et une close annulée
+    // (20 000, abandonnée).
+    foreach ([1, 2] as $month) {
+        penaltyDeclare($insurer, $month, neverSettled(120));
+    }
+
+    foreach ([3, 4] as $month) {
+        aggregatesSettledCoveredMonth($insurer, $month, PenaltySettlement::Paid, 20_000);
+    }
+
+    aggregatesSettledCoveredMonth($insurer, 5, PenaltySettlement::Waived, 20_000);
+
+    $figures = $this->aggregates->forInsurers([$insurer->id], ...$this->bounds)[$insurer->id];
+
+    // Total couru : 60 000 + 60 000 + 20 000 + 20 000 + 20 000 = 180 000.
+    // Due = total − recouvrée − abandonnée = 180 000 − 60 000, jamais négative
+    // puisque le montant clos égale exactement la courue de son mois.
+    expect($figures->penalty)->toBe(120_000)
+        ->and($figures->recovered)->toBe(40_000)
+        ->and($figures->waived)->toBe(20_000)
+        // Les officines derrière chaque part : l'appelant qui détient le seuil
+        // en décide, pas l'agrégateur.
+        ->and($figures->splitPharmacies->due)->toBe(2)
+        ->and($figures->splitPharmacies->paid)->toBe(2)
+        ->and($figures->splitPharmacies->waived)->toBe(1);
 });
 
 test('the query count stays flat however many declarations there are', function () {

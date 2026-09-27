@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\User;
@@ -111,6 +112,32 @@ test('the CSV has one row per month and insurer, then the total', function () {
         ->and($may[0][array_search('penalite_courue', $columns)])->toBe('20000')
         // Octobre et la suite ne sont pas encore arrivés : aucune ligne.
         ->and(array_filter($rows, fn (array $row) => $row[0] === '2026-10'))->toBe([]);
+});
+
+test('the file says what was paid, waived and what remains due', function () {
+    [$user, $insurer] = ledgerOfficine();
+    // Une facture d'avril soldée le 01/09, sa pénalité (juin à août) close « payée ».
+    Declaration::factory()
+        ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-09-01']])
+        ->penaltySettled(PenaltySettlement::Paid, 60_000)
+        ->create([
+            'pharmacy_id' => $user->currentPharmacy->id,
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => 4,
+            'amount_invoiced' => 1_000_000,
+            'invoice_deposited_on' => '2026-04-30',
+        ]);
+
+    $rows = ledgerCsv($user, ['format' => 'csv']);
+    $columns = PharmacyPenaltyLedgerRows::COLUMNS;
+    $july = array_values(array_filter($rows, fn (array $row) => $row[0] === '2026-07' && $row[1] === 'NSIA'))[0];
+
+    expect(array_slice($columns, array_search('penalite_mois_declare', $columns) + 1, 3))->toBe(['dont_payee', 'dont_annulee', 'reste_due'])
+        ->and($july[array_search('penalite_courue', $columns)])->toBe('40000')
+        ->and($july[array_search('dont_payee', $columns)])->toBe('20000')
+        ->and($july[array_search('dont_annulee', $columns)])->toBe('0')
+        ->and($july[array_search('reste_due', $columns)])->toBe('20000');
 });
 
 test('the current month is flagged in the file', function () {

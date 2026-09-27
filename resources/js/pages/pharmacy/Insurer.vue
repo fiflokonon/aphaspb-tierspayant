@@ -37,6 +37,13 @@ type Relationship = {
     penalty: number | null;
 };
 
+type PenaltySettlement = {
+    outcome: 'paid' | 'waived';
+    label: string;
+    amount: number;
+    on: string | null;
+};
+
 type MonthRow = {
     id: number;
     monthLabel: string;
@@ -49,6 +56,10 @@ type MonthRow = {
     delayDays: number | null;
     instalments: number;
     penalty: number | null;
+    penaltyDue: number | null;
+    settlement: PenaltySettlement | null;
+    canSettle: boolean;
+    settlementUrl: string;
     editUrl: string;
 };
 
@@ -100,7 +111,7 @@ const EXPORT_FORMATS = [
     lede: string;
 }[];
 
-const TEMPLATE = '.9fr .9fr 1fr 1fr 1fr .9fr .9fr .7fr .9fr';
+const TEMPLATE = '.9fr .9fr 1fr 1fr 1fr .9fr .9fr .7fr 1.6fr';
 const COLUMNS = [
     'MOIS',
     'STATUT',
@@ -112,6 +123,18 @@ const COLUMNS = [
     'DÉLAI',
     'PÉNALITÉ',
 ];
+
+/**
+ * Clore la pénalité d'un mois couvert, payée ou annulée.
+ */
+const settle = (row: MonthRow, outcome: 'paid' | 'waived') =>
+    router.post(row.settlementUrl, { outcome }, { preserveScroll: true });
+
+/**
+ * Remettre en dû une pénalité close.
+ */
+const reopen = (row: MonthRow) =>
+    router.delete(row.settlementUrl, { preserveScroll: true });
 </script>
 
 <template>
@@ -272,7 +295,7 @@ const COLUMNS = [
                         : formatMillions(relationship.penalty)
                 "
                 unit="FCFA"
-                hint="mois soldés en retard compris"
+                hint="pénalités payées ou annulées déduites"
             />
         </KpiRow>
 
@@ -312,7 +335,44 @@ const COLUMNS = [
                     {{ row.delayDays === null ? '—' : `${row.delayDays} j` }}
                 </div>
 
-                <div>{{ formatAmount(row.penalty) }}</div>
+                <div class="penalty-cell">
+                    <template v-if="row.settlement">
+                        <span class="settlement-chip">
+                            {{ row.settlement.label }}
+                            <template v-if="row.settlement.outcome === 'paid'">
+                                {{ formatAmount(row.settlement.amount) }}
+                            </template>
+                            · le {{ row.settlement.on }}
+                        </span>
+                        <button
+                            type="button"
+                            class="settlement-action"
+                            @click="reopen(row)"
+                        >
+                            Remettre en dû
+                        </button>
+                    </template>
+
+                    <template v-else>
+                        <span>{{ formatAmount(row.penaltyDue) }}</span>
+                        <template v-if="row.canSettle">
+                            <button
+                                type="button"
+                                class="settlement-action"
+                                @click="settle(row, 'paid')"
+                            >
+                                Marquer payée
+                            </button>
+                            <button
+                                type="button"
+                                class="settlement-action"
+                                @click="settle(row, 'waived')"
+                            >
+                                Annuler la pénalité
+                            </button>
+                        </template>
+                    </template>
+                </div>
             </DataTableRow>
         </DataTable>
 
@@ -411,6 +471,39 @@ const COLUMNS = [
 
 .month-link {
     font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.penalty-cell {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.settlement-chip {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--cream-header);
+    color: var(--ink);
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.settlement-action {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--officine);
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.settlement-action:hover {
     text-decoration: underline;
     text-underline-offset: 2px;
 }

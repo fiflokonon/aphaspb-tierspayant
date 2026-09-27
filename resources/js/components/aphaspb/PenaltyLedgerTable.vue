@@ -4,6 +4,9 @@
  *
  * Une ligne retenue reste une ligne : absente, elle se lirait « rien couru ».
  * Un mois futur de la période n'en a pas — il n'y a encore rien à y écrire.
+ *
+ * Payée, annulée et due suivent l'horloge « couru ». Sept colonnes : la table
+ * défile à l'horizontale sur écran étroit plutôt que d'en cacher une.
  */
 import { computed, ref } from 'vue';
 import { formatAmount } from '@/lib/fcfa';
@@ -33,15 +36,40 @@ const rows = computed(() =>
         .filter(({ month }) => !month.future),
 );
 
+type AmountKey =
+    | 'accrued'
+    | 'accruedCumulative'
+    | 'declared'
+    | 'accruedPaid'
+    | 'accruedWaived'
+    | 'accruedDue';
+
+const COLUMNS: { key: AmountKey; label: string }[] = [
+    { key: 'accrued', label: 'Pénalité courue' },
+    { key: 'accruedCumulative', label: 'Cumul couru' },
+    { key: 'declared', label: 'Factures du mois' },
+    { key: 'accruedPaid', label: 'Dont payée' },
+    { key: 'accruedWaived', label: 'Dont annulée' },
+    { key: 'accruedDue', label: 'Reste due' },
+];
+
+/** Le découpage par statut : retenu en bloc quand une part est sous le seuil. */
+const SPLIT_KEYS: AmountKey[] = ['accruedPaid', 'accruedWaived', 'accruedDue'];
+
 const cell = (
     month: PenaltyLedgerMonth | undefined,
-    key: 'accrued' | 'accruedCumulative' | 'declared',
+    key: AmountKey,
 ): string => {
     if (month === undefined) {
         return '—';
     }
 
     if (month.withheld) {
+        return 'retenu';
+    }
+
+    // Le couru reste publié ; seules ses trois parts tombent ensemble.
+    if (month.splitWithheld && SPLIT_KEYS.includes(key)) {
         return 'retenu';
     }
 
@@ -59,20 +87,18 @@ const cell = (
     <div
         class="overflow-x-auto rounded-[var(--radius-card)] bg-card shadow-[var(--surface-shadow)]"
     >
-        <table class="w-full min-w-[560px] text-[13px]">
+        <table class="w-full min-w-[880px] text-[13px]">
             <thead>
                 <tr
                     class="text-left font-mono text-label tracking-[0.14em] text-ink/60 uppercase"
                 >
                     <th class="px-4 py-3 font-semibold">Mois</th>
-                    <th class="px-4 py-3 text-right font-semibold">
-                        Pénalité courue
-                    </th>
-                    <th class="px-4 py-3 text-right font-semibold">
-                        Cumul couru
-                    </th>
-                    <th class="px-4 py-3 text-right font-semibold">
-                        Factures du mois
+                    <th
+                        v-for="column in COLUMNS"
+                        :key="column.key"
+                        class="px-4 py-3 text-right font-semibold"
+                    >
+                        {{ column.label }}
                     </th>
                 </tr>
             </thead>
@@ -101,14 +127,12 @@ const cell = (
                                 >sous le seuil</span
                             >
                         </td>
-                        <td class="px-4 py-2.5 text-right tabular-nums">
-                            {{ cell(month, 'accrued') }}
-                        </td>
-                        <td class="px-4 py-2.5 text-right tabular-nums">
-                            {{ cell(month, 'accruedCumulative') }}
-                        </td>
-                        <td class="px-4 py-2.5 text-right tabular-nums">
-                            {{ cell(month, 'declared') }}
+                        <td
+                            v-for="column in COLUMNS"
+                            :key="column.key"
+                            class="px-4 py-2.5 text-right tabular-nums"
+                        >
+                            {{ cell(month, column.key) }}
                         </td>
                     </tr>
 
@@ -119,19 +143,12 @@ const cell = (
                             class="bg-cream-header/40 text-ink/75"
                         >
                             <td class="py-2 pr-4 pl-8">{{ series.name }}</td>
-                            <td class="px-4 py-2 text-right tabular-nums">
-                                {{ cell(series.months[index], 'accrued') }}
-                            </td>
-                            <td class="px-4 py-2 text-right tabular-nums">
-                                {{
-                                    cell(
-                                        series.months[index],
-                                        'accruedCumulative',
-                                    )
-                                }}
-                            </td>
-                            <td class="px-4 py-2 text-right tabular-nums">
-                                {{ cell(series.months[index], 'declared') }}
+                            <td
+                                v-for="column in COLUMNS"
+                                :key="column.key"
+                                class="px-4 py-2 text-right tabular-nums"
+                            >
+                                {{ cell(series.months[index], column.key) }}
                             </td>
                         </tr>
                     </template>

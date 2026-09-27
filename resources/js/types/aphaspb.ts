@@ -95,6 +95,14 @@ export type PenaltyLedgerMonth = {
     accruedCumulative: number | null;
     declared: number | null;
     withheld: boolean;
+    /** La part du couru de ce mois close « payée ». */
+    accruedPaid: number | null;
+    /** La part du couru de ce mois close « annulée ». */
+    accruedWaived: number | null;
+    /** Le couru de ce mois moins le payé et l'annulé. */
+    accruedDue: number | null;
+    /** Payée, annulée et due retenues ensemble (une part sous le seuil), le couru publié. */
+    splitWithheld: boolean;
 };
 
 export type PenaltyLedgerSeries = {
@@ -109,11 +117,14 @@ export type PenaltyLedger = {
     maskedInsurers: number;
 };
 
-/** Les deux horloges du journal : le mois où la tranche tombe, ou celui de la facture. */
-export type PenaltyView = 'accrued' | 'declared';
+/**
+ * Les vues du journal : le mois où la tranche tombe, celui de la facture, ou
+ * ce qui reste dû du couru une fois le payé et l'annulé retirés.
+ */
+export type PenaltyView = 'accrued' | 'declared' | 'due';
 
 export function isPenaltyView(value: unknown): value is PenaltyView {
-    return value === 'accrued' || value === 'declared';
+    return value === 'accrued' || value === 'declared' || value === 'due';
 }
 
 /** Le camembert n'a pas de sens pour une évolution : ligne ou barres seulement. */

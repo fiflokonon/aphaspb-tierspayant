@@ -9,7 +9,8 @@ import DerivedStatusNotice from '@/components/aphaspb/DerivedStatusNotice.vue';
 import PaymentInstalments from '@/components/aphaspb/PaymentInstalments.vue';
 import type { Instalment } from '@/components/aphaspb/PaymentInstalments.vue';
 import PeriodPicker from '@/components/aphaspb/PeriodPicker.vue';
-import { formatFcfa } from '@/lib/fcfa';
+import { formatAmount, formatFcfa } from '@/lib/fcfa';
+import { revisionPenaltyLine } from '@/lib/revisionPenalty';
 import type { DeclarationStatus, SelectablePeriod } from '@/types/aphaspb';
 import type { ConsoleAccount } from '@/types/console';
 
@@ -28,6 +29,18 @@ type Revision = {
     invoiceDepositedOn: string | null;
     delayDays: number | null;
     payments: { amount: number; paid_on: string; delay_days: number | null }[];
+    penaltySettlement: 'paid' | 'waived' | null;
+    penaltySettlementLabel: string | null;
+    penaltySettledAmount: number | null;
+    penaltyOnly: boolean;
+};
+
+type PenaltyChoice = 'due' | 'paid' | 'waived';
+
+type Penalty = {
+    accrued: number | null;
+    settlement: Exclude<PenaltyChoice, 'due'> | null;
+    covered: boolean;
 };
 
 type Declaration = {
@@ -40,6 +53,8 @@ type Declaration = {
     delay_days: number | null;
     private_note: string | null;
     payments: Payment[];
+    penalty: Penalty;
+    correctionCount: number;
     revisions: Revision[];
 };
 
@@ -77,6 +92,32 @@ const instalments = ref<Instalment[]>(
 const received = computed(() =>
     instalments.value.reduce((sum, line) => sum + line.amount, 0),
 );
+/**
+ * La pénalité courue du mois, montrée seulement quand il y en a une.
+ *
+ * Le choix repart pré-rempli sur l'état enregistré, et cet état repart avec
+ * lui (`penalty_settlement_shown`) : le serveur n'applique le choix que s'il
+ * diffère de ce que le formulaire montrait. Une correction qui a levé la
+ * clôture n'est donc pas aussitôt reclose par le même envoi, et un formulaire
+ * resté ouvert ne défait pas une clôture faite depuis sur l'écran assureur.
+ */
+const penalty = computed(() =>
+    (props.declaration?.penalty?.accrued ?? 0) > 0
+        ? props.declaration!.penalty
+        : null,
+);
+
+const PENALTY_CHOICES: { value: PenaltyChoice; label: string }[] = [
+    { value: 'due', label: 'Due' },
+    { value: 'paid', label: 'Payée par l’assureur' },
+    { value: 'waived', label: 'Annulée' },
+];
+
+const penaltyShown: PenaltyChoice =
+    props.declaration?.penalty?.settlement ?? 'due';
+
+const penaltyChoice = ref<PenaltyChoice>(penaltyShown);
+
 const note = ref(props.declaration?.private_note ?? '');
 const noteOpen = ref(!!props.declaration?.private_note);
 const rejected = ref(props.declaration?.status === 'rejected');
@@ -169,11 +210,22 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 const revisions = computed(() => props.declaration?.revisions ?? []);
 
 /**
- * La première révision est l'état d'origine, pas une correction : une
- * déclaration enregistrée une fois puis laissée tranquille n'a pas été
- * « modifiée ».
+ * Compté par le serveur, comme l'historique et l'export : la première révision
+ * est l'état d'origine, et une révision qui ne porte qu'une clôture de
+ * pénalité n'est pas une correction.
  */
-const correctionCount = computed(() => Math.max(0, revisions.value.length - 1));
+const correctionCount = computed(() => props.declaration?.correctionCount ?? 0);
+
+const historyLabel = computed(() =>
+    correctionCount.value > 0
+        ? `Modifiée ${correctionCount.value} fois`
+        : 'Historique',
+);
+
+/** Voir revisionPenaltyLine() : seule une révision où la clôture change en parle. */
+function penaltyLine(index: number): string | null {
+    return revisionPenaltyLine(revisions.value, index);
+}
 
 const historyOpen = ref(false);
 
@@ -371,6 +423,43 @@ const officine = computed(() => {
                         :errors="errors"
                     />
 
+                    <fieldset v-if="penalty" class="penalty-panel">
+                        <legend class="penalty-legend">
+                            Pénalité de ce mois ·
+                            {{ formatAmount(penalty.accrued) }} F
+                        </legend>
+
+                        <p v-if="!penalty.covered" class="penalty-hint">
+                            Possible une fois le mois entièrement réglé.
+                        </p>
+
+                        <input
+                            type="hidden"
+                            name="penalty_settlement_shown"
+                            :value="penaltyShown"
+                        />
+
+                        <div class="penalty-choices">
+                            <label
+                                v-for="choice in PENALTY_CHOICES"
+                                :key="choice.value"
+                                class="penalty-choice"
+                            >
+                                <input
+                                    v-model="penaltyChoice"
+                                    type="radio"
+                                    name="penalty_settlement"
+                                    :value="choice.value"
+                                />
+                                {{ choice.label }}
+                            </label>
+                        </div>
+
+                        <p v-if="errors.penalty_settlement" class="field-error">
+                            {{ errors.penalty_settlement }}
+                        </p>
+                    </fieldset>
+
                     <button
                         type="button"
                         class="secondary-action"
@@ -439,7 +528,7 @@ const officine = computed(() => {
                         pas à chaque déclaration. Replié par défaut, comme la
                         note privée juste au-dessus.
                     -->
-                    <div v-if="correctionCount > 0" class="revision-history">
+                    <div v-if="revisions.length > 1" class="revision-history">
                         <button
                             type="button"
                             class="note-toggle"
@@ -449,7 +538,7 @@ const officine = computed(() => {
                                 {{ historyOpen ? '−' : '+' }}
                             </span>
 
-                            <span> Modifiée {{ correctionCount }} fois </span>
+                            <span>{{ historyLabel }}</span>
 
                             <span class="note-description">
                                 dernière le
@@ -487,51 +576,65 @@ const officine = computed(() => {
                                         </span>
                                     </div>
 
-                                    <div class="revision-figures">
-                                        <span>
-                                            {{
-                                                formatFcfa(
-                                                    revision.amountReceived,
-                                                )
-                                            }}
-                                            reçus sur
-                                            {{
-                                                formatFcfa(
-                                                    revision.amountInvoiced,
-                                                )
-                                            }}
-                                        </span>
-
-                                        <span class="revision-status">
-                                            {{ revision.statusLabel }}
-                                        </span>
-
-                                        <span
-                                            v-if="revision.delayDays !== null"
-                                        >
-                                            {{ revision.delayDays }} j
-                                        </span>
-                                    </div>
-
-                                    <ul
-                                        v-if="revision.payments.length > 0"
-                                        class="revision-payments"
+                                    <p
+                                        v-if="penaltyLine(index) !== null"
+                                        class="revision-penalty"
                                     >
-                                        <li
-                                            v-for="(
-                                                payment, line
-                                            ) in revision.payments"
-                                            :key="line"
-                                        >
-                                            {{ formatFcfa(payment.amount) }}
-                                            FCFA le
-                                            {{ formatDay(payment.paid_on) }}
-                                        </li>
-                                    </ul>
-
-                                    <p v-else class="revision-payments-empty">
-                                        Aucun versement à cette date.
+                                        {{ penaltyLine(index) }}
                                     </p>
+
+                                    <template v-if="!revision.penaltyOnly">
+                                        <div class="revision-figures">
+                                            <span>
+                                                {{
+                                                    formatFcfa(
+                                                        revision.amountReceived,
+                                                    )
+                                                }}
+                                                reçus sur
+                                                {{
+                                                    formatFcfa(
+                                                        revision.amountInvoiced,
+                                                    )
+                                                }}
+                                            </span>
+
+                                            <span class="revision-status">
+                                                {{ revision.statusLabel }}
+                                            </span>
+
+                                            <span
+                                                v-if="
+                                                    revision.delayDays !== null
+                                                "
+                                            >
+                                                {{ revision.delayDays }} j
+                                            </span>
+                                        </div>
+
+                                        <ul
+                                            v-if="revision.payments.length > 0"
+                                            class="revision-payments"
+                                        >
+                                            <li
+                                                v-for="(
+                                                    payment, line
+                                                ) in revision.payments"
+                                                :key="line"
+                                            >
+                                                {{ formatFcfa(payment.amount) }}
+                                                FCFA le
+                                                {{ formatDay(payment.paid_on) }}
+                                            </li>
+                                        </ul>
+
+                                        <p
+                                            v-else
+                                            class="revision-payments-empty"
+                                        >
+                                            Aucun versement à cette date.
+                                        </p>
+                                    </template>
                                 </li>
                             </ol>
                         </Transition>
@@ -1280,6 +1383,59 @@ const officine = computed(() => {
     margin-top: 10px;
 }
 
+.penalty-panel {
+    margin-top: 14px;
+
+    border: 0;
+
+    padding: 0;
+}
+
+.penalty-legend {
+    padding: 0;
+
+    color: var(--ink);
+
+    font-size: 10.5px;
+    font-weight: 700;
+}
+
+.penalty-hint {
+    margin-top: 4px;
+
+    color: var(--light);
+
+    font-size: 12.5px;
+}
+
+.penalty-choices {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px 16px;
+
+    margin-top: 10px;
+}
+
+.penalty-choice {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    color: var(--ink);
+
+    font-size: 12.5px;
+
+    cursor: pointer;
+}
+
+.penalty-choice input {
+    accent-color: var(--officine);
+}
+
 .note-textarea {
     width: 100%;
 
@@ -1948,6 +2104,14 @@ const officine = computed(() => {
     gap: 10px;
 
     color: color-mix(in srgb, var(--ink) 70%, transparent);
+}
+
+.revision-penalty {
+    margin: 4px 0 0;
+
+    font-weight: 650;
+
+    color: var(--ink);
 }
 
 .revision-status {

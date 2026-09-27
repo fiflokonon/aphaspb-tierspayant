@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Declarations\ReconcilePenaltySettlement;
+use App\Actions\Declarations\RecordDeclarationRevision;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveInsurerRequest;
+use App\Models\Declaration;
 use App\Models\Insurer;
+use App\Models\User;
 use App\Services\Settings\SettingsRepository;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -67,9 +72,13 @@ class InsurerManagementController extends Controller
         return to_route('admin.insurers');
     }
 
-    public function update(SaveInsurerRequest $request, Insurer $insurer): RedirectResponse
-    {
-        $insurer->update([
+    public function update(
+        SaveInsurerRequest $request,
+        Insurer $insurer,
+        ReconcilePenaltySettlement $reconcile,
+        RecordDeclarationRevision $revisions,
+    ): RedirectResponse {
+        $insurer->fill([
             'name' => $request->validated('name', $insurer->name),
             'is_active' => $request->has('is_active')
                 ? $request->boolean('is_active')
@@ -86,7 +95,60 @@ class InsurerManagementController extends Controller
             ] : [],
         ]);
 
+        $reopened = DB::transaction(function () use ($insurer, $reconcile, $revisions, $request): int {
+            $clauseChanged = $insurer->isDirty(['penalty_trigger_days', 'penalty_rate_bp']);
+
+            $insurer->save();
+
+            return $clauseChanged
+                ? $this->reconcileClosures($insurer, $reconcile, $revisions, $request->user())
+                : 0;
+        });
+
+        if ($reopened > 0) {
+            Inertia::flash('toast', [
+                'type' => 'info',
+                'message' => "{$reopened} pénalité(s) close(s) rouvertes : le montant a changé avec la clause.",
+            ]);
+        }
+
         return to_route('admin.insurers');
+    }
+
+    /**
+     * Lever les clôtures que la nouvelle clause ne justifie plus.
+     *
+     * Le montant clos doit égaler la pénalité calculée : due, agrégats et
+     * journal n'en retiennent que l'issue. Une clause changée change le calcul
+     * sans qu'aucun mois soit réenregistré ; sans cette passe, la clôture
+     * survivrait avec un montant faux, puis tomberait au prochain
+     * enregistrement de l'officine avec un message dont elle n'est pas
+     * l'auteur. Chaque levée laisse une révision signée de l'administrateur.
+     *
+     * @return int le nombre de clôtures levées
+     */
+    protected function reconcileClosures(
+        Insurer $insurer,
+        ReconcilePenaltySettlement $reconcile,
+        RecordDeclarationRevision $revisions,
+        User $admin,
+    ): int {
+        $reopened = 0;
+
+        $closed = Declaration::query()
+            ->where('insurer_id', $insurer->id)
+            ->whereNotNull('penalty_settlement')
+            ->with(['insurer', 'payments'])
+            ->get();
+
+        foreach ($closed as $declaration) {
+            if ($reconcile->reconcile($declaration) !== null) {
+                $revisions->handle($declaration, $admin);
+                $reopened++;
+            }
+        }
+
+        return $reopened;
     }
 
     /**

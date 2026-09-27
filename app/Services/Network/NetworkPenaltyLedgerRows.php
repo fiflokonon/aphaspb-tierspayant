@@ -11,11 +11,12 @@ use App\Services\Settings\SettingsRepository;
  *
  * Ne nomme aucune officine. Ne décide d'aucune rétention : les mois retenus
  * arrivent déjà vidés de NetworkPenaltyJournal, et gardent leur ligne avec
- * l'explication — une ligne absente se lirait « rien couru ».
+ * l'explication — une ligne absente se lirait « rien couru ». Un découpage
+ * par statut retenu seul s'explique de même.
  */
 class NetworkPenaltyLedgerRows
 {
-    public const COLUMNS = ['mois', 'assureur', 'penalite_courue', 'cumul_couru', 'penalite_mois_declare', 'mois_en_cours', 'retenu'];
+    public const COLUMNS = ['mois', 'assureur', 'penalite_courue', 'cumul_couru', 'penalite_mois_declare', 'dont_payee', 'dont_annulee', 'reste_due', 'mois_en_cours', 'retenu'];
 
     public function __construct(
         protected NetworkPenaltyJournal $journal,
@@ -66,13 +67,30 @@ class NetworkPenaltyLedgerRows
             $month->accrued,
             $month->accruedCumulative,
             $month->declared,
+            $month->accruedPaid,
+            $month->accruedWaived,
+            $month->accruedDue,
             $month->current ? 'oui' : 'non',
-            match (true) {
-                $month->withheld => $reason,
-                // Le cumul vide d'un mois publié vient d'un mois retenu plus tôt.
-                $month->accruedCumulative === null => 'cumul interrompu par un mois retenu',
-                default => null,
-            },
+            $this->explanation($month, $reason),
         ];
+    }
+
+    /**
+     * Pourquoi des cellules d'un mois sont vides, ou null si rien ne l'est.
+     */
+    protected function explanation(PenaltyLedgerMonth $month, string $reason): ?string
+    {
+        if ($month->withheld) {
+            return $reason;
+        }
+
+        $notes = array_filter([
+            // Le couru reste publié ; seules ses trois parts sont vidées.
+            $month->splitWithheld ? 'payée / annulée / due : une part sur '.$reason : null,
+            // Le cumul vide d'un mois publié vient d'un mois retenu plus tôt.
+            $month->accruedCumulative === null ? 'cumul interrompu par un mois retenu' : null,
+        ]);
+
+        return $notes === [] ? null : implode(' ; ', $notes);
     }
 }

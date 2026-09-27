@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use Carbon\CarbonImmutable;
 use Database\Factories\DeclarationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -30,6 +31,10 @@ use Illuminate\Support\Carbon;
  * @property CarbonImmutable|null $paid_on
  * @property int|null $delay_days
  * @property string|null $private_note
+ * @property PenaltySettlement|null $penalty_settlement
+ * @property int|null $penalty_settled_amount
+ * @property CarbonImmutable|null $penalty_settled_on
+ * @property int|null $penalty_settled_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read int<0, max> $amount_outstanding
@@ -108,6 +113,9 @@ class Declaration extends Model
             'amount_invoiced' => 'integer',
             'amount_received' => 'integer',
             'delay_days' => 'integer',
+            'penalty_settlement' => PenaltySettlement::class,
+            'penalty_settled_amount' => 'integer',
+            'penalty_settled_on' => 'immutable_date',
         ];
     }
 
@@ -192,6 +200,43 @@ class Declaration extends Model
         return Attribute::get(
             fn (): int => max(0, $this->amount_invoiced - $this->amount_received),
         );
+    }
+
+    /**
+     * Clore la pénalité : les quatre colonnes ensemble, jamais une seule.
+     *
+     * Hors de Fillable exprès : une clôture ne vient jamais d'un fill() de
+     * requête, seulement de SettlePenalty, qui a vérifié la condition.
+     */
+    public function settlePenalty(PenaltySettlement $outcome, int $amount, User $by): void
+    {
+        $this->forceFill([
+            'penalty_settlement' => $outcome,
+            'penalty_settled_amount' => $amount,
+            'penalty_settled_on' => now()->toDateString(),
+            'penalty_settled_by' => $by->id,
+        ])->save();
+    }
+
+    public function clearPenaltySettlement(): void
+    {
+        $this->forceFill([
+            'penalty_settlement' => null,
+            'penalty_settled_amount' => null,
+            'penalty_settled_on' => null,
+            'penalty_settled_by' => null,
+        ])->save();
+    }
+
+    public function isPenaltySettled(): bool
+    {
+        return $this->penalty_settlement !== null;
+    }
+
+    /** Couvert à 100 % : la seule condition de mois sous laquelle une pénalité se clôt. */
+    public function isFullyCovered(): bool
+    {
+        return $this->amount_received >= $this->amount_invoiced;
     }
 
     /**

@@ -49,7 +49,14 @@ function pick(
         return null;
     }
 
-    return view === 'accrued' ? month.accrued : month.declared;
+    switch (view) {
+        case 'accrued':
+            return month.accrued;
+        case 'declared':
+            return month.declared;
+        case 'due':
+            return month.accruedDue;
+    }
 }
 
 export function penaltyChartRows(

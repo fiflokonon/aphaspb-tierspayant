@@ -57,7 +57,7 @@ class DeclarationHistoryController extends Controller
 
         $declarations = Declaration::query()
             ->with('insurer:id,name')
-            ->withCount(['revisions', 'payments'])
+            ->withCount(['revisions' => fn ($query) => $query->aboutFigures(), 'payments'])
             ->where('pharmacy_id', $pharmacy->id)
             ->when($insurerId, fn ($query) => $query->where('insurer_id', $insurerId))
             ->when($year, fn ($query) => $query->where('period_year', $year))
@@ -85,7 +85,8 @@ class DeclarationHistoryController extends Controller
                 'delayDays' => $declaration->delay_days,
                 'instalments' => $declaration->payments_count,
                 // La première révision est l'état d'origine : seules les
-                // suivantes sont des corrections.
+                // suivantes sont des corrections. Le comptage exclut déjà
+                // celles qui ne portent qu'une clôture de pénalité.
                 'corrections' => max(0, $declaration->revisions_count - 1),
                 'privateNote' => $declaration->private_note,
                 'editUrl' => route('pharmacy.declare', [

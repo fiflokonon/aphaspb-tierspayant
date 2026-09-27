@@ -78,3 +78,21 @@ Deux tests le tiennent : un sur les données (`summary` vaut null), un sur le **
 - Filtrée sur un assureur masqué, la série totale est retenue en bloc ; sur un assureur autorisé, elle suit sa rétention mois par mois.
 
 `NetworkPenaltyLedger::tally()` coûte trois requêtes quel que soit le volume (test dédié).
+
+## Le découpage par statut de clôture relève aussi du seuil
+Due / recouvrée / abandonnée (`InsurerPenaltyAggregates` → exports réseau) et `accruedPaid` / `accruedWaived` / `accruedDue` (journal) désagrègent un assureur autorisé : une officine qui annule seule publierait son montant exact.
+
+**Règle de partition** (27/09/2026) : le découpage n'est publié que si chaque part **non vide** repose sur ≥ seuil officines distinctes ; sinon les trois parts tombent **ensemble** (null), la courue / le couru du mois restant publiés. Une seule part cachée se retrouverait par différence avec les autres.
+
+- Les agrégats exposent `PenaltySplitPharmacies` (compté dans le curseur existant : toujours 4 requêtes) ; `NetworkExportRows` / `NetworkPdfExport` décident via `restsOnFewerThan()`. CSV/XLSX : cellules vides ; PDF : « retenu » + une ligne d'explication.
+- Journal : `PenaltyTally::ledger(..., $splitWithheld)` passe les officines de chaque part et, pour le total, celles des parts cachées des séries publiées (mois retenus ou découpages retenus) ; `NetworkPenaltyJournal` retient, séries **et** total, filtre ou non. `PenaltyLedgerMonth::splitWithheld` dit « retenu » à l'écran et dans les exports. Toujours 3 requêtes.
+- Le journal officine n'est pas concerné (l'officine lit ses propres chiffres).
+- La partition reste stricte pour la due aussi : un assureur autorisé sans aucune clôture, dont 1 à seuil − 1 officines seulement ont couru une pénalité, garde `penalite_potentielle_fcfa` (et le titre du PDF) retenus, même quand le journal ne retient rien (test `without closures, a due resting on too few officines stays withheld`).
+
+## Un mois retenu du journal retient le découpage de l'export
+La due / recouvrée / abandonnée de période d'un assureur autorisé (`NetworkExportRows`, `NetworkPdfExport`), moins les mois publiés du journal réseau du **même périmètre** (période, ville, filtre assureur), rend tout mois que le journal retient — en entier ou dans son seul découpage. Cas courant : mêmes fenêtres, `to` = mois courant.
+
+- Les trois chiffres de l'export tombent donc ensemble dès que la série de l'assureur a un mois non futur `withheld` ou `splitWithheld` : `PenaltyLedger::insurersWithWithheldMonths()`, lu sur `NetworkPenaltyJournal::for()` **une fois par export**, jamais par assureur.
+- S'ajoute à la règle de partition, ne la remplace pas. PDF : « retenu » + note qui cite le journal (`splitWithheldByLedger`).
+- Un assureur sans série (pas de clause) n'est pas concerné. L'export gagne les requêtes du journal ; `InsurerPenaltyAggregates` (4) et `tally()` (3) sont inchangés.
+- Tests : `a month whose status split the journal withholds…` et `a month the journal withholds entirely…` — vérifiés par mutation (garde neutralisée, les deux rougissent).

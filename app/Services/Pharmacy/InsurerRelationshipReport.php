@@ -2,6 +2,7 @@
 
 namespace App\Services\Pharmacy;
 
+use App\Actions\Declarations\SettlePenalty;
 use App\Data\InsurerRelationship;
 use App\Data\Period;
 use App\Models\Declaration;
@@ -31,6 +32,7 @@ class InsurerRelationshipReport
     public function __construct(
         protected PenaltyCalculator $penalties,
         protected LongestDelay $longestDelay,
+        protected SettlePenalty $settle,
     ) {
         //
     }
@@ -52,9 +54,11 @@ class InsurerRelationshipReport
         // fois par mois déclaré.
         $declarations->each(fn (Declaration $one) => $one->setRelation('insurer', $insurer));
 
+        $months = $this->months($declarations, $insurer);
+
         return [
-            'summary' => $this->summary($insurer, $declarations),
-            'months' => $this->months($declarations, $insurer),
+            'summary' => $this->summary($insurer, $declarations, $months),
+            'months' => $months,
         ];
     }
 
@@ -83,6 +87,9 @@ class InsurerRelationshipReport
                 'invoice_deposited_on',
                 'paid_on',
                 'delay_days',
+                'penalty_settlement',
+                'penalty_settled_amount',
+                'penalty_settled_on',
             ])
             ->with('payments')
             ->where('pharmacy_id', $pharmacy->id)
@@ -97,9 +104,15 @@ class InsurerRelationshipReport
     }
 
     /**
+     * La pénalité due du résumé est la somme des lignes : les tranches ne se
+     * déroulent qu'une fois par mois. Même règle null / zéro que
+     * PenaltyCalculator::dueTotal() — la clause de l'assureur décide, pas les
+     * lignes (un mois rejeté sous convention lit null, et compte zéro).
+     *
      * @param  Collection<int, Declaration>  $declarations
+     * @param  list<array<string, mixed>>  $months
      */
-    protected function summary(Insurer $insurer, Collection $declarations): InsurerRelationship
+    protected function summary(Insurer $insurer, Collection $declarations, array $months): InsurerRelationship
     {
         $invoiced = (int) $declarations->sum('amount_invoiced');
         $received = (int) $declarations->sum('amount_received');
@@ -123,7 +136,9 @@ class InsurerRelationshipReport
                 ) / $basis, 1)
                 : null,
             longestDelayDays: $this->longestDelay->for($declarations),
-            penalty: $this->penalties->total($declarations),
+            penalty: $insurer->hasPenaltyClause()
+                ? array_sum(array_map(fn (array $month): int => (int) ($month['penaltyDue'] ?? 0), $months))
+                : null,
         );
     }
 
@@ -135,7 +150,19 @@ class InsurerRelationshipReport
      */
     protected function months(Collection $declarations, Insurer $insurer): array
     {
-        return array_values($declarations->map(fn (Declaration $one): array => [
+        return array_values($declarations->map(fn (Declaration $one): array => $this->month($one, $insurer))->all());
+    }
+
+    /**
+     * Une ligne : la courue calculée une fois, la due et le refus s'en déduisent.
+     *
+     * @return array<string, mixed>
+     */
+    protected function month(Declaration $one, Insurer $insurer): array
+    {
+        $accrued = $this->penalties->for($one);
+
+        return [
             'id' => $one->id,
             'year' => $one->period_year,
             'month' => $one->period_month,
@@ -149,12 +176,21 @@ class InsurerRelationshipReport
             'paidOn' => $one->paid_on?->toDateString(),
             'delayDays' => $one->delay_days,
             'instalments' => $one->payments->count(),
-            'penalty' => $this->penalties->for($one),
+            'penalty' => $accrued,
+            'penaltyDue' => $this->penalties->dueFrom($one, $accrued),
+            'settlement' => $one->penalty_settlement === null ? null : [
+                'outcome' => $one->penalty_settlement->value,
+                'label' => $one->penalty_settlement->label(),
+                'amount' => (int) $one->penalty_settled_amount,
+                'on' => $one->penalty_settled_on?->format('d/m'),
+            ],
+            'canSettle' => ! $one->isPenaltySettled() && $this->settle->refusalGiven($one, $accrued) === null,
+            'settlementUrl' => route('pharmacy.penalty-settlement.store', $one, absolute: false),
             'editUrl' => route('pharmacy.declare', [
                 'insurer' => $insurer->id,
                 'year' => $one->period_year,
                 'month' => $one->period_month,
             ], absolute: false),
-        ])->all());
+        ];
     }
 }

@@ -18,7 +18,7 @@ use App\Models\Pharmacy;
  */
 class PharmacyPenaltyLedgerRows
 {
-    public const COLUMNS = ['mois', 'assureur', 'penalite_courue', 'cumul_couru', 'penalite_mois_declare', 'mois_en_cours'];
+    public const COLUMNS = ['mois', 'assureur', 'penalite_courue', 'cumul_couru', 'penalite_mois_declare', 'dont_payee', 'dont_annulee', 'reste_due', 'mois_en_cours'];
 
     public function __construct(protected PharmacyPenaltyLedger $ledger)
     {
@@ -64,6 +64,9 @@ class PharmacyPenaltyLedgerRows
             $month->accrued,
             $month->accruedCumulative,
             $month->declared,
+            $month->accruedPaid,
+            $month->accruedWaived,
+            $month->accruedDue,
             $month->current ? 'oui' : 'non',
         ];
     }

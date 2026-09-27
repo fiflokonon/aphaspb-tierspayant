@@ -4,6 +4,7 @@ namespace App\Services\Pharmacy;
 
 use App\Data\PenaltyLedger;
 use App\Data\Period;
+use App\Enums\PenaltySettlement;
 use App\Models\Pharmacy;
 use App\Services\Declarations\PenaltyCalculator;
 use App\Services\Declarations\PenaltyLedgerWindow;
@@ -49,7 +50,7 @@ class PharmacyPenaltyLedger
             ->get([
                 'declarations.id', 'declarations.insurer_id', 'declarations.period_year', 'declarations.period_month',
                 'declarations.amount_invoiced', 'declarations.amount_received',
-                'declarations.invoice_deposited_on', 'declarations.paid_on',
+                'declarations.invoice_deposited_on', 'declarations.paid_on', 'declarations.penalty_settlement',
             ]);
 
         $payments = DB::table('declaration_payments')
@@ -76,6 +77,7 @@ class PharmacyPenaltyLedger
                 triggerDays: (int) $clause->penalty_trigger_days,
                 rateBp: (int) $clause->penalty_rate_bp,
                 payments: $payments[$declaration->id] ?? [],
+                settlement: PenaltySettlement::tryFrom((string) $declaration->penalty_settlement),
             );
         }
 

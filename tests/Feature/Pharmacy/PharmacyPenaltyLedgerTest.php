@@ -2,6 +2,7 @@
 
 use App\Data\Period;
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
@@ -128,4 +129,29 @@ test('the insurer filter narrows series and total alike', function () {
     expect($ledger->insurers)->toHaveCount(1)
         ->and($ledger->insurers[0]->insurerId)->toBe($kept->id)
         ->and($ledger->total->month('2026-05')->accrued)->toBe(20_000);
+});
+
+test('a penalty closed as paid is read from the declaration and leaves nothing due', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    // Déposée le 31/03, soldée le 01/09 : quatre tranches de mai à août, 80 000 clos « payée ».
+    Declaration::factory()
+        ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-09-01']])
+        ->penaltySettled(PenaltySettlement::Paid, 80_000)
+        ->create([
+            'pharmacy_id' => $this->pharmacy->id,
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => 3,
+            'amount_invoiced' => 1_000_000,
+            'invoice_deposited_on' => '2026-03-31',
+        ]);
+    ledgerUnpaid($this->pharmacy, $insurer, 4, '2026-04-30');
+
+    $series = $this->ledger->for($this->pharmacy, new Period(2026, 3), new Period(2026, 9))->insurers[0];
+
+    // Juillet : 20 000 de la facture close, 20 000 de celle d'avril encore due.
+    expect($series->month('2026-07')->accrued)->toBe(40_000)
+        ->and($series->month('2026-07')->accruedPaid)->toBe(20_000)
+        ->and($series->month('2026-07')->accruedDue)->toBe(20_000)
+        ->and($series->month('2026-03')->declared)->toBe(80_000);
 });

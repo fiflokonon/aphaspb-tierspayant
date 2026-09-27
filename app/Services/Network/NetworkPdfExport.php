@@ -22,7 +22,10 @@ use Barryvdh\DomPDF\PDF as PdfDocument;
  * inside it behaves how.
  *
  * The withholding rule is not re-decided here: NetworkExportRows owns it, and
- * every format obeys the same call.
+ * every format obeys the same call — the status split of the penalty included,
+ * through the same PenaltySplitPharmacies::restsOnFewerThan(), and withheld
+ * as well when the penalty journal of the same scope withholds a month of the
+ * insurer (the period figures minus its published months would give it back).
  */
 class NetworkPdfExport
 {
@@ -30,6 +33,7 @@ class NetworkPdfExport
         protected NetworkStatsService $stats,
         protected SettingsRepository $settings,
         protected InsurerPenaltyAggregates $penalties,
+        protected NetworkPenaltyJournal $journal,
     ) {
         //
     }
@@ -85,9 +89,23 @@ class NetworkPdfExport
         $figures = $this->penalties->forInsurers($allowed, $from, $to, $city);
         $monthly = $this->stats->monthlyByInsurer($allowed, $from, $to, $city, $insurerId);
 
+        $minimum = $this->settings->anonymityMinPharmacies();
+
+        // Même règle que NetworkExportRows : un mois retenu au journal du même
+        // périmètre se lirait par différence avec la période publiée ici.
+        $ledgerWithheld = $allowed === []
+            ? []
+            : $this->journal->for($from, $to, $city, $insurerId)->insurersWithWithheldMonths();
+
         foreach ($rows as $index => $row) {
             $rows[$index]['figures'] = $figures[$row['insurerId']]
                 ?? new InsurerPenaltyFigures(null, null);
+            // Même règle que NetworkExportRows : due, recouvrée et abandonnée
+            // tombent ensemble dès qu'une part repose sur trop peu d'officines,
+            // ou dès que le journal retient un mois de l'assureur.
+            $rows[$index]['splitWithheldByLedger'] = in_array($row['insurerId'], $ledgerWithheld, true);
+            $rows[$index]['splitWithheld'] = $rows[$index]['splitWithheldByLedger']
+                || $rows[$index]['figures']->splitPharmacies->restsOnFewerThan($minimum);
             $rows[$index]['monthly'] = $this->withheldMonths($monthly[$row['insurerId']] ?? []);
         }
 
@@ -101,7 +119,7 @@ class NetworkPdfExport
             'rows' => $rows,
             'withheld' => $withheld,
             'city' => $city,
-            'anonymityThreshold' => $this->settings->anonymityMinPharmacies(),
+            'anonymityThreshold' => $minimum,
             'periodLabel' => $this->periodLabel($from, $to),
             'generatedAt' => now(),
         ];

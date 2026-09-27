@@ -10,6 +10,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/js/pages/pharmacy/Dashboard.vue, resources/js/components/aphaspb/KpiCard.vue | .ai/rules/components-aphaspb.md |
 | config/joomla.php | .ai/rules/config.md |
 | resources/js/layouts/console/** | .ai/rules/console.md |
+| app/Http/Controllers/Pharmacy/DeclarationController.php | .ai/rules/controllers-pharmacy.md |
 | resources/css/**, resources/js/** | .ai/rules/css-js.md |
 | app/Actions/Declarations/** | .ai/rules/declarations.md |
 | app/Services/Exports/** | .ai/rules/exports.md |
@@ -25,5 +26,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Requests/Pharmacy/SaveDeclarationRequest.php | .ai/rules/pharmacy.md |
 | routes/web.php | .ai/rules/routes.md |
 | app/Services/Declarations/** | .ai/rules/services-declarations.md |
+| app/Services/** | .ai/rules/services.md |
 | app/Support/DayNumber.php, app/Support/ConsoleNavigation.php | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |

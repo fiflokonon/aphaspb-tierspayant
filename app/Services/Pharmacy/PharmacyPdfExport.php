@@ -3,6 +3,7 @@
 namespace App\Services\Pharmacy;
 
 use App\Data\Period;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Pharmacy;
 use App\Services\Declarations\LongestDelay;
@@ -92,7 +93,7 @@ class PharmacyPdfExport
                 fn (Declaration $one): bool => $one->payments->count() > 1,
             )->count(),
             'longestDelayDays' => $this->longestDelay->for($declarations),
-            'penalty' => $this->penalties->total($declarations),
+            'penalty' => $this->penalties->dueTotal($declarations),
             'withinStandard' => $dated->count() === 0 ? null : round($dated->filter(
                 fn (Declaration $one): bool => $one->delay_days <= $one->insurer->standard_delay_days,
             )->count() / $dated->count() * 100, 1),
@@ -130,7 +131,7 @@ class PharmacyPdfExport
                 // à InsurerRelationshipReport : une synthèse qui contredirait
                 // sa propre table de détail serait pire que pas de synthèse.
                 'longestDelayDays' => $this->longestDelay->for($group),
-                'penalty' => $this->penalties->total($group),
+                'penalty' => $this->penalties->dueTotal($group),
             ];
         })->values();
 
@@ -165,7 +166,7 @@ class PharmacyPdfExport
                 'penaltyTriggerDays' => $insurer->penalty_trigger_days,
                 'penaltyRatePercent' => $insurer->penaltyRatePercent(),
                 'longestDelayDays' => $this->longestDelay->for($group),
-                'penalty' => $this->penalties->total($group),
+                'penalty' => $this->penalties->dueTotal($group),
                 'invoiced' => $invoiced,
                 'received' => $received,
                 'outstanding' => max(0, $invoiced - $received),
@@ -180,7 +181,12 @@ class PharmacyPdfExport
                     'outstanding' => $one->amount_outstanding,
                     'depositedOn' => $one->invoice_deposited_on?->toDateString(),
                     'delayDays' => $one->delay_days,
-                    'penalty' => $this->penalties->for($one),
+                    'penalty' => $this->penalties->due($one),
+                    'settlementLabel' => $one->penalty_settlement?->label(),
+                    // Le montant clos accompagne une pénalité payée, comme à
+                    // l'écran : c'est l'argent que l'assureur a versé.
+                    'settledAmount' => $one->penalty_settled_amount,
+                    'isPaidSettlement' => $one->penalty_settlement === PenaltySettlement::Paid,
                 ])->all()),
             ];
         })->values();

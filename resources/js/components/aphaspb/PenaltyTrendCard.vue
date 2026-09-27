@@ -43,6 +43,7 @@ const insurer = useQueryId('penalty_insurer');
 const VIEWS: { value: PenaltyView; label: string }[] = [
     { value: 'accrued', label: 'Courue par mois' },
     { value: 'declared', label: 'Par mois déclaré' },
+    { value: 'due', label: 'Reste due' },
 ];
 
 const insurerOptions = computed(() => [
@@ -63,11 +64,15 @@ const hasWithheld = computed(() =>
         .some((month) => month.withheld),
 );
 
-const caption = computed(() =>
-    view.value === 'accrued'
-        ? 'Pénalité tombée chaque mois calendaire, toutes factures confondues · le mois en cours est partiel.'
-        : 'Pénalité à ce jour des factures de chaque mois déclaré · un mois encore ouvert continue de croître.',
-);
+const CAPTIONS: Record<PenaltyView, string> = {
+    accrued:
+        'Pénalité tombée chaque mois calendaire, toutes factures confondues · le mois en cours est partiel.',
+    declared:
+        'Pénalité à ce jour des factures de chaque mois déclaré · un mois encore ouvert continue de croître.',
+    due: 'Pénalité courue chaque mois, moins ce qui a été clos payé ou annulé · ce qui peut encore être réclamé.',
+};
+
+const caption = computed(() => CAPTIONS[view.value]);
 
 const chartArea = ref<HTMLElement | null>(null);
 const exporting = ref(false);
