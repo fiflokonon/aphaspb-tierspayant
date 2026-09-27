@@ -25,6 +25,11 @@ use App\Services\Settings\SettingsRepository;
  * The three columns are emptied together (« partition rule »): any one of
  * them, next to another published figure, would give a hidden one back.
  *
+ * One more way back: the network penalty journal of the same scope publishes
+ * the split month by month. When it withholds a month of this insurer — whole,
+ * or its split only —, the period figures minus the published months would
+ * give that month back. The three columns are then emptied as well.
+ *
  * That rule lives here, once, rather than in each writer: two export formats
  * that could disagree on who gets figures would be the leak itself.
  *
@@ -67,6 +72,7 @@ class NetworkExportRows
         protected NetworkStatsService $stats,
         protected InsurerPenaltyAggregates $penalties,
         protected SettingsRepository $settings,
+        protected NetworkPenaltyJournal $journal,
     ) {
         //
     }
@@ -87,15 +93,13 @@ class NetworkExportRows
         // passer : l'agrégateur n'a pas la liberté de contourner le seuil.
         // Un assureur choisi est donc déjà seul dans cette liste, et
         // InsurerPenaltyAggregates n'a pas besoin de connaître le filtre.
-        $figures = $this->penalties->forInsurers(
-            array_keys(array_filter(
-                $indicators,
-                fn (InsurerIndicators|InsufficientData $entry): bool => $entry instanceof InsurerIndicators,
-            )),
-            $from,
-            $to,
-            $city,
-        );
+        $allowed = array_keys(array_filter(
+            $indicators,
+            fn (InsurerIndicators|InsufficientData $entry): bool => $entry instanceof InsurerIndicators,
+        ));
+
+        $figures = $this->penalties->forInsurers($allowed, $from, $to, $city);
+        $ledgerWithheld = $this->ledgerWithheld($allowed, $from, $to, $city, $insurerId);
 
         foreach ($indicators as $insurerId => $entry) {
             $name = (string) ($names[$insurerId] ?? '');
@@ -127,8 +131,29 @@ class NetworkExportRows
                 $amount,
                 $figures[$insurerId] ?? new InsurerPenaltyFigures(null, null),
                 $minimum,
+                in_array($insurerId, $ledgerWithheld, true),
             );
         }
+    }
+
+    /**
+     * Les assureurs autorisés dont le journal des pénalités du même périmètre
+     * retient au moins un mois, en entier ou dans son découpage.
+     *
+     * Même période, même ville, même filtre assureur que l'export : c'est
+     * quand les deux fenêtres coïncident que la différence rend le mois
+     * caché. Un seul appel pour tout l'export, pas un par assureur.
+     *
+     * @param  list<int>  $allowed
+     * @return list<int>
+     */
+    protected function ledgerWithheld(array $allowed, Period $from, Period $to, ?string $city, ?int $insurerId): array
+    {
+        if ($allowed === []) {
+            return [];
+        }
+
+        return $this->journal->for($from, $to, $city, $insurerId)->insurersWithWithheldMonths();
     }
 
     /**
@@ -156,11 +181,13 @@ class NetworkExportRows
         InsurerAmounts $amount,
         InsurerPenaltyFigures $figures,
         int $minimum,
+        bool $ledgerWithheld,
     ): array {
         // Les trois ensemble, jamais une seule : une part publiée à côté d'une
         // part cachée finit toujours par la rendre, par différence avec un
-        // autre chiffre publié ailleurs (PDF, journal).
-        $splitWithheld = $figures->splitPharmacies->restsOnFewerThan($minimum);
+        // autre chiffre publié ailleurs (PDF, journal). Et les trois aussi
+        // quand le journal retient un mois : période − mois publiés le rendrait.
+        $splitWithheld = $ledgerWithheld || $figures->splitPharmacies->restsOnFewerThan($minimum);
 
         return [
             $name,

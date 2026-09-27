@@ -354,7 +354,11 @@
                         {{-- Une part publiée à côté d'une part cachée la rendrait
                              par différence : les trois tombent ensemble. --}}
                         <div class="sub">
-                            répartition due / recouvrée / abandonnée retenue : une part repose sur moins de {{ $anonymityThreshold }} officines
+                            @if ($row['splitWithheldByLedger'])
+                                répartition due / recouvrée / abandonnée retenue : un mois du journal des pénalités est retenu sur la même période, et s'en déduirait
+                            @else
+                                répartition due / recouvrée / abandonnée retenue : une part repose sur moins de {{ $anonymityThreshold }} officines
+                            @endif
                         </div>
                     @elseif (($figures->recovered ?? 0) > 0 || ($figures->waived ?? 0) > 0)
                         <div class="sub">

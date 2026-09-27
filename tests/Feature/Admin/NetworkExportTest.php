@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Network\InsurerPenaltyAggregates;
 use App\Services\Network\NetworkExportRows;
 use App\Services\Network\NetworkPdfExport;
+use App\Services\Network\NetworkPenaltyJournal;
 use App\Support\Fcfa;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia;
@@ -414,6 +415,123 @@ test('the report publishes the status split when every part rests on enough offi
     expect($payload['rows'][0]['splitWithheld'])->toBeFalse()
         ->and($html)->toContain(Fcfa::format(300_000))
         ->and($html)->toContain('dont recouvrée '.Fcfa::format(100_000));
+});
+
+test('a month whose status split the journal withholds withholds the export split too', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    // Sur la période, chaque part non vide repose sur au moins cinq
+    // officines : six payées, cinq annulées. La règle de partition laisse
+    // passer. Mais en mai, une seule officine a couru une part payée : le
+    // journal retient le découpage de mai, et la recouvrée de l'export moins
+    // la payée d'avril (publiée) rendrait les 20 000 de cette officine.
+    foreach (range(1, 5) as $ignored) {
+        settledCoveredMonth($insurer, 3, PenaltySettlement::Paid, 20_000);
+        settledCoveredMonth($insurer, 4, PenaltySettlement::Waived, 20_000);
+    }
+
+    settledCoveredMonth($insurer, 4, PenaltySettlement::Paid, 20_000);
+
+    $cell = networkCsvCell('NSIA');
+
+    expect($cell('officines_declarantes'))->toBe('11')
+        ->and($cell('penalite_potentielle_fcfa'))->toBe('')
+        ->and($cell('penalite_recouvree_fcfa'))->toBe('')
+        ->and($cell('penalite_abandonnee_fcfa'))->toBe('');
+
+    $export = app(NetworkPdfExport::class);
+    $payload = (new ReflectionMethod($export, 'data'))->invoke($export, new Period(2025, 9), new Period(2026, 8), null);
+    $html = view('exports.network', $payload)->render();
+
+    expect($payload['rows'][0]['splitWithheld'])->toBeTrue()
+        ->and($html)->toContain('un mois du journal des pénalités est retenu')
+        ->and($html)->not->toContain(Fcfa::format(120_000));
+});
+
+test('a month the journal withholds entirely withholds the export split too', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    // Six officines payées, la partition passe. Mais mai ne repose que sur
+    // une officine : le journal le retient en entier, et la recouvrée de
+    // l'export moins avril le rendrait.
+    foreach (range(1, 5) as $ignored) {
+        settledCoveredMonth($insurer, 3, PenaltySettlement::Paid, 20_000);
+    }
+
+    settledCoveredMonth($insurer, 4, PenaltySettlement::Paid, 20_000);
+
+    $cell = networkCsvCell('NSIA');
+
+    expect($cell('officines_declarantes'))->toBe('6')
+        ->and($cell('penalite_potentielle_fcfa'))->toBe('')
+        ->and($cell('penalite_recouvree_fcfa'))->toBe('')
+        ->and($cell('penalite_abandonnee_fcfa'))->toBe('');
+});
+
+test('the export split is published when every month of the journal is', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    // Avril : cinq payées ; mai : cinq annulées. Aucun mois ni aucun
+    // découpage retenu au journal.
+    foreach (range(1, 5) as $ignored) {
+        settledCoveredMonth($insurer, 3, PenaltySettlement::Paid, 20_000);
+        settledCoveredMonth($insurer, 4, PenaltySettlement::Waived, 20_000);
+    }
+
+    $cell = networkCsvCell('NSIA');
+
+    expect($cell('penalite_potentielle_fcfa'))->toBe('0')
+        ->and($cell('penalite_recouvree_fcfa'))->toBe('100000')
+        ->and($cell('penalite_abandonnee_fcfa'))->toBe('100000');
+
+    $export = app(NetworkPdfExport::class);
+    $payload = (new ReflectionMethod($export, 'data'))->invoke($export, new Period(2025, 9), new Period(2026, 8), null);
+
+    expect($payload['rows'][0]['splitWithheld'])->toBeFalse();
+});
+
+test('without closures, a due resting on too few officines stays withheld', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    // Cinq officines déclarent mai, deux seulement laissent leur facture
+    // impayée. Leur tranche tombe le 31 juillet, après la fin de période
+    // (juin) : le journal n'a aucun mois retenu, seule la partition retient.
+    $declare = fn (int $received) => Declaration::factory()->create([
+        'pharmacy_id' => Pharmacy::factory(),
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 5,
+        'amount_invoiced' => 1_000_000,
+        'amount_received' => $received,
+        'status' => $received === 0 ? DeclarationStatus::Unpaid : DeclarationStatus::Paid,
+        'is_status_manual' => true,
+        'invoice_deposited_on' => '2026-06-01',
+        'paid_on' => $received === 0 ? null : '2026-06-20',
+        'delay_days' => $received === 0 ? null : 19,
+    ]);
+
+    foreach (range(1, 3) as $ignored) {
+        $declare(1_000_000);
+    }
+
+    $declare(0);
+    $declare(0);
+
+    [$from, $to] = [new Period(2026, 1), new Period(2026, 6)];
+
+    expect(app(NetworkPenaltyJournal::class)->for($from, $to)->insurersWithWithheldMonths())->toBe([]);
+
+    $row = collect(app(NetworkExportRows::class)->rows($from, $to))->first();
+    $cell = fn (string $column) => $row[array_search($column, NetworkExportRows::COLUMNS, true)];
+
+    expect($cell('officines_declarantes'))->toBe(5)
+        ->and($cell('penalite_potentielle_fcfa'))->toBeNull();
+
+    $export = app(NetworkPdfExport::class);
+    $payload = (new ReflectionMethod($export, 'data'))->invoke($export, $from, $to, null);
+
+    expect($payload['rows'][0]['splitWithheld'])->toBeTrue()
+        ->and(view('exports.network', $payload)->render())->not->toContain(Fcfa::format(40_000));
 });
 
 test('a withheld insurer leaves the due, recovered and abandoned penalty columns empty too', function () {
