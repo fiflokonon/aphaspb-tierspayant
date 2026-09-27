@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\InsurerAmountsResource;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
+use App\Services\Network\NetworkPenaltyJournal;
 use App\Services\Network\NetworkStatsService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -26,8 +27,10 @@ class NetworkTrendsController extends Controller
     /** The window the canvas shows, until the admin picks otherwise. */
     protected const DEFAULT_PERIOD = StatsPeriod::LastTwelveMonths;
 
-    public function __construct(protected NetworkStatsService $stats)
-    {
+    public function __construct(
+        protected NetworkStatsService $stats,
+        protected NetworkPenaltyJournal $penaltyJournal,
+    ) {
         //
     }
 
@@ -51,6 +54,10 @@ class NetworkTrendsController extends Controller
             // The curve is the expensive read; it arrives after first paint.
             'trend' => Inertia::defer(
                 fn () => $this->stats->delayTrend($from, $to, $city),
+            ),
+
+            'penaltyTrend' => Inertia::defer(
+                fn () => $this->penaltyJournal->for($from, $to, $city)->toArray(),
             ),
         ]);
     }

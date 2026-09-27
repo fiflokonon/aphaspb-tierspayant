@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Pharmacy;
 
 use App\Data\OverdueLine;
+use App\Data\Period;
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
 use App\Models\PharmacyInvitation;
 use App\Services\Declarations\DeclarationCalendar;
 use App\Services\Declarations\OverduePaymentsService;
+use App\Services\Pharmacy\PharmacyPenaltyLedger;
 use App\Services\Pharmacy\PharmacyStatsService;
 use App\Support\MonthLabel;
 use Illuminate\Http\Request;
@@ -33,6 +35,7 @@ class PaymentJourneyController extends Controller
         protected PharmacyStatsService $stats,
         protected DeclarationCalendar $calendar,
         protected OverduePaymentsService $overdue,
+        protected PharmacyPenaltyLedger $penaltyLedger,
     ) {
         //
     }
@@ -63,6 +66,11 @@ class PaymentJourneyController extends Controller
             // after the first paint rather than delaying it.
             'journey' => Inertia::defer(
                 fn () => $this->stats->monthlyJourney($pharmacy, self::MONTHS, $insurerId),
+            ),
+
+            // Deuxième lecture coûteuse : même traitement que le parcours.
+            'penaltyTrend' => Inertia::defer(
+                fn () => $this->penaltyLedger->for($pharmacy, ...Period::lastMonths(self::MONTHS))->toArray(),
             ),
         ]);
     }
