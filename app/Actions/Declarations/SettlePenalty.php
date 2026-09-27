@@ -114,6 +114,16 @@ class SettlePenalty
     }
 
     /**
+     * Le choix du formulaire du mois, écarté parce que le geste est refusé.
+     *
+     * @return Toast
+     */
+    public function ignoredChoiceNotice(string $refusal): array
+    {
+        return ['type' => 'info', 'message' => 'Pénalité non close : '.lcfirst($refusal)];
+    }
+
+    /**
      * @return Toast
      */
     public function reopenedNotice(Declaration $declaration): array

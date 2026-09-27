@@ -54,9 +54,9 @@ class DeclarationController extends Controller
             ]);
         }
 
-        // L'assureur porte la clause de pénalité ; les versements, déjà chargés
-        // par le tour, en donnent le calcul.
-        $declaration = $run->declarationFor($insurer)?->loadMissing(['insurer', 'payments']);
+        // L'assureur porte la clause de pénalité : celui du tour, attaché sans
+        // requête. Les versements, déjà chargés par le tour, en donnent le calcul.
+        $declaration = $run->declarationFor($insurer)?->setRelation('insurer', $insurer);
 
         return Inertia::render('pharmacy/Declare', [
             'insurer' => [
@@ -82,9 +82,6 @@ class DeclarationController extends Controller
                 'paid_on' => $declaration->paid_on?->toDateString(),
                 'delay_days' => $declaration->delay_days,
                 'private_note' => $declaration->private_note,
-                // Les versements repartent tels qu'ils sont enregistrés : la
-                // correction d'un mois se fait sur les lignes elles-mêmes, pas
-                // sur un total qui aurait perdu le détail des dates.
                 // La pénalité courue, et ce que l'officine en a fait. Le choix
                 // n'est possible que sur un mois entièrement réglé.
                 'penalty' => [
@@ -92,6 +89,9 @@ class DeclarationController extends Controller
                     'settlement' => $declaration->penalty_settlement?->value,
                     'covered' => $declaration->isFullyCovered(),
                 ],
+                // Les versements repartent tels qu'ils sont enregistrés : la
+                // correction d'un mois se fait sur les lignes elles-mêmes, pas
+                // sur un total qui aurait perdu le détail des dates.
                 'payments' => $declaration->payments->map(fn ($payment): array => [
                     'amount' => $payment->amount,
                     'paid_on' => $payment->paid_on->toDateString(),
@@ -130,13 +130,16 @@ class DeclarationController extends Controller
     ): RedirectResponse {
         $pharmacy = $request->user()->currentPharmacy;
 
+        $choice = $request->penaltyChoice();
+
         // L'état de clôture que le formulaire a affiché : c'est contre lui, et
         // non contre la base, que le choix se juge. Sinon un formulaire
         // périmé défait en silence une clôture faite ailleurs entre-temps
         // (écran assureur, collègue). Sans ce champ (onglet ancien, API),
         // repli sur l'état enregistré, lu avant toute écriture : les
-        // versements ci-dessous peuvent lever la clôture.
-        $shown = $request->penaltyShown() ?? Declaration::query()
+        // versements ci-dessous peuvent lever la clôture. Sans choix, rien
+        // à juger : pas de lecture.
+        $shown = $choice === null ? null : $request->penaltyShown() ?? Declaration::query()
             ->where('pharmacy_id', $pharmacy->id)
             ->where('insurer_id', $request->integer('insurer_id'))
             ->where('period_year', $request->integer('period_year'))
@@ -151,7 +154,7 @@ class DeclarationController extends Controller
         // committés : la trace perd cet enregistrement, et la sauvegarde
         // suivante se compare à une révision périmée, donc enregistre une
         // correction réelle comme si c'était la précédente.
-        DB::transaction(function () use ($request, $pharmacy, $recordInstalments, $recordRevision, $settle, $shown, &$notice) {
+        DB::transaction(function () use ($request, $pharmacy, $recordInstalments, $recordRevision, $settle, $choice, $shown, &$notice) {
             $declaration = Declaration::query()->updateOrCreate(
                 [
                     'pharmacy_id' => $pharmacy->id,
@@ -174,28 +177,27 @@ class DeclarationController extends Controller
             // Written after the declaration, and only then: the delay of each
             // transfer is counted from the deposit date this save has settled.
             $reopened = $recordInstalments->handle($declaration, $request->instalments());
-            $choice = $request->penaltyChoice();
+
+            // Relue une fois, versements et assureur compris : le refus, la
+            // clôture et la révision lisent la même instance.
+            $saved = $declaration->fresh(['insurer', 'payments']);
 
             // Le formulaire repart pré-rempli : un choix identique à ce qu'il
             // montrait n'est pas un geste, et ne doit ni reclore ce que la
             // correction vient de lever (cas B), ni défaire ce qu'un autre
             // écran a fait depuis.
             if ($choice !== null && $choice !== $shown) {
-                $month = MonthLabel::short($declaration->period_month, $declaration->period_year);
+                $outcome = PenaltySettlement::tryFrom($choice);
 
-                if ($choice === 'due') {
-                    if ($settle->reopen($declaration->fresh())) {
-                        $notice = ['type' => 'success', 'message' => sprintf('Pénalité de %s remise en dû.', $month)];
-                    }
-                } elseif (($refusal = $settle->refusal($declaration->fresh(['insurer', 'payments']))) !== null) {
-                    $notice = ['type' => 'info', 'message' => 'Pénalité non close : '.lcfirst($refusal)];
+                if ($outcome === null) {
+                    $notice = $settle->reopen($saved) ? $settle->reopenedNotice($saved) : $settle->notSettledNotice($saved);
+                } elseif (($refusal = $settle->refusal($saved)) !== null) {
+                    $notice = $settle->ignoredChoiceNotice($refusal);
+                } elseif ($settle->settle($saved, $outcome, $request->user())) {
+                    // Une clôture posée dans cet envoi remplace la levée qu'il a causée.
+                    [$notice, $reopened] = [$settle->settledNotice($saved, $outcome), null];
                 } else {
-                    $outcome = PenaltySettlement::from($choice);
-
-                    if ($settle->settle($declaration->fresh(['insurer', 'payments']), $outcome, $request->user())) {
-                        $reopened = null;
-                        $notice = ['type' => 'success', 'message' => sprintf('Pénalité de %s marquée %s.', $month, mb_strtolower($outcome->label()))];
-                    }
+                    $notice = $settle->alreadySettledNotice($saved, $outcome);
                 }
             }
 
@@ -203,16 +205,15 @@ class DeclarationController extends Controller
                 $notice = [
                     'type' => 'warning',
                     'message' => $reopened->message(
-                        MonthLabel::short($declaration->period_month, $declaration->period_year),
-                        $declaration->insurer->name,
+                        MonthLabel::short($saved->period_month, $saved->period_year),
+                        $saved->insurer->name,
                     ),
                 ];
             }
 
             // Après les versements et la clôture, jamais avant : une révision
             // antérieure photographierait l'état de l'enregistrement précédent.
-            // Relue fraîche : SettlePenalty a écrit sur une autre instance.
-            $recordRevision->handle($declaration->fresh()->load('payments'), $request->user());
+            $recordRevision->handle($saved, $request->user());
         });
 
         if ($notice !== null) {

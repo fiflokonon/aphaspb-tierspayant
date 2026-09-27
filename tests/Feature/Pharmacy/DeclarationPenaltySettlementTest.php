@@ -150,3 +150,27 @@ test('the form knows the penalty of the month', function () {
             ->where('declaration.penalty.covered', true)
             ->where('declaration.penalty.settlement', null));
 });
+
+test('a form choice already applied elsewhere says so instead of claiming a change', function () {
+    $user = User::factory()->create();
+    $declaration = referenceMonth($user);
+    $user->currentPharmacy->insurers()->attach($declaration->insurer_id);
+
+    // Le formulaire affichait « due » ; un collègue a clos « payée » entre-temps.
+    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+
+    $this->actingAs($user)
+        ->post(route('pharmacy.declare.store'), referencePayload($declaration->insurer_id, referenceInstalments(), 'paid', 'due'))
+        ->assertInertiaFlash('toast', ['type' => 'info', 'message' => 'La pénalité de Mars 26 était déjà marquée payée.']);
+});
+
+test('a form « due » on a closure already lifted elsewhere says so', function () {
+    $user = User::factory()->create();
+    $declaration = referenceMonth($user);
+    $user->currentPharmacy->insurers()->attach($declaration->insurer_id);
+
+    // Le formulaire affichait « payée » ; la clôture a été levée entre-temps.
+    $this->actingAs($user)
+        ->post(route('pharmacy.declare.store'), referencePayload($declaration->insurer_id, referenceInstalments(), 'due', 'paid'))
+        ->assertInertiaFlash('toast', ['type' => 'info', 'message' => "La pénalité de Mars 26 n'était pas close."]);
+});
