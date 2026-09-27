@@ -4,6 +4,7 @@ import type {
     PenaltyLedgerMonth,
     PenaltyLedgerSeries,
 } from '@/types/aphaspb';
+import { isPenaltyView } from '@/types/aphaspb';
 import { penaltyChartRows, visibleSeries } from './penaltySeries';
 
 function month(
@@ -18,6 +19,10 @@ function month(
         accrued: 0,
         accruedCumulative: 0,
         declared: 0,
+        accruedPaid: 0,
+        accruedWaived: 0,
+        accruedDue: 0,
+        declaredDue: 0,
         withheld: false,
         ...values,
     };
@@ -32,10 +37,16 @@ function series(
 
 const ledger: PenaltyLedger = {
     insurers: [
-        series(1, [month('2026-05', { accrued: 10, declared: 70 })]),
-        series(2, [month('2026-05', { accrued: 5, declared: 0 })]),
+        series(1, [
+            month('2026-05', { accrued: 10, declared: 70, accruedDue: 4 }),
+        ]),
+        series(2, [
+            month('2026-05', { accrued: 5, declared: 0, accruedDue: 5 }),
+        ]),
     ],
-    total: series(null, [month('2026-05', { accrued: 15, declared: 70 })]),
+    total: series(null, [
+        month('2026-05', { accrued: 15, declared: 70, accruedDue: 9 }),
+    ]),
     maskedInsurers: 0,
 };
 
@@ -79,6 +90,26 @@ describe('penaltyChartRows', () => {
         expect(declared[0]).toMatchObject({ s0: 70, s1: 0, total: 70 });
     });
 
+    test('the due view reads what remains due once paid and waived are out', () => {
+        const due = penaltyChartRows(ledger.insurers, ledger.total, 'due');
+
+        expect(due[0]).toMatchObject({ s0: 4, s1: 5, total: 9 });
+    });
+
+    test('a withheld month stays a gap in the due view too', () => {
+        const rows = penaltyChartRows(
+            [
+                series(1, [
+                    month('2026-06', { withheld: true, accruedDue: null }),
+                ]),
+            ],
+            null,
+            'due',
+        );
+
+        expect(rows[0]?.s0).toBeNull();
+    });
+
     test('a withheld or future month is a gap, never a zero', () => {
         const rows = penaltyChartRows(
             [
@@ -98,5 +129,12 @@ describe('penaltyChartRows', () => {
     test('the months come from the total, or from the first series without one', () => {
         expect(penaltyChartRows([], ledger.total, 'accrued')).toHaveLength(1);
         expect(penaltyChartRows([], null, 'accrued')).toEqual([]);
+    });
+});
+
+describe('isPenaltyView', () => {
+    test('knows the three clocks and nothing else', () => {
+        expect(['accrued', 'declared', 'due'].every(isPenaltyView)).toBe(true);
+        expect(isPenaltyView('paid')).toBe(false);
     });
 });

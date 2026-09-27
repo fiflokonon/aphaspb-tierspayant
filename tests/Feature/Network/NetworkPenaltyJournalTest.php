@@ -2,6 +2,7 @@
 
 use App\Data\Period;
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
@@ -68,6 +69,37 @@ test('a month resting on too few officines is withheld, with every later cumulat
         ->and($series->month('2026-07')->accrued)->toBe(100_000)
         ->and($series->month('2026-07')->accruedCumulative)->toBeNull()
         ->and($series->month('2026-08')->accrued)->toBe(120_000);
+});
+
+test('a withheld month blanks what was paid, waived and what remains due', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($insurer, 5, 3, '2026-03-31');
+    // Juin : une seule officine, soldée le 01/09 et close « payée » — une tranche
+    // de 20 000 le 29/08. Sans rétention, juin publierait une due à zéro.
+    Declaration::factory()
+        ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-09-01']])
+        ->penaltySettled(PenaltySettlement::Paid, 20_000)
+        ->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => 6,
+            'amount_invoiced' => 1_000_000,
+            'invoice_deposited_on' => '2026-06-30',
+        ]);
+
+    $series = $this->journal->for(...$this->bounds)->insurers[0];
+    $june = $series->month('2026-06');
+
+    expect($june->withheld)->toBeTrue()
+        ->and($june->accruedPaid)->toBeNull()
+        ->and($june->accruedWaived)->toBeNull()
+        ->and($june->accruedDue)->toBeNull()
+        ->and($june->declaredDue)->toBeNull()
+        ->and($series->month('2026-07')->accruedDue)->toBe(100_000)
+        ->and($series->month('2026-07')->accruedPaid)->toBe(0)
+        ->and($series->month('2026-08')->accruedPaid)->toBe(20_000)
+        ->and($series->month('2026-08')->accruedDue)->toBe(100_000);
 });
 
 test('a masked insurer has no series but still counts in the unfiltered total', function () {

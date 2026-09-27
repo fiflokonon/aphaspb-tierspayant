@@ -6,6 +6,7 @@ use App\Data\PenaltyLedger;
 use App\Data\PenaltyLedgerMonth;
 use App\Data\PenaltyLedgerSeries;
 use App\Data\Period;
+use App\Enums\PenaltySettlement;
 use App\Support\DayNumber;
 use App\Support\MonthLabel;
 use Carbon\CarbonImmutable;
@@ -22,6 +23,10 @@ use Closure;
  * nues, et c'est ce qui rend l'accumulateur testable sans base. Il compte
  * aussi les officines derrière chaque mois, sans rien en décider : la
  * rétention appartient à l'appelant qui détient le seuil.
+ *
+ * Une pénalité close suit les mêmes horloges : chacune de ses tranches va
+ * aussi à « payée » ou « annulée » de son mois, et toute sa somme au clos de
+ * son mois déclaré. La due est ce qui reste une fois les deux retirées.
  */
 class PenaltyTally
 {
@@ -40,8 +45,14 @@ class PenaltyTally
     /** @var array<int, array<string, array<int, true>>> */
     protected array $declaredPharmacies = [];
 
+    /** @var array<int, array{paid: array<string, int>, waived: array<string, int>, declared: array<string, int>}> */
+    protected array $settled = [];
+
     /** @var array<string, int> */
     protected array $totalAccrued = [];
+
+    /** @var array{paid: array<string, int>, waived: array<string, int>, declared: array<string, int>} */
+    protected array $totalSettled = ['paid' => [], 'waived' => [], 'declared' => []];
 
     /** @var array<string, int> */
     protected array $totalDeclared = [];
@@ -75,6 +86,7 @@ class PenaltyTally
      * Une déclaration sous convention, non rejetée, déposée.
      *
      * @param  list<array{0: int, 1: int}>  $payments
+     * @param  PenaltySettlement|null  $settlement  la clôture de sa pénalité, null tant qu'elle est due
      */
     public function add(
         int $insurerId,
@@ -88,8 +100,11 @@ class PenaltyTally
         int $triggerDays,
         int $rateBp,
         array $payments,
+        ?PenaltySettlement $settlement = null,
     ): void {
         $this->insurers[$insurerId] = true;
+        $this->settled[$insurerId] ??= ['paid' => [], 'waived' => [], 'declared' => []];
+        $bucket = $settlement === PenaltySettlement::Waived ? 'waived' : 'paid';
 
         $tranches = $this->penalties->tranches(
             $amountInvoiced, $amountReceived, $depositedDay, $paidDay, $triggerDays, $rateBp, $payments, $this->today,
@@ -109,6 +124,11 @@ class PenaltyTally
             $this->declaredPharmacies[$insurerId][$month][$pharmacyId] = true;
             $this->totalDeclared[$month] = ($this->totalDeclared[$month] ?? 0) + $sum;
             $this->totalDeclaredPharmacies[$month][$pharmacyId] = true;
+
+            if ($settlement !== null) {
+                $this->settled[$insurerId]['declared'][$month] = ($this->settled[$insurerId]['declared'][$month] ?? 0) + $sum;
+                $this->totalSettled['declared'][$month] = ($this->totalSettled['declared'][$month] ?? 0) + $sum;
+            }
         }
 
         foreach ($tranches as [$day, $amount]) {
@@ -125,6 +145,11 @@ class PenaltyTally
             $this->accruedPharmacies[$insurerId][$month][$pharmacyId] = true;
             $this->totalAccrued[$month] = ($this->totalAccrued[$month] ?? 0) + $amount;
             $this->totalAccruedPharmacies[$month][$pharmacyId] = true;
+
+            if ($settlement !== null) {
+                $this->settled[$insurerId][$bucket][$month] = ($this->settled[$insurerId][$bucket][$month] ?? 0) + $amount;
+                $this->totalSettled[$bucket][$month] = ($this->totalSettled[$bucket][$month] ?? 0) + $amount;
+            }
         }
     }
 
@@ -164,6 +189,7 @@ class PenaltyTally
                 $this->declared[$insurerId] ?? [],
                 $this->accruedPharmacies[$insurerId] ?? [],
                 $this->declaredPharmacies[$insurerId] ?? [],
+                $this->settled[$insurerId] ?? ['paid' => [], 'waived' => [], 'declared' => []],
                 $withheld,
             );
 
@@ -184,6 +210,7 @@ class PenaltyTally
             $this->totalDeclared,
             $this->totalAccruedPharmacies,
             $this->totalDeclaredPharmacies,
+            $this->totalSettled,
             $withheld,
             $hiddenAccrued,
             $hiddenDeclared,
@@ -200,6 +227,7 @@ class PenaltyTally
      * @param  array<string, int>  $declared
      * @param  array<string, array<int, true>>  $accruedPharmacies
      * @param  array<string, array<int, true>>  $declaredPharmacies
+     * @param  array{paid: array<string, int>, waived: array<string, int>, declared: array<string, int>}  $settled
      * @param  array<string, array<int, true>>  $hiddenAccrued
      * @param  array<string, array<int, true>>  $hiddenDeclared
      */
@@ -210,6 +238,7 @@ class PenaltyTally
         array $declared,
         array $accruedPharmacies,
         array $declaredPharmacies,
+        array $settled,
         ?Closure $withheld,
         array $hiddenAccrued = [],
         array $hiddenDeclared = [],
@@ -248,6 +277,8 @@ class PenaltyTally
             }
 
             $cumulative += $accrued[$key] ?? 0;
+            $paid = $settled['paid'][$key] ?? 0;
+            $waived = $settled['waived'][$key] ?? 0;
 
             $months[] = new PenaltyLedgerMonth(
                 $key,
@@ -257,6 +288,10 @@ class PenaltyTally
                 accrued: $accrued[$key] ?? 0,
                 accruedCumulative: $broken ? null : $cumulative,
                 declared: $declared[$key] ?? 0,
+                accruedPaid: $paid,
+                accruedWaived: $waived,
+                accruedDue: ($accrued[$key] ?? 0) - $paid - $waived,
+                declaredDue: ($declared[$key] ?? 0) - ($settled['declared'][$key] ?? 0),
             );
         }
 

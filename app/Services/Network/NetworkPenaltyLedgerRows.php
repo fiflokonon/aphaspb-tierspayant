@@ -15,7 +15,7 @@ use App\Services\Settings\SettingsRepository;
  */
 class NetworkPenaltyLedgerRows
 {
-    public const COLUMNS = ['mois', 'assureur', 'penalite_courue', 'cumul_couru', 'penalite_mois_declare', 'mois_en_cours', 'retenu'];
+    public const COLUMNS = ['mois', 'assureur', 'penalite_courue', 'cumul_couru', 'penalite_mois_declare', 'dont_payee', 'dont_annulee', 'reste_due', 'mois_en_cours', 'retenu'];
 
     public function __construct(
         protected NetworkPenaltyJournal $journal,
@@ -66,6 +66,9 @@ class NetworkPenaltyLedgerRows
             $month->accrued,
             $month->accruedCumulative,
             $month->declared,
+            $month->accruedPaid,
+            $month->accruedWaived,
+            $month->accruedDue,
             $month->current ? 'oui' : 'non',
             match (true) {
                 $month->withheld => $reason,

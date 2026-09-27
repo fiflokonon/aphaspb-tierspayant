@@ -1,6 +1,7 @@
 <?php
 
 use App\Data\Period;
+use App\Enums\PenaltySettlement;
 use App\Services\Declarations\PenaltyCalculator;
 use App\Services\Declarations\PenaltyTally;
 use App\Support\DayNumber;
@@ -143,4 +144,87 @@ test('a withheld month blanks every later cumulative', function () {
         ->and($series->month('2026-06')->accrued)->toBeNull()
         ->and($series->month('2026-07')->accrued)->toBe(20_000)
         ->and($series->month('2026-07')->accruedCumulative)->toBeNull();
+});
+
+/**
+ * La même facture, soldée le 01/09 : ses quatre tranches (mai à août) lui
+ * restent acquises, puis la pénalité est close avec l'issue donnée.
+ */
+function tallySettled(PenaltyTally $tally, ?PenaltySettlement $settlement): void
+{
+    $tally->add(
+        insurerId: 1,
+        pharmacyId: 10,
+        periodYear: 2026,
+        periodMonth: 3,
+        amountInvoiced: 1_000_000,
+        amountReceived: 1_000_000,
+        depositedDay: DayNumber::fromDate('2026-03-31'),
+        paidDay: DayNumber::fromDate('2026-09-01'),
+        triggerDays: 60,
+        rateBp: 200,
+        payments: [[1_000_000, DayNumber::fromDate('2026-09-01')]],
+        settlement: $settlement,
+    );
+}
+
+test('a paid penalty goes to the month of each tranche, and to its declared month in full', function () {
+    $tally = new PenaltyTally(new PenaltyCalculator, new Period(2026, 3), new Period(2026, 9));
+    tallySettled($tally, PenaltySettlement::Paid);
+
+    $ledger = $tally->ledger([1 => 'NSIA']);
+
+    foreach ([$ledger->insurers[0], $ledger->total] as $series) {
+        foreach (['2026-05', '2026-06', '2026-07', '2026-08'] as $key) {
+            expect($series->month($key)->accrued)->toBe(20_000)
+                ->and($series->month($key)->accruedPaid)->toBe(20_000)
+                ->and($series->month($key)->accruedWaived)->toBe(0)
+                ->and($series->month($key)->accruedDue)->toBe(0);
+        }
+
+        expect($series->month('2026-03')->declared)->toBe(80_000)
+            ->and($series->month('2026-03')->declaredDue)->toBe(0)
+            // Le cumul reste celui du couru : la clôture ne le réécrit pas.
+            ->and($series->month('2026-08')->accruedCumulative)->toBe(80_000);
+    }
+});
+
+test('a waived penalty goes to the waived bucket, not the paid one', function () {
+    $tally = new PenaltyTally(new PenaltyCalculator, new Period(2026, 3), new Period(2026, 9));
+    tallySettled($tally, PenaltySettlement::Waived);
+
+    $may = $tally->ledger([1 => 'NSIA'])->insurers[0]->month('2026-05');
+
+    expect($may->accruedWaived)->toBe(20_000)
+        ->and($may->accruedPaid)->toBe(0)
+        ->and($may->accruedDue)->toBe(0);
+});
+
+test('an unsettled penalty stays due in full', function () {
+    $tally = new PenaltyTally(new PenaltyCalculator, new Period(2026, 3), new Period(2026, 9));
+    tallySettled($tally, null);
+    tallyUnpaid($tally, 1, 11, 3, '2026-03-31');
+
+    $series = $tally->ledger([1 => 'NSIA'])->insurers[0];
+
+    expect($series->month('2026-05')->accruedDue)->toBe($series->month('2026-05')->accrued)
+        ->and($series->month('2026-05')->accruedDue)->toBe(40_000)
+        ->and($series->month('2026-03')->declaredDue)->toBe(160_000);
+});
+
+test('a future or withheld month has no settled or due figure either', function () {
+    $tally = new PenaltyTally(new PenaltyCalculator, new Period(2026, 5), new Period(2026, 10));
+    tallySettled($tally, PenaltySettlement::Paid);
+
+    $series = $tally->ledger([1 => 'NSIA'], fn (?int $insurerId, int $accrued): bool => $insurerId !== null && $accrued === 1)->insurers[0];
+
+    foreach (['2026-05', '2026-10'] as $key) {
+        expect($series->month($key)->accruedPaid)->toBeNull()
+            ->and($series->month($key)->accruedWaived)->toBeNull()
+            ->and($series->month($key)->accruedDue)->toBeNull()
+            ->and($series->month($key)->declaredDue)->toBeNull();
+    }
+
+    expect($series->month('2026-05')->withheld)->toBeTrue()
+        ->and($series->month('2026-10')->future)->toBeTrue();
 });

@@ -192,7 +192,9 @@
 <p class="lede">
     Pénalité courue : ce qui est tombé pendant le mois, toutes factures
     confondues. Factures du mois : la pénalité, à ce jour, des factures de ce
-    mois déclaré. Le mois en cours est partiel.
+    mois déclaré. Dont payée, dont annulée : la part du couru dont la pénalité
+    a été close ; reste due : ce qui peut encore être réclamé. Le mois en cours
+    est partiel.
     @if ($ledger->maskedInsurers > 0)
         Le total couvre aussi {{ $ledger->maskedInsurers }} assureur(s) masqué(s)
         sous le seuil d'anonymat, qui n'ont pas de page propre.
@@ -206,6 +208,9 @@
             <th>Pénalité courue</th>
             <th>Cumul couru</th>
             <th>Factures du mois</th>
+            <th>Dont payée</th>
+            <th>Dont annulée</th>
+            <th>Reste due</th>
         </tr>
     </thead>
     <tbody>
@@ -220,6 +225,9 @@
                 <td>{{ $money($month, $month->accrued) }}</td>
                 <td>{{ $cumulative($month) }}</td>
                 <td>{{ $money($month, $month->declared) }}</td>
+                <td>{{ $money($month, $month->accruedPaid) }}</td>
+                <td>{{ $money($month, $month->accruedWaived) }}</td>
+                <td>{{ $money($month, $month->accruedDue) }}</td>
             </tr>
         @endforeach
     </tbody>
@@ -236,6 +244,9 @@
                     <th>Pénalité courue</th>
                     <th>Cumul couru</th>
                     <th>Factures du mois</th>
+                    <th>Dont payée</th>
+                    <th>Dont annulée</th>
+                    <th>Reste due</th>
                 </tr>
             </thead>
             <tbody>
@@ -250,6 +261,9 @@
                         <td>{{ $money($month, $month->accrued) }}</td>
                         <td>{{ $cumulative($month) }}</td>
                         <td>{{ $money($month, $month->declared) }}</td>
+                        <td>{{ $money($month, $month->accruedPaid) }}</td>
+                        <td>{{ $money($month, $month->accruedWaived) }}</td>
+                        <td>{{ $money($month, $month->accruedDue) }}</td>
                     </tr>
                 @endforeach
             </tbody>
