@@ -100,7 +100,9 @@ class DeclarationController extends Controller
                 ])->all(),
                 // L'historique des corrections, du plus récent au plus ancien.
                 // La première révision est l'état d'origine, pas une
-                // correction : l'écran ne compte donc que les suivantes.
+                // correction, et une révision de pure clôture de pénalité non
+                // plus : le compte est celui de l'historique et de l'export.
+                'correctionCount' => max(0, $declaration->revisions->where('penalty_only', false)->count() - 1),
                 'revisions' => $declaration->revisions->sortByDesc('id')->values()->map(
                     fn (DeclarationRevision $revision): array => [
                         'recordedAt' => $revision->created_at?->toIso8601String(),
@@ -111,6 +113,10 @@ class DeclarationController extends Controller
                         'invoiceDepositedOn' => $revision->invoice_deposited_on?->toDateString(),
                         'delayDays' => $revision->delay_days,
                         'payments' => $revision->payments,
+                        'penaltySettlement' => $revision->penalty_settlement?->value,
+                        'penaltySettlementLabel' => $revision->penalty_settlement?->label(),
+                        'penaltySettledAmount' => $revision->penalty_settled_amount,
+                        'penaltyOnly' => $revision->penalty_only,
                     ],
                 )->all(),
             ],

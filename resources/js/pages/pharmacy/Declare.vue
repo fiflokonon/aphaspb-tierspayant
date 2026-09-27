@@ -28,6 +28,10 @@ type Revision = {
     invoiceDepositedOn: string | null;
     delayDays: number | null;
     payments: { amount: number; paid_on: string; delay_days: number | null }[];
+    penaltySettlement: 'paid' | 'waived' | null;
+    penaltySettlementLabel: string | null;
+    penaltySettledAmount: number | null;
+    penaltyOnly: boolean;
 };
 
 type PenaltyChoice = 'due' | 'paid' | 'waived';
@@ -50,6 +54,7 @@ type Declaration = {
     private_note: string | null;
     payments: Payment[];
     penalty: Penalty;
+    correctionCount: number;
     revisions: Revision[];
 };
 
@@ -205,11 +210,38 @@ const isLast = computed(() => props.progress.current >= props.progress.total);
 const revisions = computed(() => props.declaration?.revisions ?? []);
 
 /**
- * La première révision est l'état d'origine, pas une correction : une
- * déclaration enregistrée une fois puis laissée tranquille n'a pas été
- * « modifiée ».
+ * Compté par le serveur, comme l'historique et l'export : la première révision
+ * est l'état d'origine, et une révision qui ne porte qu'une clôture de
+ * pénalité n'est pas une correction.
  */
-const correctionCount = computed(() => Math.max(0, revisions.value.length - 1));
+const correctionCount = computed(() => props.declaration?.correctionCount ?? 0);
+
+const historyLabel = computed(() =>
+    correctionCount.value > 0
+        ? `Modifiée ${correctionCount.value} fois`
+        : 'Historique',
+);
+
+/**
+ * Ce que la révision dit de la pénalité, ou null si elle n'en dit rien.
+ *
+ * Une clôture se lit « Pénalité payée · 32 000 F » ; son retour à rien,
+ * après une clôture, « Pénalité remise en dû ». Les révisions vont du plus
+ * récent au plus ancien : la précédente est donc la suivante du tableau.
+ */
+function penaltyLine(index: number): string | null {
+    const revision = revisions.value[index];
+
+    if (revision.penaltySettlementLabel !== null) {
+        return `Pénalité ${revision.penaltySettlementLabel.toLowerCase()} · ${formatAmount(revision.penaltySettledAmount)} F`;
+    }
+
+    const previous = revisions.value[index + 1];
+
+    return previous !== undefined && previous.penaltySettlement !== null
+        ? 'Pénalité remise en dû'
+        : null;
+}
 
 const historyOpen = ref(false);
 
@@ -512,7 +544,7 @@ const officine = computed(() => {
                         pas à chaque déclaration. Replié par défaut, comme la
                         note privée juste au-dessus.
                     -->
-                    <div v-if="correctionCount > 0" class="revision-history">
+                    <div v-if="revisions.length > 1" class="revision-history">
                         <button
                             type="button"
                             class="note-toggle"
@@ -522,7 +554,7 @@ const officine = computed(() => {
                                 {{ historyOpen ? '−' : '+' }}
                             </span>
 
-                            <span> Modifiée {{ correctionCount }} fois </span>
+                            <span>{{ historyLabel }}</span>
 
                             <span class="note-description">
                                 dernière le
@@ -560,51 +592,65 @@ const officine = computed(() => {
                                         </span>
                                     </div>
 
-                                    <div class="revision-figures">
-                                        <span>
-                                            {{
-                                                formatFcfa(
-                                                    revision.amountReceived,
-                                                )
-                                            }}
-                                            reçus sur
-                                            {{
-                                                formatFcfa(
-                                                    revision.amountInvoiced,
-                                                )
-                                            }}
-                                        </span>
-
-                                        <span class="revision-status">
-                                            {{ revision.statusLabel }}
-                                        </span>
-
-                                        <span
-                                            v-if="revision.delayDays !== null"
-                                        >
-                                            {{ revision.delayDays }} j
-                                        </span>
-                                    </div>
-
-                                    <ul
-                                        v-if="revision.payments.length > 0"
-                                        class="revision-payments"
+                                    <p
+                                        v-if="penaltyLine(index) !== null"
+                                        class="revision-penalty"
                                     >
-                                        <li
-                                            v-for="(
-                                                payment, line
-                                            ) in revision.payments"
-                                            :key="line"
-                                        >
-                                            {{ formatFcfa(payment.amount) }}
-                                            FCFA le
-                                            {{ formatDay(payment.paid_on) }}
-                                        </li>
-                                    </ul>
-
-                                    <p v-else class="revision-payments-empty">
-                                        Aucun versement à cette date.
+                                        {{ penaltyLine(index) }}
                                     </p>
+
+                                    <template v-if="!revision.penaltyOnly">
+                                        <div class="revision-figures">
+                                            <span>
+                                                {{
+                                                    formatFcfa(
+                                                        revision.amountReceived,
+                                                    )
+                                                }}
+                                                reçus sur
+                                                {{
+                                                    formatFcfa(
+                                                        revision.amountInvoiced,
+                                                    )
+                                                }}
+                                            </span>
+
+                                            <span class="revision-status">
+                                                {{ revision.statusLabel }}
+                                            </span>
+
+                                            <span
+                                                v-if="
+                                                    revision.delayDays !== null
+                                                "
+                                            >
+                                                {{ revision.delayDays }} j
+                                            </span>
+                                        </div>
+
+                                        <ul
+                                            v-if="revision.payments.length > 0"
+                                            class="revision-payments"
+                                        >
+                                            <li
+                                                v-for="(
+                                                    payment, line
+                                                ) in revision.payments"
+                                                :key="line"
+                                            >
+                                                {{ formatFcfa(payment.amount) }}
+                                                FCFA le
+                                                {{ formatDay(payment.paid_on) }}
+                                            </li>
+                                        </ul>
+
+                                        <p
+                                            v-else
+                                            class="revision-payments-empty"
+                                        >
+                                            Aucun versement à cette date.
+                                        </p>
+                                    </template>
                                 </li>
                             </ol>
                         </Transition>
@@ -2074,6 +2120,14 @@ const officine = computed(() => {
     gap: 10px;
 
     color: color-mix(in srgb, var(--ink) 70%, transparent);
+}
+
+.revision-penalty {
+    margin: 4px 0 0;
+
+    font-weight: 650;
+
+    color: var(--ink);
 }
 
 .revision-status {

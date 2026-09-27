@@ -79,7 +79,7 @@ class PharmacyExportRows
     {
         return Declaration::query()
             ->with(['insurer:id,name,standard_delay_days,penalty_trigger_days,penalty_rate_bp', 'payments'])
-            ->withCount('revisions')
+            ->withCount(['revisions' => fn ($query) => $query->aboutFigures()])
             ->where('pharmacy_id', $pharmacy->id)
             ->whereRaw(
                 '(period_year * 12 + period_month) BETWEEN ? AND ?',
@@ -127,6 +127,7 @@ class PharmacyExportRows
             // chaque déclaration sur plusieurs lignes : le fichier reste une
             // ligne par mois et par assureur, donc triable et sommable.
             $this->renderInstalments($declaration),
+            // État d'origine exclu ; clôtures de pénalité exclues au comptage.
             max(0, $declaration->revisions_count - 1),
             $declaration->private_note,
         ];

@@ -7,6 +7,8 @@ use App\Enums\PenaltySettlement;
 use Carbon\CarbonImmutable;
 use Database\Factories\DeclarationRevisionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property list<array{amount: int, paid_on: string, delay_days: int|null}> $payments
  * @property PenaltySettlement|null $penalty_settlement
  * @property int|null $penalty_settled_amount
+ * @property bool $penalty_only
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Declaration $declaration
@@ -48,6 +51,7 @@ use Illuminate\Support\Carbon;
     'payments',
     'penalty_settlement',
     'penalty_settled_amount',
+    'penalty_only',
 ])]
 class DeclarationRevision extends Model
 {
@@ -71,7 +75,22 @@ class DeclarationRevision extends Model
             'payments' => 'array',
             'penalty_settlement' => PenaltySettlement::class,
             'penalty_settled_amount' => 'integer',
+            'penalty_only' => 'boolean',
         ];
+    }
+
+    /**
+     * Les révisions qui corrigent un chiffre déclaré, état d'origine compris.
+     *
+     * Une révision qui ne porte qu'une clôture de pénalité n'est pas une
+     * correction : tout compteur « modifiée N fois » part d'ici.
+     *
+     * @param  Builder<DeclarationRevision>  $query
+     */
+    #[Scope]
+    protected function aboutFigures(Builder $query): void
+    {
+        $query->where('penalty_only', false);
     }
 
     /**

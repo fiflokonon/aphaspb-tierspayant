@@ -14,7 +14,7 @@ Ordre obligatoire dans `DeclarationController::store()` : `updateOrCreate` → `
 
 La **note privée est volontairement absente** de la table : la trace porte sur les chiffres que le réseau lit, et en garder des copies élargirait la surface de fuite. Verrouillé par un test.
 
-La première révision est l'état d'origine, pas une correction : partout dans l'UI, le nombre affiché est `revisions_count - 1`.
+La première révision est l'état d'origine, pas une correction : partout dans l'UI, le nombre affiché est `revisions_count - 1`, compté sur `revisions` filtrées par le scope `aboutFigures()`. Une révision qui ne diffère de la précédente que par `penalty_settlement` / `penalty_settled_amount` porte `penalty_only = true` (posé par `RecordDeclarationRevision`, jamais sur la première) : c'est une trace de clôture, pas une correction, et l'historique du formulaire l'affiche comme telle.
 
 ## Une clôture de pénalité tombe d'elle-même
 `ReconcilePenaltySettlement` est appelée à la fin de `RecordPaymentInstalments::handle()` (qui rend désormais `?PenaltyReopened`), jamais depuis le hook `saving` : celui-ci n'a ni les versements ni l'assureur.
