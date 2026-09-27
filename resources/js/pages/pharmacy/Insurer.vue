@@ -295,7 +295,7 @@ const reopen = (row: MonthRow) =>
                         : formatMillions(relationship.penalty)
                 "
                 unit="FCFA"
-                hint="mois soldés en retard compris"
+                hint="pénalités payées ou annulées déduites"
             />
         </KpiRow>
 

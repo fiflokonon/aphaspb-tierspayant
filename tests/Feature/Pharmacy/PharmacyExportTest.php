@@ -404,7 +404,21 @@ test('the pdf totals read the due, zero once the only month is settled', functio
     $page = collect($payload['insurerPages'])->firstWhere('name', 'NSIA');
 
     expect($page['penalty'])->toBe(0)
-        ->and($page['months'][0]['settlementLabel'])->toBe('Payée');
+        ->and($page['months'][0]['settlementLabel'])->toBe('Payée')
+        ->and($page['months'][0]['settledAmount'])->toBe(32_000);
+});
+
+test('the pdf pill of a paid month carries the closed amount', function () {
+    [$user] = exportingOfficine();
+    $declaration = referenceMonth($user);
+    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+
+    $export = app(PharmacyPdfExport::class);
+    $reflected = new ReflectionMethod($export, 'data');
+    $payload = $reflected->invoke($export, $user->currentPharmacy, new Period(2025, 9), new Period(2026, 8), null);
+
+    expect(view('exports.pharmacy', $payload)->render())
+        ->toContain("<div class=\"settlement-chip\">Payée 32\u{202F}000 F</div>");
 });
 
 test('the pdf month keeps a null settlement label when nothing was closed', function () {

@@ -445,7 +445,7 @@
                         <td>
                             {{ $month['penalty'] === null ? '—' : \App\Support\Fcfa::format($month['penalty']) }}
                             @if ($month['settlementLabel'])
-                                <div class="settlement-chip">{{ $month['settlementLabel'] }}</div>
+                                <div class="settlement-chip">{{ $month['settlementLabel'] }}{{ $month['isPaidSettlement'] && $month['settledAmount'] !== null ? ' '.\App\Support\Fcfa::format($month['settledAmount']).' F' : '' }}</div>
                             @endif
                         </td>
                     </tr>

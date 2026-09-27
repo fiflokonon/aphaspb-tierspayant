@@ -3,6 +3,7 @@
 namespace App\Services\Pharmacy;
 
 use App\Data\Period;
+use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Pharmacy;
 use App\Services\Declarations\LongestDelay;
@@ -182,6 +183,10 @@ class PharmacyPdfExport
                     'delayDays' => $one->delay_days,
                     'penalty' => $this->penalties->due($one),
                     'settlementLabel' => $one->penalty_settlement?->label(),
+                    // Le montant clos accompagne une pénalité payée, comme à
+                    // l'écran : c'est l'argent que l'assureur a versé.
+                    'settledAmount' => $one->penalty_settled_amount,
+                    'isPaidSettlement' => $one->penalty_settlement === PenaltySettlement::Paid,
                 ])->all()),
             ];
         })->values();
