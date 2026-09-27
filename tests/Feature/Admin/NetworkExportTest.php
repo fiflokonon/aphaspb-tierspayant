@@ -255,25 +255,43 @@ test('an insurer without a clause leaves the penalty cells empty', function () {
         ->and($cell('penalite_potentielle_fcfa'))->toBe('');
 });
 
+/**
+ * Un mois clos, réglé en une fois — condition du geste remplie (§5.1) : la
+ * facture est couverte à 100 % avant la clôture, à la différence d'un mois
+ * jamais réglé, que l'application refuserait de clore.
+ *
+ * Le versement tombe le 75ᵉ jour après le dépôt : la première tranche (jour
+ * 60) est déjà passée et non soldée — elle porte donc 20 000 F — mais la
+ * deuxième (jour 90) n'est jamais atteinte. Le montant clos égale exactement
+ * cette courue, comme l'exige ReconcilePenaltySettlement.
+ */
+function settledCoveredMonth(Insurer $insurer, int $month, PenaltySettlement $outcome, int $amount): void
+{
+    $depositedOn = CarbonImmutable::create(2026, $month, 1);
+
+    Declaration::factory()
+        ->instalments([
+            ['amount' => 1_000_000, 'paid_on' => $depositedOn->addDays(75)->toDateString()],
+        ])
+        ->penaltySettled($outcome, $amount)
+        ->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => $month,
+            'amount_invoiced' => 1_000_000,
+            'invoice_deposited_on' => $depositedOn,
+        ]);
+}
+
 test('the csv carries the due, recovered and abandoned penalty amounts', function () {
     $insurer = Insurer::factory()
         ->withPenalty(triggerDays: 60, ratePercent: 2.0)
         ->create(['name' => 'NSIA', 'standard_delay_days' => 30]);
 
-    $neverSettled = fn (int $daysAgo): array => [
-        'amount_received' => 0,
-        'status' => DeclarationStatus::Unpaid,
-        'is_status_manual' => true,
-        'invoice_deposited_on' => CarbonImmutable::create(2026, 8, 15)->subDays($daysAgo),
-        'paid_on' => null,
-        'delay_days' => null,
-    ];
-
     // Cinq officines : deux jamais réglées depuis 120 jours (60 000 chacune,
     // encore dues), deux closes payées (20 000 chacune, recouvrées) et une
-    // close annulée (20 000, abandonnée). Le montant clos égale la courue de
-    // son propre mois — une facture déposée il y a 60 jours ne porte qu'une
-    // tranche.
+    // close annulée (20 000, abandonnée).
     foreach ([1, 2] as $month) {
         Declaration::factory()->create([
             'pharmacy_id' => Pharmacy::factory(),
@@ -281,33 +299,20 @@ test('the csv carries the due, recovered and abandoned penalty amounts', functio
             'period_year' => 2026,
             'period_month' => $month,
             'amount_invoiced' => 1_000_000,
-            ...$neverSettled(120),
+            'amount_received' => 0,
+            'status' => DeclarationStatus::Unpaid,
+            'is_status_manual' => true,
+            'invoice_deposited_on' => CarbonImmutable::create(2026, 8, 15)->subDays(120),
+            'paid_on' => null,
+            'delay_days' => null,
         ]);
     }
 
     foreach ([3, 4] as $month) {
-        Declaration::factory()
-            ->penaltySettled(PenaltySettlement::Paid, 20_000)
-            ->create([
-                'pharmacy_id' => Pharmacy::factory(),
-                'insurer_id' => $insurer->id,
-                'period_year' => 2026,
-                'period_month' => $month,
-                'amount_invoiced' => 1_000_000,
-                ...$neverSettled(60),
-            ]);
+        settledCoveredMonth($insurer, $month, PenaltySettlement::Paid, 20_000);
     }
 
-    Declaration::factory()
-        ->penaltySettled(PenaltySettlement::Waived, 20_000)
-        ->create([
-            'pharmacy_id' => Pharmacy::factory(),
-            'insurer_id' => $insurer->id,
-            'period_year' => 2026,
-            'period_month' => 5,
-            'amount_invoiced' => 1_000_000,
-            ...$neverSettled(60),
-        ]);
+    settledCoveredMonth($insurer, 5, PenaltySettlement::Waived, 20_000);
 
     $rows = networkCsvRows();
     $header = $rows[0];
@@ -320,7 +325,15 @@ test('the csv carries the due, recovered and abandoned penalty amounts', functio
 });
 
 test('a withheld insurer leaves the due, recovered and abandoned penalty columns empty too', function () {
-    exportDeclare(Insurer::factory()->withPenalty()->create(['name' => 'Trop peu retenu']), 2);
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'Trop peu retenu']);
+
+    exportDeclare($insurer, 2);
+
+    // Une troisième officine, dont le mois est clos payé : toujours sous le
+    // seuil, mais l'assureur a bien un montant recouvré sur la période — la
+    // colonne doit rester vide malgré tout, pas seulement quand rien n'a été
+    // réglé.
+    settledCoveredMonth($insurer, 8, PenaltySettlement::Paid, 20_000);
 
     $rows = networkCsvRows();
     $header = $rows[0];
