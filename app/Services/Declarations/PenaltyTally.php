@@ -141,15 +141,23 @@ class PenaltyTally
     /**
      * Le journal : une série par assureur de `$names`, dans cet ordre, et le total.
      *
+     * La closure reçoit, pour la série totale seulement, les officines derrière
+     * sa **part cachée** : les mois déjà retenus des séries publiées. Le total
+     * moins les séries visibles rend exactement cette part ; l'appelant peut
+     * donc retenir le total quand elle ne repose que sur quelques officines.
+     * Pour une série d'assureur, ces deux compteurs valent zéro.
+     *
      * @param  array<int, string>  $names  les assureurs à publier, par identifiant
-     * @param  (Closure(?int, int, int): bool)|null  $withheld  assureur (null = total), officines du couru, officines du déclaré
+     * @param  (Closure(?int, int, int, int, int): bool)|null  $withheld  assureur (null = total), officines du couru, du déclaré, puis celles de la part cachée du couru et du déclaré
      */
     public function ledger(array $names, ?Closure $withheld = null, int $maskedInsurers = 0): PenaltyLedger
     {
         $series = [];
+        $hiddenAccrued = [];
+        $hiddenDeclared = [];
 
         foreach ($names as $insurerId => $name) {
-            $series[] = $this->series(
+            $one = $this->series(
                 $insurerId,
                 $name,
                 $this->accrued[$insurerId] ?? [],
@@ -158,6 +166,15 @@ class PenaltyTally
                 $this->declaredPharmacies[$insurerId] ?? [],
                 $withheld,
             );
+
+            foreach ($one->months as $month) {
+                if ($month->withheld) {
+                    $hiddenAccrued[$month->month] = ($hiddenAccrued[$month->month] ?? []) + ($this->accruedPharmacies[$insurerId][$month->month] ?? []);
+                    $hiddenDeclared[$month->month] = ($hiddenDeclared[$month->month] ?? []) + ($this->declaredPharmacies[$insurerId][$month->month] ?? []);
+                }
+            }
+
+            $series[] = $one;
         }
 
         $total = $this->series(
@@ -168,6 +185,8 @@ class PenaltyTally
             $this->totalAccruedPharmacies,
             $this->totalDeclaredPharmacies,
             $withheld,
+            $hiddenAccrued,
+            $hiddenDeclared,
         );
 
         return new PenaltyLedger($series, $total, $maskedInsurers);
@@ -181,6 +200,8 @@ class PenaltyTally
      * @param  array<string, int>  $declared
      * @param  array<string, array<int, true>>  $accruedPharmacies
      * @param  array<string, array<int, true>>  $declaredPharmacies
+     * @param  array<string, array<int, true>>  $hiddenAccrued
+     * @param  array<string, array<int, true>>  $hiddenDeclared
      */
     protected function series(
         ?int $insurerId,
@@ -190,6 +211,8 @@ class PenaltyTally
         array $accruedPharmacies,
         array $declaredPharmacies,
         ?Closure $withheld,
+        array $hiddenAccrued = [],
+        array $hiddenDeclared = [],
     ): PenaltyLedgerSeries {
         $currentKey = now()->format('Y-m');
         $cumulative = 0;
@@ -213,6 +236,8 @@ class PenaltyTally
                 $insurerId,
                 count($accruedPharmacies[$key] ?? []),
                 count($declaredPharmacies[$key] ?? []),
+                count($hiddenAccrued[$key] ?? []),
+                count($hiddenDeclared[$key] ?? []),
             );
 
             if ($isWithheld) {

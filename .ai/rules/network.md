@@ -68,12 +68,13 @@ Le filtre lui-même vit dans `DeclarationWindow::apply()`, seul goulot des neuf 
 
 Deux tests le tiennent : un sur les données (`summary` vaut null), un sur le **rendu** — sans ce second, un `$summary['declarations']` resté dans le Blade ne rougirait qu'en production. Vérifié par mutation : la garde neutralisée, la vue rend un 500.
 
-## Journal des pénalités : cumul vidé après un mois retenu, total sans seuil
+## Journal des pénalités : cumul vidé après un mois retenu, total presque sans seuil
 `NetworkPenaltyJournal` est le seul point de décision du seuil pour le journal ; écrans et exports passent tous par lui.
 
 - Un mois retenu vide **tous les cumuls suivants** de la série : cumul(M) − cumul(M−1) = couru(M), le rendrait déductible.
 - Un mois est retenu si ses officines contributrices (couru **ou** mois déclaré) sont entre 1 et seuil − 1. Zéro officine = zéro publié, pas retenu.
-- Série totale non filtrée : **tous** les assureurs sous convention, masqués compris, sans seuil — décision client du 27/09/2026, risque de déduction par différence accepté. Verrouillé par `a masked insurer has no series but still counts in the unfiltered total`.
+- Série totale non filtrée : **tous** les assureurs sous convention, masqués compris — décision client du 27/09/2026, risque « un seul assureur masqué se déduit par différence » accepté. Verrouillé par `a masked insurer has no series but still counts in the unfiltered total` et `the unfiltered total is published even when it rests on fewer officines than the threshold`.
+- Deux exceptions décidées le même jour après revue : le mois du total est retenu quand sa **part cachée** (mois retenus des séries publiées, officines distinctes, par horloge) repose sur 1 à seuil − 1 officines — sinon total − séries visibles rend ce mois ; et, **sous filtre ville**, quand le total lui-même y repose sur 1 à seuil − 1 officines (une ville d'une officine la désigne). `PenaltyTally::ledger()` passe ces compteurs cachés à la closure, pour le total seulement.
 - Filtrée sur un assureur masqué, la série totale est retenue en bloc ; sur un assureur autorisé, elle suit sa rétention mois par mois.
 
 `NetworkPenaltyLedger::tally()` coûte trois requêtes quel que soit le volume (test dédié).

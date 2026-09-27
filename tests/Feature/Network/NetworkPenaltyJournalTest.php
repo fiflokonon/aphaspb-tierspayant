@@ -127,6 +127,42 @@ test('only insurers that fed the total count as masked', function () {
         ->and($ledger->total->month('2026-05')->accrued)->toBe(120_000);
 });
 
+test('the unfiltered total is withheld when a withheld month of a published insurer would be its only hidden part', function () {
+    $first = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    $second = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($first, 5, 3, '2026-03-31');
+    networkUnpaid($second, 5, 3, '2026-03-31');
+    // Juin : une seule officine chez le premier assureur, facture de 3 000 000.
+    networkUnpaid($first, 1, 6, '2026-06-30', ['amount_invoiced' => 3_000_000]);
+
+    $ledger = $this->journal->for(...$this->bounds);
+    $june = $ledger->total->month('2026-06');
+
+    // Sans rétention : total − second = la pénalité de cette seule officine.
+    expect($june->withheld)->toBeTrue()
+        ->and($june->declared)->toBeNull()
+        ->and($ledger->total->month('2026-07')->accruedCumulative)->toBeNull()
+        // Mai ne cache rien : il reste publié.
+        ->and($ledger->total->month('2026-05')->accrued)->toBe(200_000);
+});
+
+test('filtered on a city, the total needs the threshold too', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($insurer, 5, 3, '2026-03-31', pharmacy: ['city' => 'Cotonou']);
+    networkUnpaid($insurer, 1, 3, '2026-03-31', ['amount_invoiced' => 7_000_000], pharmacy: ['city' => 'Kandi']);
+
+    $kandi = $this->journal->for(...$this->bounds, city: 'Kandi')->total;
+    $cotonou = $this->journal->for(...$this->bounds, city: 'Cotonou')->total;
+
+    // Une seule officine à Kandi : son total serait sa pénalité, ville nommée.
+    expect($kandi->month('2026-05')->withheld)->toBeTrue()
+        ->and($kandi->month('2026-05')->accrued)->toBeNull()
+        // Un mois sans aucune contribution ne cache personne : zéro publié.
+        ->and($kandi->month('2026-04')->withheld)->toBeFalse()
+        ->and($kandi->month('2026-04')->accrued)->toBe(0)
+        ->and($cotonou->month('2026-05')->accrued)->toBe(100_000);
+});
+
 test('filtered on a masked insurer, the total is withheld too', function () {
     $masked = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
     networkUnpaid($masked, 2, 3, '2026-03-31');

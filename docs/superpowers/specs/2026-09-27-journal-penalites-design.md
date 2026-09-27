@@ -342,12 +342,14 @@ précédentes, **ce sont eux qui font foi**.
   entrés dans le total sans série publiée, y compris ceux absents de
   `perInsurer()` parce que seule une facture ancienne court encore dans la
   période. Un assureur sans convention n'y figure jamais.
-- **§6 (revue, ouvert)** — deux déductions dépassent le risque accepté le
-  27/09 : un **mois retenu d'un assureur autorisé** se retrouve par
-  différence (total − séries visibles) quand il est seul caché ce mois-là, et
-  le **filtre ville** publie sans seuil le total d'une ville qui peut ne
-  compter qu'une officine. Le PDF réseau ne prétend plus qu'aucune officine
-  n'est identifiable ; la règle elle-même attend une décision.
+- **§6 (revue, tranché le 27/09/2026)** — deux déductions dépassaient le
+  risque accepté : un **mois retenu d'un assureur autorisé** se retrouvait
+  par différence (total − séries visibles), et le **filtre ville** publiait
+  sans seuil le total d'une ville qui peut ne compter qu'une officine.
+  Décision : le mois du total est retenu quand sa part cachée (mois retenus
+  des séries publiées) repose sur 1 à seuil − 1 officines, et, sous filtre
+  ville, quand le total lui-même y repose. Hors ville, les assureurs masqués
+  restent dans le total sans seuil, comme accepté.
 - **§4.1** — `PharmacyPenaltyLedger` lit en **query builder**, pas en
   Eloquent : `private_note` n'est jamais chargée, et le résultat est le même.
 - **§4.2 / §4.3** — l'accumulation et la construction des DTO vivent dans

@@ -179,9 +179,9 @@
         <tr>
             <td style="text-align: left;">
                 Édité le {{ $generatedAt->translatedFormat('d/m/Y à H:i') }} ·
-                Aucune officine nommée. Le total, lui, n'applique pas le seuil
-                d'anonymat (décision du 27/09/2026) : restreint à une ville ou à
-                un mois, il peut ne reposer que sur quelques officines.
+                Aucune officine nommée. Le total couvre aussi les assureurs
+                masqués sous le seuil d'anonymat ; un mois qui ne reposerait
+                que sur quelques officines y est retenu.
             </td>
             <td style="text-align: right;">Page <span class="page-number"></span></td>
         </tr>

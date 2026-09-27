@@ -19,8 +19,12 @@ use stdClass;
  * - une série par assureur **autorisé** par perInsurer() sur la période, puis
  *   réévaluée **mois par mois** (règle « seuil à chaque granularité ») ;
  * - la série totale sans filtre couvre **tous** les assureurs sous convention,
- *   sans seuil, comme networkSummary(). Décision du 27/09/2026, risque nommé
- *   dans la spec : un seul assureur masqué se déduit par différence ;
+ *   masqués compris, comme networkSummary() : un seul assureur masqué se
+ *   déduit par différence, risque accepté le 27/09/2026. Mais un mois est
+ *   retenu quand sa **part cachée** (les mois retenus des séries publiées)
+ *   ne repose que sur quelques officines, et, sous filtre ville, quand le
+ *   total lui-même n'y repose que sur quelques officines — décision du même
+ *   jour, prise après revue ;
  * - filtrée sur un assureur, la série totale devient ses chiffres : retenue en
  *   bloc s'il est masqué, sinon mois par mois comme sa série.
  */
@@ -67,9 +71,21 @@ class NetworkPenaltyJournal
 
         return $tally->ledger(
             $authorized,
-            function (?int $seriesInsurer, int $accruedPharmacies, int $declaredPharmacies) use ($insurerId, $filteredIsMasked, $belowMinimum): bool {
+            function (?int $seriesInsurer, int $accruedPharmacies, int $declaredPharmacies, int $hiddenAccrued, int $hiddenDeclared) use ($insurerId, $city, $filteredIsMasked, $belowMinimum): bool {
                 if ($seriesInsurer === null && $insurerId === null) {
-                    return false;
+                    // Total moins séries visibles = part cachée : un mois
+                    // retenu d'un assureur publié, s'il est seul caché, se
+                    // lirait par soustraction (décision du 27/09/2026).
+                    if ($belowMinimum($hiddenAccrued) || $belowMinimum($hiddenDeclared)) {
+                        return true;
+                    }
+
+                    // Restreint à une ville, le total peut n'être que celui
+                    // d'une ou deux officines, et la ville les désigne. Hors
+                    // filtre ville, les assureurs masqués restent dans le
+                    // total sans seuil : risque accepté le 27/09/2026.
+                    return $city !== null
+                        && ($belowMinimum($accruedPharmacies) || $belowMinimum($declaredPharmacies));
                 }
 
                 if ($seriesInsurer === null && $filteredIsMasked) {
