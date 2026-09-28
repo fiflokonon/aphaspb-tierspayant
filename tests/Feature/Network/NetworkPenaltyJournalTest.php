@@ -41,6 +41,62 @@ function networkUnpaid(Insurer $insurer, int $count, int $month, string $deposit
     ]));
 }
 
+/**
+ * Une facture de mars réglée dix jours après son dépôt : aucune pénalité ne
+ * court. Dates explicites — la fabrique `paid()` tire un règlement au hasard,
+ * qui laissait parfois courir une pénalité en mai (test instable).
+ */
+function paidOnTime(Pharmacy $pharmacy, Insurer $insurer): void
+{
+    Declaration::factory()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 3,
+        'amount_invoiced' => 1_000_000,
+        'amount_received' => 1_000_000,
+        'invoice_deposited_on' => '2026-03-31',
+        'paid_on' => '2026-04-10',
+    ]);
+}
+
+/**
+ * Une facture de mars pour une officine donnée, jamais réglée, ou dont la
+ * pénalité de mai (20 000) est close selon `$outcome`.
+ */
+function marchInvoice(Pharmacy $pharmacy, Insurer $insurer, ?PenaltySettlement $outcome = null): void
+{
+    if ($outcome === null) {
+        Declaration::factory()->create([
+            'pharmacy_id' => $pharmacy->id,
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => 3,
+            'amount_invoiced' => 1_000_000,
+            'amount_received' => 0,
+            'status' => DeclarationStatus::Unpaid,
+            'is_status_manual' => true,
+            'invoice_deposited_on' => '2026-03-31',
+            'paid_on' => null,
+            'delay_days' => null,
+        ]);
+
+        return;
+    }
+
+    Declaration::factory()
+        ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-06-14']])
+        ->penaltySettled($outcome, 20_000)
+        ->create([
+            'pharmacy_id' => $pharmacy->id,
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => 3,
+            'amount_invoiced' => 1_000_000,
+            'invoice_deposited_on' => '2026-03-31',
+        ]);
+}
+
 test('an authorised insurer gets its monthly series', function () {
     $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
     networkUnpaid($insurer, 5, 3, '2026-03-31');
@@ -382,12 +438,7 @@ test('an unfiltered journal series month follows the city partition too', functi
     $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
     networkUnpaid($insurer, 5, 3, '2026-03-31', pharmacy: ['city' => 'Cotonou']);
     networkUnpaid($insurer, 1, 3, '2026-03-31', pharmacy: ['city' => 'Parakou']);
-    Pharmacy::factory()->count(4)->create(['city' => 'Parakou'])->each(fn (Pharmacy $pharmacy) => Declaration::factory()->paid()->create([
-        'pharmacy_id' => $pharmacy->id,
-        'insurer_id' => $insurer->id,
-        'period_year' => 2026,
-        'period_month' => 3,
-    ]));
+    Pharmacy::factory()->count(4)->create(['city' => 'Parakou'])->each(fn (Pharmacy $pharmacy) => paidOnTime($pharmacy, $insurer));
 
     $may = $this->journal->for(...$this->bounds)->insurers[0]->month('2026-05');
 
@@ -430,4 +481,34 @@ test('an unfiltered status split is withheld when an unpublishable city split wo
         ->and($everyone->insurers[0]->month('2026-05')->accruedPaid)->toBeNull()
         ->and($everyone->total->month('2026-05')->accruedPaid)->toBeNull()
         ->and($cotonou->insurers[0]->month('2026-05')->accruedPaid)->toBe(100_000);
+});
+
+test('the unfiltered total withholds its split when the city-share insurers hidden split cells rest on too few officines', function () {
+    // A : Cotonou ×5 + une Bohiconnaise qui annule ; C : Cotonou ×5 + Parakou
+    // ×4 ; B : Bohicon ×5 qui annulent + Parakou ×5. A et C sont « city-share »,
+    // leurs cellules cachées de mai (1 + 4 officines) passent le seuil au
+    // couru : le mois se publie. Mais la part annulée cachée ne repose que sur
+    // la Bohiconnaise : total annulé 120 000 − B 100 000 = ses 20 000.
+    [$a, $b, $c] = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->count(3)->create()->all();
+    $cotonou = Pharmacy::factory()->count(5)->create(['city' => 'Cotonou']);
+    $bohicon = Pharmacy::factory()->count(5)->create(['city' => 'Bohicon']);
+    $parakou = Pharmacy::factory()->count(5)->create(['city' => 'Parakou']);
+
+    $cotonou->each(function (Pharmacy $pharmacy) use ($a, $c) {
+        marchInvoice($pharmacy, $a);
+        marchInvoice($pharmacy, $c);
+    });
+    marchInvoice($bohicon->first(), $a, PenaltySettlement::Waived);
+    $parakou->take(4)->each(fn (Pharmacy $pharmacy) => marchInvoice($pharmacy, $c));
+    $bohicon->each(fn (Pharmacy $pharmacy) => marchInvoice($pharmacy, $b, PenaltySettlement::Waived));
+    $parakou->each(fn (Pharmacy $pharmacy) => marchInvoice($pharmacy, $b));
+
+    $ledger = $this->journal->for(...$this->bounds);
+    $may = $ledger->total->month('2026-05');
+
+    expect(collect($ledger->insurers)->pluck('insurerId')->all())->toBe([$b->id])
+        ->and($ledger->insurers[0]->month('2026-05')->accruedWaived)->toBe(100_000)
+        ->and($may->withheld)->toBeFalse()
+        ->and($may->splitWithheld)->toBeTrue()
+        ->and($may->accruedWaived)->toBeNull();
 });
