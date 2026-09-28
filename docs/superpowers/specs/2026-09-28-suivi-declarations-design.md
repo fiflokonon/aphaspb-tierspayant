@@ -66,6 +66,38 @@ il est retenu (conservé, vidé, expliqué) : résumé réseau et montants rése
 délais, chaque mois du total du journal des pénalités, avec ou sans filtre
 ville. Test de non-régression : `tests/Feature/Admin/CombinedScreensLeakTest.php`.
 
+**Fuite par soustraction entre villes, fermée elle aussi.** Un second passage
+de revue a reconstruit la même information autrement : les villes partagent
+le réseau sans recouvrement, donc un chiffre sans filtre ville, moins les
+chiffres publiés de chaque ville, rend ceux des villes retenues. Sur l'exemple
+ci-dessus, « Évolution » sans filtre (6 officines, 10 062 000 FCFA facturés)
+moins « Évolution » sur Cotonou (5 officines, 5 000 000) rendait les
+5 062 000 FCFA de l'officine de Bohicon. Les officines sans ville, qu'aucun
+filtre ne publie, se retrouvaient toujours de cette façon. Désormais, tout
+chiffre réseau sans filtre ville est retenu lorsque la part qu'il cacherait
+(les villes retenues et les officines sans ville) repose sur 1 à 4 officines
+(seuil − 1). La règle vaut pour chaque niveau publié : synthèse, montants,
+ligne par assureur, point mensuel de la courbe, mois du rapport PDF, mois du
+journal des pénalités et découpage payée / annulée / due.
+
+**Risques résiduels acceptés.** L'APhaSPB accepte, en connaissance de cause,
+les trois cas suivants. Chacun demande de croiser volontairement plusieurs
+écrans, et le fermer rendrait l'outil largement inutilisable :
+
+1. *Périodes qui se recouvrent.* En comparant deux périodes qui se chevauchent
+   (par exemple « 12 derniers mois » et « année civile »), la différence porte
+   sur les seuls mois qui les séparent. Si peu d'officines ont déclaré ces
+   mois-là, leurs chiffres peuvent se déduire.
+2. *Synthèse moins assureurs publiés.* La synthèse réseau inclut les assureurs
+   masqués (trop peu d'officines déclarantes). En lui retirant les lignes des
+   assureurs publiés, on obtient la part cumulée des assureurs masqués. C'est
+   la même décision que celle prise le 27/09/2026 pour le journal des
+   pénalités.
+3. *Nombre d'officines conventionnées.* L'écran « Gestion des assureurs »
+   affiche, pour chaque assureur, le nombre d'officines qui l'ont coché. Pour
+   un assureur qui en compte 1 à 4, ce nombre signale que ses éventuels
+   chiffres ne concernent que ces quelques officines.
+
 Cet amendement est une décision du 28/09/2026. **Il doit être validé par écrit
 côté APhaSPB avant la mise en production**, puisque le CDC est le document
 signé.
@@ -227,3 +259,11 @@ Vérification finale : `composer ci:check`.
   publié (risque « par différence » accepté le 27/09/2026, inchangé). La ligne
   réseau de la courbe ne moyenne plus que les points assureur × mois publiés.
   Détail : §3, « Fuite par combinaison ».
+- **Règle de partition par ville** (second tour de revue, 28/09/2026) : un
+  chiffre réseau sans filtre ville est retenu quand les villes retenues et
+  les officines sans ville y pèsent 1 à seuil − 1 officines. L'agrégat par
+  assureur coûte une requête de plus (4 au lieu de 3). La fabrique de test
+  `PharmacyFactory` range désormais toute officine à Cotonou par défaut, sans
+  quoi la règle rendait les tests aléatoires. Risques résiduels acceptés
+  (périodes qui se recouvrent, synthèse moins assureurs publiés, nombre
+  d'officines conventionnées) : §3.
