@@ -23,9 +23,11 @@ use stdClass;
  *   masqués compris, comme networkSummary() : un seul assureur masqué se
  *   déduit par différence, risque accepté le 27/09/2026. Mais un mois est
  *   retenu quand sa **part cachée** (les mois retenus des séries publiées)
- *   ne repose que sur quelques officines, et, sous filtre ville, quand le
- *   total lui-même n'y repose que sur quelques officines — décision du même
- *   jour, prise après revue ;
+ *   ne repose que sur quelques officines — décision du même jour, prise
+ *   après revue —, et quand le total lui-même n'y repose que sur 1 à
+ *   seuil − 1 officines, avec ou sans filtre ville (28/09/2026 : un réseau
+ *   d'une seule déclarante, que le suivi des déclarations nomme, rendait
+ *   sa pénalité exacte) ;
  * - filtrée sur un assureur, la série totale devient ses chiffres : retenue en
  *   bloc s'il est masqué, sinon mois par mois comme sa série ;
  * - le découpage par statut d'un mois publié (payée, annulée, due) est une
@@ -76,7 +78,7 @@ class NetworkPenaltyJournal
 
         return $tally->ledger(
             $authorized,
-            function (?int $seriesInsurer, int $accruedPharmacies, int $declaredPharmacies, int $hiddenAccrued, int $hiddenDeclared) use ($insurerId, $city, $filteredIsMasked, $belowMinimum): bool {
+            function (?int $seriesInsurer, int $accruedPharmacies, int $declaredPharmacies, int $hiddenAccrued, int $hiddenDeclared) use ($insurerId, $filteredIsMasked, $belowMinimum): bool {
                 if ($seriesInsurer === null && $insurerId === null) {
                     // Total moins séries visibles = part cachée : un mois
                     // retenu d'un assureur publié, s'il est seul caché, se
@@ -85,12 +87,12 @@ class NetworkPenaltyJournal
                         return true;
                     }
 
-                    // Restreint à une ville, le total peut n'être que celui
-                    // d'une ou deux officines, et la ville les désigne. Hors
-                    // filtre ville, les assureurs masqués restent dans le
-                    // total sans seuil : risque accepté le 27/09/2026.
-                    return $city !== null
-                        && ($belowMinimum($accruedPharmacies) || $belowMinimum($declaredPharmacies));
+                    // Le total lui-même, avec ou sans ville : reposant sur 1 à
+                    // seuil − 1 officines, il serait leur pénalité exacte, et
+                    // le suivi des déclarations dit lesquelles ont déclaré
+                    // (28/09/2026). Les assureurs masqués restent comptés
+                    // dedans : risque « par différence » accepté le 27/09/2026.
+                    return $belowMinimum($accruedPharmacies) || $belowMinimum($declaredPharmacies);
                 }
 
                 if ($seriesInsurer === null && $filteredIsMasked) {

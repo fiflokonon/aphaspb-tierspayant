@@ -21,7 +21,7 @@ class InsurerIndicatorsResource
      *     insurerId: int,
      *     insurerName: string,
      *     sufficient: bool,
-     *     declaringPharmacies: int,
+     *     declaringPharmacies: int|null,
      *     required: int|null,
      *     averageDelayDays: float|null,
      *     standardDelayDays: int|null,
@@ -45,7 +45,9 @@ class InsurerIndicatorsResource
             'insurerId' => $insurerId,
             'insurerName' => $insurerName,
             'sufficient' => $sufficient,
-            'declaringPharmacies' => $entry->declaringPharmacies,
+            // Jamais le compte exact sous le seuil : « moins de {required} »
+            // est tout ce qui sort (voir InsufficientData).
+            'declaringPharmacies' => $sufficient ? $entry->declaringPharmacies : null,
             'required' => $sufficient ? null : $entry->required,
             'averageDelayDays' => $sufficient ? $entry->averageDelayDays : null,
             'standardDelayDays' => $sufficient ? $entry->standardDelayDays : null,

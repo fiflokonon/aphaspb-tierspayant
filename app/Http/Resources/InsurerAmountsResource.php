@@ -19,7 +19,7 @@ class InsurerAmountsResource
      *     insurerId: int,
      *     insurerName: string,
      *     sufficient: bool,
-     *     declaringPharmacies: int,
+     *     declaringPharmacies: int|null,
      *     required: int|null,
      *     invoiced: int|null,
      *     received: int|null,
@@ -38,7 +38,9 @@ class InsurerAmountsResource
             'insurerId' => $insurerId,
             'insurerName' => $insurerName,
             'sufficient' => $sufficient,
-            'declaringPharmacies' => $entry->declaringPharmacies,
+            // Jamais le compte exact sous le seuil : « moins de {required} »
+            // est tout ce qui sort (voir InsufficientData).
+            'declaringPharmacies' => $sufficient ? $entry->declaringPharmacies : null,
             'required' => $sufficient ? null : $entry->required,
             'invoiced' => $sufficient ? $entry->invoiced : null,
             'received' => $sufficient ? $entry->received : null,

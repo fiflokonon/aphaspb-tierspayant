@@ -250,9 +250,13 @@ watch([period, city, insurer], reload);
                     Aucun nom d'officine, aucun montant individuel, aucune note
                     privée. Un assureur déclaré par moins de
                     <strong>5 officines</strong> apparaît avec la mention «
-                    données insuffisantes » et aucun chiffre — la ligne est
-                    conservée exprès, car une ligne absente se lirait comme une
-                    absence de données et non comme une rétention volontaire.
+                    données insuffisantes · moins de 5 officines déclarantes »
+                    et aucun chiffre, pas même le nombre exact de ses officines
+                    — la ligne est conservée exprès, car une ligne absente se
+                    lirait comme une absence de données et non comme une
+                    rétention volontaire. La synthèse du rapport est retenue de
+                    même quand, filtres compris, elle repose sur moins de 5
+                    officines.
                 </p>
             </div>
 

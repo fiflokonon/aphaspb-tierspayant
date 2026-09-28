@@ -110,6 +110,10 @@ test('an insurer below the threshold gets no figures at all', function () {
         ->first(fn (string $row) => str_contains($row, 'Trop peu'));
 
     expect($line)->toContain('donnees insuffisantes')
+        // « moins de 5 », jamais le compte exact (2) : sous le seuil il est
+        // lui-même un chiffre (28/09/2026).
+        ->and($line)->toContain('moins de 5 officines declarantes')
+        ->and(str_getcsv($line, ';')[1])->toBe('moins de 5')
         ->and($line)->not->toContain('1000000')
         ->and($line)->not->toContain('2000000')
         ->and($line)->not->toContain('40');
@@ -189,7 +193,8 @@ test('the report withholds an insurer below the anonymity threshold like every o
     expect($payload['rows'])->toBeEmpty()
         ->and($payload['withheld'])->toHaveCount(1)
         ->and($payload['withheld'][0]['name'])->toBe('Petit Assureur')
-        ->and($payload['withheld'][0]['declaringPharmacies'])->toBe(3);
+        // Le compte exact sous le seuil ne sort pas non plus (28/09/2026).
+        ->and($payload['withheld'][0])->not->toHaveKey('declaringPharmacies');
 });
 
 /**
@@ -715,6 +720,7 @@ test('a month declared by a single officine is withheld from the insurer page', 
     // Sans ça, la ligne de juillet imprimerait la facture exacte d'une officine
     // nommable dans un rapport qui promet l'inverse.
     expect($months[7]['withheld'])->toBeTrue()
+        ->and($months[7]['declaringPharmacies'])->toBeNull()
         ->and($months[7]['invoiced'])->toBeNull()
         ->and($months[7]['outstanding'])->toBeNull()
         ->and($months[8]['withheld'])->toBeFalse()
@@ -758,7 +764,9 @@ test('the rendered page prints no figure for a withheld month', function () {
 
     // Le montant exact de l'officine unique ne doit apparaître nulle part.
     expect($html)->not->toContain('4'.Fcfa::THIN_NBSP.'210'.Fcfa::THIN_NBSP.'000')
-        ->and($html)->toContain('chiffres retenus');
+        ->and($html)->toContain('chiffres retenus')
+        ->and($html)->toContain('Moins de 5 officines déclarantes ce mois-là')
+        ->and($html)->not->toContain('1 officine déclarante');
 });
 
 test('the city filter re-applies the threshold inside the city', function () {
@@ -792,9 +800,10 @@ test('the city filter re-applies the threshold inside the city', function () {
 
     // Une clairance nationale ne vaut pas clairance dans chaque ville : dans
     // Parakou cet assureur n'est déclaré que par une officine, et ses chiffres
-    // seraient les siens, exactement.
+    // seraient les siens, exactement. Le compte non plus ne sort pas : « 1 »,
+    // à côté du suivi qui nomme les déclarantes, désignerait l'officine.
     expect($cell('assureur'))->toBe('NSIA Assurances')
-        ->and($cell('officines_declarantes'))->toBe('1')
+        ->and($cell('officines_declarantes'))->toBe('moins de 5')
         ->and($cell('facture_fcfa'))->toBe('')
         ->and($cell('delai_le_plus_long_jours'))->toBe('')
         ->and(downloadCsv(['city' => 'Parakou']))->not->toContain('4210000');
@@ -819,10 +828,10 @@ test('choosing an insurer leaves only that insurer in the report', function () {
 });
 
 test('choosing an insurer below the threshold withholds its summary too', function () {
-    // Le résumé n'applique aucun seuil quand il couvre tout le réseau : aucune
-    // officine n'y est nommable. Restreint à un assureur, il devient les
-    // chiffres de cet assureur — et une seule officine déclarante rendrait sa
-    // facture exacte lisible. Le filtre ne doit pas ouvrir cette porte.
+    // Restreint à un assureur, le résumé devient les chiffres de cet assureur
+    // — et une seule officine déclarante rendrait sa facture exacte lisible.
+    // Depuis le 28/09/2026 la règle est générale (tout résumé réseau sous le
+    // seuil est retenu) ; ce cas en reste l'illustration par le filtre.
     $hidden = Insurer::factory()->create(['name' => 'Petit Assureur']);
 
     exportDeclare($hidden, 1, ['amount_invoiced' => 7_654_321, 'amount_received' => 0]);
@@ -833,7 +842,9 @@ test('choosing an insurer below the threshold withholds its summary too', functi
 
     expect($payload['rows'])->toBeEmpty()
         ->and($payload['withheld'])->toHaveCount(1)
-        ->and($payload['summary'])->toBeNull();
+        ->and($payload['summary']['withheld'])->toBeTrue()
+        ->and($payload['summary']['declarations'])->toBeNull()
+        ->and($payload['summary']['declaringPharmacies'])->toBeNull();
 });
 
 test('the chosen insurer narrows the csv to its single row', function () {
@@ -863,7 +874,7 @@ test('the filename names the insurer the file covers', function () {
 });
 
 test('the report still renders when the summary is withheld', function () {
-    // Le test de données ci-dessus prouve que `summary` vaut null ; celui-ci
+    // Le test de données ci-dessus prouve que `summary` est retenu ; celui-ci
     // prouve que la vue le supporte. Sans lui, un `$summary['declarations']`
     // resté dans le Blade ne rougirait qu'en production.
     $hidden = Insurer::factory()->create(['name' => 'Petit Assureur']);

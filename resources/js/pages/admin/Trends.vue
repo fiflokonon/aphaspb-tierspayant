@@ -25,28 +25,41 @@ type AmountRow = {
     insurerId: number;
     insurerName: string;
     sufficient: boolean;
-    declaringPharmacies: number;
+    /** Null under the threshold: the exact count never leaves the server. */
+    declaringPharmacies: number | null;
     required: number | null;
     invoiced: number | null;
     outstanding: number | null;
     recoveryRate: number | null;
 };
 
+/**
+ * A point resting on fewer officines than the threshold is not drawn: its
+ * month is listed under `withheld` (per insurer) or `withheldMonths` (network).
+ */
 type Trend = {
-    insurers: Record<number, { name: string; points: Record<string, number> }>;
+    insurers: Record<
+        number,
+        { name: string; points: Record<string, number>; withheld: string[] }
+    >;
     network: Record<string, number>;
+    withheldMonths: string[];
     threshold: number;
+    required: number;
 };
 
 const props = defineProps<{
+    /** Withheld as a whole when it rests on fewer officines than the threshold. */
     summary: {
-        invoiced: number;
-        received: number;
-        outstanding: number;
+        withheld: boolean;
+        required: number;
+        invoiced: number | null;
+        received: number | null;
+        outstanding: number | null;
         recoveryRate: number | null;
-        declaringPharmacies: number;
+        declaringPharmacies: number | null;
         weightedDelayDays: number | null;
-        outstandingBeyond90: number;
+        outstandingBeyond90: number | null;
     };
     amounts: AmountRow[];
     /** The mean of the agreed delays: no single one governs the network. */
@@ -84,10 +97,33 @@ const recoveryTone = (rate: number | null): KpiTone => {
 };
 
 /** Both the amount and its share, never one without the other. */
-const share = (value: number): string =>
-    props.summary.invoiced === 0
+const share = (value: number | null): string =>
+    value === null || !props.summary.invoiced
         ? '—'
         : `${Math.round((value / props.summary.invoiced) * 100)} %`;
+
+/** What a withheld KPI says under its « retenu ». */
+const withheldHint = computed(
+    () =>
+        `moins de ${props.summary.required} officines déclarantes sur ce périmètre`,
+);
+
+/** A withheld KPI shows « retenu », never a zero that would read « rien ». */
+const millions = (value: number | null): string =>
+    props.summary.withheld ? 'retenu' : formatMillions(value ?? 0);
+
+/** The months of the curve left blank, said in one line under the chart. */
+const withheldNote = computed(() => {
+    const months = new Set<string>(props.trend?.withheldMonths ?? []);
+
+    Object.values(props.trend?.insurers ?? {}).forEach((one) =>
+        one.withheld.forEach((month) => months.add(month)),
+    );
+
+    return months.size === 0
+        ? null
+        : `Points retenus (moins de ${props.summary.required} officines déclarantes ce mois-là) : ${[...months].sort().join(', ')}.`;
+});
 
 const period = ref(props.period);
 const city = ref(props.city);
@@ -163,11 +199,11 @@ const chartHeading = computed(() =>
     chartType.value === 'pie'
         ? {
               title: 'Encours par assureur',
-              caption: `Reste à recouvrer sur la période, réparti entre les assureurs · un assureur n'apparaît qu'à partir de 5 officines déclarantes.`,
+              caption: `Reste à recouvrer sur la période, réparti entre les assureurs · un assureur n'apparaît qu'à partir de ${props.summary.required} officines déclarantes.`,
           }
         : {
               title: 'Évolution du délai de paiement',
-              caption: `Délai moyen pondéré par les montants, en jours · ligne de référence à ${props.threshold} j, la moyenne des délais standard des assureurs · un assureur n'apparaît qu'à partir de 5 officines déclarantes.`,
+              caption: `Délai moyen pondéré par les montants, en jours · ligne de référence à ${props.threshold} j, la moyenne des délais standard des assureurs · un point n'apparaît qu'à partir de ${props.summary.required} officines déclarantes.`,
           },
 );
 
@@ -257,9 +293,13 @@ async function exportChart() {
 
                 <KpiCard
                     label="FACTURÉ · RÉSEAU"
-                    :value="formatMillions(summary.invoiced)"
-                    unit="FCFA"
-                    :hint="`${summary.declaringPharmacies} officines déclarantes`"
+                    :value="millions(summary.invoiced)"
+                    :unit="summary.withheld ? undefined : 'FCFA'"
+                    :hint="
+                        summary.withheld
+                            ? withheldHint
+                            : `${summary.declaringPharmacies} officines déclarantes`
+                    "
                 />
 
                 <div class="metric-icon primary-icon">
@@ -272,10 +312,14 @@ async function exportChart() {
 
                 <KpiCard
                     label="ENCAISSÉ"
-                    :value="formatMillions(summary.received)"
-                    unit="FCFA"
+                    :value="millions(summary.received)"
+                    :unit="summary.withheld ? undefined : 'FCFA'"
                     :tone="recoveryTone(summary.recoveryRate)"
-                    :hint="`${share(summary.received)} du facturé`"
+                    :hint="
+                        summary.withheld
+                            ? withheldHint
+                            : `${share(summary.received)} du facturé`
+                    "
                 />
 
                 <div class="metric-icon success-icon">
@@ -288,10 +332,14 @@ async function exportChart() {
 
                 <KpiCard
                     label="ENCOURS DU RÉSEAU"
-                    :value="formatMillions(summary.outstanding)"
-                    unit="FCFA"
-                    tone="bad"
-                    :hint="`${share(summary.outstanding)} du facturé · dont ${formatMillions(summary.outstandingBeyond90)} au-delà de 90 j`"
+                    :value="millions(summary.outstanding)"
+                    :unit="summary.withheld ? undefined : 'FCFA'"
+                    :tone="summary.withheld ? 'neutral' : 'bad'"
+                    :hint="
+                        summary.withheld
+                            ? withheldHint
+                            : `${share(summary.outstanding)} du facturé · dont ${formatMillions(summary.outstandingBeyond90 ?? 0)} au-delà de 90 j`
+                    "
                 />
 
                 <div class="metric-icon danger-icon">
@@ -305,12 +353,19 @@ async function exportChart() {
                 <KpiCard
                     label="DÉLAI MOYEN PONDÉRÉ"
                     :value="
-                        summary.weightedDelayDays?.toLocaleString('fr-FR') ??
-                        '—'
+                        summary.withheld
+                            ? 'retenu'
+                            : (summary.weightedDelayDays?.toLocaleString(
+                                  'fr-FR',
+                              ) ?? '—')
                     "
-                    unit="jours"
+                    :unit="summary.withheld ? undefined : 'jours'"
                     :tone="delayTone(summary.weightedDelayDays)"
-                    :hint="`délai standard moyen ${threshold} j`"
+                    :hint="
+                        summary.withheld
+                            ? withheldHint
+                            : `délai standard moyen ${threshold} j`
+                    "
                 />
 
                 <div class="metric-icon gold-icon">
@@ -337,6 +392,10 @@ async function exportChart() {
                     </div>
 
                     <p>{{ chartHeading.caption }}</p>
+
+                    <p v-if="chartType !== 'pie' && withheldNote">
+                        {{ withheldNote }}
+                    </p>
                 </div>
 
                 <div v-if="chartType !== 'pie'" class="threshold-badge">
@@ -417,11 +476,13 @@ async function exportChart() {
 
                     <strong>
                         {{
-                            summary.weightedDelayDays?.toLocaleString(
-                                'fr-FR',
-                            ) ?? '—'
+                            summary.withheld
+                                ? 'retenu'
+                                : (summary.weightedDelayDays?.toLocaleString(
+                                      'fr-FR',
+                                  ) ?? '—')
                         }}
-                        <small>j</small>
+                        <small v-if="!summary.withheld">j</small>
                     </strong>
                 </div>
             </div>
@@ -440,7 +501,7 @@ async function exportChart() {
                 title="Montants agrégés par assureur"
                 :columns="COLUMNS"
                 :template="TEMPLATE"
-                footer="Aucun montant individuel : l'agrégation s'ouvre à partir de 5 officines déclarantes."
+                :footer="`Aucun montant individuel : l'agrégation s'ouvre à partir de ${summary.required} officines déclarantes.`"
                 class="amounts-table"
             >
                 <template v-for="row in amounts" :key="row.insurerId">
@@ -449,10 +510,9 @@ async function exportChart() {
                         :template="TEMPLATE"
                         :label="row.insurerName"
                         :span="4"
-                        :explanation="`${row.declaringPharmacies}
-                            officine${row.declaringPharmacies > 1 ? 's' : ''}
-                            déclarante${row.declaringPharmacies > 1 ? 's' : ''}
-                            — les montants s'agrègent à partir de ${row.required}`"
+                        :explanation="`moins de ${row.required} officines
+                            déclarantes — les montants s'agrègent à partir de
+                            ${row.required}`"
                     />
 
                     <DataTableRow

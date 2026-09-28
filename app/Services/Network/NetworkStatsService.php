@@ -265,10 +265,24 @@ class NetworkStatsService
     /**
      * Monthly average delay per insurer, plus the network average.
      *
-     * @return array{insurers: array<int, array{name: string, points: array<string, float>}>, network: array<string, float>, threshold: int}
+     * The clearance of perInsurer() holds for the period only: an insurer
+     * declared by five officines over the year may have had a single one in
+     * March, and that point would be its delay. Each insurer-month therefore
+     * carries its own distinct count, and a point resting on fewer officines
+     * than the threshold is withheld — listed under `withheld`, never drawn.
+     *
+     * The network line averages the **published** points only. A month whose
+     * points are all withheld is withheld as well (`withheldMonths`); and
+     * since each published point rests on the threshold, so does every
+     * network point. Averaging the hidden points in would let the network
+     * line, minus the visible ones, give a withheld point back.
+     *
+     * @return array{insurers: array<int, array{name: string, points: array<string, float>, withheld: list<string>}>, network: array<string, float>, withheldMonths: list<string>, threshold: int, required: int}
      */
     public function delayTrend(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
+        $minimum = $this->settings->anonymityMinPharmacies();
+
         $eligible = array_keys(array_filter(
             $this->perInsurer($from, $to, $city),
             fn (InsurerIndicators|InsufficientData $entry): bool => $entry instanceof InsurerIndicators,
@@ -279,6 +293,7 @@ class NetworkStatsService
             ->whereIn('status', DeclarationStatus::settledValues())
             ->select('insurer_id', 'period_year', 'period_month')
             ->selectRaw('AVG(delay_days) as average_delay')
+            ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->groupBy('insurer_id', 'period_year', 'period_month')
             ->get();
 
@@ -286,6 +301,7 @@ class NetworkStatsService
 
         $insurers = [];
         $networkTotals = [];
+        $months = [];
 
         foreach ($rows as $row) {
             $key = sprintf('%04d-%02d', $row->period_year, $row->period_month);
@@ -293,6 +309,16 @@ class NetworkStatsService
             $average = (float) $row->average_delay;
 
             $insurers[$insurerId]['name'] ??= (string) $names[$insurerId];
+            $insurers[$insurerId]['points'] ??= [];
+            $insurers[$insurerId]['withheld'] ??= [];
+            $months[$key] = true;
+
+            if (! $this->isSufficient((int) $row->declaring_pharmacies, $minimum)) {
+                $insurers[$insurerId]['withheld'][] = $key;
+
+                continue;
+            }
+
             $insurers[$insurerId]['points'][$key] = round($average, 1);
 
             $networkTotals[$key][] = $average;
@@ -306,10 +332,20 @@ class NetworkStatsService
 
         ksort($network);
 
+        foreach ($insurers as $id => $series) {
+            sort($series['withheld']);
+            $insurers[$id]['withheld'] = $series['withheld'];
+        }
+
+        $withheldMonths = array_values(array_diff(array_keys($months), array_keys($network)));
+        sort($withheldMonths);
+
         return [
             'insurers' => $insurers,
             'network' => $network,
+            'withheldMonths' => $withheldMonths,
             'threshold' => $this->averageStandardDelayDays(),
+            'required' => $minimum,
         ];
     }
 
@@ -385,10 +421,19 @@ class NetworkStatsService
      * the distinct pharmacy count cannot be summed across insurers because one
      * officine declares to several.
      *
-     * @return array{declaringPharmacies: int, declarations: int, averageDelayDays: float|null, weightedDelayDays: float|null, withinThresholdShare: float|null, rejectionRate: float|null, outstandingBeyond90: int}
+     * **Withheld under the threshold, like any other aggregate.** Once filtered
+     * on a city or an insurer — or simply at launch, with one declarant — this
+     * summary may rest on a single officine, and the declaration follow-up
+     * names the officines that declared. Every figure is then emptied
+     * (`withheld`), the exact count included: « moins de N » is all that
+     * leaves. Zero declarant is not withheld — it reads « rien déclaré ».
+     *
+     * @return array{withheld: bool, required: int, declaringPharmacies: int|null, declarations: int|null, averageDelayDays: float|null, weightedDelayDays: float|null, withinThresholdShare: float|null, rejectionRate: float|null, outstandingBeyond90: int|null}
      */
     public function networkSummary(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
+        $minimum = $this->settings->anonymityMinPharmacies();
+
         $row = $this->withStandardDelay($this->baseQuery($from, $to, $city, $insurerId))
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('COUNT(*) as total')
@@ -400,12 +445,30 @@ class NetworkStatsService
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN amount_received ELSE 0 END) as delay_basis")
             ->first();
 
+        $declaring = (int) ($row->declaring_pharmacies ?? 0);
+
+        if ($this->summaryIsWithheld($declaring, $minimum)) {
+            return [
+                'withheld' => true,
+                'required' => $minimum,
+                'declaringPharmacies' => null,
+                'declarations' => null,
+                'averageDelayDays' => null,
+                'weightedDelayDays' => null,
+                'withinThresholdShare' => null,
+                'rejectionRate' => null,
+                'outstandingBeyond90' => null,
+            ];
+        }
+
         $total = (int) ($row->total ?? 0);
         $settled = (int) ($row->settled ?? 0);
         $basis = (int) ($row->delay_basis ?? 0);
 
         return [
-            'declaringPharmacies' => (int) ($row->declaring_pharmacies ?? 0),
+            'withheld' => false,
+            'required' => $minimum,
+            'declaringPharmacies' => $declaring,
             'declarations' => $total,
             'averageDelayDays' => $settled > 0 ? round((int) $row->delay_total / $settled, 1) : null,
             'weightedDelayDays' => $basis > 0 ? round((int) $row->delay_weighted / $basis, 1) : null,
@@ -473,8 +536,11 @@ class NetworkStatsService
      *
      * Age is counted from the end of the declared month, as on the officine
      * side: the CDC stores no invoice date.
+     *
+     * Protected: it carries no threshold of its own, and is only published
+     * through networkSummary(), which withholds it with the rest.
      */
-    public function outstandingBeyond(Period $from, Period $to, ?string $city, int $days, ?int $insurerId = null): int
+    protected function outstandingBeyond(Period $from, Period $to, ?string $city, int $days, ?int $insurerId = null): int
     {
         $rows = $this->baseQuery($from, $to, $city, $insurerId)
             ->whereRaw('amount_invoiced > amount_received')
@@ -512,26 +578,60 @@ class NetworkStatsService
     /**
      * Network-wide totals over a period, in FCFA and as shares.
      *
-     * @return array{invoiced: int, received: int, outstanding: int, recoveryRate: float|null, declaringPharmacies: int}
+     * Same rule as networkSummary(): resting on 1 to threshold − 1 officines,
+     * the totals are withheld — a city of one declarant would otherwise print
+     * that officine's exact invoice.
+     *
+     * @return array{withheld: bool, required: int, invoiced: int|null, received: int|null, outstanding: int|null, recoveryRate: float|null, declaringPharmacies: int|null}
      */
     public function aggregatedAmounts(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
+        $minimum = $this->settings->anonymityMinPharmacies();
+
         $row = $this->baseQuery($from, $to, $city, $insurerId)
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('SUM(amount_invoiced) as invoiced')
             ->selectRaw('SUM(amount_received) as received')
             ->first();
 
+        $declaring = (int) ($row->declaring_pharmacies ?? 0);
+
+        if ($this->summaryIsWithheld($declaring, $minimum)) {
+            return [
+                'withheld' => true,
+                'required' => $minimum,
+                'invoiced' => null,
+                'received' => null,
+                'outstanding' => null,
+                'recoveryRate' => null,
+                'declaringPharmacies' => null,
+            ];
+        }
+
         $invoiced = (int) ($row->invoiced ?? 0);
         $received = (int) ($row->received ?? 0);
 
         return [
+            'withheld' => false,
+            'required' => $minimum,
             'invoiced' => $invoiced,
             'received' => $received,
             'outstanding' => max(0, $invoiced - $received),
             'recoveryRate' => $invoiced > 0 ? round($received / $invoiced * 100, 1) : null,
-            'declaringPharmacies' => (int) ($row->declaring_pharmacies ?? 0),
+            'declaringPharmacies' => $declaring,
         ];
+    }
+
+    /**
+     * Whether a period-level network summary must be withheld.
+     *
+     * 1 to threshold − 1 declarants: withheld. Zero is published — a summary
+     * of nothing names no one, and reads « rien déclaré » rather than
+     * « chiffres cachés ».
+     */
+    protected function summaryIsWithheld(int $declaringPharmacies, int $minimum): bool
+    {
+        return $declaringPharmacies > 0 && ! $this->isSufficient($declaringPharmacies, $minimum);
     }
 
     /**

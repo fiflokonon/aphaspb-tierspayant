@@ -364,12 +364,11 @@ test('the within threshold share is judged against the insurer own standard dela
 test('the network within threshold share honours each insurer own standard delay', function () {
     $lenient = Insurer::factory()->create(['standard_delay_days' => 90]);
 
-    recordForDistinctPharmacies($this->insurer, [
-        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 45],
-    ]);
-    recordForDistinctPharmacies($lenient, [
-        ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 45],
-    ]);
+    // Trois déclarations de chaque côté, six officines distinctes : le résumé
+    // réseau est retenu sous le seuil de 5 depuis le 28/09/2026.
+    $late = array_fill(0, 3, ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 45]);
+    recordForDistinctPharmacies($this->insurer, $late);
+    recordForDistinctPharmacies($lenient, $late);
 
     // Forty-five days: late for the thirty-day insurer, on time for the other.
     expect($this->service->networkSummary(new Period(2026, 8), new Period(2026, 8))['withinThresholdShare'])
@@ -409,13 +408,16 @@ test('the city filter narrows the aggregate to one city', function () {
 });
 
 test('the network totals narrow to one city like every other aggregate', function () {
-    foreach (['Cotonou', 'Parakou'] as $city) {
+    // Cinq à Cotonou (une seule officine y serait retenue depuis le
+    // 28/09/2026), une à Parakou, au montant distinct pour que le filtre se
+    // voie.
+    foreach ([...array_fill(0, 5, 'Cotonou'), 'Parakou'] as $city) {
         Declaration::factory()->create([
             'pharmacy_id' => Pharmacy::factory()->create(['city' => $city]),
             'insurer_id' => $this->insurer->id,
             'period_year' => 2026,
             'period_month' => 8,
-            'amount_invoiced' => 1_000_000,
+            'amount_invoiced' => $city === 'Parakou' ? 9_000_000 : 1_000_000,
             'amount_received' => 400_000,
             'delay_days' => 20,
         ]);
@@ -423,8 +425,9 @@ test('the network totals narrow to one city like every other aggregate', functio
 
     $totals = $this->service->aggregatedAmounts(new Period(2026, 8), new Period(2026, 8), 'Cotonou');
 
-    expect($totals['invoiced'])->toBe(1_000_000)
-        ->and($totals['declaringPharmacies'])->toBe(1);
+    expect($totals['withheld'])->toBeFalse()
+        ->and($totals['invoiced'])->toBe(5_000_000)
+        ->and($totals['declaringPharmacies'])->toBe(5);
 });
 
 test('the delay curve follows the bounds it is handed', function () {
@@ -508,8 +511,11 @@ test('the network weighted delay differs from the plain average', function () {
 test('the network outstanding beyond ninety days counts only old enough months', function () {
     $this->travelTo(CarbonImmutable::create(2026, 8, 15));
 
+    // Quatre officines réglées en août s'ajoutent pour que le résumé repose sur
+    // le seuil (retenu en deçà depuis le 28/09/2026) ; elles ne doivent rien.
     recordForDistinctPharmacies($this->insurer, [
         ['amount_invoiced' => 300_000, 'amount_received' => 0, 'delay_days' => null],
+        ...array_fill(0, 4, ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 10]),
     ]);
 
     Declaration::factory()->create([
@@ -587,4 +593,119 @@ test('an insurer filter narrows the network summary, which otherwise spans every
     // c'est lui qui ouvre le document.
     expect($everyone['declarations'])->toBe(10)
         ->and($filtered['declarations'])->toBe(5);
+});
+
+test('the network summary resting on fewer officines than the threshold is withheld, even unfiltered', function () {
+    // Un réseau au lancement : quatre déclarantes. Publié, le résumé dirait
+    // 4 officines, 4 déclarations, 30 j — les chiffres d'officines que le
+    // suivi des déclarations nomme.
+    recordForDistinctPharmaciesIn($this->insurer, 2026, 8, 4);
+
+    $summary = $this->service->networkSummary(new Period(2026, 8), new Period(2026, 8));
+    $amounts = $this->service->aggregatedAmounts(new Period(2026, 8), new Period(2026, 8));
+
+    expect($summary['withheld'])->toBeTrue()
+        ->and($summary['required'])->toBe(5)
+        ->and($summary['declaringPharmacies'])->toBeNull()
+        ->and($summary['declarations'])->toBeNull()
+        ->and($summary['averageDelayDays'])->toBeNull()
+        ->and($summary['outstandingBeyond90'])->toBeNull()
+        ->and($amounts['withheld'])->toBeTrue()
+        ->and($amounts['invoiced'])->toBeNull()
+        ->and($amounts['declaringPharmacies'])->toBeNull();
+});
+
+test('the network summary resting on the threshold is published', function () {
+    recordForDistinctPharmaciesIn($this->insurer, 2026, 8, 5);
+
+    $summary = $this->service->networkSummary(new Period(2026, 8), new Period(2026, 8));
+    $amounts = $this->service->aggregatedAmounts(new Period(2026, 8), new Period(2026, 8));
+
+    expect($summary['withheld'])->toBeFalse()
+        ->and($summary['declaringPharmacies'])->toBe(5)
+        ->and($summary['declarations'])->toBe(5)
+        ->and($summary['averageDelayDays'])->toBe(30.0)
+        ->and($amounts['withheld'])->toBeFalse()
+        ->and($amounts['declaringPharmacies'])->toBe(5);
+});
+
+test('a network summary with nothing declared is published at zero, not withheld', function () {
+    $summary = $this->service->networkSummary(new Period(2026, 8), new Period(2026, 8));
+
+    expect($summary['withheld'])->toBeFalse()
+        ->and($summary['declaringPharmacies'])->toBe(0)
+        ->and($summary['declarations'])->toBe(0);
+});
+
+test('the city filter re-applies the threshold to the network summary', function () {
+    // Six officines au total : le réseau entier est publié. Mais Parakou n'en
+    // compte qu'une, au montant distinct, et ses chiffres seraient les siens.
+    foreach ([...array_fill(0, 5, 'Cotonou'), 'Parakou'] as $city) {
+        Declaration::factory()->create([
+            'pharmacy_id' => Pharmacy::factory()->create(['city' => $city]),
+            'insurer_id' => $this->insurer->id,
+            'period_year' => 2026,
+            'period_month' => 8,
+            'amount_invoiced' => $city === 'Parakou' ? 4_210_000 : 1_000_000,
+            'amount_received' => 0,
+            'delay_days' => null,
+        ]);
+    }
+
+    $everyone = $this->service->aggregatedAmounts(new Period(2026, 8), new Period(2026, 8));
+    $parakou = $this->service->aggregatedAmounts(new Period(2026, 8), new Period(2026, 8), 'Parakou');
+    $summary = $this->service->networkSummary(new Period(2026, 8), new Period(2026, 8), 'Parakou');
+
+    expect($everyone['withheld'])->toBeFalse()
+        ->and($everyone['invoiced'])->toBe(9_210_000)
+        ->and($parakou['withheld'])->toBeTrue()
+        ->and($parakou['invoiced'])->toBeNull()
+        ->and($summary['withheld'])->toBeTrue()
+        ->and($summary['declarations'])->toBeNull();
+});
+
+test('a delay curve month resting on fewer officines than the threshold is withheld', function () {
+    // Cinq officines en août : l'assureur est autorisé sur la période. En
+    // juillet une seule, à 200 j : publié, le point de juillet serait son délai.
+    recordForDistinctPharmaciesIn($this->insurer, 2026, 8, 5);
+
+    Declaration::factory()->paid()->create([
+        'pharmacy_id' => Pharmacy::factory(),
+        'insurer_id' => $this->insurer->id,
+        'period_year' => 2026,
+        'period_month' => 7,
+        'delay_days' => 200,
+    ]);
+
+    $trend = $this->service->delayTrend(new Period(2026, 7), new Period(2026, 8));
+    $series = $trend['insurers'][$this->insurer->id];
+
+    expect($trend['network'])->toBe(['2026-08' => 30.0])
+        ->and($trend['withheldMonths'])->toBe(['2026-07'])
+        ->and($series['points'])->toBe(['2026-08' => 30.0])
+        ->and($series['withheld'])->toBe(['2026-07'])
+        ->and($trend['required'])->toBe(5);
+});
+
+test('the network curve averages published points only', function () {
+    // Deux assureurs autorisés sur la période ; en juillet le second n'a
+    // qu'une officine, à 200 j. L'inclure dans la moyenne réseau de juillet
+    // la rendrait déductible : réseau × 2 − point visible.
+    $other = Insurer::factory()->create();
+    recordForDistinctPharmaciesIn($this->insurer, 2026, 7, 5);
+    recordForDistinctPharmaciesIn($other, 2026, 8, 5);
+
+    Declaration::factory()->paid()->create([
+        'pharmacy_id' => Pharmacy::factory(),
+        'insurer_id' => $other->id,
+        'period_year' => 2026,
+        'period_month' => 7,
+        'delay_days' => 200,
+    ]);
+
+    $trend = $this->service->delayTrend(new Period(2026, 7), new Period(2026, 8));
+
+    expect($trend['network'])->toBe(['2026-07' => 30.0, '2026-08' => 30.0])
+        ->and($trend['withheldMonths'])->toBe([])
+        ->and($trend['insurers'][$other->id]['withheld'])->toBe(['2026-07']);
 });

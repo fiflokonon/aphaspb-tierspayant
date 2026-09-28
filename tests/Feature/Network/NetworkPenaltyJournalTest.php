@@ -202,17 +202,35 @@ test('a masked insurer has no series but still counts in the unfiltered total', 
         ->and($ledger->maskedInsurers)->toBe(1);
 });
 
-test('the unfiltered total is published even when it rests on fewer officines than the threshold', function () {
-    // Décor discriminant : deux officines seulement, sous le seuil de 5. Un
-    // seuil appliqué au total retiendrait mai ; la décision du 27/09/2026 dit
-    // que le total non filtré n'en a pas.
+test('the unfiltered total is withheld when it rests on fewer officines than the threshold', function () {
+    // Renversé le 28/09/2026 (il affirmait l'inverse, décision du 27/09) : un
+    // réseau d'une ou deux déclarantes, que le suivi des déclarations nomme,
+    // rendait leur pénalité exacte. Décor discriminant : deux officines, sous
+    // le seuil de 5 ; publié, mai vaudrait 40 000.
     $masked = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
     networkUnpaid($masked, 2, 3, '2026-03-31');
 
     $may = $this->journal->for(...$this->bounds)->total->month('2026-05');
 
-    expect($may->withheld)->toBeFalse()
-        ->and($may->accrued)->toBe(40_000);
+    expect($may->withheld)->toBeTrue()
+        ->and($may->accrued)->toBeNull()
+        ->and($may->declared)->toBeNull();
+});
+
+test('the unfiltered total resting on the threshold is published, masked insurers included', function () {
+    // Contrôle : deux assureurs masqués (2 + 3 officines distinctes), aucune
+    // série publiée, mais un total qui repose sur 5 officines.
+    $first = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    $second = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($first, 2, 3, '2026-03-31');
+    networkUnpaid($second, 3, 3, '2026-03-31');
+
+    $ledger = $this->journal->for(...$this->bounds);
+    $may = $ledger->total->month('2026-05');
+
+    expect($ledger->insurers)->toBe([])
+        ->and($may->withheld)->toBeFalse()
+        ->and($may->accrued)->toBe(100_000);
 });
 
 test('only insurers that fed the total count as masked', function () {

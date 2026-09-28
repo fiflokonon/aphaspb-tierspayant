@@ -163,12 +163,11 @@
 
 <h2>Ce que le réseau a constaté</h2>
 
-@if ($summary === null)
+@if ($summary['withheld'])
     <p class="lede">
-        Chiffres retenus : l'assureur choisi compte moins de
-        {{ $anonymityThreshold }} officines déclarantes sur la période.
-        Restreinte à un seul assureur, cette synthèse rendrait la facture
-        d'une officine identifiable.
+        Synthèse retenue : sur le périmètre choisi, elle repose sur moins de
+        {{ $anonymityThreshold }} officines déclarantes. Publiée, elle rendrait
+        les chiffres d'une officine identifiable.
     </p>
 @else
 <p class="lede">
@@ -272,9 +271,8 @@
                 <tr class="withheld">
                     <td class="text">{{ $entry['name'] }}</td>
                     <td colspan="10">
-                        {{ $entry['declaringPharmacies'] }} officine{{ $entry['declaringPharmacies'] > 1 ? 's' : '' }}
-                        déclarante{{ $entry['declaringPharmacies'] > 1 ? 's' : '' }} —
-                        chiffres retenus, affichage à partir de {{ $anonymityThreshold }}
+                        Données insuffisantes · moins de {{ $anonymityThreshold }} officines déclarantes —
+                        chiffres retenus
                     </td>
                 </tr>
             @endforeach
@@ -292,7 +290,7 @@
     @if (count($withheld) > 0)
         <p class="note">
             Les assureurs déclarés par moins de {{ $anonymityThreshold }} officines
-            figurent sans chiffres. En deçà de ce seuil, une moyenne réseau
+            figurent sans chiffres, ni le nombre exact de leurs officines. En deçà de ce seuil, une moyenne réseau
             redonnerait les données d'une officine identifiable — la ligne est
             conservée pour que son absence ne se lise pas comme une absence de
             déclarations.
@@ -392,9 +390,8 @@
                         <tr class="withheld">
                             <td class="text">{{ $month['monthLabel'] }}</td>
                             <td colspan="5">
-                                {{ $month['declaringPharmacies'] }} officine{{ $month['declaringPharmacies'] > 1 ? 's' : '' }}
-                                déclarante{{ $month['declaringPharmacies'] > 1 ? 's' : '' }} ce mois-là —
-                                chiffres retenus, affichage à partir de {{ $anonymityThreshold }}
+                                Moins de {{ $anonymityThreshold }} officines déclarantes ce mois-là —
+                                chiffres retenus
                             </td>
                         </tr>
                     @else

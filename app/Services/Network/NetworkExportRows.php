@@ -119,7 +119,7 @@ class NetworkExportRows
             if (! $amount instanceof InsurerAmounts) {
                 yield $this->withheld($name, new InsufficientData(
                     $entry->declaringPharmacies,
-                    $entry->declaringPharmacies,
+                    $minimum,
                 ));
 
                 continue;
@@ -159,6 +159,11 @@ class NetworkExportRows
     /**
      * A row that states the figures are withheld, and carries none.
      *
+     * Not even the exact number of declaring officines: under the threshold,
+     * that count is itself a figure — « 1 », next to the declaration
+     * follow-up that names who declared, designates the officine. The cell
+     * says « moins de N » instead.
+     *
      * @return ExportRow
      */
     protected function withheld(string $name, InsufficientData $entry): array
@@ -166,8 +171,8 @@ class NetworkExportRows
         $row = array_fill(0, count(self::COLUMNS), null);
 
         $row[0] = $name;
-        $row[1] = $entry->declaringPharmacies;
-        $row[2] = 'donnees insuffisantes — agregation a partir de '.$entry->required.' officines';
+        $row[1] = 'moins de '.$entry->required;
+        $row[2] = 'donnees insuffisantes — moins de '.$entry->required.' officines declarantes, agregation a partir de '.$entry->required;
 
         return $row;
     }
