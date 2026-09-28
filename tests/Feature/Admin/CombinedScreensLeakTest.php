@@ -300,6 +300,91 @@ describe('the two-step rebuild through an insurer withheld by the city partition
     });
 });
 
+/**
+ * Une facture d'avril réglée à temps (dépôt 30/04, versement 10/05) : rien ne
+ * court. Dates explicites, pour un décor déterministe.
+ */
+function aprilPaidOnTime(Pharmacy $pharmacy, Insurer $insurer): void
+{
+    Declaration::factory()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 4,
+        'amount_invoiced' => 1_000_000,
+        'amount_received' => 1_000_000,
+        'invoice_deposited_on' => '2026-04-30',
+        'paid_on' => '2026-05-10',
+    ]);
+}
+
+describe('the month-level rebuild through an authorised insurer', function () {
+    beforeEach(function () {
+        // A : Cotonou ×5 impayées + une Bohiconnaise impayée à 7 000 000 +
+        // quatre Bohiconnaises réglées à temps : A est autorisé sur la
+        // période, mais son mois de juin, non filtré, est retenu par la
+        // partition. B : Cotonou ×5 + Bohicon ×5.
+        $this->first = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'Assureur A']);
+        $this->second = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'Assureur B']);
+
+        $cotonou = Pharmacy::factory()->count(5)->create(['city' => 'Cotonou']);
+        $bohicon = Pharmacy::factory()->count(5)->create(['city' => 'Bohicon']);
+
+        $cotonou->each(function (Pharmacy $pharmacy) {
+            aprilUnpaid($pharmacy, $this->first);
+            aprilUnpaid($pharmacy, $this->second);
+        });
+        $bohicon->each(fn (Pharmacy $pharmacy) => aprilUnpaid($pharmacy, $this->second));
+        aprilUnpaid($bohicon->first(), $this->first, 7_000_000);
+        $bohicon->skip(1)->each(fn (Pharmacy $pharmacy) => aprilPaidOnTime($pharmacy, $this->first));
+    });
+
+    test('the unfiltered total no longer completes a series month the city partition withholds', function () {
+        $journal = app(NetworkPenaltyJournal::class);
+        $everyone = $journal->for(new Period(2026, 1), new Period(2026, 9));
+        $cotonou = $journal->for(new Period(2026, 1), new Period(2026, 9), 'Cotonou');
+
+        $series = fn ($ledger, Insurer $insurer) => collect($ledger->insurers)->firstWhere('insurerId', $insurer->id);
+
+        // Juin : A retenu, B 200 000, A_Cotonou 100 000 ; le total (440 000)
+        // les aurait complétés en 140 000, la pénalité de la Bohiconnaise.
+        expect($series($everyone, $this->first)->month('2026-06')->withheld)->toBeTrue()
+            ->and($series($everyone, $this->second)->month('2026-06')->accrued)->toBe(200_000)
+            ->and($series($cotonou, $this->first)->month('2026-06')->accrued)->toBe(100_000)
+            ->and($everyone->total->month('2026-06')->withheld)->toBeTrue()
+            ->and($everyone->total->month('2026-06')->accrued)->toBeNull();
+    });
+});
+
+describe('a control where the withheld series months hide enough officines', function () {
+    beforeEach(function () {
+        // A cache deux Bohiconnaises en juin, C trois Parakoises : union 5.
+        [$a, $b, $c, $d] = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->count(4)->create()->all();
+        $cotonou = Pharmacy::factory()->count(5)->create(['city' => 'Cotonou']);
+        $bohicon = Pharmacy::factory()->count(5)->create(['city' => 'Bohicon']);
+        $parakou = Pharmacy::factory()->count(5)->create(['city' => 'Parakou']);
+
+        $cotonou->each(function (Pharmacy $pharmacy) use ($a, $c) {
+            aprilUnpaid($pharmacy, $a);
+            aprilUnpaid($pharmacy, $c);
+        });
+        $bohicon->take(2)->each(fn (Pharmacy $pharmacy) => aprilUnpaid($pharmacy, $a));
+        $bohicon->skip(2)->each(fn (Pharmacy $pharmacy) => aprilPaidOnTime($pharmacy, $a));
+        $parakou->take(3)->each(fn (Pharmacy $pharmacy) => aprilUnpaid($pharmacy, $c));
+        $parakou->skip(3)->each(fn (Pharmacy $pharmacy) => aprilPaidOnTime($pharmacy, $c));
+        $bohicon->each(fn (Pharmacy $pharmacy) => aprilUnpaid($pharmacy, $b));
+        $parakou->each(fn (Pharmacy $pharmacy) => aprilUnpaid($pharmacy, $d));
+    });
+
+    test('the unfiltered journal total is published', function () {
+        $june = app(NetworkPenaltyJournal::class)->for(new Period(2026, 1), new Period(2026, 9))->total->month('2026-06');
+
+        // A 7 + C 8 + B 5 + D 5 factures impayées : 25 × 20 000.
+        expect($june->withheld)->toBeFalse()
+            ->and($june->accrued)->toBe(500_000);
+    });
+});
+
 describe('a control where the city-share insurers hide enough officines', function () {
     beforeEach(function () {
         // A cache deux Bohiconnaises, C trois Parakoises : leurs cellules
