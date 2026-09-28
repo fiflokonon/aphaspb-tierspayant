@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AnonymityThresholdController;
+use App\Http\Controllers\Admin\DeclarationFollowUpController;
 use App\Http\Controllers\Admin\InsurerManagementController;
 use App\Http\Controllers\Admin\NetworkExportController;
 use App\Http\Controllers\Admin\NetworkPenaltyLedgerController;
@@ -44,6 +45,9 @@ Route::middleware(['auth', 'can:manage-network'])
         Route::get('network', NetworkStatsController::class)->name('network');
         Route::get('trends', NetworkTrendsController::class)->name('trends');
         Route::get('pharmacies', RegisteredPharmaciesController::class)->name('pharmacies');
+        // Seul écran réseau où un nom d'officine côtoie une donnée de
+        // déclaration (complet / partiel / rien) : spec suivi des déclarations.
+        Route::get('declarations-followup', DeclarationFollowUpController::class)->name('declarations-followup');
         Route::get('insurers', [InsurerManagementController::class, 'index'])->name('insurers');
         Route::post('insurers', [InsurerManagementController::class, 'store'])->name('insurers.store');
         Route::patch('insurers/{insurer}', [InsurerManagementController::class, 'update'])->name('insurers.update');

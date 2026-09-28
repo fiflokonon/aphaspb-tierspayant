@@ -1,6 +1,7 @@
 import {
     Building2,
     ChartColumn,
+    ClipboardCheck,
     Download,
     FilePlus2,
     History,
@@ -31,6 +32,7 @@ const ICONS: Record<string, Component> = {
     'chart-column': ChartColumn,
     'trending-up': TrendingUp,
     store: Store,
+    'clipboard-check': ClipboardCheck,
     receipt: Receipt,
 };
 
