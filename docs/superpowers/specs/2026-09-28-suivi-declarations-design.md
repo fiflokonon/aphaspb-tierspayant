@@ -80,6 +80,17 @@ chiffre réseau sans filtre ville est retenu lorsque la part qu'il cacherait
 ligne par assureur, point mensuel de la courbe, mois du rapport PDF, mois du
 journal des pénalités et découpage payée / annulée / due.
 
+Un troisième passage a trouvé un détour en deux temps. Un assureur retenu par
+cette règle reste compté dans la synthèse et dans le total du journal. La
+synthèse, moins les assureurs publiés, rendait alors cet assureur ; moins sa
+ligne publiée à Cotonou, elle rendait l'officine de Bohicon. Exemple : un
+assureur A déclaré par 5 officines de Cotonou et une seule de Bohicon
+(7 000 000 FCFA), un assureur B par 5 officines de Cotonou et 5 de Bohicon.
+La synthèse (22 000 000) moins B (10 000 000) moins A à Cotonou (5 000 000)
+donnait les 7 000 000 de l'officine de Bohicon. La synthèse, les montants et
+le total du journal sont désormais retenus aussi lorsque les parts cachées de
+ces assureurs reposent, ensemble, sur 1 à 4 officines distinctes.
+
 **Risques résiduels acceptés.** L'APhaSPB accepte, en connaissance de cause,
 les trois cas suivants. Chacun demande de croiser volontairement plusieurs
 écrans, et le fermer rendrait l'outil largement inutilisable :
@@ -89,10 +100,13 @@ les trois cas suivants. Chacun demande de croiser volontairement plusieurs
    sur les seuls mois qui les séparent. Si peu d'officines ont déclaré ces
    mois-là, leurs chiffres peuvent se déduire.
 2. *Synthèse moins assureurs publiés.* La synthèse réseau inclut les assureurs
-   masqués (trop peu d'officines déclarantes). En lui retirant les lignes des
-   assureurs publiés, on obtient la part cumulée des assureurs masqués. C'est
-   la même décision que celle prise le 27/09/2026 pour le journal des
-   pénalités.
+   masqués parce qu'ils comptent trop peu d'officines déclarantes. En lui
+   retirant les lignes des assureurs publiés, on obtient la part cumulée de
+   ces assureurs masqués. C'est la même décision que celle prise le
+   27/09/2026 pour le journal des pénalités. Ce risque ne couvre plus les
+   assureurs retenus par la règle de partition par ville : pour eux, la
+   synthèse et le total du journal sont retenus dès que leurs parts cachées
+   reposent, ensemble, sur 1 à 4 officines.
 3. *Nombre d'officines conventionnées.* L'écran « Gestion des assureurs »
    affiche, pour chaque assureur, le nombre d'officines qui l'ont coché. Pour
    un assureur qui en compte 1 à 4, ce nombre signale que ses éventuels
@@ -267,3 +281,8 @@ Vérification finale : `composer ci:check`.
   quoi la règle rendait les tests aléatoires. Risques résiduels acceptés
   (périodes qui se recouvrent, synthèse moins assureurs publiés, nombre
   d'officines conventionnées) : §3.
+- **Assureurs retenus par la partition et totaux** (troisième tour de revue,
+  28/09/2026) : la synthèse, les montants réseau et le total du journal sont
+  aussi retenus quand les parts cachées de ces assureurs reposent, ensemble,
+  sur 1 à seuil − 1 officines. Le risque accepté « synthèse moins assureurs
+  publiés » est restreint en conséquence (§3).
