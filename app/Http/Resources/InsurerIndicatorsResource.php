@@ -23,6 +23,7 @@ class InsurerIndicatorsResource
      *     sufficient: bool,
      *     declaringPharmacies: int|null,
      *     required: int|null,
+     *     withheldReason: 'too-few'|'city-share'|null,
      *     averageDelayDays: float|null,
      *     standardDelayDays: int|null,
      *     withinThresholdShare: float|null,
@@ -49,6 +50,9 @@ class InsurerIndicatorsResource
             // est tout ce qui sort (voir InsufficientData).
             'declaringPharmacies' => $sufficient ? $entry->declaringPharmacies : null,
             'required' => $sufficient ? null : $entry->required,
+            // « city-share » : l'assureur a assez d'officines, mais non filtré
+            // moins les villes publiées rendrait une part qui n'en a pas assez.
+            'withheldReason' => $entry instanceof InsufficientData ? ($entry->cityShare ? 'city-share' : 'too-few') : null,
             'averageDelayDays' => $sufficient ? $entry->averageDelayDays : null,
             'standardDelayDays' => $sufficient ? $entry->standardDelayDays : null,
             'withinThresholdShare' => $sufficient ? $entry->withinThresholdShare : null,

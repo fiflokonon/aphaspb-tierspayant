@@ -27,6 +27,13 @@ readonly class InsurerPenaltyFigures
         public ?int $waived = null,
         /** Les officines derrière la due, la recouvrée et l'abandonnée. */
         public PenaltySplitPharmacies $splitPharmacies = new PenaltySplitPharmacies,
+        /**
+         * Les mêmes, ville par ville ('' : sans ville), pour la règle de
+         * partition de l'export non filtré (Network\CityPartition).
+         *
+         * @var array<string, PenaltySplitPharmacies>
+         */
+        public array $citySplitPharmacies = [],
     ) {
         //
     }

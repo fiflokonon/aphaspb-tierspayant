@@ -132,6 +132,7 @@ class NetworkExportRows
                 $figures[$insurerId] ?? new InsurerPenaltyFigures(null, null),
                 $minimum,
                 in_array($insurerId, $ledgerWithheld, true),
+                $city === null,
             );
         }
     }
@@ -171,6 +172,16 @@ class NetworkExportRows
         $row = array_fill(0, count(self::COLUMNS), null);
 
         $row[0] = $name;
+
+        if ($entry->cityShare) {
+            // Le compte non plus : non filtré moins les villes publiées, il
+            // rendrait exactement la part cachée.
+            $row[1] = 'retenu';
+            $row[2] = 'chiffres retenus — hors filtre ville, les villes non publiees et les officines sans ville y pesent moins de '.$entry->required.' officines, qui se deduiraient par difference';
+
+            return $row;
+        }
+
         $row[1] = 'moins de '.$entry->required;
         $row[2] = 'donnees insuffisantes — moins de '.$entry->required.' officines declarantes, agregation a partir de '.$entry->required;
 
@@ -187,12 +198,18 @@ class NetworkExportRows
         InsurerPenaltyFigures $figures,
         int $minimum,
         bool $ledgerWithheld,
+        bool $unfilteredByCity,
     ): array {
         // Les trois ensemble, jamais une seule : une part publiée à côté d'une
         // part cachée finit toujours par la rendre, par différence avec un
         // autre chiffre publié ailleurs (PDF, journal). Et les trois aussi
         // quand le journal retient un mois : période − mois publiés le rendrait.
-        $splitWithheld = $ledgerWithheld || $figures->splitPharmacies->restsOnFewerThan($minimum);
+        // Et, non filtré par ville, quand les parts des villes retenues (et des
+        // officines sans ville) reposent sur trop peu d'officines : l'export
+        // moins les exports par ville les rendrait (CityPartition).
+        $splitWithheld = $ledgerWithheld
+            || $figures->splitPharmacies->restsOnFewerThan($minimum)
+            || ($unfilteredByCity && CityPartition::withholdsSplit($figures->citySplitPharmacies, $minimum));
 
         return [
             $name,

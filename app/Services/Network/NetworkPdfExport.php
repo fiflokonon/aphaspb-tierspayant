@@ -67,7 +67,7 @@ class NetworkPdfExport
             if ($entry instanceof InsufficientData) {
                 // Le nom seul : sous le seuil, le compte exact d'officines est
                 // lui-même un chiffre (voir InsufficientData).
-                $withheld[] = ['name' => $name];
+                $withheld[] = ['name' => $name, 'cityShare' => $entry->cityShare];
 
                 continue;
             }
@@ -107,7 +107,8 @@ class NetworkPdfExport
             // ou dès que le journal retient un mois de l'assureur.
             $rows[$index]['splitWithheldByLedger'] = in_array($row['insurerId'], $ledgerWithheld, true);
             $rows[$index]['splitWithheld'] = $rows[$index]['splitWithheldByLedger']
-                || $rows[$index]['figures']->splitPharmacies->restsOnFewerThan($minimum);
+                || $rows[$index]['figures']->splitPharmacies->restsOnFewerThan($minimum)
+                || ($city === null && CityPartition::withholdsSplit($rows[$index]['figures']->citySplitPharmacies, $minimum));
             $rows[$index]['monthly'] = $this->withheldMonths($monthly[$row['insurerId']] ?? []);
         }
 
@@ -165,7 +166,14 @@ class NetworkPdfExport
         $minimum = $this->settings->anonymityMinPharmacies();
 
         return array_map(function (array $month) use ($minimum): array {
-            if ($month['declaringPharmacies'] >= $minimum) {
+            // Les comptes par ville ne sortent jamais : sous le seuil, ce
+            // sont des comptes exacts (règle « aucun compte sous le seuil »).
+            $perCity = $month['cityPharmacies'] ?? [];
+            unset($month['cityPharmacies']);
+
+            // Règle de partition : ce mois, moins le même mois des rapports
+            // par ville, rendrait les villes retenues (CityPartition).
+            if ($month['declaringPharmacies'] >= $minimum && ! CityPartition::withholds($perCity, $minimum)) {
                 return [...$month, 'withheld' => false];
             }
 

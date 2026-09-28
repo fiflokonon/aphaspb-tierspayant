@@ -100,16 +100,18 @@ test('the network screen filtered on the city exposes neither the count nor a fi
         });
 });
 
-test('the network screen without filter still publishes the cleared insurer', function () {
-    // Contrôle : six déclarantes en tout pour le premier assureur.
+test('the network screen filtered on the other city still publishes the cleared insurer', function () {
+    // Contrôle. Avant la règle de partition (round 2), ce test lisait l'écran
+    // non filtré et y attendait l'assureur publié à 6 officines : c'est
+    // précisément ce chiffre, moins Cotonou, qui rendait la déclarante.
     $this->actingAs($this->admin)
-        ->get(route('admin.network'))
+        ->get(route('admin.network', ['city' => 'Cotonou']))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('indicators.0.insurerName', 'Assureur Un')
             ->where('indicators.0.sufficient', true)
-            ->where('indicators.0.declaringPharmacies', 6)
+            ->where('indicators.0.declaringPharmacies', 5)
             ->where('summary.withheld', false)
-            ->where('summary.declaringPharmacies', 6));
+            ->where('summary.declaringPharmacies', 5));
 });
 
 test('the trends screen filtered on the city exposes neither the count nor the amounts', function () {
@@ -170,4 +172,45 @@ test('the network csv and pdf for the city expose neither the count nor a figure
     foreach (['3 217 000', '1 845 000', '5 062 000'] as $figure) {
         expect(str_replace("\u{202F}", ' ', $html))->not->toContain($figure);
     }
+});
+
+test('unfiltered minus the published city no longer gives the lone declarant back', function () {
+    // Revue du 28/09/2026, second tour : les villes partitionnent le réseau.
+    // Non filtré (6 officines, 10 062 000) moins Cotonou (5, 5 000 000) rendait
+    // Bohicon, soit la déclarante unique : 5 062 000 ; et l'assureur Un non
+    // filtré (8 217 000) moins Cotonou, sa part : 3 217 000.
+    $props = fn (array $query): array => $this->actingAs($this->admin)
+        ->get(route('admin.trends', $query))
+        ->viewData('page')['props'];
+
+    $everyone = $props([]);
+    $cotonou = $props(['city' => 'Cotonou']);
+
+    $first = collect($everyone['amounts'])->firstWhere('insurerName', 'Assureur Un');
+    $firstInCotonou = collect($cotonou['amounts'])->firstWhere('insurerName', 'Assureur Un');
+
+    expect($cotonou['summary']['withheld'])->toBeFalse()
+        ->and($cotonou['summary']['invoiced'])->toBe(5_000_000)
+        ->and($firstInCotonou['invoiced'])->toBe(5_000_000)
+        ->and($everyone['summary']['withheld'])->toBeTrue()
+        ->and($everyone['summary']['withheldReason'])->toBe('city-share')
+        ->and($everyone['summary']['invoiced'])->toBeNull()
+        ->and($everyone['summary']['declaringPharmacies'])->toBeNull()
+        ->and($first['sufficient'])->toBeFalse()
+        ->and($first['withheldReason'])->toBe('city-share')
+        ->and($first['invoiced'])->toBeNull()
+        ->and(json_encode($everyone))->not->toContain('10062000')
+        ->and(json_encode($everyone))->not->toContain('8217000');
+
+    $network = $this->actingAs($this->admin)->get(route('admin.network'))->viewData('page')['props'];
+
+    expect($network['summary']['withheld'])->toBeTrue()
+        ->and(collect($network['indicators'])->firstWhere('insurerName', 'Assureur Un')['sufficient'])->toBeFalse();
+
+    $csv = $this->actingAs($this->admin)
+        ->get(route('admin.csv-exports.download', ['period' => 'current-quarter']))
+        ->streamedContent();
+
+    expect($csv)->not->toContain('8217000')
+        ->and($csv)->not->toContain('10062000');
 });

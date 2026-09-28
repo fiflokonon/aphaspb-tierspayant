@@ -487,9 +487,11 @@ test('the aggregation costs a fixed number of queries whatever the number of ins
     $this->service->perInsurer(new Period(2026, 8), new Period(2026, 8));
 
     // One grouped aggregate over the declarations, one over the instalments,
-    // one lookup of insurer names. Eight insurers, or eight hundred, must not
-    // change this number.
-    expect(DB::getQueryLog())->toHaveCount(3);
+    // one lookup of insurer names, and — since the city partition rule of
+    // 28/09/2026 — one count of declarants per insurer and city (unfiltered
+    // by city only). Eight insurers, or eight hundred, must not change this
+    // number.
+    expect(DB::getQueryLog())->toHaveCount(4);
 });
 
 test('the network weighted delay differs from the plain average', function () {
@@ -656,9 +658,13 @@ test('the city filter re-applies the threshold to the network summary', function
     $parakou = $this->service->aggregatedAmounts(new Period(2026, 8), new Period(2026, 8), 'Parakou');
     $summary = $this->service->networkSummary(new Period(2026, 8), new Period(2026, 8), 'Parakou');
 
-    expect($everyone['withheld'])->toBeFalse()
-        ->and($everyone['invoiced'])->toBe(9_210_000)
+    // Non filtré, publié jusqu'au 28/09/2026 (9 210 000) : moins Cotonou, il
+    // rendait Parakou. La règle de partition le retient désormais.
+    expect($everyone['withheld'])->toBeTrue()
+        ->and($everyone['withheldReason'])->toBe('city-share')
+        ->and($everyone['invoiced'])->toBeNull()
         ->and($parakou['withheld'])->toBeTrue()
+        ->and($parakou['withheldReason'])->toBe('too-few')
         ->and($parakou['invoiced'])->toBeNull()
         ->and($summary['withheld'])->toBeTrue()
         ->and($summary['declarations'])->toBeNull();
@@ -708,4 +714,104 @@ test('the network curve averages published points only', function () {
     expect($trend['network'])->toBe(['2026-07' => 30.0, '2026-08' => 30.0])
         ->and($trend['withheldMonths'])->toBe([])
         ->and($trend['insurers'][$other->id]['withheld'])->toBe(['2026-07']);
+});
+
+/**
+ * $count officines de la ville, une déclaration payée chacune au mois dit.
+ */
+function declarePaidInCity(Insurer $insurer, ?string $city, int $count, int $month = 8, int $invoiced = 1_000_000): void
+{
+    Pharmacy::factory()->count($count)->create(['city' => $city])->each(
+        fn (Pharmacy $pharmacy) => Declaration::factory()->paid()->create([
+            'pharmacy_id' => $pharmacy->id,
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => $month,
+            'amount_invoiced' => $invoiced,
+            'amount_received' => $invoiced,
+            'delay_days' => 30,
+        ]),
+    );
+}
+
+test('an unfiltered aggregate is withheld when the unpublishable cities hold 1 to threshold − 1 officines', function () {
+    // Cotonou (5) est publiable ; Parakou (1) ne l'est pas. Non filtré moins
+    // Cotonou rendrait Parakou, soit une officine : 4 210 000.
+    declarePaidInCity($this->insurer, 'Cotonou', 5);
+    declarePaidInCity($this->insurer, 'Parakou', 1, invoiced: 4_210_000);
+
+    $period = [new Period(2026, 8), new Period(2026, 8)];
+
+    $summary = $this->service->networkSummary(...$period);
+    $amounts = $this->service->aggregatedAmounts(...$period);
+    $row = $this->service->perInsurer(...$period)[$this->insurer->id];
+    $amountRow = $this->service->aggregatedByInsurer(...$period)[$this->insurer->id];
+
+    expect($summary['withheld'])->toBeTrue()
+        ->and($summary['withheldReason'])->toBe('city-share')
+        ->and($summary['declarations'])->toBeNull()
+        ->and($amounts['withheld'])->toBeTrue()
+        ->and($amounts['invoiced'])->toBeNull()
+        ->and($row)->toBeInstanceOf(InsufficientData::class)
+        ->and($row->cityShare)->toBeTrue()
+        ->and($amountRow)->toBeInstanceOf(InsufficientData::class)
+        // Filtré sur Cotonou, rien ne change : la ville se publie seule.
+        ->and($this->service->aggregatedAmounts(...[...$period, 'Cotonou'])['invoiced'])->toBe(5_000_000);
+});
+
+test('an unfiltered aggregate is published when the unpublishable cities together hold the threshold', function () {
+    // Contrôle : cinq villes d'une officine chacune. Chacune est retenue, mais
+    // leur part commune, que la différence rendrait, repose sur 5 officines.
+    declarePaidInCity($this->insurer, 'Cotonou', 5);
+
+    foreach (['Porto-Novo', 'Parakou', 'Abomey-Calavi', 'Bohicon', 'Lokossa'] as $city) {
+        declarePaidInCity($this->insurer, $city, 1);
+    }
+
+    $period = [new Period(2026, 8), new Period(2026, 8)];
+
+    expect($this->service->networkSummary(...$period)['withheld'])->toBeFalse()
+        ->and($this->service->aggregatedAmounts(...$period)['invoiced'])->toBe(10_000_000)
+        ->and($this->service->perInsurer(...$period)[$this->insurer->id])->toBeInstanceOf(InsurerIndicators::class)
+        ->and($this->service->aggregatedByInsurer(...$period)[$this->insurer->id])->toBeInstanceOf(InsurerAmounts::class);
+});
+
+test('an officine without a city always counts in the hidden share', function () {
+    // Aucun filtre ne la publie jamais : non filtré moins toutes les villes
+    // la rend toujours.
+    declarePaidInCity($this->insurer, 'Cotonou', 5);
+    declarePaidInCity($this->insurer, null, 1, invoiced: 4_210_000);
+
+    $period = [new Period(2026, 8), new Period(2026, 8)];
+
+    expect($this->service->networkSummary(...$period)['withheld'])->toBeTrue()
+        ->and($this->service->aggregatedAmounts(...$period)['invoiced'])->toBeNull()
+        ->and($this->service->perInsurer(...$period)[$this->insurer->id])->toBeInstanceOf(InsufficientData::class);
+});
+
+test('a delay curve point is withheld when its unpublishable cities hold too few officines', function () {
+    // Juillet : Cotonou 5 et Parakou 5, tout est publiable. Août : Cotonou 5,
+    // Parakou 1 — une des cinq de juillet, donc Parakou reste autorisée sur
+    // la période. Le point d'août non filtré moins Cotonou rendrait Parakou.
+    declarePaidInCity($this->insurer, 'Cotonou', 5, month: 7);
+    $parakou = Pharmacy::factory()->count(5)->create(['city' => 'Parakou']);
+
+    foreach ($parakou as $pharmacy) {
+        Declaration::factory()->paid()->create(['pharmacy_id' => $pharmacy->id, 'insurer_id' => $this->insurer->id, 'period_year' => 2026, 'period_month' => 7, 'delay_days' => 30]);
+    }
+
+    Pharmacy::query()->where('city', 'Cotonou')->get()->each(
+        fn (Pharmacy $pharmacy) => Declaration::factory()->paid()->create(['pharmacy_id' => $pharmacy->id, 'insurer_id' => $this->insurer->id, 'period_year' => 2026, 'period_month' => 8, 'delay_days' => 30]),
+    );
+    Declaration::factory()->paid()->create(['pharmacy_id' => $parakou->first()->id, 'insurer_id' => $this->insurer->id, 'period_year' => 2026, 'period_month' => 8, 'delay_days' => 200]);
+
+    $trend = $this->service->delayTrend(new Period(2026, 7), new Period(2026, 8));
+
+    expect($trend['insurers'][$this->insurer->id]['points'])->toBe(['2026-07' => 30.0])
+        ->and($trend['insurers'][$this->insurer->id]['withheld'])->toBe(['2026-08'])
+        ->and($trend['network'])->toBe(['2026-07' => 30.0])
+        ->and($trend['withheldMonths'])->toBe(['2026-08'])
+        // Filtré sur Cotonou, août se publie.
+        ->and($this->service->delayTrend(new Period(2026, 7), new Period(2026, 8), 'Cotonou')['network'])
+        ->toBe(['2026-07' => 30.0, '2026-08' => 30.0]);
 });

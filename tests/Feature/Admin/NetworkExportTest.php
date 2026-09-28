@@ -13,6 +13,7 @@ use App\Services\Network\NetworkPdfExport;
 use App\Services\Network\NetworkPenaltyJournal;
 use App\Support\Fcfa;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia;
 
 beforeEach(function () {
@@ -57,8 +58,18 @@ test('the page offers the export', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('admin/Exports')
             ->has('downloadUrl')
-            ->has('columns'),
+            ->has('columns')
+            ->where('anonymityThreshold', 5),
         );
+});
+
+test('the page states the threshold as set, not a hardcoded five', function () {
+    Http::fake();
+    $this->actingAs($this->admin)->patch(route('admin.settings.anonymity'), ['minimum' => 8]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.csv-exports'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('anonymityThreshold', 8));
 });
 
 test('the download is a csv with a dated filename', function () {
@@ -271,7 +282,7 @@ test('an insurer without a clause leaves the penalty cells empty', function () {
  * deuxième (jour 90) n'est jamais atteinte. Le montant clos égale exactement
  * cette courue, comme l'exige ReconcilePenaltySettlement.
  */
-function settledCoveredMonth(Insurer $insurer, int $month, PenaltySettlement $outcome, int $amount): void
+function settledCoveredMonth(Insurer $insurer, int $month, PenaltySettlement $outcome, int $amount, string $city = 'Cotonou'): void
 {
     $depositedOn = CarbonImmutable::create(2026, $month, 1);
 
@@ -281,7 +292,7 @@ function settledCoveredMonth(Insurer $insurer, int $month, PenaltySettlement $ou
         ])
         ->penaltySettled($outcome, $amount)
         ->create([
-            'pharmacy_id' => Pharmacy::factory(),
+            'pharmacy_id' => Pharmacy::factory()->create(['city' => $city]),
             'insurer_id' => $insurer->id,
             'period_year' => 2026,
             'period_month' => $month,
@@ -294,11 +305,11 @@ function settledCoveredMonth(Insurer $insurer, int $month, PenaltySettlement $ou
  * $count officines, chacune une facture de 1 000 000 déposée il y a 120 jours
  * et jamais réglée : trois tranches de 20 000, soit 60 000 encore dues.
  */
-function unpaidPenaltyMonths(Insurer $insurer, int $count, int $month): void
+function unpaidPenaltyMonths(Insurer $insurer, int $count, int $month, string $city = 'Cotonou'): void
 {
     foreach (range(1, $count) as $ignored) {
         Declaration::factory()->create([
-            'pharmacy_id' => Pharmacy::factory(),
+            'pharmacy_id' => Pharmacy::factory()->create(['city' => $city]),
             'insurer_id' => $insurer->id,
             'period_year' => 2026,
             'period_month' => $month,
@@ -903,4 +914,66 @@ test('the page offers the insurers the network declared to', function () {
             ->where('insurers.0.name', 'NSIA Assurances')
             ->where('insurer', null),
         );
+});
+
+test('unfiltered by city, the status split is withheld when the unpublishable cities hold too few officines in a part', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    // Cotonou : cinq dues, cinq payées. Parakou : cinq déclarantes, dont une
+    // seule laisse courir une pénalité. Le découpage non filtré (due 360 000)
+    // moins celui de Cotonou (300 000) rendrait la due de cette officine.
+    unpaidPenaltyMonths($insurer, 5, 2);
+
+    foreach (range(1, 5) as $ignored) {
+        settledCoveredMonth($insurer, 3, PenaltySettlement::Paid, 20_000);
+    }
+
+    unpaidPenaltyMonths($insurer, 1, 2, 'Parakou');
+    Pharmacy::factory()->count(4)->create(['city' => 'Parakou'])->each(fn (Pharmacy $pharmacy) => Declaration::factory()->paid()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 2,
+    ]));
+
+    $everyone = networkCsvCell('NSIA', ['period' => 'calendar-year']);
+    $cotonou = networkCsvCell('NSIA', ['period' => 'calendar-year', 'city' => 'Cotonou']);
+
+    expect($everyone('officines_declarantes'))->toBe('15')
+        ->and($everyone('penalite_potentielle_fcfa'))->toBe('')
+        ->and($everyone('penalite_recouvree_fcfa'))->toBe('')
+        ->and($cotonou('penalite_potentielle_fcfa'))->toBe('300000')
+        ->and($cotonou('penalite_recouvree_fcfa'))->toBe('100000');
+});
+
+test('unfiltered by city, a month of the insurer page follows the city partition', function () {
+    $insurer = Insurer::factory()->create(['name' => 'NSIA Assurances']);
+    $declare = fn (Pharmacy $pharmacy, int $month, int $invoiced) => Declaration::factory()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => $month,
+        'amount_invoiced' => $invoiced,
+        'amount_received' => $invoiced,
+        'delay_days' => 20,
+    ]);
+
+    // Juillet : cinq à Parakou. Août : cinq à Cotonou et une seule des cinq
+    // de Parakou. Août non filtré moins août de Cotonou rendrait sa facture.
+    $parakou = Pharmacy::factory()->count(5)->create(['city' => 'Parakou']);
+    $parakou->each(fn (Pharmacy $pharmacy) => $declare($pharmacy, 7, 1_000_000));
+    Pharmacy::factory()->count(5)->create(['city' => 'Cotonou'])->each(fn (Pharmacy $pharmacy) => $declare($pharmacy, 8, 1_000_000));
+    $declare($parakou->first(), 8, 4_210_000);
+
+    $export = app(NetworkPdfExport::class);
+    $data = new ReflectionMethod($export, 'data');
+    $everyone = collect($data->invoke($export, new Period(2026, 7), new Period(2026, 8), null)['rows'][0]['monthly'])->keyBy('month');
+    $cotonou = collect($data->invoke($export, new Period(2026, 7), new Period(2026, 8), 'Cotonou')['rows'][0]['monthly'])->keyBy('month');
+
+    expect($everyone[8]['withheld'])->toBeTrue()
+        ->and($everyone[8]['invoiced'])->toBeNull()
+        ->and($everyone[8])->not->toHaveKey('cityPharmacies')
+        ->and($everyone[7]['withheld'])->toBeFalse()
+        ->and($cotonou[8]['withheld'])->toBeFalse()
+        ->and($cotonou[8]['invoiced'])->toBe(5_000_000);
 });

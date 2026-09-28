@@ -75,6 +75,9 @@ class PenaltyTally
     /** @var array<string, array{due?: array<int, true>, paid?: array<int, true>, waived?: array<int, true>}> */
     protected array $totalSplitPharmacies = [];
 
+    /** @var array<int, string> la ville de chaque officine vue, '' sans ville */
+    protected array $pharmacyCities = [];
+
     protected int $firstDay;
 
     protected int $lastDay;
@@ -99,6 +102,7 @@ class PenaltyTally
      *
      * @param  list<array{0: int, 1: int}>  $payments
      * @param  PenaltySettlement|null  $settlement  la clôture de sa pénalité, null tant qu'elle est due
+     * @param  string|null  $city  la ville de l'officine, pour la règle de partition réseau (cityCounts())
      */
     public function add(
         int $insurerId,
@@ -113,8 +117,10 @@ class PenaltyTally
         int $rateBp,
         array $payments,
         ?PenaltySettlement $settlement = null,
+        ?string $city = null,
     ): void {
         $this->insurers[$insurerId] = true;
+        $this->pharmacyCities[$pharmacyId] = $city ?? '';
         $this->settled[$insurerId] ??= ['paid' => [], 'waived' => []];
         $bucket = $settlement === PenaltySettlement::Waived ? 'waived' : 'paid';
 
@@ -177,6 +183,57 @@ class PenaltyTally
     }
 
     /**
+     * Les officines d'un mois d'une série, ville par ville.
+     *
+     * Pour la règle de partition par ville (Network\CityPartition) : un mois
+     * non filtré, moins les mêmes mois publiés ville par ville, rendrait les
+     * villes retenues. Aucune décision ici non plus. Clé '' : sans ville.
+     *
+     * @return array{accrued: array<string, int>, declared: array<string, int>, split: array<string, PenaltySplitPharmacies>}
+     */
+    public function cityCounts(?int $insurerId, string $month): array
+    {
+        $accrued = $insurerId === null ? ($this->totalAccruedPharmacies[$month] ?? []) : ($this->accruedPharmacies[$insurerId][$month] ?? []);
+        $declared = $insurerId === null ? ($this->totalDeclaredPharmacies[$month] ?? []) : ($this->declaredPharmacies[$insurerId][$month] ?? []);
+        $split = $insurerId === null ? ($this->totalSplitPharmacies[$month] ?? []) : ($this->splitPharmacies[$insurerId][$month] ?? []);
+
+        $parts = [];
+
+        foreach (['due', 'paid', 'waived'] as $part) {
+            foreach ($split[$part] ?? [] as $pharmacyId => $ignored) {
+                $city = $this->pharmacyCities[$pharmacyId] ?? '';
+                $parts[$city][$part] = ($parts[$city][$part] ?? 0) + 1;
+            }
+        }
+
+        return [
+            'accrued' => $this->countByCity($accrued),
+            'declared' => $this->countByCity($declared),
+            'split' => array_map(fn (array $counts): PenaltySplitPharmacies => new PenaltySplitPharmacies(
+                due: $counts['due'] ?? 0,
+                paid: $counts['paid'] ?? 0,
+                waived: $counts['waived'] ?? 0,
+            ), $parts),
+        ];
+    }
+
+    /**
+     * @param  array<int, true>  $pharmacies
+     * @return array<string, int>
+     */
+    protected function countByCity(array $pharmacies): array
+    {
+        $counts = [];
+
+        foreach ($pharmacies as $pharmacyId => $ignored) {
+            $city = $this->pharmacyCities[$pharmacyId] ?? '';
+            $counts[$city] = ($counts[$city] ?? 0) + 1;
+        }
+
+        return $counts;
+    }
+
+    /**
      * Le journal : une série par assureur de `$names`, dans cet ordre, et le total.
      *
      * La closure reçoit, pour la série totale seulement, les officines derrière
@@ -192,8 +249,8 @@ class PenaltyTally
      * total moins séries visibles rendrait.
      *
      * @param  array<int, string>  $names  les assureurs à publier, par identifiant
-     * @param  (Closure(?int, int, int, int, int): bool)|null  $withheld  assureur (null = total), officines du couru, du déclaré, puis celles de la part cachée du couru et du déclaré
-     * @param  (Closure(?int, PenaltySplitPharmacies, PenaltySplitPharmacies): bool)|null  $splitWithheld  assureur (null = total), officines de chaque part, puis celles des parts cachées
+     * @param  (Closure(?int, int, int, int, int, string): bool)|null  $withheld  assureur (null = total), officines du couru, du déclaré, puis celles de la part cachée du couru et du déclaré, puis le mois (`AAAA-MM`)
+     * @param  (Closure(?int, PenaltySplitPharmacies, PenaltySplitPharmacies, string): bool)|null  $splitWithheld  assureur (null = total), officines de chaque part, puis celles des parts cachées, puis le mois
      */
     public function ledger(array $names, ?Closure $withheld = null, int $maskedInsurers = 0, ?Closure $splitWithheld = null): PenaltyLedger
     {
@@ -304,6 +361,7 @@ class PenaltyTally
                 count($declaredPharmacies[$key] ?? []),
                 count($hiddenAccrued[$key] ?? []),
                 count($hiddenDeclared[$key] ?? []),
+                $key,
             );
 
             if ($isWithheld) {
@@ -323,6 +381,7 @@ class PenaltyTally
                 $insurerId,
                 $this->splitCounts($split[$key] ?? []),
                 $this->splitCounts($hiddenSplit[$key] ?? []),
+                $key,
             );
 
             $months[] = new PenaltyLedgerMonth(

@@ -110,14 +110,17 @@ test('a withheld month blanks what was paid, waived and what remains due', funct
  * close : une tranche de 20 000 le 30/05, rien ensuite. Le montant clos égale
  * la courue, comme l'exige la réconciliation.
  */
-function networkSettled(Insurer $insurer, int $count, PenaltySettlement $outcome): void
+/**
+ * @param  array<string, mixed>  $pharmacy
+ */
+function networkSettled(Insurer $insurer, int $count, PenaltySettlement $outcome, array $pharmacy = []): void
 {
     foreach (range(1, $count) as $ignored) {
         Declaration::factory()
             ->instalments([['amount' => 1_000_000, 'paid_on' => '2026-06-14']])
             ->penaltySettled($outcome, 20_000)
             ->create([
-                'pharmacy_id' => Pharmacy::factory(),
+                'pharmacy_id' => Pharmacy::factory()->create($pharmacy),
                 'insurer_id' => $insurer->id,
                 'period_year' => 2026,
                 'period_month' => 3,
@@ -354,4 +357,77 @@ test('the raw tally reads the same number of queries however many declarations t
 
     expect(count(DB::getQueryLog()))->toBe($withOne)
         ->and($withOne)->toBe(3);
+});
+
+test('an unfiltered journal month is withheld when its unpublishable cities hold too few officines', function () {
+    // Mars déclaré, facture qui court en mai : Cotonou 5, Parakou 1. Non
+    // filtré moins Cotonou rendrait la pénalité de l'officine de Parakou.
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($insurer, 5, 3, '2026-03-31', pharmacy: ['city' => 'Cotonou']);
+    networkUnpaid($insurer, 1, 3, '2026-03-31', pharmacy: ['city' => 'Parakou']);
+
+    $everyone = $this->journal->for(...$this->bounds);
+    $cotonou = $this->journal->for(...[...$this->bounds, 'Cotonou']);
+
+    expect($everyone->total->month('2026-05')->withheld)->toBeTrue()
+        ->and($everyone->total->month('2026-05')->accrued)->toBeNull()
+        ->and($cotonou->total->month('2026-05')->withheld)->toBeFalse()
+        ->and($cotonou->total->month('2026-05')->accrued)->toBe(100_000);
+});
+
+test('an unfiltered journal series month follows the city partition too', function () {
+    // L'assureur est autorisé (Cotonou 5, Parakou 5 déclarants) ; mais seule
+    // une officine de Parakou laisse une facture courir. Sa série de mai, non
+    // filtrée, moins celle de Cotonou, rendrait sa pénalité.
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($insurer, 5, 3, '2026-03-31', pharmacy: ['city' => 'Cotonou']);
+    networkUnpaid($insurer, 1, 3, '2026-03-31', pharmacy: ['city' => 'Parakou']);
+    Pharmacy::factory()->count(4)->create(['city' => 'Parakou'])->each(fn (Pharmacy $pharmacy) => Declaration::factory()->paid()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 3,
+    ]));
+
+    $may = $this->journal->for(...$this->bounds)->insurers[0]->month('2026-05');
+
+    expect($may->withheld)->toBeTrue()
+        ->and($may->accrued)->toBeNull();
+});
+
+test('an unfiltered journal month is published when the unpublishable cities hold the threshold', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($insurer, 5, 3, '2026-03-31', pharmacy: ['city' => 'Cotonou']);
+
+    foreach (['Porto-Novo', 'Parakou', 'Abomey-Calavi', 'Bohicon', 'Lokossa'] as $city) {
+        networkUnpaid($insurer, 1, 3, '2026-03-31', pharmacy: ['city' => $city]);
+    }
+
+    $ledger = $this->journal->for(...$this->bounds);
+
+    expect($ledger->total->month('2026-05')->withheld)->toBeFalse()
+        ->and($ledger->total->month('2026-05')->accrued)->toBe(200_000)
+        ->and($ledger->insurers[0]->month('2026-05')->accrued)->toBe(200_000);
+});
+
+test('an unfiltered status split is withheld when an unpublishable city split would be its hidden part', function () {
+    // Mai : Cotonou 5 dues + 5 payées, Parakou 4 dues + 1 payée. Chaque ville
+    // passe le seuil, le mois se publie. Mais le découpage de Parakou est
+    // retenu (payée sur une officine) : non filtré (payée 120 000) moins
+    // Cotonou (100 000) rendrait la payée de cette officine.
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    networkUnpaid($insurer, 5, 3, '2026-03-31', pharmacy: ['city' => 'Cotonou']);
+    networkSettled($insurer, 5, PenaltySettlement::Paid, ['city' => 'Cotonou']);
+    networkUnpaid($insurer, 4, 3, '2026-03-31', pharmacy: ['city' => 'Parakou']);
+    networkSettled($insurer, 1, PenaltySettlement::Paid, ['city' => 'Parakou']);
+
+    $everyone = $this->journal->for(...$this->bounds);
+    $cotonou = $this->journal->for(...[...$this->bounds, 'Cotonou']);
+
+    expect($everyone->insurers[0]->month('2026-05')->withheld)->toBeFalse()
+        ->and($everyone->insurers[0]->month('2026-05')->accrued)->toBe(300_000)
+        ->and($everyone->insurers[0]->month('2026-05')->splitWithheld)->toBeTrue()
+        ->and($everyone->insurers[0]->month('2026-05')->accruedPaid)->toBeNull()
+        ->and($everyone->total->month('2026-05')->accruedPaid)->toBeNull()
+        ->and($cotonou->insurers[0]->month('2026-05')->accruedPaid)->toBe(100_000);
 });

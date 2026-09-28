@@ -165,9 +165,16 @@
 
 @if ($summary['withheld'])
     <p class="lede">
-        Synthèse retenue : sur le périmètre choisi, elle repose sur moins de
-        {{ $anonymityThreshold }} officines déclarantes. Publiée, elle rendrait
-        les chiffres d'une officine identifiable.
+        @if ($summary['withheldReason'] === 'city-share')
+            Synthèse retenue : sans filtre ville, les villes non publiées et les
+            officines sans ville y pèsent moins de {{ $anonymityThreshold }}
+            officines. Cette synthèse, moins celles des villes publiées, rendrait
+            leurs chiffres.
+        @else
+            Synthèse retenue : sur le périmètre choisi, elle repose sur moins de
+            {{ $anonymityThreshold }} officines déclarantes. Publiée, elle rendrait
+            les chiffres d'une officine identifiable.
+        @endif
     </p>
 @else
 <p class="lede">
@@ -271,8 +278,13 @@
                 <tr class="withheld">
                     <td class="text">{{ $entry['name'] }}</td>
                     <td colspan="10">
-                        Données insuffisantes · moins de {{ $anonymityThreshold }} officines déclarantes —
-                        chiffres retenus
+                        @if ($entry['cityShare'])
+                            Chiffres retenus : hors filtre ville, les villes non publiées y pèsent
+                            moins de {{ $anonymityThreshold }} officines, qui se déduiraient par différence
+                        @else
+                            Données insuffisantes · moins de {{ $anonymityThreshold }} officines déclarantes —
+                            chiffres retenus
+                        @endif
                     </td>
                 </tr>
             @endforeach
@@ -355,7 +367,7 @@
                             @if ($row['splitWithheldByLedger'])
                                 répartition due / recouvrée / abandonnée retenue : un mois du journal des pénalités est retenu sur la même période, et s'en déduirait
                             @else
-                                répartition due / recouvrée / abandonnée retenue : une part repose sur moins de {{ $anonymityThreshold }} officines
+                                répartition due / recouvrée / abandonnée retenue : une part repose sur moins de {{ $anonymityThreshold }} officines, ici ou dans les villes non publiées
                             @endif
                         </div>
                     @elseif (($figures->recovered ?? 0) > 0 || ($figures->waived ?? 0) > 0)
@@ -390,8 +402,8 @@
                         <tr class="withheld">
                             <td class="text">{{ $month['monthLabel'] }}</td>
                             <td colspan="5">
-                                Moins de {{ $anonymityThreshold }} officines déclarantes ce mois-là —
-                                chiffres retenus
+                                Moins de {{ $anonymityThreshold }} officines déclarantes ce mois-là,
+                                ou dans les villes non publiées — chiffres retenus
                             </td>
                         </tr>
                     @else

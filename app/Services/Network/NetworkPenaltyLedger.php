@@ -51,11 +51,15 @@ class NetworkPenaltyLedger
         $payments = $this->instalments(array_keys($clauses), $from, $to, $city);
 
         $declarations = $this->scope(DB::table('declarations'), array_keys($clauses), $from, $to, $city)
+            // Jointe, pas une requête de plus : la ville de chaque officine
+            // nourrit la règle de partition du journal non filtré.
+            ->leftJoin('pharmacies as declaring_pharmacy', 'declaring_pharmacy.id', '=', 'declarations.pharmacy_id')
             ->select(
                 'declarations.id', 'declarations.insurer_id', 'declarations.pharmacy_id',
                 'declarations.period_year', 'declarations.period_month',
                 'declarations.amount_invoiced', 'declarations.amount_received',
                 'declarations.invoice_deposited_on', 'declarations.paid_on', 'declarations.penalty_settlement',
+                'declaring_pharmacy.city as pharmacy_city',
             )
             // cursor() et non get() : même raison qu'InsurerPenaltyAggregates.
             ->cursor();
@@ -76,6 +80,7 @@ class NetworkPenaltyLedger
                 rateBp: $rateBp,
                 payments: $payments[$declaration->id] ?? [],
                 settlement: PenaltySettlement::tryFrom((string) $declaration->penalty_settlement),
+                city: $declaration->pharmacy_city === null ? null : (string) $declaration->pharmacy_city,
             );
         }
 

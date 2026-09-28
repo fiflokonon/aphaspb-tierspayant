@@ -9,6 +9,8 @@ import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
 import ProgressMiniBar from '@/components/aphaspb/ProgressMiniBar.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
+import { withheldExplanation } from '@/lib/withheld';
+import type { WithheldReason } from '@/lib/withheld';
 import type { KpiTone } from '@/types/aphaspb';
 
 type Indicator = {
@@ -18,6 +20,7 @@ type Indicator = {
     /** Null under the threshold: the exact count never leaves the server. */
     declaringPharmacies: number | null;
     required: number | null;
+    withheldReason: WithheldReason | null;
     averageDelayDays: number | null;
     standardDelayDays: number | null;
     withinThresholdShare: number | null;
@@ -33,6 +36,7 @@ type Indicator = {
 type Summary = {
     withheld: boolean;
     required: number;
+    withheldReason: WithheldReason | null;
     declaringPharmacies: number | null;
     declarations: number | null;
     averageDelayDays: number | null;
@@ -122,16 +126,15 @@ const percent = (value: number | null): string =>
 const days = (value: number | null): string =>
     value === null ? '—' : `${value.toLocaleString('fr-FR')} j`;
 
-const footer = computed(() =>
-    props.summary.withheld
-        ? `${props.indicators.length} assureurs · synthèse retenue : moins de ${props.summary.required} officines déclarantes sur ce périmètre`
-        : `${props.indicators.length} assureurs · ${(props.summary.declarations ?? 0).toLocaleString('fr-FR')} déclarations agrégées · évolution mensuelle en préparation`,
+/** What a withheld KPI says under its « retenu ». */
+const withheldHint = computed(() =>
+    withheldExplanation(props.summary.withheldReason, props.summary.required),
 );
 
-/** What a withheld KPI says under its « retenu ». */
-const withheldHint = computed(
-    () =>
-        `moins de ${props.summary.required} officines déclarantes sur ce périmètre`,
+const footer = computed(() =>
+    props.summary.withheld
+        ? `${props.indicators.length} assureurs · synthèse retenue : ${withheldHint.value}`
+        : `${props.indicators.length} assureurs · ${(props.summary.declarations ?? 0).toLocaleString('fr-FR')} déclarations agrégées · évolution mensuelle en préparation`,
 );
 
 const period = ref(props.period);
@@ -330,9 +333,10 @@ watch([period, city], reload);
                         :template="TEMPLATE"
                         :label="indicator.insurerName"
                         :span="6"
-                        :explanation="`moins de ${indicator.required}
-                            officines déclarantes — affichage à partir de
-                            ${indicator.required}, pour garantir l’anonymat`"
+                        :explanation="`${withheldExplanation(
+                            indicator.withheldReason,
+                            indicator.required ?? summary.required,
+                        )} — pour garantir l’anonymat`"
                     />
 
                     <DataTableRow

@@ -21,6 +21,7 @@ class InsurerAmountsResource
      *     sufficient: bool,
      *     declaringPharmacies: int|null,
      *     required: int|null,
+     *     withheldReason: 'too-few'|'city-share'|null,
      *     invoiced: int|null,
      *     received: int|null,
      *     outstanding: int|null,
@@ -42,6 +43,9 @@ class InsurerAmountsResource
             // est tout ce qui sort (voir InsufficientData).
             'declaringPharmacies' => $sufficient ? $entry->declaringPharmacies : null,
             'required' => $sufficient ? null : $entry->required,
+            // « city-share » : l'assureur a assez d'officines, mais non filtré
+            // moins les villes publiées rendrait une part qui n'en a pas assez.
+            'withheldReason' => $entry instanceof InsufficientData ? ($entry->cityShare ? 'city-share' : 'too-few') : null,
             'invoiced' => $sufficient ? $entry->invoiced : null,
             'received' => $sufficient ? $entry->received : null,
             'outstanding' => $sufficient ? $entry->outstanding : null,

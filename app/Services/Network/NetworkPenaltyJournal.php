@@ -76,9 +76,22 @@ class NetworkPenaltyJournal
         // ancienne court encore nourrit le total sans y figurer.
         $masked = count(array_diff($tally->insurerIds(), array_keys($authorized)));
 
+        // Règle de partition par ville (28/09/2026) : non filtré, un mois
+        // moins le même mois publié ville par ville rendrait les villes
+        // retenues et les officines sans ville. Séries et total, couru et
+        // déclaré, puis découpage.
+        $partitionWithholds = fn (?int $seriesInsurer, string $month): bool => $city === null && (
+            CityPartition::withholds($tally->cityCounts($seriesInsurer, $month)['accrued'], $minimum)
+            || CityPartition::withholds($tally->cityCounts($seriesInsurer, $month)['declared'], $minimum)
+        );
+
         return $tally->ledger(
             $authorized,
-            function (?int $seriesInsurer, int $accruedPharmacies, int $declaredPharmacies, int $hiddenAccrued, int $hiddenDeclared) use ($insurerId, $filteredIsMasked, $belowMinimum): bool {
+            function (?int $seriesInsurer, int $accruedPharmacies, int $declaredPharmacies, int $hiddenAccrued, int $hiddenDeclared, string $month = '') use ($insurerId, $filteredIsMasked, $belowMinimum, $partitionWithholds): bool {
+                if ($partitionWithholds($seriesInsurer, $month)) {
+                    return true;
+                }
+
                 if ($seriesInsurer === null && $insurerId === null) {
                     // Total moins séries visibles = part cachée : un mois
                     // retenu d'un assureur publié, s'il est seul caché, se
@@ -106,8 +119,9 @@ class NetworkPenaltyJournal
             // qu'une part non vide repose sur trop peu d'officines. Pour le
             // total, aussi quand les parts cachées des séries publiées le
             // feraient : total − séries visibles les rendrait.
-            fn (?int $seriesInsurer, PenaltySplitPharmacies $own, PenaltySplitPharmacies $hidden): bool => $own->restsOnFewerThan($minimum)
-                || $hidden->restsOnFewerThan($minimum),
+            fn (?int $seriesInsurer, PenaltySplitPharmacies $own, PenaltySplitPharmacies $hidden, string $month = ''): bool => $own->restsOnFewerThan($minimum)
+                || $hidden->restsOnFewerThan($minimum)
+                || ($city === null && CityPartition::withholdsSplit($tally->cityCounts($seriesInsurer, $month)['split'], $minimum)),
         );
     }
 

@@ -17,6 +17,12 @@ readonly class InsufficientData
     public function __construct(
         public int $declaringPharmacies,
         public int $required,
+        /**
+         * Retenu par la règle de partition par ville, non par son propre
+         * compte : non filtré, ce chiffre moins les villes publiées rendrait
+         * une part qui repose sur 1 à seuil − 1 officines (CityPartition).
+         */
+        public bool $cityShare = false,
     ) {
         //
     }

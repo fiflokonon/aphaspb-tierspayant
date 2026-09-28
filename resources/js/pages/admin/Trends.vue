@@ -18,6 +18,8 @@ import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 import { exportChartToPng } from '@/lib/chartPng';
 import { rankSlices } from '@/lib/donut';
 import { formatMillions } from '@/lib/millions';
+import type { WithheldReason } from '@/lib/withheld';
+import { withheldExplanation } from '@/lib/withheld';
 import { CHART_COLORS, isChartType } from '@/types/aphaspb';
 import type { KpiTone, PenaltyLedger } from '@/types/aphaspb';
 
@@ -28,6 +30,7 @@ type AmountRow = {
     /** Null under the threshold: the exact count never leaves the server. */
     declaringPharmacies: number | null;
     required: number | null;
+    withheldReason: WithheldReason | null;
     invoiced: number | null;
     outstanding: number | null;
     recoveryRate: number | null;
@@ -46,6 +49,7 @@ type Trend = {
     withheldMonths: string[];
     threshold: number;
     required: number;
+    withheldReason: WithheldReason | null;
 };
 
 const props = defineProps<{
@@ -53,6 +57,7 @@ const props = defineProps<{
     summary: {
         withheld: boolean;
         required: number;
+        withheldReason: WithheldReason | null;
         invoiced: number | null;
         received: number | null;
         outstanding: number | null;
@@ -103,9 +108,8 @@ const share = (value: number | null): string =>
         : `${Math.round((value / props.summary.invoiced) * 100)} %`;
 
 /** What a withheld KPI says under its « retenu ». */
-const withheldHint = computed(
-    () =>
-        `moins de ${props.summary.required} officines déclarantes sur ce périmètre`,
+const withheldHint = computed(() =>
+    withheldExplanation(props.summary.withheldReason, props.summary.required),
 );
 
 /** A withheld KPI shows « retenu », never a zero that would read « rien ». */
@@ -122,7 +126,7 @@ const withheldNote = computed(() => {
 
     return months.size === 0
         ? null
-        : `Points retenus (moins de ${props.summary.required} officines déclarantes ce mois-là) : ${[...months].sort().join(', ')}.`;
+        : `Points retenus (moins de ${props.summary.required} officines déclarantes ce mois-là, ou dans les villes non publiées) : ${[...months].sort().join(', ')}.`;
 });
 
 const period = ref(props.period);
@@ -510,9 +514,10 @@ async function exportChart() {
                         :template="TEMPLATE"
                         :label="row.insurerName"
                         :span="4"
-                        :explanation="`moins de ${row.required} officines
-                            déclarantes — les montants s'agrègent à partir de
-                            ${row.required}`"
+                        :explanation="`${withheldExplanation(
+                            row.withheldReason,
+                            row.required ?? summary.required,
+                        )} — les montants restent retenus`"
                     />
 
                     <DataTableRow
