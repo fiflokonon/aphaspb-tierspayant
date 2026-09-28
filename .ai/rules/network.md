@@ -57,24 +57,32 @@ Conséquences pratiques :
 - le seuil par défaut vaut **5** (`SettingsRepository::DEFAULTS`), pas 2 : `ANONYMITY_FLOOR = 2` n'est que le plancher réglable ;
 - un test d'absence de fuite doit avoir un décor **discriminant** : si le total de période de l'assureur coïncide numériquement avec la valeur retenue, le test rougit sur un agrégat parfaitement légitime.
 
-## Le résumé réseau n'a pas de seuil — sauf restreint à un assureur
-`NetworkStatsService::networkSummary()` n'applique **aucun** seuil d'anonymat, et c'est légitime : il agrège tous les assureurs, donc aucune officine n'y est nommable.
+## Le résumé réseau a un seuil, filtré ou non (28/09/2026)
+**Remplace la règle « le résumé réseau n'a pas de seuil — sauf restreint à un assureur ».** Une revue a combiné les écrans : dans une ville de 5 officines dont une seule a déclaré, le suivi des déclarations la nomme, et « Statistiques réseau » / « Évolution » filtrés sur la ville publiaient son facturé et ses assureurs.
 
-Le filtre assureur de l'export (20/09/2026) change cette prémisse. Restreint à un assureur, ce même résumé devient *les chiffres de cet assureur* — une granularité de publication nouvelle, où une unique officine déclarante rend sa facture exacte lisible. `NetworkPdfExport::summary()` retient donc le résumé quand un assureur est choisi **et** qu'il est sous le seuil.
-
-La condition porte sur `$withheld` non vide, pas sur un `$rows` vide : un assureur qui n'a rien déclaré sur la période mérite un résumé à zéro (« rien déclaré »), pas une rétention (« chiffres cachés »).
+- `NetworkStatsService::networkSummary()` et `aggregatedAmounts()` décident eux-mêmes (ils détiennent `SettingsRepository`, comme `perInsurer()`) : reposant sur 1 à seuil − 1 officines distinctes après filtres ville / assureur, ils rendent `withheld: true`, `required: N` et **toutes** les valeurs à null, compte d'officines compris. Zéro officine = zéros publiés (« rien déclaré »), pas retenu.
+- `outstandingBeyond()` est protégé : il n'a pas de seuil propre et ne sort que par `networkSummary()`.
+- `NetworkPdfExport::summary()` ne décide plus rien : l'ancien cas « assureur choisi sous le seuil » est un cas particulier de la règle générale. Le Blade teste `$summary['withheld']`.
+- Écrans : KPI « retenu » + « moins de N officines déclarantes sur ce périmètre ».
+- Risque accepté inchangé : les assureurs masqués restent dans un résumé publié, donc « résumé − lignes publiées » rend leur part (même décision que le journal, 27/09/2026).
 
 Le filtre lui-même vit dans `DeclarationWindow::apply()`, seul goulot des neuf agrégats. `InsurerPenaltyAggregates` ne le reçoit pas : son `whereIn` sur les assureurs autorisés le restreint déjà.
 
-Deux tests le tiennent : un sur les données (`summary` vaut null), un sur le **rendu** — sans ce second, un `$summary['declarations']` resté dans le Blade ne rougirait qu'en production. Vérifié par mutation : la garde neutralisée, la vue rend un 500.
+Tests : `the network summary resting on fewer officines than the threshold is withheld, even unfiltered`, `the city filter re-applies the threshold to the network summary`, `tests/Feature/Admin/CombinedScreensLeakTest.php` (scénario de revue) et `the report still renders when the summary is withheld` (rendu). Vérifié par mutation.
 
-## Journal des pénalités : cumul vidé après un mois retenu, total presque sans seuil
+## Aucun compte exact sous le seuil
+`InsufficientData::$declaringPharmacies` reste en mémoire pour les services, mais **ne sort jamais** : `InsurerIndicatorsResource` / `InsurerAmountsResource` le rendent null quand `sufficient` est faux, `NetworkExportRows::withheld()` écrit « moins de N » dans `officines_declarantes`, le PDF ne reçoit que le nom des assureurs retenus et vide `declaringPharmacies` des mois retenus. Sous le seuil, « 1 officine déclarante » à côté du suivi qui nomme les déclarantes désigne l'officine.
+
+## La courbe des délais se retient point par point
+`delayTrend()` compte les officines distinctes de chaque point assureur × mois ; un point sous le seuil n'est pas tracé (`insurers[id].withheld`). La ligne réseau ne moyenne **que les points publiés** : y mêler un point caché le rendrait par « réseau × n − points visibles ». Un mois sans aucun point publié est listé dans `withheldMonths`. Aucune requête de plus.
+
+## Journal des pénalités : cumul vidé après un mois retenu, total sous seuil propre
 `NetworkPenaltyJournal` est le seul point de décision du seuil pour le journal ; écrans et exports passent tous par lui.
 
 - Un mois retenu vide **tous les cumuls suivants** de la série : cumul(M) − cumul(M−1) = couru(M), le rendrait déductible.
 - Un mois est retenu si ses officines contributrices (couru **ou** mois déclaré) sont entre 1 et seuil − 1. Zéro officine = zéro publié, pas retenu.
-- Série totale non filtrée : **tous** les assureurs sous convention, masqués compris — décision client du 27/09/2026, risque « un seul assureur masqué se déduit par différence » accepté. Verrouillé par `a masked insurer has no series but still counts in the unfiltered total` et `the unfiltered total is published even when it rests on fewer officines than the threshold`.
-- Deux exceptions décidées le même jour après revue : le mois du total est retenu quand sa **part cachée** (mois retenus des séries publiées, officines distinctes, par horloge) repose sur 1 à seuil − 1 officines — sinon total − séries visibles rend ce mois ; et, **sous filtre ville**, quand le total lui-même y repose sur 1 à seuil − 1 officines (une ville d'une officine la désigne). `PenaltyTally::ledger()` passe ces compteurs cachés à la closure, pour le total seulement.
+- Série totale non filtrée : **tous** les assureurs sous convention, masqués compris — décision client du 27/09/2026, risque « un seul assureur masqué se déduit par différence » accepté. Verrouillé par `a masked insurer has no series but still counts in the unfiltered total` et `the unfiltered total resting on the threshold is published, masked insurers included` ; sous le seuil, `the unfiltered total is withheld when it rests on fewer officines than the threshold`.
+- Deux exceptions : le mois du total est retenu quand sa **part cachée** (mois retenus des séries publiées, officines distinctes, par horloge) repose sur 1 à seuil − 1 officines — sinon total − séries visibles rend ce mois (27/09/2026) ; et quand le total lui-même y repose sur 1 à seuil − 1 officines, **avec ou sans filtre ville** (étendu au total non filtré le 28/09/2026 : un réseau d'une déclarante, que le suivi nomme, rendait sa pénalité). `PenaltyTally::ledger()` passe ces compteurs cachés à la closure, pour le total seulement.
 - Filtrée sur un assureur masqué, la série totale est retenue en bloc ; sur un assureur autorisé, elle suit sa rétention mois par mois.
 
 `NetworkPenaltyLedger::tally()` coûte trois requêtes quel que soit le volume (test dédié).
@@ -103,3 +111,6 @@ Le CDC interdit à l'espace réseau « un nom d'officine lié à une déclaratio
 Bornes à ne pas franchir : jamais d'assureur (nom, id, nombre), de montant, de statut, de date ou de note privée ; le lecteur ne lit que des `COUNT(DISTINCT insurer_id)` groupés, jamais une ligne `declarations` hydratée. Deux requêtes quel que soit le nombre d'officines (test dédié). Mêmes règles que `DeclarationCalendar` côté officine, qui fait la même jointure sur `insurer_pharmacy` (complet = chaque assureur coché déclaré ; décochés ignorés des deux côtés ; rejetée = déclarée), plus : officines sans assureur, supprimées ou inscrites après la fin du mois exclues.
 
 « Pharmacies inscrites » (`RegisteredPharmaciesController`) reste sans aucune donnée de déclaration. Test de confidentialité : `the screen never carries an insurer, an amount or a private note` — chercher « insurer » dans les seules props de l'écran, la coquille nommant « Gestion des assureurs ».
+
+## Aucun chiffre réseau sous le seuil, aucun compte exact sous le seuil
+Décision du 28/09/2026, après une fuite par combinaison d'écrans (suivi des déclarations + stats filtrées sur une ville d'une seule déclarante). 1) Tout agrégat réseau (résumé, montants réseau, point de courbe assureur × mois et réseau, mois du total du journal, filtré ou non) repose sur ≥ seuil officines distinctes à sa propre granularité, sinon il est retenu : conservé, vidé, expliqué (« retenu », « moins de N officines déclarantes »), jamais supprimé. Zéro officine se publie à zéro. 2) Le compte exact d'officines d'une entrée retenue ne sort jamais (props, CSV/XLSX, PDF, notifications) : `InsufficientData::$declaringPharmacies` reste interne. Garde-fous : `CombinedScreensLeakTest`, `summaryIsWithheld()`, resources à `declaringPharmacies` null.

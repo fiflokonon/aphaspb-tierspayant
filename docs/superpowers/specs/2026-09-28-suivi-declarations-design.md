@@ -49,6 +49,23 @@ agrégats de ces assureurs ce mois-là. Les agrégats restent protégés par le
 seuil d'anonymat (≥ 5 officines déclarantes) : l'appartenance à l'agrégat ne
 révèle pas sa part.
 
+**Fuite par combinaison, trouvée en revue et fermée à la source.** Cette
+dernière phrase ne tenait pas : dans une ville de 5 officines où une seule a
+déclaré au trimestre, le suivi la nomme (« Partielle », les autres « Sans
+déclaration ») ; « Statistiques réseau » filtré sur cette ville affichait pour
+deux assureurs « 1 officine déclarante » (compte exact sur des lignes
+retenues), et « Évolution » filtré sur la ville publiait facturé, encaissé et
+encours sans aucun seuil. L'admin apprenait ainsi quels assureurs cette
+officine nommée avait déclarés et combien elle avait facturé. Correction, sur
+toutes les sorties réseau (écrans, props, CSV/XLSX, PDF, notifications) :
+(1) le compte exact d'une entrée retenue ne sort plus — on écrit « moins de N
+officines déclarantes » ; (2) tout agrégat réseau repose sur au moins N
+officines déclarantes distinctes à sa propre granularité, filtres compris, ou
+il est retenu (conservé, vidé, expliqué) : résumé réseau et montants réseau
+(`networkSummary()`, `aggregatedAmounts()`), chaque point de la courbe des
+délais, chaque mois du total du journal des pénalités, avec ou sans filtre
+ville. Test de non-régression : `tests/Feature/Admin/CombinedScreensLeakTest.php`.
+
 Cet amendement est une décision du 28/09/2026. **Il doit être validé par écrit
 côté APhaSPB avant la mise en production**, puisque le CDC est le document
 signé.
@@ -202,4 +219,11 @@ Vérification finale : `composer ci:check`.
 - **Pas de lien de relance pour une officine complète** : rien à lui rappeler.
 - **Le `DISTINCT`** du compte d'assureurs déclarés est une précaution : l'index
   unique `decl_pharmacy_insurer_period_unique` rend déjà impossible un doublon.
-
+- **Résumés réseau et total non filtré du journal sous seuil, comptes exacts
+  jamais montrés sous le seuil** (après revue, 28/09/2026). Remplace deux
+  décisions antérieures : « le résumé réseau n'a pas de seuil, sauf restreint à
+  un assureur » et « le total non filtré du journal est publié même sous le
+  seuil » (27/09/2026). Les assureurs masqués restent comptés dans un total
+  publié (risque « par différence » accepté le 27/09/2026, inchangé). La ligne
+  réseau de la courbe ne moyenne plus que les points assureur × mois publiés.
+  Détail : §3, « Fuite par combinaison ».
