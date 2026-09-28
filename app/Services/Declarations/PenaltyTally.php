@@ -193,6 +193,28 @@ class PenaltyTally
      */
     public function cityCounts(?int $insurerId, string $month): array
     {
+        $sets = $this->cityPharmacies($insurerId, $month);
+
+        return [
+            'accrued' => array_map('count', $sets['accrued']),
+            'declared' => array_map('count', $sets['declared']),
+            'split' => array_map(fn (array $parts): PenaltySplitPharmacies => new PenaltySplitPharmacies(
+                due: count($parts['due'] ?? []),
+                paid: count($parts['paid'] ?? []),
+                waived: count($parts['waived'] ?? []),
+            ), $sets['split']),
+        ];
+    }
+
+    /**
+     * Les mêmes, par identifiant d'officine : les cellules cachées de
+     * plusieurs assureurs se recouvrent, et seule une union compte des
+     * officines distinctes.
+     *
+     * @return array{accrued: array<string, array<int, true>>, declared: array<string, array<int, true>>, split: array<string, array{due?: array<int, true>, paid?: array<int, true>, waived?: array<int, true>}>}
+     */
+    public function cityPharmacies(?int $insurerId, string $month): array
+    {
         $accrued = $insurerId === null ? ($this->totalAccruedPharmacies[$month] ?? []) : ($this->accruedPharmacies[$insurerId][$month] ?? []);
         $declared = $insurerId === null ? ($this->totalDeclaredPharmacies[$month] ?? []) : ($this->declaredPharmacies[$insurerId][$month] ?? []);
         $split = $insurerId === null ? ($this->totalSplitPharmacies[$month] ?? []) : ($this->splitPharmacies[$insurerId][$month] ?? []);
@@ -201,36 +223,30 @@ class PenaltyTally
 
         foreach (['due', 'paid', 'waived'] as $part) {
             foreach ($split[$part] ?? [] as $pharmacyId => $ignored) {
-                $city = $this->pharmacyCities[$pharmacyId] ?? '';
-                $parts[$city][$part] = ($parts[$city][$part] ?? 0) + 1;
+                $parts[$this->pharmacyCities[$pharmacyId] ?? ''][$part][$pharmacyId] = true;
             }
         }
 
         return [
-            'accrued' => $this->countByCity($accrued),
-            'declared' => $this->countByCity($declared),
-            'split' => array_map(fn (array $counts): PenaltySplitPharmacies => new PenaltySplitPharmacies(
-                due: $counts['due'] ?? 0,
-                paid: $counts['paid'] ?? 0,
-                waived: $counts['waived'] ?? 0,
-            ), $parts),
+            'accrued' => $this->groupByCity($accrued),
+            'declared' => $this->groupByCity($declared),
+            'split' => $parts,
         ];
     }
 
     /**
      * @param  array<int, true>  $pharmacies
-     * @return array<string, int>
+     * @return array<string, array<int, true>>
      */
-    protected function countByCity(array $pharmacies): array
+    protected function groupByCity(array $pharmacies): array
     {
-        $counts = [];
+        $grouped = [];
 
         foreach ($pharmacies as $pharmacyId => $ignored) {
-            $city = $this->pharmacyCities[$pharmacyId] ?? '';
-            $counts[$city] = ($counts[$city] ?? 0) + 1;
+            $grouped[$this->pharmacyCities[$pharmacyId] ?? ''][$pharmacyId] = true;
         }
 
-        return $counts;
+        return $grouped;
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Data\InsufficientData;
 use App\Data\PenaltyLedger;
 use App\Data\PenaltySplitPharmacies;
 use App\Data\Period;
+use App\Services\Declarations\PenaltyTally;
 use App\Services\Settings\SettingsRepository;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -79,16 +80,40 @@ class NetworkPenaltyJournal
         // Règle de partition par ville (28/09/2026) : non filtré, un mois
         // moins le même mois publié ville par ville rendrait les villes
         // retenues et les officines sans ville. Séries et total, couru et
-        // déclaré, puis découpage.
+        // déclaré, puis découpage. Lu une fois par (série, mois).
+        $cache = [];
+        $cellsOf = function (?int $seriesInsurer, string $month) use ($tally, &$cache): array {
+            return $cache[($seriesInsurer ?? 'total').'|'.$month] ??= $tally->cityCounts($seriesInsurer, $month);
+        };
+
         $partitionWithholds = fn (?int $seriesInsurer, string $month): bool => $city === null && (
-            CityPartition::withholds($tally->cityCounts($seriesInsurer, $month)['accrued'], $minimum)
-            || CityPartition::withholds($tally->cityCounts($seriesInsurer, $month)['declared'], $minimum)
+            CityPartition::withholds($cellsOf($seriesInsurer, $month)['accrued'], $minimum)
+            || CityPartition::withholds($cellsOf($seriesInsurer, $month)['declared'], $minimum)
         );
+
+        // Troisième tour de revue : un assureur retenu par la partition reste
+        // masqué dans le total. Total − séries publiées − ses séries de ville
+        // publiées rendrait ses cellules cachées ; le total est retenu quand
+        // leur union repose sur 1 à seuil − 1 officines.
+        $cityShare = array_keys(array_filter(
+            $indicators,
+            fn ($entry): bool => $entry instanceof InsufficientData && $entry->cityShare,
+        ));
+
+        $hiddenCells = function (string $month) use ($tally, $cityShare, $minimum, &$cache): array {
+            return $cache['cells|'.$month] ??= $this->hiddenCells($tally, $cityShare, $month, $minimum);
+        };
+
+        $totalWithheldByCityShare = fn (?int $seriesInsurer, string $month): bool => $city === null
+            && $seriesInsurer === null
+            && $insurerId === null
+            && $cityShare !== []
+            && ($belowMinimum(count($hiddenCells($month)['accrued'])) || $belowMinimum(count($hiddenCells($month)['declared'])));
 
         return $tally->ledger(
             $authorized,
-            function (?int $seriesInsurer, int $accruedPharmacies, int $declaredPharmacies, int $hiddenAccrued, int $hiddenDeclared, string $month = '') use ($insurerId, $filteredIsMasked, $belowMinimum, $partitionWithholds): bool {
-                if ($partitionWithholds($seriesInsurer, $month)) {
+            function (?int $seriesInsurer, int $accruedPharmacies, int $declaredPharmacies, int $hiddenAccrued, int $hiddenDeclared, string $month = '') use ($insurerId, $filteredIsMasked, $belowMinimum, $partitionWithholds, $totalWithheldByCityShare): bool {
+                if ($partitionWithholds($seriesInsurer, $month) || $totalWithheldByCityShare($seriesInsurer, $month)) {
                     return true;
                 }
 
@@ -121,8 +146,54 @@ class NetworkPenaltyJournal
             // feraient : total − séries visibles les rendrait.
             fn (?int $seriesInsurer, PenaltySplitPharmacies $own, PenaltySplitPharmacies $hidden, string $month = ''): bool => $own->restsOnFewerThan($minimum)
                 || $hidden->restsOnFewerThan($minimum)
-                || ($city === null && CityPartition::withholdsSplit($tally->cityCounts($seriesInsurer, $month)['split'], $minimum)),
+                || ($city === null && CityPartition::withholdsSplit($cellsOf($seriesInsurer, $month)['split'], $minimum))
+                || ($city === null && $seriesInsurer === null && $insurerId === null && $cityShare !== []
+                    && $hiddenCells($month)['split']->restsOnFewerThan($minimum)),
         );
+    }
+
+    /**
+     * Les cellules cachées d'un mois des assureurs retenus par la partition.
+     *
+     * Par assureur, les villes où son mois repose sur 1 à seuil − 1 officines
+     * (couru, déclaré) ou dont le découpage est retenu, et ses officines sans
+     * ville ; puis l'union sur ces assureurs, en officines distinctes.
+     *
+     * @param  list<int>  $cityShare
+     * @return array{accrued: array<int, true>, declared: array<int, true>, split: PenaltySplitPharmacies}
+     */
+    protected function hiddenCells(PenaltyTally $tally, array $cityShare, string $month, int $minimum): array
+    {
+        $hidden = ['accrued' => [], 'declared' => []];
+        $parts = ['due' => [], 'paid' => [], 'waived' => []];
+
+        foreach ($cityShare as $insurer) {
+            $cells = $tally->cityPharmacies($insurer, $month);
+
+            foreach (['accrued', 'declared'] as $kind) {
+                foreach ($cells[$kind] as $cityKey => $pharmacies) {
+                    if ((string) $cityKey === CityPartition::NO_CITY || count($pharmacies) < $minimum) {
+                        $hidden[$kind] += $pharmacies;
+                    }
+                }
+            }
+
+            foreach ($cells['split'] as $cityKey => $split) {
+                $counts = new PenaltySplitPharmacies(count($split['due'] ?? []), count($split['paid'] ?? []), count($split['waived'] ?? []));
+
+                if ((string) $cityKey === CityPartition::NO_CITY || $counts->restsOnFewerThan($minimum)) {
+                    foreach ($parts as $part => $members) {
+                        $parts[$part] = $members + ($split[$part] ?? []);
+                    }
+                }
+            }
+        }
+
+        return [
+            'accrued' => $hidden['accrued'],
+            'declared' => $hidden['declared'],
+            'split' => new PenaltySplitPharmacies(count($parts['due']), count($parts['paid']), count($parts['waived'])),
+        ];
     }
 
     /**

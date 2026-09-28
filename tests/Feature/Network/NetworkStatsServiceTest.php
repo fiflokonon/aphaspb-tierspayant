@@ -815,3 +815,18 @@ test('a delay curve point is withheld when its unpublishable cities hold too few
         ->and($this->service->delayTrend(new Period(2026, 7), new Period(2026, 8), 'Cotonou')['network'])
         ->toBe(['2026-07' => 30.0, '2026-08' => 30.0]);
 });
+
+test('officines with a null city and with an empty city add up in the hidden share', function () {
+    // SQL les range en deux groupes (NULL, ''), la règle en une seule clé
+    // « sans ville » : 2 + 3 = 5, le point se publie. Écraser au lieu
+    // d'additionner n'en garderait que 2 ou 3, et le retiendrait à tort.
+    declarePaidInCity($this->insurer, 'Cotonou', 5);
+    declarePaidInCity($this->insurer, null, 2);
+    declarePaidInCity($this->insurer, '', 3);
+
+    $trend = $this->service->delayTrend(new Period(2026, 8), new Period(2026, 8));
+
+    expect($trend['insurers'][$this->insurer->id]['points'])->toBe(['2026-08' => 30.0])
+        ->and($trend['insurers'][$this->insurer->id]['withheld'])->toBe([])
+        ->and($this->service->networkSummary(new Period(2026, 8), new Period(2026, 8))['withheld'])->toBeFalse();
+});

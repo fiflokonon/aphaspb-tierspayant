@@ -60,6 +60,43 @@ class CityPartition
     }
 
     /**
+     * Les officines distinctes des cellules cachées des assureurs retenus par
+     * la partition (« city-share »).
+     *
+     * Un tel assureur reste masqué dans les totaux publiés (synthèse, total
+     * du journal). Total − lignes publiées − ses lignes de ville publiées rend
+     * ses cellules cachées : les villes où il repose sur 1 à seuil − 1
+     * officines, et ses officines sans ville. Le total non filtré est retenu
+     * quand leur union repose sur 1 à seuil − 1 officines (revue, 3e tour).
+     *
+     * Les assureurs retenus faute d'officines (moins du seuil au total) n'y
+     * entrent pas : aucune de leurs lignes de ville n'est publiée, leur part
+     * relève du risque accepté « synthèse − assureurs publiés ».
+     *
+     * @param  array<int, array<string, array<int, true>>>  $cells  assureur → ville → officines
+     */
+    public static function hiddenCellsOfCityShareInsurers(array $cells, int $minimum): int
+    {
+        $hidden = [];
+
+        foreach ($cells as $cities) {
+            $counts = array_map('count', $cities);
+
+            if (array_sum($counts) < $minimum || ! self::withholds($counts, $minimum)) {
+                continue;
+            }
+
+            foreach ($cities as $city => $pharmacies) {
+                if ((string) $city === self::NO_CITY || count($pharmacies) < $minimum) {
+                    $hidden += $pharmacies;
+                }
+            }
+        }
+
+        return count($hidden);
+    }
+
+    /**
      * La même règle pour un découpage due / payée / annulée.
      *
      * Une ville cache son découpage dès qu'une de ses parts repose sur 1 à

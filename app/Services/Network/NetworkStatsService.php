@@ -320,7 +320,8 @@ class NetworkStatsService
 
             foreach ($counts as $count) {
                 $key = sprintf('%04d-%02d', $count->period_year, $count->period_month);
-                $partition[(int) $count->insurer_id][$key][CityPartition::key($count->city)] = (int) $count->pharmacies;
+                // += : NULL et '' sont deux groupes SQL, une seule clé « sans ville ».
+                $partition[(int) $count->insurer_id][$key][CityPartition::key($count->city)] = ($partition[(int) $count->insurer_id][$key][CityPartition::key($count->city)] ?? 0) + (int) $count->pharmacies;
             }
         }
 
@@ -431,7 +432,10 @@ class NetworkStatsService
             );
 
             foreach ($counts as $count) {
-                $cities[(int) $count->insurer_id][(int) $count->period_year][(int) $count->period_month][CityPartition::key($count->city)] = (int) $count->pharmacies;
+                $cell = sprintf('%d|%d|%d', $count->insurer_id, $count->period_year, $count->period_month);
+                $cityKey = CityPartition::key($count->city);
+                // += : NULL et '' sont deux groupes SQL, une seule clé « sans ville ».
+                $cities[$cell][$cityKey] = ($cities[$cell][$cityKey] ?? 0) + (int) $count->pharmacies;
             }
         }
 
@@ -446,7 +450,7 @@ class NetworkStatsService
                 'month' => (int) $row->period_month,
                 'monthLabel' => MonthLabel::short((int) $row->period_month, (int) $row->period_year),
                 'declaringPharmacies' => (int) $row->declaring_pharmacies,
-                'cityPharmacies' => $cities[(int) $row->insurer_id][(int) $row->period_year][(int) $row->period_month] ?? [],
+                'cityPharmacies' => $cities[sprintf('%d|%d|%d', $row->insurer_id, $row->period_year, $row->period_month)] ?? [],
                 'declarations' => (int) $row->declarations,
                 'invoiced' => $invoiced,
                 'received' => $received,
@@ -690,9 +694,17 @@ class NetworkStatsService
      * summary of nothing names no one, and reads « rien déclaré » rather than
      * « chiffres cachés ».
      *
-     * « city-share » : unfiltered by city, the summary minus the published
-     * cities gives the unpublishable ones back (CityPartition). One grouped
-     * query, only when no city is chosen and the own count passed.
+     * « city-share », unfiltered by city only, in two ways (CityPartition):
+     *
+     * - the summary minus the published cities gives the unpublishable ones
+     *   back (round 2) ;
+     * - an insurer withheld by the city partition stays inside the summary.
+     *   Summary − published insurer rows − that insurer's published city rows
+     *   gives its hidden city cells back (round 3). The union of those cells,
+     *   over every such insurer, in distinct officines, must not rest on 1 to
+     *   threshold − 1 of them.
+     *
+     * One query, only when no city is chosen and the own count passed.
      *
      * @return 'too-few'|'city-share'|null
      */
@@ -710,20 +722,30 @@ class NetworkStatsService
             return null;
         }
 
+        $cells = $this->partitionCells($from, $to, $insurerId);
+
         $perCity = [];
 
-        foreach ($this->perCity($this->baseQuery($from, $to, null, $insurerId)) as $count) {
-            $perCity[CityPartition::key($count->city)] = (int) $count->pharmacies;
+        foreach ($cells as $pharmacies) {
+            foreach ($pharmacies as $key => $members) {
+                $perCity[$key] = ($perCity[$key] ?? []) + $members;
+            }
         }
 
-        return CityPartition::withholds($perCity, $minimum) ? 'city-share' : null;
+        if (CityPartition::withholds(array_map('count', $perCity), $minimum)) {
+            return 'city-share';
+        }
+
+        $hidden = CityPartition::hiddenCellsOfCityShareInsurers($cells, $minimum);
+
+        return $hidden > 0 && $hidden < $minimum ? 'city-share' : null;
     }
 
     /**
      * Declaring pharmacies per insurer and city, for the city partition rule.
      *
      * Empty when a city is chosen: a single city is published whole, there is
-     * nothing to subtract it from. One grouped query otherwise.
+     * nothing to subtract it from. One query otherwise.
      *
      * @return array<int, array<string, int>>
      */
@@ -733,13 +755,37 @@ class NetworkStatsService
             return [];
         }
 
-        $partition = [];
+        return array_map(
+            fn (array $cities): array => array_map('count', $cities),
+            $this->partitionCells($from, $to, $insurerId),
+        );
+    }
 
-        foreach ($this->perCity($this->baseQuery($from, $to, null, $insurerId), ['declarations.insurer_id']) as $count) {
-            $partition[(int) $count->insurer_id][CityPartition::key($count->city)] = (int) $count->pharmacies;
+    /**
+     * The declaring pharmacies of each insurer × city cell, by identifier.
+     *
+     * Identifiers, not counts: the hidden cells of several insurers overlap
+     * (one officine declares to several), and only a union counts distinct
+     * officines. Rows are distinct (insurer, pharmacy) pairs — a few thousand
+     * at most. NULL and '' cities share the « sans ville » key.
+     *
+     * @return array<int, array<string, array<int, true>>>
+     */
+    protected function partitionCells(Period $from, Period $to, ?int $insurerId): array
+    {
+        $rows = $this->baseQuery($from, $to, null, $insurerId)
+            ->join('pharmacies', 'pharmacies.id', '=', 'declarations.pharmacy_id')
+            ->distinct()
+            ->select('declarations.insurer_id', 'declarations.pharmacy_id', 'pharmacies.city')
+            ->get();
+
+        $cells = [];
+
+        foreach ($rows as $row) {
+            $cells[(int) $row->insurer_id][CityPartition::key($row->city)][(int) $row->pharmacy_id] = true;
         }
 
-        return $partition;
+        return $cells;
     }
 
     /**
