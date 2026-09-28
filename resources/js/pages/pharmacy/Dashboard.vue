@@ -109,6 +109,7 @@ const props = defineProps<{
     journey?: JourneyPoint[];
     penaltyTrend?: PenaltyLedger;
     pendingInvitations?: DashboardInvitation[];
+    whatsappInvite?: { url: string } | null;
 }>();
 
 const chartType = useQueryState('chart', 'bar', isChartType);
@@ -406,6 +407,17 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </div>
         </div>
 
+        <!--
+            Le réseau relance hors plateforme, sur WhatsApp, une officine dont
+            un mois manque : sans numéro, il n'a aucun moyen de la joindre.
+        -->
+        <p v-if="whatsappInvite" class="whatsapp-invite">
+            Ajoutez un numéro WhatsApp pour que le réseau puisse vous joindre.
+            <Link :href="whatsappInvite.url" class="whatsapp-invite-link">
+                Ajouter un numéro
+            </Link>
+        </p>
+
         <section v-if="outstandingMonths.length > 0" class="catch-up">
             <div class="catch-up-text">
                 <span class="catch-up-label"> MOIS À RATTRAPER </span>
@@ -657,6 +669,23 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 </template>
 
 <style scoped>
+.whatsapp-invite {
+    margin-top: 16px;
+    padding: 11px 14px;
+    border-radius: var(--radius-band);
+    background: var(--cream-header);
+    color: var(--ink);
+    font-size: var(--text-meta);
+}
+
+.whatsapp-invite-link {
+    margin-left: 6px;
+    color: var(--officine);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
 .insurer-banner {
     display: flex;
     align-items: flex-start;

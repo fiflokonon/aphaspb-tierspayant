@@ -61,6 +61,11 @@ class PaymentJourneyController extends Controller
             'declareUrl' => route('pharmacy.declare'),
             'outstandingMonths' => $this->outstandingMonths($pharmacy),
             'pendingInvitations' => $this->pendingInvitations($request),
+            // Le numéro sert au réseau à rappeler une déclaration manquante ;
+            // l'invite ne s'adresse qu'à qui peut modifier la fiche.
+            'whatsappInvite' => $pharmacy->whatsapp_phone === null && $request->user()->can('update', $pharmacy)
+                ? ['url' => route('pharmacies.edit', $pharmacy, absolute: false)]
+                : null,
 
             // The chart is the only expensive read on this page, so it arrives
             // after the first paint rather than delaying it.

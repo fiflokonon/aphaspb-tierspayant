@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\DeclarationStatus;
+use App\Enums\PharmacyRole;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
@@ -413,4 +414,30 @@ test('the penalty trend is deferred, then covers twelve months', function () {
                 ->where('penaltyTrend.insurers.0.insurerId', $insurer->id)
                 ->where('penaltyTrend.total.months.9.month', '2026-06')
                 ->where('penaltyTrend.total.months.9.accrued', 20_000)));
+});
+
+test('an officine without WhatsApp number is invited to add one', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->get(dashboardUrlFor($user))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('whatsappInvite.url', route('pharmacies.edit', $user->currentPharmacy, absolute: false)));
+});
+
+test('the invite disappears once the number is set', function () {
+    $user = User::factory()->create();
+    $user->currentPharmacy->update(['whatsapp_phone' => '+22997000000']);
+
+    $this->actingAs($user)->get(dashboardUrlFor($user))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('whatsappInvite', null));
+});
+
+test('a member who cannot edit the officine is not invited', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $owner->currentPharmacy->members()->attach($member, ['role' => PharmacyRole::Member->value]);
+    $member->switchPharmacy($owner->currentPharmacy);
+
+    $this->actingAs($member->fresh())->get(dashboardUrlFor($member->fresh()))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('whatsappInvite', null));
 });
