@@ -89,7 +89,17 @@ assureur A déclaré par 5 officines de Cotonou et une seule de Bohicon
 La synthèse (22 000 000) moins B (10 000 000) moins A à Cotonou (5 000 000)
 donnait les 7 000 000 de l'officine de Bohicon. La synthèse, les montants et
 le total du journal sont désormais retenus aussi lorsque les parts cachées de
-ces assureurs reposent, ensemble, sur 1 à 4 officines distinctes.
+ces assureurs reposent, ensemble, sur 1 à 4 officines distinctes. Un quatrième
+passage a trouvé la même chose à l'échelle d'un seul mois du journal : un
+assureur publié sur la période, mais dont un mois est retenu par la règle des
+villes, laissait le total de ce mois compléter la soustraction. Ce cas est
+fermé de la même façon.
+
+Ce qui est fermé, c'est le détour **sans filtre ville**. La variante en une
+seule étape, **filtrée sur une ville**, reste possible et relève du risque
+accepté (2) ci-dessous. Sur l'exemple, la synthèse de Bohicon (12 000 000)
+moins la ligne publiée de B à Bohicon (5 000 000) donne les 7 000 000 de A à
+Bohicon, c'est-à-dire de sa seule officine déclarante dans cette ville.
 
 **Risques résiduels acceptés.** L'APhaSPB accepte, en connaissance de cause,
 les trois cas suivants. Chacun demande de croiser volontairement plusieurs
@@ -102,7 +112,10 @@ les trois cas suivants. Chacun demande de croiser volontairement plusieurs
 2. *Synthèse moins assureurs publiés.* La synthèse réseau inclut les assureurs
    masqués parce qu'ils comptent trop peu d'officines déclarantes. En lui
    retirant les lignes des assureurs publiés, on obtient la part cumulée de
-   ces assureurs masqués. C'est la même décision que celle prise le
+   ces assureurs masqués. Cela vaut aussi une fois filtré sur une ville : la
+   synthèse de la ville moins ses lignes publiées donne la part, dans cette
+   ville, des assureurs qui y sont masqués, même quand elle ne repose que sur
+   une officine. C'est la même décision que celle prise le
    27/09/2026 pour le journal des pénalités. Ce risque ne couvre plus les
    assureurs retenus par la règle de partition par ville : pour eux, la
    synthèse et le total du journal sont retenus dès que leurs parts cachées
@@ -286,3 +299,8 @@ Vérification finale : `composer ci:check`.
   aussi retenus quand les parts cachées de ces assureurs reposent, ensemble,
   sur 1 à seuil − 1 officines. Le risque accepté « synthèse moins assureurs
   publiés » est restreint en conséquence (§3).
+- **Mois de série retenus et total du journal** (quatrième tour de revue,
+  28/09/2026) : les cellules cachées d'un mois de série retenu par la règle
+  des villes (ou dont seul le découpage l'est) comptent aussi dans la règle
+  du total. La variante filtrée sur une ville de « synthèse moins assureurs
+  publiés » reste un risque accepté (§3, risque 2).
