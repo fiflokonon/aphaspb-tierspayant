@@ -81,7 +81,12 @@ function reload(page: number) {
     router.get(
         '/admin/declarations-followup',
         { month: month.value, city: city.value, state: state.value, page },
-        { preserveState: true, preserveScroll: true, replace: true },
+        {
+            only: ['pharmacies', 'summary', 'month', 'city', 'state'],
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
     );
 }
 
@@ -144,7 +149,7 @@ const summaryLine = computed(
                         v-if="row.whatsappUrl"
                         :href="row.whatsappUrl"
                         target="_blank"
-                        rel="noopener"
+                        rel="noopener noreferrer"
                         class="whatsapp-link"
                     >
                         <MessageCircle
@@ -156,6 +161,9 @@ const summaryLine = computed(
                     </a>
                     <span v-else-if="row.state !== 'complete'" class="muted">
                         pas de numéro
+                    </span>
+                    <span v-else class="muted" aria-label="Rien à relancer">
+                        —
                     </span>
                 </div>
             </DataTableRow>

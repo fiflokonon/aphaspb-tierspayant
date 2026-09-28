@@ -149,9 +149,10 @@ résumé porte sur toutes les officines éligibles, avant filtre d'état.
 
 ## 7. Tests (Pest)
 
-- `WhatsappNumber` : `97 00 00 00` → `+22997000000` ; `0022997000000` →
-  `+22997000000` ; `+33 6 12 34 56 78` → `+33612345678` ; `abc` et `123` →
-  invalide.
+- `WhatsappNumber` (plan béninois à 10 chiffres depuis fin 2024, voir §9) :
+  `01 97 00 00 00` → `+2290197000000` ; l'ancien `97 00 00 00` →
+  `+2290197000000` ; `22997000000` → `+2290197000000` ; `+33 6 12 34 56 78` →
+  `+33612345678` ; `abc`, `123`, `1234567` et `9700000000` → invalide.
 - Saisie : le profil d'inscription et la modification de l'officine
   enregistrent le numéro normalisé, et refusent un numéro invalide avec le
   message.
@@ -183,3 +184,22 @@ Vérification finale : `composer ci:check`.
 - Trace des relances effectuées.
 - Export de la liste.
 - Relance par assureur.
+
+## 9. Écarts avec la version validée
+
+- **Plan de numérotation béninois.** Depuis fin 2024, un mobile béninois a 10
+  chiffres et commence par `01`. La normalisation (§4.1) ajoute `01` à un
+  ancien numéro à 8 chiffres, lit `229…` sans `+` comme l'indicatif, et
+  refuse un numéro national qui n'a ni 8 chiffres ni la forme `01` + 8.
+  Un numéro étranger doit porter son indicatif (`+` ou `00`).
+- **Même règle que le calendrier officine, pour de vrai.** `DeclarationCalendar`
+  ignore désormais, lui aussi, les déclarations d'un assureur décoché depuis.
+  Sans cela, le réseau relançait une officine dont le tableau de bord ne
+  réclamait rien.
+- **Normalisation partagée** par le trait
+  `App\Http\Requests\Concerns\ValidatesWhatsappPhone`, plutôt que recopiée
+  dans les deux requêtes.
+- **Pas de lien de relance pour une officine complète** : rien à lui rappeler.
+- **Le `DISTINCT`** du compte d'assureurs déclarés est une précaution : l'index
+  unique `decl_pharmacy_insurer_period_unique` rend déjà impossible un doublon.
+
