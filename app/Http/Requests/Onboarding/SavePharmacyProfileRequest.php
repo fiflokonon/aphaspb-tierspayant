@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Onboarding;
 
+use App\Http\Requests\Concerns\ValidatesWhatsappPhone;
 use App\Models\Pharmacy;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -9,6 +10,8 @@ use Illuminate\Validation\Rule;
 
 class SavePharmacyProfileRequest extends FormRequest
 {
+    use ValidatesWhatsappPhone;
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -29,6 +32,7 @@ class SavePharmacyProfileRequest extends FormRequest
                     : Rule::unique(Pharmacy::class, 'onpb_license')->ignore($current->id),
             ],
             'city' => ['required', 'string', 'max:100'],
+            'whatsapp_phone' => $this->whatsappPhoneRules(),
         ];
     }
 
@@ -43,6 +47,7 @@ class SavePharmacyProfileRequest extends FormRequest
             'name.required' => "Le nom de l'officine est obligatoire.",
             'city.required' => 'La ville est obligatoire.',
             'onpb_license.unique' => 'Ce numéro ONPB est déjà enregistré.',
+            ...$this->whatsappPhoneMessages(),
         ];
     }
 }

@@ -109,6 +109,20 @@ const confirmCancelInvitation = (invitation: PharmacyInvitation) => {
                 />
             </FormField>
 
+            <FormField
+                label="WHATSAPP DE CONTACT"
+                :error="errors.whatsapp_phone"
+                hint="Optionnel. Le réseau APhaSPB l'utilise pour vous rappeler une déclaration manquante."
+            >
+                <TextInput
+                    name="whatsapp_phone"
+                    type="tel"
+                    :model-value="pharmacy.whatsappPhone ?? ''"
+                    :invalid="!!errors.whatsapp_phone"
+                    placeholder="01 97 00 00 00"
+                />
+            </FormField>
+
             <button
                 type="submit"
                 data-test="pharmacy-save-button"

@@ -119,3 +119,37 @@ test('a pharmacy route sends an un-onboarded officine to the onboarding', functi
         ->get(route('pharmacy.declare'))
         ->assertRedirect(route('onboarding.profile'));
 });
+
+test('the onboarding profile stores a normalised WhatsApp number', function () {
+    $user = User::factory()->notOnboarded()->create();
+
+    $this->actingAs($user)->post(route('onboarding.profile.store'), [
+        'name' => 'Pharmacie du Port',
+        'city' => 'Cotonou',
+        'whatsapp_phone' => '97 00 00 00',
+    ])->assertSessionHasNoErrors();
+
+    expect($user->fresh()->currentPharmacy->whatsapp_phone)->toBe('+22997000000');
+});
+
+test('an invalid WhatsApp number is refused', function () {
+    $user = User::factory()->notOnboarded()->create();
+
+    $this->actingAs($user)->post(route('onboarding.profile.store'), [
+        'name' => 'Pharmacie du Port',
+        'city' => 'Cotonou',
+        'whatsapp_phone' => 'abc',
+    ])->assertSessionHasErrors(['whatsapp_phone' => 'Numéro WhatsApp invalide.']);
+});
+
+test('the WhatsApp number stays optional', function () {
+    $user = User::factory()->notOnboarded()->create();
+
+    $this->actingAs($user)->post(route('onboarding.profile.store'), [
+        'name' => 'Pharmacie du Port',
+        'city' => 'Cotonou',
+        'whatsapp_phone' => '',
+    ])->assertSessionHasNoErrors();
+
+    expect($user->fresh()->currentPharmacy->whatsapp_phone)->toBeNull();
+});

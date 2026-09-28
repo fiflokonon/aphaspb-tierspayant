@@ -30,7 +30,7 @@ class PharmacyProfileController extends Controller
         }
 
         return Inertia::render('onboarding/Profile', [
-            'pharmacy' => $user->currentPharmacy?->only(['name', 'onpb_license', 'city']),
+            'pharmacy' => $user->currentPharmacy?->only(['name', 'onpb_license', 'city', 'whatsapp_phone']),
             'cities' => $this->citySuggestions(),
         ]);
     }

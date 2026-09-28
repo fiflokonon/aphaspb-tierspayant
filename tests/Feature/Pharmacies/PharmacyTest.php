@@ -3,6 +3,7 @@
 use App\Enums\PharmacyRole;
 use App\Models\Pharmacy;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('the pharmacies index page can be rendered', function () {
@@ -379,4 +380,26 @@ test('guests cannot access pharmacies', function () {
     $response = $this->get(route('pharmacies.index'));
 
     $response->assertRedirect(route('login'));
+});
+
+test('the owner updates the WhatsApp number of the officine', function () {
+    $user = User::factory()->create();
+    $pharmacy = Pharmacy::factory()->create(['name' => 'Original Name']);
+    $pharmacy->members()->attach($user, ['role' => PharmacyRole::Owner->value]);
+
+    $this->actingAs($user)
+        ->patch(route('pharmacies.update', $pharmacy), ['name' => 'Original Name', 'whatsapp_phone' => '0022997000000'])
+        ->assertSessionHasNoErrors();
+
+    expect($pharmacy->fresh()->whatsapp_phone)->toBe('+22997000000');
+});
+
+test('the edit screen shows the WhatsApp number', function () {
+    $user = User::factory()->create();
+    $pharmacy = Pharmacy::factory()->create(['whatsapp_phone' => '+22997000000']);
+    $pharmacy->members()->attach($user, ['role' => PharmacyRole::Owner->value]);
+
+    $this->actingAs($user)
+        ->get(route('pharmacies.edit', $pharmacy))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pharmacy.whatsappPhone', '+22997000000'));
 });
