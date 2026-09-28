@@ -129,7 +129,7 @@ test('the onboarding profile stores a normalised WhatsApp number', function () {
         'whatsapp_phone' => '97 00 00 00',
     ])->assertSessionHasNoErrors();
 
-    expect($user->fresh()->currentPharmacy->whatsapp_phone)->toBe('+22997000000');
+    expect($user->fresh()->currentPharmacy->whatsapp_phone)->toBe('+2290197000000');
 });
 
 test('an invalid WhatsApp number is refused', function () {

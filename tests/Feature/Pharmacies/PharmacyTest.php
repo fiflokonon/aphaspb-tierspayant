@@ -388,18 +388,18 @@ test('the owner updates the WhatsApp number of the officine', function () {
     $pharmacy->members()->attach($user, ['role' => PharmacyRole::Owner->value]);
 
     $this->actingAs($user)
-        ->patch(route('pharmacies.update', $pharmacy), ['name' => 'Original Name', 'whatsapp_phone' => '0022997000000'])
+        ->patch(route('pharmacies.update', $pharmacy), ['name' => 'Original Name', 'whatsapp_phone' => '002290197000000'])
         ->assertSessionHasNoErrors();
 
-    expect($pharmacy->fresh()->whatsapp_phone)->toBe('+22997000000');
+    expect($pharmacy->fresh()->whatsapp_phone)->toBe('+2290197000000');
 });
 
 test('the edit screen shows the WhatsApp number', function () {
     $user = User::factory()->create();
-    $pharmacy = Pharmacy::factory()->create(['whatsapp_phone' => '+22997000000']);
+    $pharmacy = Pharmacy::factory()->create(['whatsapp_phone' => '+2290197000000']);
     $pharmacy->members()->attach($user, ['role' => PharmacyRole::Owner->value]);
 
     $this->actingAs($user)
         ->get(route('pharmacies.edit', $pharmacy))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('pharmacy.whatsappPhone', '+22997000000'));
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pharmacy.whatsappPhone', '+2290197000000'));
 });

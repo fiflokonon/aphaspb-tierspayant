@@ -88,12 +88,22 @@ class DeclarationCalendar
         // Counted on the query builder rather than through Eloquent: these
         // rows are an aggregate projection, not declarations. The model
         // carries no global scope, so nothing is lost by stepping past it.
+        //
+        // Joined to the insurers still ticked: a declaration for an insurer
+        // the officine has since dropped does not complete a month. The
+        // network's follow-up (DeclarationCompleteness) counts the same way,
+        // so the officine is never chased for a month its own dashboard
+        // calls done — or the other way round.
         return Declaration::query()
             ->toBase()
-            ->where('pharmacy_id', $pharmacy->id)
-            ->selectRaw('period_year, period_month, COUNT(DISTINCT insurer_id) AS declared')
-            ->whereRaw('(period_year * 12 + period_month) >= ?', [$earliest])
-            ->groupBy('period_year', 'period_month')
+            ->join('insurer_pharmacy', function ($join) {
+                $join->on('insurer_pharmacy.pharmacy_id', '=', 'declarations.pharmacy_id')
+                    ->on('insurer_pharmacy.insurer_id', '=', 'declarations.insurer_id');
+            })
+            ->where('declarations.pharmacy_id', $pharmacy->id)
+            ->selectRaw('declarations.period_year, declarations.period_month, COUNT(DISTINCT declarations.insurer_id) AS declared')
+            ->whereRaw('(declarations.period_year * 12 + declarations.period_month) >= ?', [$earliest])
+            ->groupBy('declarations.period_year', 'declarations.period_month')
             ->get()
             ->mapWithKeys(fn (object $row): array => [
                 ((int) $row->period_year * 12 + (int) $row->period_month) => (int) $row->declared,

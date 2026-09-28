@@ -426,7 +426,7 @@ test('an officine without WhatsApp number is invited to add one', function () {
 
 test('the invite disappears once the number is set', function () {
     $user = User::factory()->create();
-    $user->currentPharmacy->update(['whatsapp_phone' => '+22997000000']);
+    $user->currentPharmacy->update(['whatsapp_phone' => '+2290197000000']);
 
     $this->actingAs($user)->get(dashboardUrlFor($user))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('whatsappInvite', null));

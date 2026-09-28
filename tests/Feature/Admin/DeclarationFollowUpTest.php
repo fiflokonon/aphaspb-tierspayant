@@ -29,7 +29,7 @@ test('an officine cannot open the follow-up', function () {
 test('the screen lists the officines to chase for last month, with a summary', function () {
     $done = followedPharmacy('Pharmacie Faite');
     Declaration::factory()->create(['pharmacy_id' => $done->id, 'insurer_id' => $this->insurer->id, 'period_year' => 2026, 'period_month' => 8]);
-    followedPharmacy("Pharmacie L'Espérance", '+22997000000');
+    followedPharmacy("Pharmacie L'Espérance", '+2290197000000');
 
     $this->actingAs($this->admin)->get(route('admin.declarations-followup'))
         ->assertOk()
@@ -45,7 +45,7 @@ test('the screen lists the officines to chase for last month, with a summary', f
 });
 
 test('the WhatsApp link carries the message for the right month', function () {
-    followedPharmacy("Pharmacie L'Espérance", '+22997000000');
+    followedPharmacy("Pharmacie L'Espérance", '+2290197000000');
 
     $url = $this->actingAs($this->admin)->get(route('admin.declarations-followup'))
         ->viewData('page')['props']['pharmacies']['data'][0]['whatsappUrl'];
@@ -53,7 +53,7 @@ test('the WhatsApp link carries the message for the right month', function () {
     $message = "Bonjour Pharmacie L'Espérance, votre déclaration de août 2026 sur la plateforme APhaSPB est à faire. "
         .'Vous pouvez la compléter ici : '.route('pharmacy.declare', ['year' => 2026, 'month' => 8]).'. Merci !';
 
-    expect($url)->toBe('https://wa.me/22997000000?text='.rawurlencode($message));
+    expect($url)->toBe('https://wa.me/2290197000000?text='.rawurlencode($message));
 });
 
 test('without number, no link', function () {
@@ -87,7 +87,7 @@ test('state and city filters', function () {
 });
 
 test('the screen never carries an insurer, an amount or a private note', function () {
-    $pharmacy = followedPharmacy('Pharmacie Discrète', '+22997000000');
+    $pharmacy = followedPharmacy('Pharmacie Discrète', '+2290197000000');
     Declaration::factory()->create([
         'pharmacy_id' => $pharmacy->id, 'insurer_id' => $this->insurer->id,
         'period_year' => 2026, 'period_month' => 8,
