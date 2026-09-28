@@ -27,5 +27,5 @@ Before planning or editing, find the row whose globs match the file's path and r
 | routes/web.php | .ai/rules/routes.md |
 | app/Services/Declarations/** | .ai/rules/services-declarations.md |
 | app/Services/** | .ai/rules/services.md |
-| app/Support/DayNumber.php, app/Support/ConsoleNavigation.php | .ai/rules/support.md |
+| app/Support/DayNumber.php, app/Support/ConsoleNavigation.php, app/Support/** | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |

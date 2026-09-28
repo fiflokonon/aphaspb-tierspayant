@@ -96,3 +96,10 @@ La due / recouvrée / abandonnée de période d'un assureur autorisé (`NetworkE
 - S'ajoute à la règle de partition, ne la remplace pas. PDF : « retenu » + note qui cite le journal (`splitWithheldByLedger`).
 - Un assureur sans série (pas de clause) n'est pas concerné. L'export gagne les requêtes du journal ; `InsurerPenaltyAggregates` (4) et `tally()` (3) sont inchangés.
 - Tests : `a month whose status split the journal withholds…` et `a month the journal withholds entirely…` — vérifiés par mutation (garde neutralisée, les deux rougissent).
+
+## DeclarationCompleteness est la seule exception nom–déclaration
+Le CDC interdit à l'espace réseau « un nom d'officine lié à une déclaration ». Exception décidée le 28/09/2026 (spec suivi des déclarations, §3), **à faire valider par écrit côté APhaSPB avant la production** : `DeclarationCompleteness` + `Admin\DeclarationFollowUpController` montrent, par officine nommée et par mois terminé, l'état complet / partiel / rien — et rien d'autre.
+
+Bornes à ne pas franchir : jamais d'assureur (nom, id, nombre), de montant, de statut, de date ou de note privée ; le lecteur ne lit que des `COUNT(DISTINCT insurer_id)` groupés, jamais une ligne `declarations` hydratée. Deux requêtes quel que soit le nombre d'officines (test dédié). Mêmes règles que `DeclarationCalendar` côté officine (complet = chaque assureur coché déclaré ; décochés ignorés ; rejetée = déclarée), plus : officines sans assureur, supprimées ou inscrites après la fin du mois exclues.
+
+« Pharmacies inscrites » (`RegisteredPharmaciesController`) reste sans aucune donnée de déclaration. Test de confidentialité : `the screen never carries an insurer, an amount or a private note` — chercher « insurer » dans les seules props de l'écran, la coquille nommant « Gestion des assureurs ».

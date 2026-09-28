@@ -41,7 +41,11 @@ class DeclarationCompleteness
             ->get();
 
         // Comptés sur les assureurs encore cochés : une déclaration pour un
-        // assureur retiré depuis ne rend pas un mois complet.
+        // assureur retiré depuis ne rend pas un mois complet. Le DISTINCT est
+        // une précaution, pas une règle : l'index unique
+        // `decl_pharmacy_insurer_period_unique` interdit déjà deux lignes pour
+        // un même assureur et un même mois, et aucun test ne peut l'en
+        // distinguer — ne pas en écrire un qui prétendrait le faire.
         $declared = DB::table('declarations')
             ->join('insurer_pharmacy', function ($join) {
                 $join->on('insurer_pharmacy.pharmacy_id', '=', 'declarations.pharmacy_id')
