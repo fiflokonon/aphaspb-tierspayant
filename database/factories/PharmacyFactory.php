@@ -24,7 +24,12 @@ class PharmacyFactory extends Factory
             'name' => $name,
             'slug' => Str::slug($name),
             'onpb_license' => fake()->boolean(70) ? 'ONPB-'.fake()->unique()->numberBetween(1000, 9999) : null,
-            'city' => fake()->randomElement(['Cotonou', 'Porto-Novo', 'Parakou', 'Abomey-Calavi', 'Bohicon']),
+            // Une ville fixe, pas tirée au hasard : la règle de partition par
+            // ville (NetworkStatsService) retient un agrégat réseau dès que les
+            // villes non publiables y pèsent 1 à seuil − 1 officines. Une ville
+            // aléatoire rendait tout test réseau non déterministe. Un test qui
+            // veut plusieurs villes les nomme.
+            'city' => 'Cotonou',
             'owner_name' => fake()->name(),
         ];
     }
