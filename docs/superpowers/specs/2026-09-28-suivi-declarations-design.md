@@ -101,29 +101,33 @@ accepté (2) ci-dessous. Sur l'exemple, la synthèse de Bohicon (12 000 000)
 moins la ligne publiée de B à Bohicon (5 000 000) donne les 7 000 000 de A à
 Bohicon, c'est-à-dire de sa seule officine déclarante dans cette ville.
 
-**Risques résiduels acceptés.** L'APhaSPB accepte, en connaissance de cause,
-les trois cas suivants. Chacun demande de croiser volontairement plusieurs
-écrans, et le fermer rendrait l'outil largement inutilisable :
+**Risques résiduels acceptés.** Les protections ci-dessus ne ferment pas
+tout. Il reste trois cas, que l'APhaSPB déclare accepter en connaissance de
+cause. Chacun oblige à comparer volontairement plusieurs écrans ou plusieurs
+réglages ; les fermer rendrait l'outil largement inutilisable.
 
-1. *Périodes qui se recouvrent.* En comparant deux périodes qui se chevauchent
-   (par exemple « 12 derniers mois » et « année civile »), la différence porte
-   sur les seuls mois qui les séparent. Si peu d'officines ont déclaré ces
-   mois-là, leurs chiffres peuvent se déduire.
-2. *Synthèse moins assureurs publiés.* La synthèse réseau inclut les assureurs
-   masqués parce qu'ils comptent trop peu d'officines déclarantes. En lui
-   retirant les lignes des assureurs publiés, on obtient la part cumulée de
-   ces assureurs masqués. Cela vaut aussi une fois filtré sur une ville : la
-   synthèse de la ville moins ses lignes publiées donne la part, dans cette
-   ville, des assureurs qui y sont masqués, même quand elle ne repose que sur
-   une officine. C'est la même décision que celle prise le
-   27/09/2026 pour le journal des pénalités. Ce risque ne couvre plus les
-   assureurs retenus par la règle de partition par ville : pour eux, la
-   synthèse et le total du journal sont retenus dès que leurs parts cachées
-   reposent, ensemble, sur 1 à 4 officines.
-3. *Nombre d'officines conventionnées.* L'écran « Gestion des assureurs »
-   affiche, pour chaque assureur, le nombre d'officines qui l'ont coché. Pour
-   un assureur qui en compte 1 à 4, ce nombre signale que ses éventuels
-   chiffres ne concernent que ces quelques officines.
+1. *Périodes qui se recouvrent — risque accepté.* En comparant les chiffres de
+   deux périodes qui se chevauchent (par exemple « 12 derniers mois » et
+   « année civile »), on obtient par différence les chiffres des seuls mois
+   qui les séparent. Si très peu d'officines ont déclaré ces mois-là, on peut
+   en déduire leurs montants.
+2. *Synthèse moins assureurs publiés — risque accepté.* La synthèse compte
+   aussi les assureurs dont les chiffres sont retenus faute d'un nombre
+   suffisant d'officines déclarantes. En retirant de la synthèse les lignes
+   des assureurs publiés, on obtient la part cumulée de ces assureurs
+   retenus. Cela vaut aussi quand l'écran est filtré sur une ville : la
+   synthèse de la ville, moins les assureurs publiés dans cette ville, donne
+   la part des assureurs retenus dans cette ville, même si elle ne concerne
+   qu'une officine. C'est la même décision que celle prise le 27/09/2026 pour
+   le journal des pénalités. Ce risque ne concerne pas les assureurs retenus
+   par la règle des villes : pour eux, la synthèse et le total du journal sont
+   eux-mêmes retenus dès que la part qu'ils cachent repose sur moins de
+   5 officines.
+3. *Nombre d'officines conventionnées — risque accepté.* L'écran « Gestion des
+   assureurs » affiche, pour chaque assureur, le nombre d'officines qui l'ont
+   déclaré dans leurs conventions. Pour un assureur qui n'en compte que 1 à 4,
+   ce nombre indique que ses éventuels chiffres ne concernent que ces quelques
+   officines.
 
 Cet amendement est une décision du 28/09/2026. **Il doit être validé par écrit
 côté APhaSPB avant la mise en production**, puisque le CDC est le document
@@ -304,3 +308,11 @@ Vérification finale : `composer ci:check`.
   des villes (ou dont seul le découpage l'est) comptent aussi dans la règle
   du total. La variante filtrée sur une ville de « synthèse moins assureurs
   publiés » reste un risque accepté (§3, risque 2).
+- **Compartiments de ville et collation** (cinquième tour, 29/09/2026) : la
+  production tourne sous MySQL, dont la collation ignore la casse et les
+  accents (« Bohicon », « bohicon » et « Bohicón » sont une seule ville pour le
+  filtre). Les regroupements par ville de la règle des villes utilisent donc
+  une clé calculée par la base, selon sa propre collation (la plus petite
+  graphie équivalente), au lieu de la chaîne brute. La liste des villes
+  filtrables utilise la même clé. Les données enregistrées ne sont pas
+  modifiées.
