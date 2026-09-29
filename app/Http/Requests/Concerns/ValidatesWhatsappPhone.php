@@ -30,9 +30,9 @@ trait ValidatesWhatsappPhone
     /**
      * @return array<int, string>
      */
-    protected function whatsappPhoneRules(): array
+    protected function whatsappPhoneRules(bool $required = false): array
     {
-        return ['nullable', 'string', 'regex:/^\+\d{8,15}$/'];
+        return [$required ? 'required' : 'nullable', 'string', 'regex:/^\+\d{8,15}$/'];
     }
 
     /**
@@ -40,6 +40,9 @@ trait ValidatesWhatsappPhone
      */
     protected function whatsappPhoneMessages(): array
     {
-        return ['whatsapp_phone.regex' => 'Numéro WhatsApp invalide.'];
+        return [
+            'whatsapp_phone.required' => 'Le numéro WhatsApp est obligatoire.',
+            'whatsapp_phone.regex' => 'Numéro WhatsApp invalide.',
+        ];
     }
 }

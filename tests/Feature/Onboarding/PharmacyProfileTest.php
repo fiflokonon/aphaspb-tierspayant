@@ -30,6 +30,7 @@ test('submitting the profile creates the officine and makes the user its owner',
             'name' => 'Pharmacie Le Bon Secours',
             'onpb_license' => 'ONPB-4212',
             'city' => 'Cotonou',
+            'whatsapp_phone' => '0197000000',
         ])
         ->assertRedirect(route('onboarding.insurers'));
 
@@ -52,6 +53,7 @@ test('the titulaire comes from the Joomla account, never from the form', functio
         ->post(route('onboarding.profile.store'), [
             'name' => 'Pharmacie Le Bon Secours',
             'city' => 'Cotonou',
+            'whatsapp_phone' => '0197000000',
             'owner_name' => 'Quelqu’un d’autre',
         ])
         ->assertRedirect(route('onboarding.insurers'));
@@ -66,6 +68,7 @@ test('the ONPB licence may be left blank', function () {
         ->post(route('onboarding.profile.store'), [
             'name' => 'Pharmacie Sans Licence',
             'city' => 'Parakou',
+            'whatsapp_phone' => '0197000000',
         ])
         ->assertRedirect();
 
@@ -84,15 +87,15 @@ test('a duplicate ONPB licence is refused', function () {
         ->assertSessionHasErrors('onpb_license');
 });
 
-test('the name and the city are both required', function () {
+test('the name, the city and the WhatsApp number are all required', function () {
     $this->actingAs(User::factory()->notOnboarded()->create())
         ->post(route('onboarding.profile.store'), [])
-        ->assertSessionHasErrors(['name', 'city']);
+        ->assertSessionHasErrors(['name', 'city', 'whatsapp_phone']);
 });
 
 test('a second submission updates the officine instead of creating another', function () {
     $user = User::factory()->notOnboarded()->create();
-    $payload = ['name' => 'Pharmacie A', 'city' => 'Cotonou'];
+    $payload = ['name' => 'Pharmacie A', 'city' => 'Cotonou', 'whatsapp_phone' => '0197000000'];
 
     $this->actingAs($user)->post(route('onboarding.profile.store'), $payload);
 
@@ -142,14 +145,14 @@ test('an invalid WhatsApp number is refused', function () {
     ])->assertSessionHasErrors(['whatsapp_phone' => 'Numéro WhatsApp invalide.']);
 });
 
-test('the WhatsApp number stays optional', function () {
+test('a blank WhatsApp number is refused at onboarding', function () {
     $user = User::factory()->notOnboarded()->create();
 
     $this->actingAs($user)->post(route('onboarding.profile.store'), [
         'name' => 'Pharmacie du Port',
         'city' => 'Cotonou',
-        'whatsapp_phone' => '',
-    ])->assertSessionHasNoErrors();
+        'whatsapp_phone' => '   ',
+    ])->assertSessionHasErrors(['whatsapp_phone' => 'Le numéro WhatsApp est obligatoire.']);
 
-    expect($user->fresh()->currentPharmacy->whatsapp_phone)->toBeNull();
+    expect($user->fresh()->currentPharmacy)->toBeNull();
 });
