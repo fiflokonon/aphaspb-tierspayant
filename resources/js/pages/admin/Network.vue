@@ -9,14 +9,18 @@ import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
 import ProgressMiniBar from '@/components/aphaspb/ProgressMiniBar.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
+import { withheldExplanation } from '@/lib/withheld';
+import type { WithheldReason } from '@/lib/withheld';
 import type { KpiTone } from '@/types/aphaspb';
 
 type Indicator = {
     insurerId: number;
     insurerName: string;
     sufficient: boolean;
-    declaringPharmacies: number;
+    /** Null under the threshold: the exact count never leaves the server. */
+    declaringPharmacies: number | null;
     required: number | null;
+    withheldReason: WithheldReason | null;
     averageDelayDays: number | null;
     standardDelayDays: number | null;
     withinThresholdShare: number | null;
@@ -25,9 +29,16 @@ type Indicator = {
     unpaidRate: number | null;
 };
 
+/**
+ * Withheld as a whole when it rests on fewer officines than the threshold —
+ * a city of one declarant would otherwise print that officine's figures.
+ */
 type Summary = {
-    declaringPharmacies: number;
-    declarations: number;
+    withheld: boolean;
+    required: number;
+    withheldReason: WithheldReason | null;
+    declaringPharmacies: number | null;
+    declarations: number | null;
     averageDelayDays: number | null;
     withinThresholdShare: number | null;
     rejectionRate: number | null;
@@ -115,9 +126,15 @@ const percent = (value: number | null): string =>
 const days = (value: number | null): string =>
     value === null ? '—' : `${value.toLocaleString('fr-FR')} j`;
 
-const footer = computed(
-    () =>
-        `${props.indicators.length} assureurs · ${props.summary.declarations.toLocaleString('fr-FR')} déclarations agrégées · évolution mensuelle en préparation`,
+/** What a withheld KPI says under its « retenu ». */
+const withheldHint = computed(() =>
+    withheldExplanation(props.summary.withheldReason, props.summary.required),
+);
+
+const footer = computed(() =>
+    props.summary.withheld
+        ? `${props.indicators.length} assureurs · synthèse retenue : ${withheldHint.value}`
+        : `${props.indicators.length} assureurs · ${(props.summary.declarations ?? 0).toLocaleString('fr-FR')} déclarations agrégées · évolution mensuelle en préparation`,
 );
 
 const period = ref(props.period);
@@ -211,9 +228,19 @@ watch([period, city], reload);
 
                 <KpiCard
                     label="OFFICINES DÉCLARANTES"
-                    :value="summary.declaringPharmacies.toLocaleString('fr-FR')"
+                    :value="
+                        summary.withheld
+                            ? 'retenu'
+                            : (summary.declaringPharmacies ?? 0).toLocaleString(
+                                  'fr-FR',
+                              )
+                    "
                     tone="neutral"
-                    hint="ayant déclaré au moins une fois sur la période"
+                    :hint="
+                        summary.withheld
+                            ? withheldHint
+                            : 'ayant déclaré au moins une fois sur la période'
+                    "
                 />
 
                 <div class="kpi-decoration">
@@ -227,11 +254,19 @@ watch([period, city], reload);
                 <KpiCard
                     label="DÉLAI MOYEN RÉSEAU"
                     :value="
-                        summary.averageDelayDays?.toLocaleString('fr-FR') ?? '—'
+                        summary.withheld
+                            ? 'retenu'
+                            : (summary.averageDelayDays?.toLocaleString(
+                                  'fr-FR',
+                              ) ?? '—')
                     "
-                    unit="jours"
+                    :unit="summary.withheld ? undefined : 'jours'"
                     :tone="delayTone(summary.averageDelayDays, networkStandard)"
-                    hint="statuts payés et partiels confondus"
+                    :hint="
+                        summary.withheld
+                            ? withheldHint
+                            : 'statuts payés et partiels confondus'
+                    "
                 />
 
                 <div class="kpi-decoration">
@@ -245,15 +280,24 @@ watch([period, city], reload);
                 <KpiCard
                     label="PAYÉ DANS LES DÉLAIS"
                     :value="
-                        summary.withinThresholdShare?.toLocaleString('fr-FR') ??
-                        '—'
+                        summary.withheld
+                            ? 'retenu'
+                            : (summary.withinThresholdShare?.toLocaleString(
+                                  'fr-FR',
+                              ) ?? '—')
                     "
-                    unit="%"
+                    :unit="summary.withheld ? undefined : '%'"
                     :tone="shareTone(summary.withinThresholdShare)"
                 >
                     <template #hint>
                         <span class="kpi-hint">
-                            selon le délai retenu pour chaque assureur ·
+                            <template v-if="summary.withheld">
+                                {{ withheldHint }} ·
+                            </template>
+
+                            <template v-else>
+                                selon le délai retenu pour chaque assureur ·
+                            </template>
 
                             <Link href="/admin/insurers" class="threshold-edit">
                                 <span> Modifier </span>
@@ -289,11 +333,10 @@ watch([period, city], reload);
                         :template="TEMPLATE"
                         :label="indicator.insurerName"
                         :span="6"
-                        :explanation="`${indicator.declaringPharmacies}
-                            officine${indicator.declaringPharmacies > 1 ? 's' : ''}
-                            déclarante${indicator.declaringPharmacies > 1 ? 's' : ''}
-                            — affichage à partir de ${indicator.required},
-                            pour garantir l’anonymat`"
+                        :explanation="`${withheldExplanation(
+                            indicator.withheldReason,
+                            indicator.required ?? summary.required,
+                        )} — pour garantir l’anonymat`"
                     />
 
                     <DataTableRow

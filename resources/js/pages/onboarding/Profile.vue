@@ -9,6 +9,7 @@ defineProps<{
         name: string | null;
         onpb_license: string | null;
         city: string | null;
+        whatsapp_phone: string | null;
     } | null;
     cities: string[];
 }>();
@@ -87,6 +88,20 @@ const ownerName = computed(() => page.props.auth.user?.name ?? '');
                     </FormField>
                 </div>
             </div>
+
+            <FormField
+                label="WHATSAPP DE CONTACT"
+                :error="errors.whatsapp_phone"
+                hint="Optionnel. Le réseau APhaSPB l'utilise pour vous rappeler une déclaration manquante."
+            >
+                <TextInput
+                    name="whatsapp_phone"
+                    type="tel"
+                    :model-value="pharmacy?.whatsapp_phone ?? ''"
+                    :invalid="!!errors.whatsapp_phone"
+                    placeholder="01 97 00 00 00"
+                />
+            </FormField>
 
             <FormField
                 label="NOM DU TITULAIRE"

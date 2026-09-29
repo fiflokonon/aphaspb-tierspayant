@@ -65,7 +65,9 @@ class NetworkPdfExport
             $name = (string) ($names[$currentId] ?? '');
 
             if ($entry instanceof InsufficientData) {
-                $withheld[] = ['name' => $name, 'declaringPharmacies' => $entry->declaringPharmacies];
+                // Le nom seul : sous le seuil, le compte exact d'officines est
+                // lui-même un chiffre (voir InsufficientData).
+                $withheld[] = ['name' => $name, 'cityShare' => $entry->cityShare];
 
                 continue;
             }
@@ -105,7 +107,8 @@ class NetworkPdfExport
             // ou dès que le journal retient un mois de l'assureur.
             $rows[$index]['splitWithheldByLedger'] = in_array($row['insurerId'], $ledgerWithheld, true);
             $rows[$index]['splitWithheld'] = $rows[$index]['splitWithheldByLedger']
-                || $rows[$index]['figures']->splitPharmacies->restsOnFewerThan($minimum);
+                || $rows[$index]['figures']->splitPharmacies->restsOnFewerThan($minimum)
+                || ($city === null && CityPartition::withholdsSplit($rows[$index]['figures']->citySplitPharmacies, $minimum));
             $rows[$index]['monthly'] = $this->withheldMonths($monthly[$row['insurerId']] ?? []);
         }
 
@@ -115,7 +118,7 @@ class NetworkPdfExport
             <=> ($a['indicators']->averageDelayDays ?? 0));
 
         return [
-            'summary' => $this->summary($from, $to, $city, $insurerId, $withheld),
+            'summary' => $this->summary($from, $to, $city, $insurerId),
             'rows' => $rows,
             'withheld' => $withheld,
             'city' => $city,
@@ -126,30 +129,19 @@ class NetworkPdfExport
     }
 
     /**
-     * Le résumé d'ouverture, retenu lorsqu'il ne parlerait que d'un assureur
-     * sous le seuil.
+     * Le résumé d'ouverture, retenu quand il repose sur trop peu d'officines.
      *
-     * Sans filtre, ce résumé agrège tous les assureurs : aucune officine n'y
-     * est nommable, et aucun seuil ne s'y applique — c'est délibéré et
-     * inchangé. Choisir un assureur en fait les chiffres de ce seul assureur,
-     * soit une granularité de publication nouvelle, où une unique officine
-     * déclarante rendrait sa facture exacte lisible. Le filtre ne doit pas
-     * ouvrir la porte que le reste du document tient fermée.
+     * La décision appartient à NetworkStatsService::networkSummary(), qui
+     * retient tout résumé réseau reposant sur 1 à seuil − 1 officines, filtres
+     * ville et assureur compris : restreint à une ville d'une seule
+     * déclarante, ou à un assureur sous le seuil, ce résumé rendrait les
+     * chiffres d'une officine identifiable. Zéro officine se publie à zéro
+     * (« rien déclaré »), pas retenu.
      *
-     * La condition porte sur `$withheld` et non sur un `$rows` vide : un
-     * assureur qui n'a simplement rien déclaré sur la période mérite un résumé
-     * à zéro, qui se lit « rien déclaré », et non une rétention, qui se lirait
-     * « chiffres cachés ».
-     *
-     * @param  list<array{name: string, declaringPharmacies: int}>  $withheld
-     * @return array<string, mixed>|null
+     * @return array<string, mixed>
      */
-    protected function summary(Period $from, Period $to, ?string $city, ?int $insurerId, array $withheld): ?array
+    protected function summary(Period $from, Period $to, ?string $city, ?int $insurerId): array
     {
-        if ($insurerId !== null && $withheld !== []) {
-            return null;
-        }
-
         return $this->stats->networkSummary($from, $to, $city, $insurerId);
     }
 
@@ -174,13 +166,22 @@ class NetworkPdfExport
         $minimum = $this->settings->anonymityMinPharmacies();
 
         return array_map(function (array $month) use ($minimum): array {
-            if ($month['declaringPharmacies'] >= $minimum) {
+            // Les comptes par ville ne sortent jamais : sous le seuil, ce
+            // sont des comptes exacts (règle « aucun compte sous le seuil »).
+            $perCity = $month['cityPharmacies'] ?? [];
+            unset($month['cityPharmacies']);
+
+            // Règle de partition : ce mois, moins le même mois des rapports
+            // par ville, rendrait les villes retenues (CityPartition).
+            if ($month['declaringPharmacies'] >= $minimum && ! CityPartition::withholds($perCity, $minimum)) {
                 return [...$month, 'withheld' => false];
             }
 
             return [
                 ...$month,
                 'withheld' => true,
+                // Le compte exact aussi : « moins de N » suffit à expliquer.
+                'declaringPharmacies' => null,
                 'declarations' => null,
                 'invoiced' => null,
                 'received' => null,

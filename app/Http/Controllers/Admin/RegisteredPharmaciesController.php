@@ -19,8 +19,9 @@ use Inertia\Response;
  *
  * This controller queries Pharmacy directly and never touches declarations —
  * that is what keeps the promise structural rather than a matter of care. It
- * deliberately exposes no per-officine « has declared » flag: that is
- * declaration data, and the network figure stays on screen 2a.
+ * exposes no per-officine « has declared » flag: that flag lives, as the one
+ * bounded exception to the CDC (spec suivi des déclarations, 28/09/2026), in
+ * DeclarationFollowUpController and nowhere else.
  */
 class RegisteredPharmaciesController extends Controller
 {

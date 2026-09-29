@@ -10,6 +10,7 @@ use App\Models\Pharmacy;
 use App\Services\Network\NetworkCsvExport;
 use App\Services\Network\NetworkPdfExport;
 use App\Services\Network\NetworkXlsxExport;
+use App\Services\Settings\SettingsRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,7 @@ class NetworkExportController extends Controller
         protected NetworkCsvExport $csv,
         protected NetworkXlsxExport $xlsx,
         protected NetworkPdfExport $pdf,
+        protected SettingsRepository $settings,
     ) {
         //
     }
@@ -57,6 +59,8 @@ class NetworkExportController extends Controller
             'cities' => Pharmacy::filterableCities(),
             'insurer' => $this->chosenInsurer($request)?->id,
             'insurers' => $this->declaredInsurers(),
+            // Le seuil réglé, pas un « 5 » écrit en dur dans la page.
+            'anonymityThreshold' => $this->settings->anonymityMinPharmacies(),
         ]);
     }
 

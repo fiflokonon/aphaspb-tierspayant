@@ -163,12 +163,18 @@
 
 <h2>Ce que le réseau a constaté</h2>
 
-@if ($summary === null)
+@if ($summary['withheld'])
     <p class="lede">
-        Chiffres retenus : l'assureur choisi compte moins de
-        {{ $anonymityThreshold }} officines déclarantes sur la période.
-        Restreinte à un seul assureur, cette synthèse rendrait la facture
-        d'une officine identifiable.
+        @if ($summary['withheldReason'] === 'city-share')
+            Synthèse retenue : sans filtre ville, les villes non publiées et les
+            officines sans ville y pèsent moins de {{ $anonymityThreshold }}
+            officines. Cette synthèse, moins celles des villes publiées, rendrait
+            leurs chiffres.
+        @else
+            Synthèse retenue : sur le périmètre choisi, elle repose sur moins de
+            {{ $anonymityThreshold }} officines déclarantes. Publiée, elle rendrait
+            les chiffres d'une officine identifiable.
+        @endif
     </p>
 @else
 <p class="lede">
@@ -272,9 +278,13 @@
                 <tr class="withheld">
                     <td class="text">{{ $entry['name'] }}</td>
                     <td colspan="10">
-                        {{ $entry['declaringPharmacies'] }} officine{{ $entry['declaringPharmacies'] > 1 ? 's' : '' }}
-                        déclarante{{ $entry['declaringPharmacies'] > 1 ? 's' : '' }} —
-                        chiffres retenus, affichage à partir de {{ $anonymityThreshold }}
+                        @if ($entry['cityShare'])
+                            Chiffres retenus : hors filtre ville, les villes non publiées y pèsent
+                            moins de {{ $anonymityThreshold }} officines, qui se déduiraient par différence
+                        @else
+                            Données insuffisantes · moins de {{ $anonymityThreshold }} officines déclarantes —
+                            chiffres retenus
+                        @endif
                     </td>
                 </tr>
             @endforeach
@@ -292,7 +302,7 @@
     @if (count($withheld) > 0)
         <p class="note">
             Les assureurs déclarés par moins de {{ $anonymityThreshold }} officines
-            figurent sans chiffres. En deçà de ce seuil, une moyenne réseau
+            figurent sans chiffres, ni le nombre exact de leurs officines. En deçà de ce seuil, une moyenne réseau
             redonnerait les données d'une officine identifiable — la ligne est
             conservée pour que son absence ne se lise pas comme une absence de
             déclarations.
@@ -357,7 +367,7 @@
                             @if ($row['splitWithheldByLedger'])
                                 répartition due / recouvrée / abandonnée retenue : un mois du journal des pénalités est retenu sur la même période, et s'en déduirait
                             @else
-                                répartition due / recouvrée / abandonnée retenue : une part repose sur moins de {{ $anonymityThreshold }} officines
+                                répartition due / recouvrée / abandonnée retenue : une part repose sur moins de {{ $anonymityThreshold }} officines, ici ou dans les villes non publiées
                             @endif
                         </div>
                     @elseif (($figures->recovered ?? 0) > 0 || ($figures->waived ?? 0) > 0)
@@ -392,9 +402,8 @@
                         <tr class="withheld">
                             <td class="text">{{ $month['monthLabel'] }}</td>
                             <td colspan="5">
-                                {{ $month['declaringPharmacies'] }} officine{{ $month['declaringPharmacies'] > 1 ? 's' : '' }}
-                                déclarante{{ $month['declaringPharmacies'] > 1 ? 's' : '' }} ce mois-là —
-                                chiffres retenus, affichage à partir de {{ $anonymityThreshold }}
+                                Moins de {{ $anonymityThreshold }} officines déclarantes ce mois-là,
+                                ou dans les villes non publiées — chiffres retenus
                             </td>
                         </tr>
                     @else

@@ -75,7 +75,9 @@ test('the aggregated table renders sufficient and insufficient insurers alike', 
             expect($sufficient['insurerName'])->toBe('Assez de declarants')
                 ->and($sufficient['invoiced'])->toBe(5_000_000)
                 ->and($insufficient['insurerName'])->toBe('Trop peu')
-                ->and($insufficient['declaringPharmacies'])->toBe(2)
+                // Le compte exact (2) ne sort plus sous le seuil (28/09/2026).
+                ->and($insufficient['declaringPharmacies'])->toBeNull()
+                ->and($insufficient['required'])->toBe(5)
                 ->and($insufficient['invoiced'])->toBeNull();
         });
 });

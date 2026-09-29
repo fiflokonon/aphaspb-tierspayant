@@ -14,6 +14,8 @@ const props = defineProps<{
     cities: string[];
     insurer: number | null;
     insurers: { id: number; name: string }[];
+    /** The anonymity threshold as set, never a hardcoded five. */
+    anonymityThreshold: number;
 }>();
 
 const period = ref(props.period);
@@ -249,15 +251,23 @@ watch([period, city, insurer], reload);
                 <p>
                     Aucun nom d'officine, aucun montant individuel, aucune note
                     privée. Un assureur déclaré par moins de
-                    <strong>5 officines</strong> apparaît avec la mention «
-                    données insuffisantes » et aucun chiffre — la ligne est
-                    conservée exprès, car une ligne absente se lirait comme une
-                    absence de données et non comme une rétention volontaire.
+                    <strong>{{ anonymityThreshold }} officines</strong> apparaît
+                    avec la mention « données insuffisantes · moins de
+                    {{ anonymityThreshold }} officines déclarantes » et aucun
+                    chiffre, pas même le nombre exact de ses officines — la
+                    ligne est conservée exprès, car une ligne absente se lirait
+                    comme une absence de données et non comme une rétention
+                    volontaire. La synthèse du rapport est retenue de même
+                    quand, filtres compris, elle repose sur moins de
+                    {{ anonymityThreshold }} officines. Sans filtre ville, un
+                    chiffre est aussi retenu quand les villes non publiées y
+                    pèsent moins de {{ anonymityThreshold }} officines : il les
+                    rendrait par différence.
                 </p>
             </div>
 
             <div class="privacy-shield">
-                <span> 5+ </span>
+                <span> {{ anonymityThreshold }}+ </span>
 
                 <small> officines </small>
             </div>

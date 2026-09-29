@@ -152,3 +152,23 @@ test('the declaration screen carries the months it can switch to', function () {
             ->etc(),
         );
 });
+
+test('a declaration for an insurer no longer ticked does not complete a month', function () {
+    [, $pharmacy, $insurers] = officineOwing(2);
+    $unticked = Insurer::factory()->create();
+
+    foreach ([$insurers[0], $unticked] as $insurer) {
+        Declaration::factory()->create([
+            'pharmacy_id' => $pharmacy->id,
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => 7,
+        ]);
+    }
+
+    // Même règle que le suivi réseau : sinon le réseau relancerait une
+    // officine à qui son propre tableau de bord ne réclame rien.
+    $july = collect(app(DeclarationCalendar::class)->months($pharmacy))->firstWhere('month', 7);
+
+    expect($july['isComplete'])->toBeFalse();
+});

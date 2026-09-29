@@ -74,6 +74,7 @@ class NetworkStatsService
             ->pluck('name', 'id');
 
         $instalments = $this->instalmentAggregates($from, $to, $city, $insurerId);
+        $partition = $this->insurerPartition($from, $to, $city, $insurerId);
 
         $indicators = [];
 
@@ -86,6 +87,12 @@ class NetworkStatsService
                     declaringPharmacies: $declaring,
                     required: $minimum,
                 );
+
+                continue;
+            }
+
+            if (CityPartition::withholds($partition[$insurerId] ?? [], $minimum)) {
+                $indicators[$insurerId] = new InsufficientData($declaring, $minimum, cityShare: true);
 
                 continue;
             }
@@ -265,10 +272,24 @@ class NetworkStatsService
     /**
      * Monthly average delay per insurer, plus the network average.
      *
-     * @return array{insurers: array<int, array{name: string, points: array<string, float>}>, network: array<string, float>, threshold: int}
+     * The clearance of perInsurer() holds for the period only: an insurer
+     * declared by five officines over the year may have had a single one in
+     * March, and that point would be its delay. Each insurer-month therefore
+     * carries its own distinct count, and a point resting on fewer officines
+     * than the threshold is withheld — listed under `withheld`, never drawn.
+     *
+     * The network line averages the **published** points only. A month whose
+     * points are all withheld is withheld as well (`withheldMonths`); and
+     * since each published point rests on the threshold, so does every
+     * network point. Averaging the hidden points in would let the network
+     * line, minus the visible ones, give a withheld point back.
+     *
+     * @return array{insurers: array<int, array{name: string, points: array<string, float>, withheld: list<string>}>, network: array<string, float>, withheldMonths: list<string>, threshold: int, required: int}
      */
     public function delayTrend(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
+        $minimum = $this->settings->anonymityMinPharmacies();
+
         $eligible = array_keys(array_filter(
             $this->perInsurer($from, $to, $city),
             fn (InsurerIndicators|InsufficientData $entry): bool => $entry instanceof InsurerIndicators,
@@ -279,13 +300,34 @@ class NetworkStatsService
             ->whereIn('status', DeclarationStatus::settledValues())
             ->select('insurer_id', 'period_year', 'period_month')
             ->selectRaw('AVG(delay_days) as average_delay')
+            ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->groupBy('insurer_id', 'period_year', 'period_month')
             ->get();
 
         $names = Insurer::query()->whereIn('id', $eligible)->pluck('name', 'id');
 
+        // Non filtré par ville, un point est aussi publié ville par ville : il
+        // suit la règle de partition, au même grain (assureur × mois).
+        $partition = [];
+
+        if ($city === null && $eligible !== []) {
+            $counts = $this->perCity(
+                $this->baseQuery($from, $to, null, $insurerId)
+                    ->whereIn('declarations.insurer_id', $eligible)
+                    ->whereIn('declarations.status', DeclarationStatus::settledValues()),
+                ['declarations.insurer_id', 'declarations.period_year', 'declarations.period_month'],
+            );
+
+            foreach ($counts as $count) {
+                $key = sprintf('%04d-%02d', $count->period_year, $count->period_month);
+                // += : NULL et '' sont deux groupes SQL, une seule clé « sans ville ».
+                $partition[(int) $count->insurer_id][$key][CityPartition::key($count->city)] = ($partition[(int) $count->insurer_id][$key][CityPartition::key($count->city)] ?? 0) + (int) $count->pharmacies;
+            }
+        }
+
         $insurers = [];
         $networkTotals = [];
+        $months = [];
 
         foreach ($rows as $row) {
             $key = sprintf('%04d-%02d', $row->period_year, $row->period_month);
@@ -293,6 +335,17 @@ class NetworkStatsService
             $average = (float) $row->average_delay;
 
             $insurers[$insurerId]['name'] ??= (string) $names[$insurerId];
+            $insurers[$insurerId]['points'] ??= [];
+            $insurers[$insurerId]['withheld'] ??= [];
+            $months[$key] = true;
+
+            if (! $this->isSufficient((int) $row->declaring_pharmacies, $minimum)
+                || CityPartition::withholds($partition[$insurerId][$key] ?? [], $minimum)) {
+                $insurers[$insurerId]['withheld'][] = $key;
+
+                continue;
+            }
+
             $insurers[$insurerId]['points'][$key] = round($average, 1);
 
             $networkTotals[$key][] = $average;
@@ -306,10 +359,20 @@ class NetworkStatsService
 
         ksort($network);
 
+        foreach ($insurers as $id => $series) {
+            sort($series['withheld']);
+            $insurers[$id]['withheld'] = $series['withheld'];
+        }
+
+        $withheldMonths = array_values(array_diff(array_keys($months), array_keys($network)));
+        sort($withheldMonths);
+
         return [
             'insurers' => $insurers,
             'network' => $network,
+            'withheldMonths' => $withheldMonths,
             'threshold' => $this->averageStandardDelayDays(),
+            'required' => $minimum,
         ];
     }
 
@@ -330,8 +393,13 @@ class NetworkStatsService
      * porte donc son propre `declaringPharmacies`, et c'est à l'appelant — qui
      * détient le seuil — de retenir ce qui doit l'être.
      *
+     * Non filtré par ville, chaque ligne porte aussi ses officines ville par
+     * ville (`cityPharmacies`, '' sans ville) : le même mois se publie dans
+     * le rapport de chaque ville, et l'appelant applique la règle de
+     * partition (CityPartition). Vide sous filtre ville.
+     *
      * @param  list<int>  $insurerIds
-     * @return array<int, list<array{year: int, month: int, monthLabel: string, declaringPharmacies: int, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>
+     * @return array<int, list<array{year: int, month: int, monthLabel: string, declaringPharmacies: int, cityPharmacies: array<string, int>, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>
      */
     public function monthlyByInsurer(array $insurerIds, Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
@@ -355,6 +423,22 @@ class NetworkStatsService
             ->orderByDesc('declarations.period_month')
             ->get();
 
+        $cities = [];
+
+        if ($city === null) {
+            $counts = $this->perCity(
+                $this->baseQuery($from, $to, null, $insurerId)->whereIn('declarations.insurer_id', $insurerIds),
+                ['declarations.insurer_id', 'declarations.period_year', 'declarations.period_month'],
+            );
+
+            foreach ($counts as $count) {
+                $cell = sprintf('%d|%d|%d', $count->insurer_id, $count->period_year, $count->period_month);
+                $cityKey = CityPartition::key($count->city);
+                // += : NULL et '' sont deux groupes SQL, une seule clé « sans ville ».
+                $cities[$cell][$cityKey] = ($cities[$cell][$cityKey] ?? 0) + (int) $count->pharmacies;
+            }
+        }
+
         $monthly = [];
 
         foreach ($rows as $row) {
@@ -366,6 +450,7 @@ class NetworkStatsService
                 'month' => (int) $row->period_month,
                 'monthLabel' => MonthLabel::short((int) $row->period_month, (int) $row->period_year),
                 'declaringPharmacies' => (int) $row->declaring_pharmacies,
+                'cityPharmacies' => $cities[sprintf('%d|%d|%d', $row->insurer_id, $row->period_year, $row->period_month)] ?? [],
                 'declarations' => (int) $row->declarations,
                 'invoiced' => $invoiced,
                 'received' => $received,
@@ -385,10 +470,19 @@ class NetworkStatsService
      * the distinct pharmacy count cannot be summed across insurers because one
      * officine declares to several.
      *
-     * @return array{declaringPharmacies: int, declarations: int, averageDelayDays: float|null, weightedDelayDays: float|null, withinThresholdShare: float|null, rejectionRate: float|null, outstandingBeyond90: int}
+     * **Withheld under the threshold, like any other aggregate.** Once filtered
+     * on a city or an insurer — or simply at launch, with one declarant — this
+     * summary may rest on a single officine, and the declaration follow-up
+     * names the officines that declared. Every figure is then emptied
+     * (`withheld`), the exact count included: « moins de N » is all that
+     * leaves. Zero declarant is not withheld — it reads « rien déclaré ».
+     *
+     * @return array{withheld: bool, withheldReason: 'too-few'|'city-share'|null, required: int, declaringPharmacies: int|null, declarations: int|null, averageDelayDays: float|null, weightedDelayDays: float|null, withinThresholdShare: float|null, rejectionRate: float|null, outstandingBeyond90: int|null}
      */
     public function networkSummary(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
+        $minimum = $this->settings->anonymityMinPharmacies();
+
         $row = $this->withStandardDelay($this->baseQuery($from, $to, $city, $insurerId))
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('COUNT(*) as total')
@@ -400,12 +494,33 @@ class NetworkStatsService
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN amount_received ELSE 0 END) as delay_basis")
             ->first();
 
+        $declaring = (int) ($row->declaring_pharmacies ?? 0);
+        $reason = $this->summaryWithheldReason($declaring, $minimum, $from, $to, $city, $insurerId);
+
+        if ($reason !== null) {
+            return [
+                'withheld' => true,
+                'withheldReason' => $reason,
+                'required' => $minimum,
+                'declaringPharmacies' => null,
+                'declarations' => null,
+                'averageDelayDays' => null,
+                'weightedDelayDays' => null,
+                'withinThresholdShare' => null,
+                'rejectionRate' => null,
+                'outstandingBeyond90' => null,
+            ];
+        }
+
         $total = (int) ($row->total ?? 0);
         $settled = (int) ($row->settled ?? 0);
         $basis = (int) ($row->delay_basis ?? 0);
 
         return [
-            'declaringPharmacies' => (int) ($row->declaring_pharmacies ?? 0),
+            'withheld' => false,
+            'withheldReason' => null,
+            'required' => $minimum,
+            'declaringPharmacies' => $declaring,
             'declarations' => $total,
             'averageDelayDays' => $settled > 0 ? round((int) $row->delay_total / $settled, 1) : null,
             'weightedDelayDays' => $basis > 0 ? round((int) $row->delay_weighted / $basis, 1) : null,
@@ -440,6 +555,8 @@ class NetworkStatsService
             ->whereIn('id', $rows->pluck('insurer_id'))
             ->pluck('name', 'id');
 
+        $partition = $this->insurerPartition($from, $to, $city, $insurerId);
+
         $amounts = [];
 
         foreach ($rows as $row) {
@@ -448,6 +565,14 @@ class NetworkStatsService
 
             if (! $this->isSufficient($declaring, $minimum)) {
                 $amounts[$insurerId] = new InsufficientData($declaring, $minimum);
+
+                continue;
+            }
+
+            // Même règle de partition que perInsurer() : les deux écrans
+            // doivent retenir les mêmes assureurs.
+            if (CityPartition::withholds($partition[$insurerId] ?? [], $minimum)) {
+                $amounts[$insurerId] = new InsufficientData($declaring, $minimum, cityShare: true);
 
                 continue;
             }
@@ -473,8 +598,11 @@ class NetworkStatsService
      *
      * Age is counted from the end of the declared month, as on the officine
      * side: the CDC stores no invoice date.
+     *
+     * Protected: it carries no threshold of its own, and is only published
+     * through networkSummary(), which withholds it with the rest.
      */
-    public function outstandingBeyond(Period $from, Period $to, ?string $city, int $days, ?int $insurerId = null): int
+    protected function outstandingBeyond(Period $from, Period $to, ?string $city, int $days, ?int $insurerId = null): int
     {
         $rows = $this->baseQuery($from, $to, $city, $insurerId)
             ->whereRaw('amount_invoiced > amount_received')
@@ -512,26 +640,175 @@ class NetworkStatsService
     /**
      * Network-wide totals over a period, in FCFA and as shares.
      *
-     * @return array{invoiced: int, received: int, outstanding: int, recoveryRate: float|null, declaringPharmacies: int}
+     * Same rule as networkSummary(): resting on 1 to threshold − 1 officines,
+     * the totals are withheld — a city of one declarant would otherwise print
+     * that officine's exact invoice.
+     *
+     * @return array{withheld: bool, withheldReason: 'too-few'|'city-share'|null, required: int, invoiced: int|null, received: int|null, outstanding: int|null, recoveryRate: float|null, declaringPharmacies: int|null}
      */
     public function aggregatedAmounts(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
     {
+        $minimum = $this->settings->anonymityMinPharmacies();
+
         $row = $this->baseQuery($from, $to, $city, $insurerId)
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('SUM(amount_invoiced) as invoiced')
             ->selectRaw('SUM(amount_received) as received')
             ->first();
 
+        $declaring = (int) ($row->declaring_pharmacies ?? 0);
+        $reason = $this->summaryWithheldReason($declaring, $minimum, $from, $to, $city, $insurerId);
+
+        if ($reason !== null) {
+            return [
+                'withheld' => true,
+                'withheldReason' => $reason,
+                'required' => $minimum,
+                'invoiced' => null,
+                'received' => null,
+                'outstanding' => null,
+                'recoveryRate' => null,
+                'declaringPharmacies' => null,
+            ];
+        }
+
         $invoiced = (int) ($row->invoiced ?? 0);
         $received = (int) ($row->received ?? 0);
 
         return [
+            'withheld' => false,
+            'withheldReason' => null,
+            'required' => $minimum,
             'invoiced' => $invoiced,
             'received' => $received,
             'outstanding' => max(0, $invoiced - $received),
             'recoveryRate' => $invoiced > 0 ? round($received / $invoiced * 100, 1) : null,
-            'declaringPharmacies' => (int) ($row->declaring_pharmacies ?? 0),
+            'declaringPharmacies' => $declaring,
         ];
+    }
+
+    /**
+     * Why a period-level network summary must be withheld, null if it may show.
+     *
+     * « too-few » : 1 to threshold − 1 declarants. Zero is published — a
+     * summary of nothing names no one, and reads « rien déclaré » rather than
+     * « chiffres cachés ».
+     *
+     * « city-share », unfiltered by city only, in two ways (CityPartition):
+     *
+     * - the summary minus the published cities gives the unpublishable ones
+     *   back (round 2) ;
+     * - an insurer withheld by the city partition stays inside the summary.
+     *   Summary − published insurer rows − that insurer's published city rows
+     *   gives its hidden city cells back (round 3). The union of those cells,
+     *   over every such insurer, in distinct officines, must not rest on 1 to
+     *   threshold − 1 of them.
+     *
+     * One query, only when no city is chosen and the own count passed.
+     *
+     * @return 'too-few'|'city-share'|null
+     */
+    protected function summaryWithheldReason(int $declaringPharmacies, int $minimum, Period $from, Period $to, ?string $city, ?int $insurerId): ?string
+    {
+        if ($declaringPharmacies === 0) {
+            return null;
+        }
+
+        if (! $this->isSufficient($declaringPharmacies, $minimum)) {
+            return 'too-few';
+        }
+
+        if ($city !== null) {
+            return null;
+        }
+
+        $cells = $this->partitionCells($from, $to, $insurerId);
+
+        $perCity = [];
+
+        foreach ($cells as $pharmacies) {
+            foreach ($pharmacies as $key => $members) {
+                $perCity[$key] = ($perCity[$key] ?? []) + $members;
+            }
+        }
+
+        if (CityPartition::withholds(array_map('count', $perCity), $minimum)) {
+            return 'city-share';
+        }
+
+        $hidden = CityPartition::hiddenCellsOfCityShareInsurers($cells, $minimum);
+
+        return $hidden > 0 && $hidden < $minimum ? 'city-share' : null;
+    }
+
+    /**
+     * Declaring pharmacies per insurer and city, for the city partition rule.
+     *
+     * Empty when a city is chosen: a single city is published whole, there is
+     * nothing to subtract it from. One query otherwise.
+     *
+     * @return array<int, array<string, int>>
+     */
+    protected function insurerPartition(Period $from, Period $to, ?string $city, ?int $insurerId): array
+    {
+        if ($city !== null) {
+            return [];
+        }
+
+        return array_map(
+            fn (array $cities): array => array_map('count', $cities),
+            $this->partitionCells($from, $to, $insurerId),
+        );
+    }
+
+    /**
+     * The declaring pharmacies of each insurer × city cell, by identifier.
+     *
+     * Identifiers, not counts: the hidden cells of several insurers overlap
+     * (one officine declares to several), and only a union counts distinct
+     * officines. Rows are distinct (insurer, pharmacy) pairs — a few thousand
+     * at most. NULL and '' cities share the « sans ville » key.
+     *
+     * @return array<int, array<string, array<int, true>>>
+     */
+    protected function partitionCells(Period $from, Period $to, ?int $insurerId): array
+    {
+        $rows = $this->baseQuery($from, $to, null, $insurerId)
+            ->join('pharmacies', 'pharmacies.id', '=', 'declarations.pharmacy_id')
+            ->distinct()
+            ->select('declarations.insurer_id', 'declarations.pharmacy_id')
+            // La clé canonique, pas la chaîne : les compartiments doivent
+            // suivre la collation, comme le filtre ville.
+            ->selectRaw(CityPartition::canonicalCitySql('pharmacies').' as city')
+            ->get();
+
+        $cells = [];
+
+        foreach ($rows as $row) {
+            $cells[(int) $row->insurer_id][CityPartition::key($row->city)][(int) $row->pharmacy_id] = true;
+        }
+
+        return $cells;
+    }
+
+    /**
+     * Distinct declaring pharmacies per city, within further groups.
+     *
+     * @param  list<string>  $groups
+     * @return Collection<int, \stdClass>
+     */
+    protected function perCity(Builder $query, array $groups = []): Collection
+    {
+        return $query
+            ->join('pharmacies', 'pharmacies.id', '=', 'declarations.pharmacy_id')
+            ->select($groups)
+            // Groupé sur la clé canonique : même compartiment que partout
+            // ailleurs, quelle que soit la graphie (CityPartition).
+            ->selectRaw(CityPartition::canonicalCitySql('pharmacies').' as city')
+            ->selectRaw('COUNT(DISTINCT declarations.pharmacy_id) as pharmacies')
+            ->groupBy($groups)
+            ->groupByRaw(CityPartition::canonicalCitySql('pharmacies'))
+            ->get();
     }
 
     /**

@@ -13,6 +13,7 @@ use App\Services\Network\NetworkPdfExport;
 use App\Services\Network\NetworkPenaltyJournal;
 use App\Support\Fcfa;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia;
 
 beforeEach(function () {
@@ -57,8 +58,18 @@ test('the page offers the export', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('admin/Exports')
             ->has('downloadUrl')
-            ->has('columns'),
+            ->has('columns')
+            ->where('anonymityThreshold', 5),
         );
+});
+
+test('the page states the threshold as set, not a hardcoded five', function () {
+    Http::fake();
+    $this->actingAs($this->admin)->patch(route('admin.settings.anonymity'), ['minimum' => 8]);
+
+    $this->actingAs($this->admin)
+        ->get(route('admin.csv-exports'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('anonymityThreshold', 8));
 });
 
 test('the download is a csv with a dated filename', function () {
@@ -110,6 +121,10 @@ test('an insurer below the threshold gets no figures at all', function () {
         ->first(fn (string $row) => str_contains($row, 'Trop peu'));
 
     expect($line)->toContain('donnees insuffisantes')
+        // « moins de 5 », jamais le compte exact (2) : sous le seuil il est
+        // lui-même un chiffre (28/09/2026).
+        ->and($line)->toContain('moins de 5 officines declarantes')
+        ->and(str_getcsv($line, ';')[1])->toBe('moins de 5')
         ->and($line)->not->toContain('1000000')
         ->and($line)->not->toContain('2000000')
         ->and($line)->not->toContain('40');
@@ -189,7 +204,8 @@ test('the report withholds an insurer below the anonymity threshold like every o
     expect($payload['rows'])->toBeEmpty()
         ->and($payload['withheld'])->toHaveCount(1)
         ->and($payload['withheld'][0]['name'])->toBe('Petit Assureur')
-        ->and($payload['withheld'][0]['declaringPharmacies'])->toBe(3);
+        // Le compte exact sous le seuil ne sort pas non plus (28/09/2026).
+        ->and($payload['withheld'][0])->not->toHaveKey('declaringPharmacies');
 });
 
 /**
@@ -266,7 +282,7 @@ test('an insurer without a clause leaves the penalty cells empty', function () {
  * deuxième (jour 90) n'est jamais atteinte. Le montant clos égale exactement
  * cette courue, comme l'exige ReconcilePenaltySettlement.
  */
-function settledCoveredMonth(Insurer $insurer, int $month, PenaltySettlement $outcome, int $amount): void
+function settledCoveredMonth(Insurer $insurer, int $month, PenaltySettlement $outcome, int $amount, string $city = 'Cotonou'): void
 {
     $depositedOn = CarbonImmutable::create(2026, $month, 1);
 
@@ -276,7 +292,7 @@ function settledCoveredMonth(Insurer $insurer, int $month, PenaltySettlement $ou
         ])
         ->penaltySettled($outcome, $amount)
         ->create([
-            'pharmacy_id' => Pharmacy::factory(),
+            'pharmacy_id' => Pharmacy::factory()->create(['city' => $city]),
             'insurer_id' => $insurer->id,
             'period_year' => 2026,
             'period_month' => $month,
@@ -289,11 +305,11 @@ function settledCoveredMonth(Insurer $insurer, int $month, PenaltySettlement $ou
  * $count officines, chacune une facture de 1 000 000 déposée il y a 120 jours
  * et jamais réglée : trois tranches de 20 000, soit 60 000 encore dues.
  */
-function unpaidPenaltyMonths(Insurer $insurer, int $count, int $month): void
+function unpaidPenaltyMonths(Insurer $insurer, int $count, int $month, string $city = 'Cotonou'): void
 {
     foreach (range(1, $count) as $ignored) {
         Declaration::factory()->create([
-            'pharmacy_id' => Pharmacy::factory(),
+            'pharmacy_id' => Pharmacy::factory()->create(['city' => $city]),
             'insurer_id' => $insurer->id,
             'period_year' => 2026,
             'period_month' => $month,
@@ -715,6 +731,7 @@ test('a month declared by a single officine is withheld from the insurer page', 
     // Sans ça, la ligne de juillet imprimerait la facture exacte d'une officine
     // nommable dans un rapport qui promet l'inverse.
     expect($months[7]['withheld'])->toBeTrue()
+        ->and($months[7]['declaringPharmacies'])->toBeNull()
         ->and($months[7]['invoiced'])->toBeNull()
         ->and($months[7]['outstanding'])->toBeNull()
         ->and($months[8]['withheld'])->toBeFalse()
@@ -758,7 +775,9 @@ test('the rendered page prints no figure for a withheld month', function () {
 
     // Le montant exact de l'officine unique ne doit apparaître nulle part.
     expect($html)->not->toContain('4'.Fcfa::THIN_NBSP.'210'.Fcfa::THIN_NBSP.'000')
-        ->and($html)->toContain('chiffres retenus');
+        ->and($html)->toContain('chiffres retenus')
+        ->and($html)->toContain('Moins de 5 officines déclarantes ce mois-là')
+        ->and($html)->not->toContain('1 officine déclarante');
 });
 
 test('the city filter re-applies the threshold inside the city', function () {
@@ -792,9 +811,10 @@ test('the city filter re-applies the threshold inside the city', function () {
 
     // Une clairance nationale ne vaut pas clairance dans chaque ville : dans
     // Parakou cet assureur n'est déclaré que par une officine, et ses chiffres
-    // seraient les siens, exactement.
+    // seraient les siens, exactement. Le compte non plus ne sort pas : « 1 »,
+    // à côté du suivi qui nomme les déclarantes, désignerait l'officine.
     expect($cell('assureur'))->toBe('NSIA Assurances')
-        ->and($cell('officines_declarantes'))->toBe('1')
+        ->and($cell('officines_declarantes'))->toBe('moins de 5')
         ->and($cell('facture_fcfa'))->toBe('')
         ->and($cell('delai_le_plus_long_jours'))->toBe('')
         ->and(downloadCsv(['city' => 'Parakou']))->not->toContain('4210000');
@@ -819,10 +839,10 @@ test('choosing an insurer leaves only that insurer in the report', function () {
 });
 
 test('choosing an insurer below the threshold withholds its summary too', function () {
-    // Le résumé n'applique aucun seuil quand il couvre tout le réseau : aucune
-    // officine n'y est nommable. Restreint à un assureur, il devient les
-    // chiffres de cet assureur — et une seule officine déclarante rendrait sa
-    // facture exacte lisible. Le filtre ne doit pas ouvrir cette porte.
+    // Restreint à un assureur, le résumé devient les chiffres de cet assureur
+    // — et une seule officine déclarante rendrait sa facture exacte lisible.
+    // Depuis le 28/09/2026 la règle est générale (tout résumé réseau sous le
+    // seuil est retenu) ; ce cas en reste l'illustration par le filtre.
     $hidden = Insurer::factory()->create(['name' => 'Petit Assureur']);
 
     exportDeclare($hidden, 1, ['amount_invoiced' => 7_654_321, 'amount_received' => 0]);
@@ -833,7 +853,9 @@ test('choosing an insurer below the threshold withholds its summary too', functi
 
     expect($payload['rows'])->toBeEmpty()
         ->and($payload['withheld'])->toHaveCount(1)
-        ->and($payload['summary'])->toBeNull();
+        ->and($payload['summary']['withheld'])->toBeTrue()
+        ->and($payload['summary']['declarations'])->toBeNull()
+        ->and($payload['summary']['declaringPharmacies'])->toBeNull();
 });
 
 test('the chosen insurer narrows the csv to its single row', function () {
@@ -863,7 +885,7 @@ test('the filename names the insurer the file covers', function () {
 });
 
 test('the report still renders when the summary is withheld', function () {
-    // Le test de données ci-dessus prouve que `summary` vaut null ; celui-ci
+    // Le test de données ci-dessus prouve que `summary` est retenu ; celui-ci
     // prouve que la vue le supporte. Sans lui, un `$summary['declarations']`
     // resté dans le Blade ne rougirait qu'en production.
     $hidden = Insurer::factory()->create(['name' => 'Petit Assureur']);
@@ -892,4 +914,66 @@ test('the page offers the insurers the network declared to', function () {
             ->where('insurers.0.name', 'NSIA Assurances')
             ->where('insurer', null),
         );
+});
+
+test('unfiltered by city, the status split is withheld when the unpublishable cities hold too few officines in a part', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    // Cotonou : cinq dues, cinq payées. Parakou : cinq déclarantes, dont une
+    // seule laisse courir une pénalité. Le découpage non filtré (due 360 000)
+    // moins celui de Cotonou (300 000) rendrait la due de cette officine.
+    unpaidPenaltyMonths($insurer, 5, 2);
+
+    foreach (range(1, 5) as $ignored) {
+        settledCoveredMonth($insurer, 3, PenaltySettlement::Paid, 20_000);
+    }
+
+    unpaidPenaltyMonths($insurer, 1, 2, 'Parakou');
+    Pharmacy::factory()->count(4)->create(['city' => 'Parakou'])->each(fn (Pharmacy $pharmacy) => Declaration::factory()->paid()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => 2,
+    ]));
+
+    $everyone = networkCsvCell('NSIA', ['period' => 'calendar-year']);
+    $cotonou = networkCsvCell('NSIA', ['period' => 'calendar-year', 'city' => 'Cotonou']);
+
+    expect($everyone('officines_declarantes'))->toBe('15')
+        ->and($everyone('penalite_potentielle_fcfa'))->toBe('')
+        ->and($everyone('penalite_recouvree_fcfa'))->toBe('')
+        ->and($cotonou('penalite_potentielle_fcfa'))->toBe('300000')
+        ->and($cotonou('penalite_recouvree_fcfa'))->toBe('100000');
+});
+
+test('unfiltered by city, a month of the insurer page follows the city partition', function () {
+    $insurer = Insurer::factory()->create(['name' => 'NSIA Assurances']);
+    $declare = fn (Pharmacy $pharmacy, int $month, int $invoiced) => Declaration::factory()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $insurer->id,
+        'period_year' => 2026,
+        'period_month' => $month,
+        'amount_invoiced' => $invoiced,
+        'amount_received' => $invoiced,
+        'delay_days' => 20,
+    ]);
+
+    // Juillet : cinq à Parakou. Août : cinq à Cotonou et une seule des cinq
+    // de Parakou. Août non filtré moins août de Cotonou rendrait sa facture.
+    $parakou = Pharmacy::factory()->count(5)->create(['city' => 'Parakou']);
+    $parakou->each(fn (Pharmacy $pharmacy) => $declare($pharmacy, 7, 1_000_000));
+    Pharmacy::factory()->count(5)->create(['city' => 'Cotonou'])->each(fn (Pharmacy $pharmacy) => $declare($pharmacy, 8, 1_000_000));
+    $declare($parakou->first(), 8, 4_210_000);
+
+    $export = app(NetworkPdfExport::class);
+    $data = new ReflectionMethod($export, 'data');
+    $everyone = collect($data->invoke($export, new Period(2026, 7), new Period(2026, 8), null)['rows'][0]['monthly'])->keyBy('month');
+    $cotonou = collect($data->invoke($export, new Period(2026, 7), new Period(2026, 8), 'Cotonou')['rows'][0]['monthly'])->keyBy('month');
+
+    expect($everyone[8]['withheld'])->toBeTrue()
+        ->and($everyone[8]['invoiced'])->toBeNull()
+        ->and($everyone[8])->not->toHaveKey('cityPharmacies')
+        ->and($everyone[7]['withheld'])->toBeFalse()
+        ->and($cotonou[8]['withheld'])->toBeFalse()
+        ->and($cotonou[8]['invoiced'])->toBe(5_000_000);
 });

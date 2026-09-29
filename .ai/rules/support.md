@@ -2,6 +2,7 @@
 paths:
   - app/Support/DayNumber.php
   - app/Support/ConsoleNavigation.php
+  - 'app/Support/**'
 ---
 
 # Support
@@ -23,3 +24,10 @@ Trois précautions, chacune verrouillée par un test et **chacune vérifiée par
 Le drapeau est `console.account.administrator` (bool), posé par `ConsoleNavigation::account()` depuis la Gate `manage-network`. `ConsoleHeader.vue` s'en sert pour annoncer « Vous êtes dans l'espace / ADMINISTRATEUR » là où une officine annonce son nom.
 
 Couvert par `tests/Feature/Console/ConsoleShellTest.php` (« the shell says which space the session is in »), sur les deux espaces.
+
+## WhatsappNumber : E.164, +229 par défaut
+Le numéro WhatsApp d'une officine (`pharmacies.whatsapp_phone`, facultatif) est rangé en E.164 : `+` puis 8 à 15 chiffres. `WhatsappNumber::normalize()` retire espaces, points, tirets, parenthèses, convertit un `00` initial en `+` et préfixe `+229` sans indicatif ; il rend null sinon. Plan béninois depuis fin 2024 : 10 chiffres commençant par `01` — un ancien numéro à 8 chiffres reçoit son `01`, `229…` sans `+` est lu comme l'indicatif, tout autre numéro national est refusé ; un numéro étranger doit porter `+` ou `00`.
+
+La normalisation passe par le trait `App\Http\Requests\Concerns\ValidatesWhatsappPhone` (`prepareForValidation()`), partagé par le profil d'inscription et la modification de l'officine : un numéro qui ne se normalise pas reste brut pour que la règle `regex` le refuse avec « Numéro WhatsApp invalide. ».
+
+`WhatsappNumber::link()` encode le message par `rawurlencode()` : `urlencode()` mettrait des « + » que WhatsApp afficherait tels quels.

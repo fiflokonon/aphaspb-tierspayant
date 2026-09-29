@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { VisAxis, VisLine, VisXYContainer } from '@unovis/vue';
 import { computed } from 'vue';
+import { gap } from '@/lib/chartGap';
 
 type Series = { name: string; points: Record<string, number> };
 
@@ -78,9 +79,7 @@ const dashed = computed(() =>
 );
 
 const accessorsFor = (positions: number[]) =>
-    positions.map(
-        (position) => (row: Row) => row[`s${position}`] as number | null,
-    );
+    positions.map((position) => (row: Row) => gap(row[`s${position}`]));
 
 const colorsFor = (positions: number[]) => positions.map(colorFor);
 
@@ -141,7 +140,7 @@ const x = (row: Row) => row.index;
             />
             <VisLine
                 :x="x"
-                :y="(row: Row) => row.network"
+                :y="(row: Row) => gap(row.network)"
                 color="rgb(23 33 28 / 0.42)"
                 :line-dash-array="[7, 4]"
                 :line-width="1.5"

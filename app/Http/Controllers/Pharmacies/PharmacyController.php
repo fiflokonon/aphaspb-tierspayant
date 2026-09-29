@@ -55,6 +55,7 @@ class PharmacyController extends Controller
                 'id' => $pharmacy->id,
                 'name' => $pharmacy->name,
                 'slug' => $pharmacy->slug,
+                'whatsappPhone' => $pharmacy->whatsapp_phone,
             ],
             'members' => $pharmacy->members()->get()->map(function (User $member) {
                 /** @var Membership $membership */
@@ -94,7 +95,10 @@ class PharmacyController extends Controller
         $pharmacy = DB::transaction(function () use ($request, $pharmacy) {
             $pharmacy = Pharmacy::whereKey($pharmacy->id)->lockForUpdate()->firstOrFail();
 
-            $pharmacy->update(['name' => $request->validated('name')]);
+            $pharmacy->update([
+                'name' => $request->validated('name'),
+                'whatsapp_phone' => $request->validated('whatsapp_phone'),
+            ]);
 
             return $pharmacy;
         });

@@ -11,6 +11,7 @@
  */
 import { VisAxis, VisGroupedBar, VisLine, VisXYContainer } from '@unovis/vue';
 import { computed } from 'vue';
+import { gap } from '@/lib/chartGap';
 import { formatMillions } from '@/lib/millions';
 import { penaltyChartRows } from '@/lib/penaltySeries';
 import type { PenaltyChartRow } from '@/lib/penaltySeries';
@@ -55,8 +56,7 @@ const dashed = computed(() => positionsWhere(true));
 
 const accessorsFor = (positions: number[]) =>
     positions.map(
-        (position) => (row: PenaltyChartRow) =>
-            row[`s${position}`] as number | null,
+        (position) => (row: PenaltyChartRow) => gap(row[`s${position}`]),
     );
 
 const barAccessors = computed(() =>
@@ -143,7 +143,7 @@ const x = (row: PenaltyChartRow) => row.index;
             <VisLine
                 v-if="total"
                 :x="x"
-                :y="(row: PenaltyChartRow) => row.total"
+                :y="(row: PenaltyChartRow) => gap(row.total)"
                 color="rgb(23 33 28 / 0.42)"
                 :line-dash-array="[7, 4]"
                 :line-width="1.5"

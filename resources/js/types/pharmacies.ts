@@ -7,6 +7,7 @@ export type Pharmacy = {
     role?: PharmacyRole;
     roleLabel?: string;
     isCurrent?: boolean;
+    whatsappPhone?: string | null;
 };
 
 export type PharmacyMember = {

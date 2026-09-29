@@ -23,3 +23,6 @@ DB::table('declarations')->where('id', $d->id)->update(['invoice_deposited_on' =
 ```
 
 Même famille de piège que `delay_days`, que le hook `saving` régénère à chaque enregistrement : un test qui force l'un ou l'autre en attribut décrit un état que la production ne produit jamais, et passe alors par une porte dérobée. Le lot A s'y est fait prendre une fois (`LongestDelay` et les mois partiellement réglés) ; le lot B une seconde.
+
+## PharmacyFactory range toute officine à Cotonou par défaut
+Depuis le 28/09/2026 la ville par défaut de `PharmacyFactory` est fixe (« Cotonou »), plus tirée au hasard : la règle de partition par ville (`Network\CityPartition`) retient un agrégat réseau non filtré dès que les villes non publiables y pèsent 1 à seuil − 1 officines, et une ville aléatoire rendait les tests réseau non déterministes. Un test qui a besoin de plusieurs villes les nomme (`Pharmacy::factory()->create(['city' => 'Parakou'])`), ou passe `null` pour une officine sans ville (toujours comptée dans la part cachée).

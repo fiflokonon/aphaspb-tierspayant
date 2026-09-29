@@ -57,7 +57,9 @@ test('an insurer under the threshold is rendered as an explained state', functio
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('indicators.0.sufficient', false)
             ->where('indicators.0.insurerName', 'Atlantique Assurances')
-            ->where('indicators.0.declaringPharmacies', 3)
+            // Jamais le compte exact sous le seuil : l'écran dit « moins de 5 »
+            // (28/09/2026). C'était 3 avant.
+            ->where('indicators.0.declaringPharmacies', null)
             ->where('indicators.0.required', 5)
             ->where('indicators.0.averageDelayDays', null),
         );

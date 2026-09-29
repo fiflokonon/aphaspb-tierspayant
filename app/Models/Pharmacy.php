@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\GeneratesUniquePharmacySlugs;
 use App\Enums\PharmacyRole;
+use App\Services\Network\CityPartition;
 use Database\Factories\PharmacyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -21,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $onpb_license
  * @property string|null $city
  * @property string|null $owner_name
+ * @property string|null $whatsapp_phone
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -28,7 +30,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
  */
-#[Fillable(['name', 'slug', 'onpb_license', 'city', 'owner_name'])]
+#[Fillable(['name', 'slug', 'onpb_license', 'city', 'owner_name', 'whatsapp_phone'])]
 class Pharmacy extends Model
 {
     /** @use HasFactory<PharmacyFactory> */
@@ -66,11 +68,20 @@ class Pharmacy extends Model
     {
         // array_values(), not the collection's: PHPStan cannot prove
         // Collection::pluck()->all() yields a list.
+        //
+        // Une entrée par ville que le filtre distingue, et le même
+        // représentant que les compartiments réseau : la clé canonique de
+        // CityPartition (plus petite graphie selon la collation — sous MySQL
+        // `_ai_ci`, « Bohicon » et « bohicón » ne font qu'une ville).
+        $key = CityPartition::canonicalCitySql('pharmacies');
+
         return array_values(self::query()
             ->whereNotNull('city')
+            ->selectRaw($key.' as canonical')
             ->distinct()
-            ->orderBy('city')
-            ->pluck('city')
+            ->orderBy('canonical')
+            ->pluck('canonical')
+            ->map(fn (mixed $city): string => (string) $city)
             ->all());
     }
 

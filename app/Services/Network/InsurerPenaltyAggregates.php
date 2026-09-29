@@ -59,7 +59,7 @@ class InsurerPenaltyAggregates
 
         foreach ($insurerIds as $insurerId) {
             $hasClause = isset($clauses[$insurerId]);
-            [$due, $recovered, $waived, $pharmacies] = $totals[$insurerId] ?? [0, 0, 0, [[], [], []]];
+            [$due, $recovered, $waived, $pharmacies, $cities] = $totals[$insurerId] ?? [0, 0, 0, [[], [], []], []];
 
             $figures[$insurerId] = new InsurerPenaltyFigures(
                 // La décision null/zéro se prend sur la convention, pas sur les
@@ -74,6 +74,7 @@ class InsurerPenaltyAggregates
                     paid: count($pharmacies[1]),
                     waived: count($pharmacies[2]),
                 ),
+                citySplitPharmacies: $this->perCity($pharmacies, $cities),
             );
         }
 
@@ -171,7 +172,7 @@ class InsurerPenaltyAggregates
      *
      * @param  list<int>  $insurerIds  ceux qui portent une clause
      * @param  array<int, array{0: int, 1: int}>  $clauses
-     * @return array<int, array{0: int, 1: int, 2: int, 3: array{0: array<int, true>, 1: array<int, true>, 2: array<int, true>}}> due, recouvrée, abandonnée, officines de chaque part
+     * @return array<int, array{0: int, 1: int, 2: int, 3: array{0: array<int, true>, 1: array<int, true>, 2: array<int, true>}, 4: array<int, string>}> due, recouvrée, abandonnée, officines de chaque part, ville de chaque officine
      */
     protected function penaltiesByInsurer(array $insurerIds, array $clauses, Period $from, Period $to, ?string $city): array
     {
@@ -191,7 +192,11 @@ class InsurerPenaltyAggregates
             ->whereIn('declarations.insurer_id', $insurerIds)
             ->where('declarations.status', '!=', DeclarationStatus::Rejected->value)
             ->whereNotNull('declarations.invoice_deposited_on')
+            // Jointe, pas une requête de plus (toujours quatre) : la ville
+            // nourrit la règle de partition de l'export non filtré.
+            ->leftJoin('pharmacies as declaring_pharmacy', 'declaring_pharmacy.id', '=', 'declarations.pharmacy_id')
             ->select(
+
                 'declarations.id',
                 'declarations.insurer_id',
                 'declarations.pharmacy_id',
@@ -202,6 +207,8 @@ class InsurerPenaltyAggregates
                 'declarations.penalty_settlement',
                 'declarations.penalty_settled_amount',
             )
+            // La clé canonique (collation), pas la chaîne brute : CityPartition.
+            ->selectRaw(CityPartition::canonicalCitySql('declaring_pharmacy').' as pharmacy_city')
             // cursor() et non get() : à 40 000 lignes, la collection
             // matérialisée coûte plus que tout le reste du calcul.
             ->cursor();
@@ -209,7 +216,8 @@ class InsurerPenaltyAggregates
         foreach ($declarations as $declaration) {
             $insurerId = (int) $declaration->insurer_id;
             $pharmacyId = (int) $declaration->pharmacy_id;
-            $totals[$insurerId] ??= [0, 0, 0, [[], [], []]];
+            $totals[$insurerId] ??= [0, 0, 0, [[], [], []], []];
+            $totals[$insurerId][4][$pharmacyId] = CityPartition::key($declaration->pharmacy_city);
 
             if ($declaration->penalty_settlement !== null) {
                 $amount = (int) $declaration->penalty_settled_amount;
@@ -247,6 +255,31 @@ class InsurerPenaltyAggregates
         }
 
         return $totals;
+    }
+
+    /**
+     * Les officines de chaque part, comptées ville par ville.
+     *
+     * @param  array{0: array<int, true>, 1: array<int, true>, 2: array<int, true>}  $pharmacies
+     * @param  array<int, string>  $cities
+     * @return array<string, PenaltySplitPharmacies>
+     */
+    protected function perCity(array $pharmacies, array $cities): array
+    {
+        $counts = [];
+
+        foreach ($pharmacies as $part => $members) {
+            foreach ($members as $pharmacyId => $ignored) {
+                $city = $cities[$pharmacyId] ?? CityPartition::NO_CITY;
+                $counts[$city] ??= [0, 0, 0];
+                $counts[$city][$part]++;
+            }
+        }
+
+        return array_map(
+            fn (array $parts): PenaltySplitPharmacies => new PenaltySplitPharmacies($parts[0], $parts[1], $parts[2]),
+            $counts,
+        );
     }
 
     /**
