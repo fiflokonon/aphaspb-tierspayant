@@ -3,7 +3,9 @@
 namespace Database\Seeders;
 
 use App\Actions\Declarations\RecordPaymentInstalments;
+use App\Actions\Declarations\SettlePenalty;
 use App\Enums\DeclarationStatus;
+use App\Enums\PenaltySettlement;
 use App\Enums\PharmacyRole;
 use App\Models\Declaration;
 use App\Models\Insurer;
@@ -48,6 +50,21 @@ class DemoSeeder extends Seeder
         'Courtier — Ascoma Bénin',
     ];
 
+    /**
+     * Les conventions qui prévoient une pénalité : déclenchement en jours et
+     * taux en points de base (200 = 2 %). Sans elles, le journal des
+     * pénalités, la clôture et la pénalité due n'ont rien à montrer.
+     *
+     * @var array<string, array{0: int, 1: int}>
+     */
+    protected const PENALTY_CLAUSES = [
+        // Calés sous les délais observés du profil, pour que des pénalités
+        // courent vraiment : SUNU paie en ~38 j, L'Africaine en ~58 j.
+        'NSIA Assurances' => [45, 200],
+        'SUNU Assurances' => [30, 150],
+        "L'Africaine des Assurances" => [45, 250],
+    ];
+
     /** Cities weighted the way Benin's officines actually distribute. */
     protected const CITIES = [
         'Cotonou', 'Cotonou', 'Cotonou', 'Cotonou',
@@ -79,7 +96,13 @@ class DemoSeeder extends Seeder
         $this->call(InsurerSeeder::class);
 
         $insurers = Insurer::query()->get()->keyBy('name');
+
+        foreach (self::PENALTY_CLAUSES as $name => [$trigger, $rateBp]) {
+            $insurers->get($name)?->forceFill(['penalty_trigger_days' => $trigger, 'penalty_rate_bp' => $rateBp])->save();
+        }
+
         $pharmacies = $this->pharmacies();
+        $positions = $pharmacies->pluck('id')->flip();
 
         $this->command->info('Déclarations sur '.self::MONTHS.' mois…');
 
@@ -103,9 +126,17 @@ class DemoSeeder extends Seeder
                 $leaveOpen = $pharmacy->slug === self::HERO_SLUG
                     && in_array($name, self::LEFT_TO_DECLARE, true);
 
-                $this->declareTwelveMonths($pharmacy, $insurer, $profile, $leaveOpen);
+                $this->declareTwelveMonths(
+                    $pharmacy,
+                    $insurer,
+                    $profile,
+                    $leaveOpen,
+                    $this->skipsLastMonth((int) $positions[$pharmacy->id], $name),
+                );
             }
         }
+
+        $this->settleHeroPenalties();
 
         $this->admin();
 
@@ -130,6 +161,8 @@ class DemoSeeder extends Seeder
         );
 
         $this->titulaire($hero, 'titulaire@bonsecours.local', 'Awa Hounkpatin');
+        // Sans numéro : l'invite du tableau de bord reste visible sur l'officine de démo.
+        $this->backdate($hero);
 
         $others = collect(range(2, self::PHARMACIES))->map(function (int $index) {
             $pharmacy = Pharmacy::factory()->create([
@@ -137,6 +170,12 @@ class DemoSeeder extends Seeder
             ]);
 
             $this->titulaire($pharmacy, "titulaire{$index}@officine.local", $pharmacy->owner_name);
+            $this->backdate($pharmacy);
+
+            // Une officine sur six sans numéro : le suivi affiche « pas de numéro ».
+            if ($index % 6 !== 0) {
+                $pharmacy->forceFill(['whatsapp_phone' => sprintf('+22901%08d', 97_000_000 + $index)])->saveQuietly();
+            }
 
             return $pharmacy;
         });
@@ -176,10 +215,15 @@ class DemoSeeder extends Seeder
         Insurer $insurer,
         array $profile,
         bool $leaveCurrentMonthOpen = false,
+        bool $skipLastMonth = false,
     ): void {
         $earliest = $leaveCurrentMonthOpen ? 1 : 0;
 
         for ($back = self::MONTHS - 1; $back >= $earliest; $back--) {
+            if ($skipLastMonth && $back === 1) {
+                continue;
+            }
+
             $month = now()->subMonths($back);
             // Scaled to the canvas: about 56 M FCFA invoiced over twelve
             // months across six insurers, not three times that.
@@ -311,6 +355,62 @@ class DemoSeeder extends Seeder
     /**
      * One APhaSPB administrator, in the admin Joomla group.
      */
+    /**
+     * Des mois manquants, pour que le suivi des déclarations ait quelqu'un à
+     * relancer : une officine sur sept n'a rien déclaré le mois dernier, une
+     * sur cinq a oublié son premier assureur (déclaration partielle).
+     */
+    protected function skipsLastMonth(int $position, string $insurerName): bool
+    {
+        if ($position === 0) {
+            return false;
+        }
+
+        return $position % 7 === 0
+            || ($position % 5 === 0 && $insurerName === array_key_first(self::PROFILES));
+    }
+
+    /**
+     * Inscrite avant la fenêtre suivie : une officine créée aujourd'hui serait
+     * exclue du suivi de tous les mois passés.
+     */
+    protected function backdate(Pharmacy $pharmacy): void
+    {
+        $pharmacy->forceFill(['created_at' => now()->subMonths(self::MONTHS + 1)])->saveQuietly();
+    }
+
+    /**
+     * Deux pénalités closes chez l'officine de démo — une payée, une annulée —
+     * pour que l'écran assureur et le journal montrent la clôture.
+     */
+    protected function settleHeroPenalties(): void
+    {
+        $hero = Pharmacy::query()->where('slug', self::HERO_SLUG)->first();
+        $author = User::query()->where('email', 'titulaire@bonsecours.local')->first();
+
+        if ($hero === null || $author === null) {
+            return;
+        }
+
+        $settle = app(SettlePenalty::class);
+        $outcomes = [PenaltySettlement::Paid, PenaltySettlement::Waived];
+
+        $candidates = Declaration::query()
+            ->with(['insurer', 'payments'])
+            ->where('pharmacy_id', $hero->id)
+            ->whereColumn('amount_received', '>=', 'amount_invoiced')
+            ->orderBy('period_year')
+            ->orderBy('period_month')
+            ->get()
+            ->filter(fn (Declaration $declaration): bool => $settle->refusal($declaration) === null)
+            ->take(count($outcomes))
+            ->values();
+
+        foreach ($candidates as $index => $declaration) {
+            $settle->settle($declaration, $outcomes[$index], $author);
+        }
+    }
+
     protected function admin(): void
     {
         User::query()->firstOrCreate(['email' => 'admin@aphaspb.local'], [
