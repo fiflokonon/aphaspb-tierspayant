@@ -2,12 +2,13 @@
 /**
  * Qui a déclaré quel mois, pour relancer hors plateforme.
  *
- * Exception délimitée au CDC : un nom d'officine à côté de l'état de son mois,
- * et rien d'autre — ni assureur, ni nombre d'assureurs, ni montant. La
- * relance part sur WhatsApp ; la plateforme ne l'envoie pas.
+ * Exception délimitée au CDC : un nom d'officine et son numéro de contact à
+ * côté de l'état de son mois, et rien d'autre — ni assureur, ni nombre
+ * d'assureurs, ni montant. La relance part sur WhatsApp ou par téléphone ; la
+ * plateforme ne l'envoie pas.
  */
 import { Head, router } from '@inertiajs/vue3';
-import { MessageCircle } from '@lucide/vue';
+import { MessageCircle, Phone } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
@@ -24,6 +25,7 @@ type Row = {
     city: string | null;
     state: CompletenessState;
     stateLabel: string;
+    phone: { href: string; label: string } | null;
     whatsappUrl: string | null;
 };
 
@@ -46,8 +48,8 @@ const props = defineProps<{
     pharmacies: Paginated<Row>;
 }>();
 
-const TEMPLATE = '2fr 1fr 1fr 1.3fr';
-const COLUMNS = ['OFFICINE', 'VILLE', 'ÉTAT DU MOIS', 'RELANCE'];
+const TEMPLATE = '2fr 1fr 1fr 1.2fr 1.3fr';
+const COLUMNS = ['OFFICINE', 'VILLE', 'ÉTAT DU MOIS', 'CONTACT', 'RELANCE'];
 
 /**
  * Les teintes des statuts de déclaration, réutilisées pour ne pas inventer une
@@ -146,6 +148,24 @@ const summaryLine = computed(
 
                 <div>
                     <a
+                        v-if="row.phone"
+                        :href="row.phone.href"
+                        class="phone-link"
+                    >
+                        <Phone
+                            class="size-[14px]"
+                            :stroke-width="2"
+                            aria-hidden="true"
+                        />
+                        {{ row.phone.label }}
+                    </a>
+                    <span v-else class="muted" aria-label="Pas de numéro">
+                        —
+                    </span>
+                </div>
+
+                <div>
+                    <a
                         v-if="row.whatsappUrl"
                         :href="row.whatsappUrl"
                         target="_blank"
@@ -209,7 +229,8 @@ const summaryLine = computed(
     white-space: nowrap;
 }
 
-.whatsapp-link {
+.whatsapp-link,
+.phone-link {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -217,7 +238,12 @@ const summaryLine = computed(
     font-weight: 600;
 }
 
-.whatsapp-link:hover {
+.phone-link {
+    white-space: nowrap;
+}
+
+.whatsapp-link:hover,
+.phone-link:hover {
     text-decoration: underline;
     text-underline-offset: 2px;
 }

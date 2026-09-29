@@ -64,6 +64,21 @@ class WhatsappNumber
     }
 
     /**
+     * Le numéro tel qu'on le lit à voix haute : un béninois par paires
+     * (+229 01 97 00 00 00), un étranger tel qu'il est rangé.
+     */
+    public static function display(string $e164): string
+    {
+        $prefix = '+'.self::BENIN;
+
+        if (! str_starts_with($e164, $prefix)) {
+            return $e164;
+        }
+
+        return $prefix.' '.implode(' ', str_split(substr($e164, strlen($prefix)), 2));
+    }
+
+    /**
      * Les 10 chiffres d'un mobile béninois (01 + 8), ou null.
      */
     protected static function beninNational(string $digits): ?string
