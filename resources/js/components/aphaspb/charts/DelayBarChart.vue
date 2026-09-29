@@ -12,6 +12,7 @@
  */
 import { VisAxis, VisGroupedBar, VisLine, VisXYContainer } from '@unovis/vue';
 import { computed } from 'vue';
+import { gap } from '@/lib/chartGap';
 import { CHART_COLORS } from '@/types/aphaspb';
 
 type Series = { name: string; points: Record<string, number> };
@@ -58,9 +59,7 @@ const colorFor = (position: number) =>
     CHART_COLORS[position % CHART_COLORS.length];
 
 const accessors = computed(() =>
-    props.series.map(
-        (_, position) => (row: Row) => row[`s${position}`] as number | null,
-    ),
+    props.series.map((_, position) => (row: Row) => gap(row[`s${position}`])),
 );
 
 const colors = computed(() => props.series.map((_, index) => colorFor(index)));
