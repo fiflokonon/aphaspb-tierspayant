@@ -123,6 +123,30 @@ class CityPartition
     }
 
     /**
+     * La clé canonique de la ville d'une officine, calculée par la base.
+     *
+     * Le filtre ville compare en SQL, donc selon la collation de la colonne :
+     * sous MySQL `_ai_ci` (production), « Bohicon », « bohicon » et
+     * « Bohicón » sont une seule ville filtrable. Un compartiment PHP formé
+     * sur la chaîne brute en ferait trois, et la part cachée serait fausse.
+     * La clé est donc le plus petit représentant, selon la même collation,
+     * des villes égales à celle-ci : toutes les graphies d'une même ville
+     * reçoivent la même clé, sur n'importe quel pilote, sans réécrire les
+     * données. NULL reste NULL (sans ville).
+     *
+     * `$pharmacies` est le nom ou l'alias de la table `pharmacies` de la
+     * requête appelante. Sous-requête corrélée : pas une requête de plus.
+     * Littéral seulement : ce nom entre tel quel dans le SQL.
+     *
+     * @param  literal-string  $pharmacies
+     * @return literal-string
+     */
+    public static function canonicalCitySql(string $pharmacies): string
+    {
+        return "(SELECT MIN(canonical_city.city) FROM pharmacies AS canonical_city WHERE canonical_city.city = {$pharmacies}.city)";
+    }
+
+    /**
      * La clé de ville d'une ligne lue en base.
      */
     public static function key(mixed $city): string

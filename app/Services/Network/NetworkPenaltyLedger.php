@@ -59,8 +59,10 @@ class NetworkPenaltyLedger
                 'declarations.period_year', 'declarations.period_month',
                 'declarations.amount_invoiced', 'declarations.amount_received',
                 'declarations.invoice_deposited_on', 'declarations.paid_on', 'declarations.penalty_settlement',
-                'declaring_pharmacy.city as pharmacy_city',
+
             )
+            // La clé canonique (collation), pas la chaîne brute : CityPartition.
+            ->selectRaw(CityPartition::canonicalCitySql('declaring_pharmacy').' as pharmacy_city')
             // cursor() et non get() : même raison qu'InsurerPenaltyAggregates.
             ->cursor();
 

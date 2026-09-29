@@ -776,7 +776,10 @@ class NetworkStatsService
         $rows = $this->baseQuery($from, $to, null, $insurerId)
             ->join('pharmacies', 'pharmacies.id', '=', 'declarations.pharmacy_id')
             ->distinct()
-            ->select('declarations.insurer_id', 'declarations.pharmacy_id', 'pharmacies.city')
+            ->select('declarations.insurer_id', 'declarations.pharmacy_id')
+            // La clé canonique, pas la chaîne : les compartiments doivent
+            // suivre la collation, comme le filtre ville.
+            ->selectRaw(CityPartition::canonicalCitySql('pharmacies').' as city')
             ->get();
 
         $cells = [];
@@ -798,9 +801,13 @@ class NetworkStatsService
     {
         return $query
             ->join('pharmacies', 'pharmacies.id', '=', 'declarations.pharmacy_id')
-            ->select([...$groups, 'pharmacies.city'])
+            ->select($groups)
+            // Groupé sur la clé canonique : même compartiment que partout
+            // ailleurs, quelle que soit la graphie (CityPartition).
+            ->selectRaw(CityPartition::canonicalCitySql('pharmacies').' as city')
             ->selectRaw('COUNT(DISTINCT declarations.pharmacy_id) as pharmacies')
-            ->groupBy([...$groups, 'pharmacies.city'])
+            ->groupBy($groups)
+            ->groupByRaw(CityPartition::canonicalCitySql('pharmacies'))
             ->get();
     }
 

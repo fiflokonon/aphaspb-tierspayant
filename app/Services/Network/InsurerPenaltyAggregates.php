@@ -196,7 +196,7 @@ class InsurerPenaltyAggregates
             // nourrit la règle de partition de l'export non filtré.
             ->leftJoin('pharmacies as declaring_pharmacy', 'declaring_pharmacy.id', '=', 'declarations.pharmacy_id')
             ->select(
-                'declaring_pharmacy.city as pharmacy_city',
+
                 'declarations.id',
                 'declarations.insurer_id',
                 'declarations.pharmacy_id',
@@ -207,6 +207,8 @@ class InsurerPenaltyAggregates
                 'declarations.penalty_settlement',
                 'declarations.penalty_settled_amount',
             )
+            // La clé canonique (collation), pas la chaîne brute : CityPartition.
+            ->selectRaw(CityPartition::canonicalCitySql('declaring_pharmacy').' as pharmacy_city')
             // cursor() et non get() : à 40 000 lignes, la collection
             // matérialisée coûte plus que tout le reste du calcul.
             ->cursor();
