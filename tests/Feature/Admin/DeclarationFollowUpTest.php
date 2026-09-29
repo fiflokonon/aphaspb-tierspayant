@@ -109,3 +109,20 @@ test('the screen never carries an insurer, an amount or a private note', functio
         ->and($own)->not->toContain('insurer')
         ->and($own)->not->toContain('amount');
 });
+
+test('the number to call is shown even for an officine that is up to date', function () {
+    $done = followedPharmacy('Pharmacie Faite', '+2290197000000');
+    Declaration::factory()->create(['pharmacy_id' => $done->id, 'insurer_id' => $this->insurer->id, 'period_year' => 2026, 'period_month' => 8]);
+
+    $this->actingAs($this->admin)->get(route('admin.declarations-followup', ['state' => 'all']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pharmacies.data.0.whatsappUrl', null)
+            ->where('pharmacies.data.0.phone', ['href' => 'tel:+2290197000000', 'label' => '+229 01 97 00 00 00']));
+});
+
+test('without number, nothing to call', function () {
+    followedPharmacy('Sans Numéro');
+
+    $this->actingAs($this->admin)->get(route('admin.declarations-followup'))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pharmacies.data.0.phone', null));
+});

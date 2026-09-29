@@ -110,7 +110,7 @@ class DeclarationFollowUpController extends Controller
     }
 
     /**
-     * @return array{id: int, name: string, city: string|null, state: string, stateLabel: string, whatsappUrl: string|null}
+     * @return array{id: int, name: string, city: string|null, state: string, stateLabel: string, phone: array{href: string, label: string}|null, whatsappUrl: string|null}
      */
     protected function row(PharmacyCompleteness $row, Period $month): array
     {
@@ -120,6 +120,9 @@ class DeclarationFollowUpController extends Controller
             'city' => $row->city,
             'state' => $row->state->value,
             'stateLabel' => $row->state->label(),
+            'phone' => $row->whatsappPhone === null
+                ? null
+                : ['href' => 'tel:'.$row->whatsappPhone, 'label' => WhatsappNumber::display($row->whatsappPhone)],
             'whatsappUrl' => $row->whatsappPhone === null || $row->state === CompletenessState::Complete
                 ? null
                 : WhatsappNumber::link($row->whatsappPhone, $this->message($row, $month)),

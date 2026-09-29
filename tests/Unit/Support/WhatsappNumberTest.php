@@ -26,3 +26,10 @@ test('the link opens a chat with the message encoded', function () {
     expect(WhatsappNumber::link('+22997000000', "Bonjour L'Espérance & co"))
         ->toBe('https://wa.me/22997000000?text=Bonjour%20L%27Esp%C3%A9rance%20%26%20co');
 });
+
+test('a number is displayed in pairs when Beninese, as stored otherwise', function (string $e164, string $expected) {
+    expect(WhatsappNumber::display($e164))->toBe($expected);
+})->with([
+    'benin' => ['+2290197000000', '+229 01 97 00 00 00'],
+    'foreign' => ['+33612345678', '+33612345678'],
+]);
