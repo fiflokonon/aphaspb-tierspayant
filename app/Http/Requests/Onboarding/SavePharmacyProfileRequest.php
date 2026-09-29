@@ -32,7 +32,7 @@ class SavePharmacyProfileRequest extends FormRequest
                     : Rule::unique(Pharmacy::class, 'onpb_license')->ignore($current->id),
             ],
             'city' => ['required', 'string', 'max:100'],
-            'whatsapp_phone' => $this->whatsappPhoneRules(),
+            'whatsapp_phone' => $this->whatsappPhoneRules(required: true),
         ];
     }
 
