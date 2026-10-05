@@ -24,12 +24,12 @@ defineProps<{
 
 const TEMPLATE = '1.8fr .7fr 1fr 1.4fr .8fr 1fr';
 const COLUMNS = [
-    'ASSUREUR',
-    'OFFICINES (n)',
-    'DÉLAI STANDARD',
-    'CLAUSE DE PÉNALITÉ',
-    'ÉTAT',
-    'ACTION',
+    'Assureur',
+    'Officines (n)',
+    'Délai standard',
+    'Clause de pénalité',
+    'État',
+    'Action',
 ];
 
 const editing = ref<number | null>(null);
@@ -66,8 +66,12 @@ function submitWhenComplete(event: Event, submit: () => void) {
     <Head title="Gestion des assureurs" />
 
     <div class="insurers-page">
-        <ConsoleHeader title="Gestion des assureurs" class="insurers-header" />
+        <ConsoleHeader title="" class="insurers-header" />
 
+        <div class="intro-text">
+            <h1>Gestion des assureurs</h1>
+        </div>
+   
         <section class="configuration-grid">
             <div class="configuration-card">
                 <div class="card-header">
@@ -273,8 +277,44 @@ function submitWhenComplete(event: Event, submit: () => void) {
         <section class="insurers-table-section">
             <div class="section-top-line"></div>
 
+            
+                <div class="table-heading">
+
+                    <div class="table-heading-main">
+
+                        <div class="table-heading-icon">
+                            <span></span>
+                        </div>
+
+                        <div style="padding: 10px;">
+
+                            <!-- <span class="section-eyebrow">
+                                DÉTAIL DU RÉSEAU
+                            </span> -->
+
+                            <h2 style="font-weight: 700;">
+                                Assureurs et courtiers
+                            </h2>
+
+                           
+
+                        </div>
+
+                    </div>
+
+                    <!-- STATUT -->
+                    <!-- <div class="table-status">
+
+                        <span class="status-dot"></span>
+
+                        Réseau actif
+
+                    </div> -->
+
+                </div>
+
             <DataTable
-                title="Assureurs et courtiers"
+                title=""
                 :columns="COLUMNS"
                 :template="TEMPLATE"
                 :footer="`${insurers.length} entrées · désactiver un assureur le retire des formulaires sans toucher à ses déclarations`"
@@ -292,7 +332,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
                             class="insurer-avatar"
                             :class="{ inactive: !row.isActive }"
                         >
-                            {{ row.name?.charAt(0)?.toUpperCase() }}
+                            {{ row.name?.charAt(0)?.toLowerCase() }}
                         </div>
 
                         <div class="insurer-name-content">
@@ -685,7 +725,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     background: #ffffff;
 
-    box-shadow: var(--surface-shadow);
+    /* box-shadow: var(--surface-shadow); */
 
     animation: fadeUp 0.6s ease 0.05s both;
 }
@@ -759,7 +799,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .insurer-row:hover .insurer-avatar:not(.inactive) {
     transform: scale(1.06);
 
-    box-shadow: 0 5px 12px color-mix(in srgb, var(--officine) 10%, transparent);
+    /* box-shadow: 0 5px 12px color-mix(in srgb, var(--officine) 10%, transparent); */
 }
 
 .insurer-name-content {
@@ -851,7 +891,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .edit-input:focus {
     border-color: var(--primary);
 
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--officine) 7%, transparent);
+    /* box-shadow: 0 0 0 3px color-mix(in srgb, var(--officine) 7%, transparent); */
 }
 
 .edit-confirm,
@@ -1005,7 +1045,17 @@ function submitWhenComplete(event: Event, submit: () => void) {
         color 0.2s ease,
         transform 0.2s ease;
 }
+.intro-text h1 {
+   
 
+    color: #203a31;
+
+    font-size: 21px;
+    font-weight: 800;
+
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+}
 .action-button:hover {
     transform: translateY(-1px);
 }
@@ -1075,7 +1125,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     background: #ffffff;
 
-    box-shadow: var(--surface-shadow);
+    /* box-shadow: var(--surface-shadow); */
 }
 
 .card-header {
@@ -1231,7 +1281,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .modern-input:focus {
     border-color: color-mix(in srgb, var(--officine) 35%, transparent);
 
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--officine) 6%, transparent);
+    /* box-shadow: 0 0 0 3px color-mix(in srgb, var(--officine) 6%, transparent); */
 }
 
 .primary-button {
@@ -1267,7 +1317,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     cursor: pointer;
 
-    box-shadow: 0 6px 15px color-mix(in srgb, var(--officine) 13%, transparent);
+    /* box-shadow: 0 6px 15px color-mix(in srgb, var(--officine) 13%, transparent); */
 
     transition:
         transform 0.2s ease,
@@ -1278,7 +1328,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .primary-button:hover {
     transform: translateY(-1px);
 
-    box-shadow: 0 8px 18px color-mix(in srgb, var(--officine) 18%, transparent);
+    /* box-shadow: 0 8px 18px color-mix(in srgb, var(--officine) 18%, transparent); */
 }
 
 .primary-button:disabled {
@@ -1335,8 +1385,8 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
 .number-input:focus {
     border-color: color-mix(in srgb, var(--gold-mid) 45%, transparent);
-
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold-mid) 7%, transparent);
+/* 
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold-mid) 7%, transparent); */
 }
 
 .days-label {
@@ -1380,7 +1430,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     background: color-mix(in srgb, var(--gold-mid) 5.5%, transparent);
 
-    box-shadow: var(--surface-shadow);
+    /* box-shadow: var(--surface-shadow); */
 }
 
 .anonymity-icon {
@@ -1436,7 +1486,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     background: color-mix(in srgb, var(--officine) 2.5%, transparent);
 
-    box-shadow: var(--surface-shadow);
+    /* box-shadow: var(--surface-shadow); */
 }
 
 .footnote-icon {

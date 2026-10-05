@@ -90,7 +90,7 @@ const cell = (
         <table class="w-full min-w-[880px] text-[13px]">
             <thead>
                 <tr
-                    class="text-left font-mono text-label tracking-[0.14em] text-ink/60 uppercase"
+                    class="bg-cream-state text-left font-mono text-label tracking-[0.14em] text-ink/60 uppercase"
                 >
                     <th class="px-4 py-3 font-semibold">Mois</th>
                     <th

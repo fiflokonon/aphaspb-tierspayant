@@ -62,21 +62,43 @@ const FORMATS = [
 <template>
     <Head title="Journal des pénalités" />
 
-    <div class="penalty-ledger-page">
-        <ConsoleHeader title="Journal des pénalités">
+    <div class="history-page">
+        <br>
+          <div class="intro-text"> 
+                        <h1>Journal des pénalités</h1>
+                       
+                    </div>
+        <ConsoleHeader title="" class="intro-text">
+
+          
             <template #filters>
+
+                               <div class="compact-filters">
+
+
+    <div class="filter-item">
+     
+         <label for="period">Période</label>
                 <FilterSelect
                     v-model="period"
                     :options="periods"
-                    label="Période"
+        
                     aria-label="Filtrer par période"
                 />
-                <FilterSelect
+    </div>
+
+    <div class="filter-item">
+        <label for="insurer">Assureur</label>
+             <FilterSelect
                     v-model="insurer"
                     :options="insurerOptions"
-                    label="Assureur"
+                  
                     aria-label="Filtrer par assureur"
                 />
+    </div>
+</div>
+                
+          
             </template>
         </ConsoleHeader>
 
@@ -125,6 +147,79 @@ const FORMATS = [
 </template>
 
 <style scoped>
+.history-page {
+    /* La palette vient de :root — voir resources/css/app.css. */
+
+    position: relative;
+    min-height: 100vh;
+
+    padding-bottom: 60px;
+}
+.compact-filters {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    /* margin-top: 20px;
+    padding-top: 16px; */
+    /* border-top: 1px solid var(--border); */
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 170px;
+}
+
+.filter-item label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: black;
+}
+
+.filter-item :deep(select),
+.filter-item :deep(button) {
+    min-height: 36px;
+    height: 36px;
+    font-size: 12px;
+    border-radius: 9px;
+}
+
+@media (max-width: 850px) {
+    .compact-filters {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .filter-item {
+        width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .compact-filters {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 420px) {
+    .compact-filters {
+        grid-template-columns: 1fr;
+    }
+}
+
+.intro-text h1 {
+    margin: 0;
+
+    color: var(--ink);
+
+    font-size: 21px;
+    font-weight: 800;
+
+    letter-spacing: -0.025em;
+}
 .ledger-body {
     display: flex;
     flex-direction: column;

@@ -1122,9 +1122,9 @@ type Row = {
 ```ts
 const TEMPLATE = '1.8fr .7fr 1fr 1.4fr .8fr 1fr';
 const COLUMNS = [
-    'ASSUREUR',
+    'Assureur',
     'OFFICINES (n)',
-    'DÉLAI STANDARD',
+    'Délai standard',
     'CLAUSE DE PÉNALITÉ',
     'ÉTAT',
     'ACTION',

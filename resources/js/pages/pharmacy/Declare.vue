@@ -268,8 +268,10 @@ const officine = computed(() => {
         v-if="pendingInvitations && pendingInvitations.length > 0"
         :invitations="pendingInvitations"
     /> -->
+    
 
     <div class="declare-page">
+        <br>
         <div class="declare-header">
             <Link
                 href="/pharmacy/history"

@@ -53,49 +53,35 @@ defineProps<{
 
 <style scoped>
 .console-header {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;
 }
-
 .header-band {
     min-width: 0;
+    font-family: 'Manrope', sans-serif;
 }
 
 .header-eyebrow {
-    font-family: var(--font-mono, ui-monospace, monospace);
-    font-size: 11.5px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 11px;
     line-height: 1;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: .10em;
     text-transform: uppercase;
-
-    /* Dérivé de --ink : l'écrire en clair figerait l'ancienne teinte. */
-    color: color-mix(in srgb, var(--ink) 72%, transparent);
+    color: var(--officine);
 }
 
-/*
-  La puce d'espace n'apparaît ici que dans le bandeau vert : au-dessus de
-  1024 px, c'est ConsoleTopBar qui la porte, et l'afficher aux deux endroits
-  ferait deux fois le même repère sur le même écran.
-*/
 .header-space {
     display: none;
 }
 
 .header-title {
-    /*
-      Rien au-dessus dans le cas courant : la marge n'apparaît que sous une
-      étiquette d'écran, seul élément qui précède encore le titre à partir de
-      lg. Dans le bandeau vert, c'est la puce qui pose son propre espacement.
-    */
-    margin-top: 0;
-
-    font-family: var(--font-serif, ui-serif, Georgia, serif);
-    font-size: 34px;
-    line-height: 1.06;
-
+    margin-top: 6px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 21px;
+    line-height: 1.12;
+    font-weight: 700;
     color: var(--ink);
+    letter-spacing: -.025em;
 }
 
 .header-eyebrow + .header-title {
@@ -108,66 +94,21 @@ defineProps<{
     gap: 8px;
 }
 
-/* À partir de 1024 px : en-tête clair, actions à droite du titre. */
-@media (min-width: 1024px) {
-    .console-header {
-        flex-direction: row;
-        align-items: flex-end;
-        justify-content: space-between;
-    }
-
-    /*
-      Sinon la grille du hero colle au titre de 34 px. `:empty` en plus du
-      v-if : sur grand écran le tableau de bord remplit bien ce slot, mais
-      son contenu y est masqué, et le conteneur laissait 18 px de vide.
-    */
-    .header-hero:not(:empty) {
-        margin-top: 18px;
-    }
+.header-hero {
+    margin-top: 16px;
 }
 
-/*
-  Sous 1024 px, le même bloc se replie en bandeau vert.
+@media (min-width: 1024px) {
+    .console-header { flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 24px; }
+    .header-actions { flex-shrink: 0; justify-content: flex-end; }
+    .header-hero:not(:empty) { margin-top: 18px; }
+}
 
-  Ce n'est pas une seconde charte : la liste d'alertes, l'échelle
-  typographique, le rythme d'espacement et le serif sont identiques des deux
-  côtés. Seul l'en-tête change de forme, parce qu'à 390 px trois cartes
-  claires empilées repoussent le contenu utile hors de l'écran, là où un
-  bandeau tient la légende, le titre et les chiffres en un seul pavé.
-*/
 @media (max-width: 1023.98px) {
-    .header-band {
-        padding: 17px 18px 18px;
-
-        border-radius: 16px;
-
-        background: var(--officine-dark);
-    }
-
-    .header-eyebrow {
-        /*
-          0.72 et non 0.55 : sur --officine-dark, 0.55 donne 3,69:1, sous le
-          seuil AA de 4,5:1 pour un texte de 11,5 px. 0.72 donne 5,08:1 et se
-          lit toujours comme secondaire.
-        */
-        color: rgb(255 255 255 / 0.72);
-    }
-
-    .header-space {
-        display: inline-flex;
-
-        margin-bottom: 7px;
-    }
-
-    .header-title {
-        font-size: 27px;
-        line-height: 1.08;
-
-        color: #fff;
-    }
-
-    .header-hero {
-        margin-top: 16px;
-    }
+    .header-band { padding: 20px 20px 18px; border-radius: 18px; background: linear-gradient(135deg, var(--officine-deep), #0d4c40); box-shadow: 0 16px 34px -22px rgb(7 61 51 / .55); }
+    .header-eyebrow { color: #8ed9cc; }
+    .header-space { display: inline-flex; margin-bottom: 8px; }
+    .header-title { font-size: 28px; line-height: 1.08; color: #fff; }
+    .header-hero { margin-top: 15px; }
 }
 </style>

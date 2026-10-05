@@ -56,13 +56,13 @@ const props = defineProps<{
 const TEMPLATE = '1.6fr .9fr .85fr 1fr 1fr .75fr .8fr';
 
 const COLUMNS = [
-    'ASSUREUR',
-    'OFFICINES (n)',
-    'DÉLAI MOYEN',
-    'DANS LES DÉLAIS',
-    'ARGENT DANS LES DÉLAIS',
-    'REJET',
-    'NON PAYÉ',
+    'Assureur',
+    'Officines (n)',
+    'Délai moyen',
+    'Dans les délais',
+    'Argent dans les délais',
+    'Rejet',
+    'Non payé',
 ];
 
 /**
@@ -162,68 +162,111 @@ function reload() {
 watch([period, city], reload);
 </script>
 
+
 <template>
     <Head title="Statistiques réseau" />
 
     <div class="network-page">
-        <ConsoleHeader title="Performance du réseau" class="network-header">
-            <template #filters>
-                <div class="header-filters">
-                    <FilterSelect
-                        v-model="period"
-                        :options="periods"
-                        aria-label="Filtrer par période"
-                    />
 
-                    <FilterSelect
-                        v-model="city"
-                        :options="cityOptions"
-                        aria-label="Filtrer par ville"
-                    />
+        <section class="network-intro">
+
+            <div class="intro-decoration"></div>
+
+            <div class="intro-main">
+
+                <!-- TITRE -->
+
+                <div class="intro-content">
+
+                    <div class="intro-icon">
+                        <span>◉</span>
+                    </div>
+
+                    <div class="intro-text">
+
+                        <h1>
+                            Performance du réseau
+                        </h1>
+
+                    </div>
+
                 </div>
-            </template>
 
-            <template #action>
-                <div class="header-actions">
-                    <!-- EXPORT -->
+
+                <!-- FILTRES -->
+
+                <div class="intro-filters">
+
+                    <div class="filter-item">
+
+                       
+
+                        <FilterSelect
+                            v-model="period"
+                            :options="periods"
+                            aria-label="Filtrer par période"
+                        />
+
+                    </div>
+
+
+                    <div class="filter-item">
+
+                        
+
+                        <FilterSelect
+                            v-model="city"
+                            :options="cityOptions"
+                            aria-label="Filtrer par ville"
+                        />
+
+                    </div>
+
+                 <div class="header-actions">
 
                     <a
                         href="/admin/csv-exports"
                         class="action-btn action-export"
                     >
-                        <span class="action-icon"> ↓ </span>
-
-                        <span> Exporter </span>
+                        <span class="action-icon">↓</span>
+                        <span>Exporter</span>
                     </a>
 
-                    <!-- <button
-                        type="button"
-                        class="action-btn action-sort"
+                    <Link
+                        href="/admin/insurers"
+                        class="action-btn action-edit"
                     >
-
-                        <span class="action-icon">
-                            ↕
-                        </span>
-
-                        <span>
-                            Trier
-                        </span>
-
-                    </button> -->
-
-                    <Link href="/admin/insurers" class="action-btn action-edit">
-                        <span class="action-icon"> ✎ </span>
-
-                        <span> Modifier </span>
+                        <span class="action-icon">✎</span>
+                        <span>Modifier</span>
                     </Link>
-                </div>
-            </template>
-        </ConsoleHeader>
 
-        <KpiRow :columns="3" class="network-kpis">
-            <!-- KPI 1 -->
+                </div>
+
+                </div>
+
+            </div>
+
+
+           
+
+        </section>
+
+
+        <!-- =====================================================
+             KPI
+        ====================================================== -->
+
+        <KpiRow
+            :columns="3"
+            class="network-kpis"
+        >
+
+            <!-- =================================================
+                 KPI 1 — OFFICINES
+            ================================================== -->
 
             <div class="kpi-wrapper">
+
                 <div class="kpi-accent"></div>
 
                 <KpiCard
@@ -246,9 +289,16 @@ watch([period, city], reload);
                 <div class="kpi-decoration">
                     <span>⌂</span>
                 </div>
+
             </div>
 
+
+            <!-- =================================================
+                 KPI 2 — DÉLAI MOYEN
+            ================================================== -->
+
             <div class="kpi-wrapper">
+
                 <div class="kpi-accent"></div>
 
                 <KpiCard
@@ -261,7 +311,12 @@ watch([period, city], reload);
                               ) ?? '—')
                     "
                     :unit="summary.withheld ? undefined : 'jours'"
-                    :tone="delayTone(summary.averageDelayDays, networkStandard)"
+                    :tone="
+                        delayTone(
+                            summary.averageDelayDays,
+                            networkStandard,
+                        )
+                    "
                     :hint="
                         summary.withheld
                             ? withheldHint
@@ -272,9 +327,16 @@ watch([period, city], reload);
                 <div class="kpi-decoration">
                     <span>◷</span>
                 </div>
+
             </div>
 
+
+            <!-- =================================================
+                 KPI 3 — PAYÉ DANS LES DÉLAIS
+            ================================================== -->
+
             <div class="kpi-wrapper">
+
                 <div class="kpi-accent gold"></div>
 
                 <KpiCard
@@ -290,7 +352,9 @@ watch([period, city], reload);
                     :tone="shareTone(summary.withinThresholdShare)"
                 >
                     <template #hint>
+
                         <span class="kpi-hint">
+
                             <template v-if="summary.withheld">
                                 {{ withheldHint }} ·
                             </template>
@@ -299,35 +363,99 @@ watch([period, city], reload);
                                 selon le délai retenu pour chaque assureur ·
                             </template>
 
-                            <Link href="/admin/insurers" class="threshold-edit">
-                                <span> Modifier </span>
-
-                                <span class="threshold-edit-icon"> ↗ </span>
+                            <Link
+                                href="/admin/insurers"
+                                class="threshold-edit"
+                            >
+                                <span>Modifier</span>
+                                <span class="threshold-edit-icon">↗</span>
                             </Link>
+
                         </span>
+
                     </template>
                 </KpiCard>
 
                 <div class="kpi-decoration gold">
                     <span>✓</span>
                 </div>
+
             </div>
+
         </KpiRow>
 
+        
+
+
+        <!-- =====================================================
+             TABLEAU
+        ====================================================== -->
+
         <section class="table-section">
+
+            <!-- EN-TÊTE DU TABLEAU -->
+
+            <div class="table-section-header">
+
+                <div class="table-title-block">
+
+                    <div class="table-icon">
+                        <span>↗</span>
+                    </div>
+
+                    <div>
+
+                        <!-- <span class="table-eyebrow">
+                            SUIVI DU RÉSEAU
+                        </span> -->
+
+                        <h2>
+                            Indicateurs par assureur
+                        </h2>
+
+                        <!-- <p>
+                            Comparez les délais et les indicateurs de
+                            règlement sur la période sélectionnée.
+                        </p> -->
+
+                    </div>
+
+                </div>
+
+
+                <!-- <div class="table-status">
+
+                    <span class="status-dot"></span>
+
+                    <span>
+                        Données consolidées
+                    </span>
+
+                </div> -->
+
+            </div>
+
+
             <div class="table-top-decoration"></div>
 
+
+            <!-- TABLE -->
+
             <DataTable
-                title="Indicateurs par assureur"
+                title=""
                 :columns="COLUMNS"
                 :template="TEMPLATE"
                 :footer="footer"
                 class="network-table"
             >
+
                 <template
                     v-for="indicator in indicators"
                     :key="indicator.insurerId"
                 >
+
+                    <!-- DONNÉES INSUFFISANTES -->
+
                     <InsufficientDataRow
                         v-if="!indicator.sufficient"
                         :template="TEMPLATE"
@@ -339,15 +467,24 @@ watch([period, city], reload);
                         )} — pour garantir l’anonymat`"
                     />
 
+
+                    <!-- DONNÉES DISPONIBLES -->
+
                     <DataTableRow
                         v-else
                         :template="TEMPLATE"
-                        :tone="isAlarming(indicator) ? 'alert' : 'default'"
+                        :tone="
+                            isAlarming(indicator)
+                                ? 'alert'
+                                : 'default'
+                        "
                         class="insurer-row"
                     >
+
                         <!-- ASSUREUR -->
 
                         <div class="insurer-cell">
+
                             <div class="insurer-avatar">
                                 {{
                                     indicator.insurerName
@@ -357,21 +494,36 @@ watch([period, city], reload);
                             </div>
 
                             <div class="insurer-name">
+
                                 <span>
                                     {{ indicator.insurerName }}
                                 </span>
 
-                                <small> Assureur actif </small>
+                                <small>
+                                    Assureur actif
+                                </small>
+
                             </div>
+
                         </div>
 
+
+                        <!-- OFFICINES -->
+
                         <div class="pharmacy-count">
+
                             <span class="count-number">
                                 {{ indicator.declaringPharmacies }}
                             </span>
 
-                            <span class="count-label"> officines </span>
+                            <span class="count-label">
+                                officines
+                            </span>
+
                         </div>
+
+
+                        <!-- DÉLAI MOYEN -->
 
                         <div
                             class="delay-cell"
@@ -383,41 +535,50 @@ watch([period, city], reload);
                                     ) === 'bad',
                             }"
                         >
+
                             <span class="delay-value">
                                 {{ days(indicator.averageDelayDays) }}
                             </span>
 
-                            <span class="delay-unit"> jours </span>
-
-                            <!--
-                                La règle à côté du chiffre : sans elle, la
-                                couleur de cette cellule est un verdict sans
-                                fondement énoncé.
-                            -->
-                            <span class="delay-standard">
-                                standard {{ days(indicator.standardDelayDays) }}
+                            <span class="delay-unit">
+                                jours
                             </span>
+
+                            <span class="delay-standard">
+                                standard
+                                {{ days(indicator.standardDelayDays) }}
+                            </span>
+
                         </div>
 
+
+                        <!-- PAYÉ DANS LES DÉLAIS -->
+
                         <div class="threshold-cell">
+
                             <ProgressMiniBar
-                                :share="indicator.withinThresholdShare ?? 0"
-                                :tone="
-                                    shareTone(indicator.withinThresholdShare)
+                                :share="
+                                    indicator.withinThresholdShare ?? 0
                                 "
-                                :label="percent(indicator.withinThresholdShare)"
+                                :tone="
+                                    shareTone(
+                                        indicator.withinThresholdShare,
+                                    )
+                                "
+                                :label="
+                                    percent(
+                                        indicator.withinThresholdShare,
+                                    )
+                                "
                             />
+
                         </div>
 
-                        <!--
-                            La part des déclarations réglées dans les temps dit
-                            combien de mois sont passés dans les clous ; celle-ci
-                            dit combien d'argent y est passé. Les deux divergent
-                            dès qu'un assureur règle un mois en plusieurs fois :
-                            un solde tardif fait sortir toute la déclaration du
-                            délai, alors que l'acompte, lui, est bien arrivé.
-                        -->
+
+                        <!-- RÉCUPÉRÉ DANS LE DÉLAI -->
+
                         <div class="threshold-cell">
+
                             <ProgressMiniBar
                                 :share="
                                     indicator.recoveredWithinDelayShare ?? 0
@@ -428,10 +589,16 @@ watch([period, city], reload);
                                     )
                                 "
                                 :label="
-                                    percent(indicator.recoveredWithinDelayShare)
+                                    percent(
+                                        indicator.recoveredWithinDelayShare,
+                                    )
                                 "
                             />
+
                         </div>
+
+
+                        <!-- REJETS -->
 
                         <div
                             class="rate-cell"
@@ -445,60 +612,97 @@ watch([period, city], reload);
                             </span>
                         </div>
 
+
+                        <!-- IMPAYÉS -->
+
                         <div class="rate-cell unpaid-cell">
+
                             <span>
                                 {{ percent(indicator.unpaidRate) }}
                             </span>
+
                         </div>
+
                     </DataTableRow>
+
                 </template>
+
             </DataTable>
+
         </section>
 
-        <p class="page-source">
-            Les indicateurs sont calculés à partir des déclarations transmises
-            par les officines participantes. Les données individuelles ne sont
-            jamais exposées.
-        </p>
+
+        <!-- =====================================================
+             NOTE DE CONFIDENTIALITÉ
+        ====================================================== -->
+
+        <div class="network-footnote">
+
+            <div class="footnote-icon">
+                i
+            </div>
+
+            <p>
+                Les indicateurs sont calculés à partir des déclarations
+                transmises par les officines participantes. Les données
+                individuelles ne sont jamais exposées.
+            </p>
+
+        </div>
+
     </div>
 </template>
 
+
 <style scoped>
-.delay-standard {
-    display: block;
 
-    font-size: 12.5px;
-
-    color: color-mix(in srgb, var(--ink) 38%, transparent);
-}
+/* =========================================================
+   APSPB — STATISTIQUES RÉSEAU
+   Design : Light / Elegant / Institutional
+   Font : Manrope
+========================================================= */
 
 .network-page {
-    /* La palette vient de :root — voir resources/css/app.css. */
+
+    --apha-primary: #00664c;
+    --apha-primary-dark: #005741;
+    --apha-primary-soft: #eef7f3;
+
+    --apha-gold: #b08a45;
+    --apha-gold-soft: #fbf7ef;
+
+    --apha-ink: #243a32;
+    --apha-muted: #788780;
+    --apha-light: #9da8a3;
+
+    --apha-border: #e5ebe8;
+    --apha-surface: #ffffff;
+    --apha-background: #f8faf9;
 
     position: relative;
 
     min-height: 100vh;
 
-    padding-bottom: 50px;
+    padding-bottom: 55px;
+
+    color: var(--apha-ink);
+
+    font-family: 'Manrope', sans-serif;
 }
+
+
+/* =========================================================
+   HEADER
+========================================================= */
 
 .network-header {
     position: relative;
 
-    z-index: 2;
-}
-
-.header-filters {
-    display: flex;
-
-    align-items: center;
-
-    gap: 7px;
-
-    white-space: nowrap;
+    z-index: 5;
 }
 
 .header-actions {
+
     display: flex;
 
     align-items: center;
@@ -510,8 +714,14 @@ watch([period, city], reload);
     white-space: nowrap;
 }
 
+
+/* =========================================================
+   BOUTONS HEADER
+========================================================= */
+
 .action-btn {
-    height: 36px;
+
+    height: 37px;
 
     display: inline-flex;
 
@@ -523,15 +733,17 @@ watch([period, city], reload);
 
     padding: 0 12px;
 
-    border: 1px solid var(--border);
+    border: 1px solid var(--apha-border);
 
     border-radius: 10px;
 
     background: #ffffff;
 
-    color: var(--ink);
+    color: var(--apha-ink);
 
-    font-size: 10px;
+    font-family: 'Manrope', sans-serif;
+
+    font-size: 15px;
 
     font-weight: 700;
 
@@ -542,16 +754,21 @@ watch([period, city], reload);
     cursor: pointer;
 
     transition:
-        background 0.2s ease,
+        background-color 0.2s ease,
         border-color 0.2s ease,
         color 0.2s ease,
         transform 0.2s ease,
         box-shadow 0.2s ease;
 }
 
-.action-icon {
-    width: 20px;
+.action-btn:hover {
 
+    transform: translateY(-1px);
+}
+
+.action-icon {
+
+    width: 20px;
     height: 20px;
 
     display: inline-flex;
@@ -565,125 +782,381 @@ watch([period, city], reload);
     font-size: 12px;
 
     font-weight: 800;
-
-    line-height: 1;
 }
 
-.action-export {
-    background: var(--primary);
 
-    border-color: var(--primary);
+/* EXPORTER */
+
+.action-export {
+
+    background: var(--apha-primary);
+
+    border-color: var(--apha-primary);
 
     color: #ffffff;
-
-    /* box-shadow:
-        0 5px 14px
-        color-mix(in srgb, var(--officine) 16%, transparent); */
 }
 
 .action-export .action-icon {
-    background: rgba(255, 255, 255, 0.14);
+
+    background: rgb(255 255 255 / 0.14);
 
     color: #ffffff;
 }
 
 .action-export:hover {
-    background: var(--primary-dark);
 
-    border-color: var(--primary-dark);
+    background: var(--apha-primary-dark);
 
-    color: #ffffff;
-
-    transform: translateY(-1px);
+    border-color: var(--apha-primary-dark);
 
     /* box-shadow:
-        0 8px 18px
-        color-mix(in srgb, var(--officine) 20%, transparent); */
+        0 7px 18px rgb(0 102 76 / 0.15); */
 }
 
-.action-sort {
-    background: #ffffff;
 
-    color: var(--ink);
-}
-
-.action-sort .action-icon {
-    background: var(--primary-soft);
-
-    color: var(--primary);
-}
-
-.action-sort:hover {
-    border-color: color-mix(in srgb, var(--officine) 25%, transparent);
-
-    background: var(--cream-state);
-
-    color: var(--primary-dark);
-
-    transform: translateY(-1px);
-}
+/* MODIFIER */
 
 .action-edit {
-    background: #fff;
 
-    border-color: color-mix(in srgb, var(--officine) 18%, transparent);
+    background:
+        linear-gradient(
+            135deg,
+            #ffffff,
+            #f8fcfa
+        );
 
-    color: var(--primary-dark);
+    border-color:
+        rgb(0 102 76 / 0.16);
+
+    color: var(--apha-primary-dark);
 }
 
 .action-edit .action-icon {
-    background: var(--primary-soft);
 
-    color: var(--primary);
+    background: var(--apha-primary-soft);
+
+    color: var(--apha-primary);
 }
 
 .action-edit:hover {
-    background: var(--primary-soft);
 
-    border-color: color-mix(in srgb, var(--officine) 35%, transparent);
+    background: var(--apha-primary-soft);
 
-    color: var(--primary-dark);
-
-    transform: translateY(-1px);
-    /* 
-    box-shadow:
-        0 6px 16px
-        color-mix(in srgb, var(--officine) 10%, transparent); */
+    border-color:
+        rgb(0 102 76 / 0.28);
 }
 
+
+/* =========================================================
+   PERFORMANCE DU RÉSEAU
+========================================================= */
+.network-intro {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+
+    margin: 10px 0 26px;
+
+    padding: 22px 24px;
+
+    overflow: hidden;
+
+    border: 1px solid var(--apha-border);
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            110deg,
+            #ffffff 0%,
+            #ffffff 62%,
+            #f7fbf9 100%
+        );
+/* 
+    box-shadow:
+        0 7px 28px rgb(35 70 68 / 0.045); */
+
+    animation: introAppear 0.55s ease both;
+}
+
+/* Ligne supérieure */
+
+.network-intro::before {
+
+    content: '';
+
+    position: absolute;
+
+    left: 24px;
+
+    right: 24px;
+
+    top: 0;
+
+    height: 2px;
+
+    border-radius:
+        0 0 5px 5px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--apha-primary),
+            #4a9c83,
+            transparent
+        );
+
+    opacity: 0.85;
+}
+
+
+/* Décoration circulaire */
+
+.intro-decoration {
+
+    position: absolute;
+
+    right: -65px;
+
+    top: -95px;
+
+    width: 210px;
+
+    height: 210px;
+
+    border: 1px solid #e1eee9;
+
+    border-radius: 50%;
+
+    pointer-events: none;
+}
+
+.intro-decoration::after {
+
+    content: '';
+
+    position: absolute;
+
+    right: 28px;
+
+    bottom: 28px;
+
+    width: 70px;
+
+    height: 70px;
+
+    border-radius: 50%;
+
+    background:
+        var(--apha-primary-soft);
+
+    opacity: 0.65;
+}
+
+
+/* =========================================================
+   BLOC PRINCIPAL
+========================================================= */
+
+.intro-main {
+    position: relative;
+    z-index: 2;
+
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+    min-width: 0;
+
+    gap: 34px;
+}
+
+
+/* =========================================================
+   TITRE
+========================================================= */
+
+.intro-content {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    min-width: 220px;
+}
+
+.intro-icon {
+
+    width: 48px;
+
+    height: 48px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--apha-primary),
+            var(--apha-primary-dark)
+        );
+
+    color: #ffffff;
+/* 
+    box-shadow:
+        0 8px 18px rgb(0 102 76 / 0.16); */
+}
+
+.intro-icon span {
+
+    font-size: 18px;
+
+    line-height: 1;
+}
+
+.intro-text {
+
+    min-width: 0;
+}
+
+.intro-text h1 {
+
+    margin: 0;
+
+    color: #1f3930;
+
+    font-size: 21px;
+
+    font-weight: 800;
+
+    letter-spacing: -0.035em;
+
+    line-height: 1.15;
+}
+
+.intro-period {
+
+    margin: 5px 0 0;
+
+    color: var(--apha-muted);
+
+    font-size: 10px;
+
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   FILTRES
+========================================================= */
+
+.intro-filters {
+    display: flex;
+    align-items: flex-end;
+
+    flex: 1;
+
+    gap: 12px;
+
+    padding-left: 28px;
+
+    /* border-left: 1px solid #e8eeeb; */
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+
+    gap: 5px;
+
+    flex: 1;
+    min-width: 0;
+}
+
+.filter-label {
+
+    padding-left: 2px;
+
+    color: var(--apha-light);
+
+    font-size: 8px;
+
+    font-weight: 800;
+
+    letter-spacing: 0.1em;
+
+    text-transform: uppercase;
+}
+
+
+
+
+/* =========================================================
+   KPI
+========================================================= */
+
 .network-kpis {
-    margin-bottom: 24px;
+
+    margin-bottom: 27px;
 }
 
 .kpi-wrapper {
+
     position: relative;
 
     overflow: hidden;
 
+    border: 1px solid var(--apha-border);
+
     border-radius: 16px;
 
-    transition:
-        transform 0.3s ease,
-        box-shadow 0.3s ease;
+    background: #ffffff;
 
-    animation: cardAppear 0.55s ease both;
+    /* box-shadow:
+        0 3px 17px rgb(22 51 42 / 0.045); */
+
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        border-color 0.25s ease;
+
+    animation:
+        cardAppear 0.55s ease both;
 }
 
 .kpi-wrapper:nth-child(2) {
+
     animation-delay: 0.08s;
 }
 
 .kpi-wrapper:nth-child(3) {
+
     animation-delay: 0.16s;
 }
 
 .kpi-wrapper:hover {
-    transform: translateY(-4px);
 
-    box-shadow: var(--surface-shadow-raised);
+    transform: translateY(-3px);
+
+    border-color: #dce8e2;
+
+    box-shadow:
+        0 12px 28px rgb(22 51 42 / 0.075);
 }
 
 .kpi-accent {
+
     position: absolute;
 
     left: 0;
@@ -694,33 +1167,32 @@ watch([period, city], reload);
 
     width: 3px;
 
-    background: var(--primary);
+    border-radius:
+        0 5px 5px 0;
 
-    border-radius: 0 4px 4px 0;
+    background:
+        var(--apha-primary);
 
     z-index: 5;
 }
 
 .kpi-accent.gold {
-    background: var(--gold-mid);
+
+    background:
+        var(--apha-gold);
 }
 
 .kpi-decoration {
+
     position: absolute;
 
     right: 17px;
 
     top: 17px;
 
-    width: 38px;
+    width: 39px;
 
-    height: 38px;
-
-    border-radius: 11px;
-
-    background: var(--primary-soft);
-
-    color: var(--primary);
+    height: 39px;
 
     display: flex;
 
@@ -728,73 +1200,263 @@ watch([period, city], reload);
 
     justify-content: center;
 
+    border: 1px solid #e0eee8;
+
+    border-radius: 11px;
+
+    background:
+        var(--apha-primary-soft);
+
+    color:
+        var(--apha-primary);
+
+    font-size: 15px;
+
+    font-weight: 700;
+
     pointer-events: none;
 
-    transition: transform 0.3s ease;
+    transition:
+        transform 0.25s ease;
 }
 
 .kpi-decoration.gold {
-    background: var(--gold-soft);
 
-    color: var(--gold-mid);
+    border-color: #eee4cf;
+
+    background:
+        var(--apha-gold-soft);
+
+    color:
+        var(--apha-gold);
 }
 
 .kpi-wrapper:hover .kpi-decoration {
-    transform: rotate(8deg) scale(1.08);
+
+    transform:
+        translateY(-2px)
+        scale(1.05);
 }
 
+
+/* =========================================================
+   TABLEAU
+========================================================= */
+
 .table-section {
+
     position: relative;
 
-    background: white;
-
-    border-radius: var(--radius-card);
+    overflow: hidden;
 
     padding: 4px;
 
-    box-shadow: var(--surface-shadow);
+    border: 1px solid var(--apha-border);
 
-    animation: tableAppear 0.65s ease both;
+    border-radius: 18px;
 
-    overflow: hidden;
+    background: #ffffff;
+
+    /* box-shadow:
+        0 7px 27px rgb(35 70 68 / 0.045); */
+
+    animation:
+        tableAppear 0.65s ease both;
+}
+
+
+/* =========================================================
+   EN-TÊTE TABLEAU
+========================================================= */
+
+.table-section-header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    padding: 19px 19px 17px;
+
+    /* border-bottom:
+        1px solid #edf1ef; */
+}
+
+.table-title-block {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+}
+
+.table-icon {
+
+    width: 38px;
+
+    height: 38px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border: 1px solid #dcebe4;
+
+    border-radius: 11px;
+
+    background:
+        var(--apha-primary-soft);
+
+    color:
+        var(--apha-primary);
+
+    font-size: 15px;
+
+    font-weight: 800;
+}
+
+.table-eyebrow {
+
+    display: block;
+
+    margin-bottom: 3px;
+
+    color:
+        var(--apha-primary);
+
+    font-size: 8px;
+
+    font-weight: 800;
+
+    letter-spacing: 0.12em;
+}
+
+.table-section-header h2 {
+
+    margin: 0;
+
+    color: #233a32;
+
+    font-size: 14px;
+
+    font-weight: 800;
+
+    letter-spacing: -0.015em;
+}
+
+.table-section-header p {
+
+    margin: 4px 0 0;
+
+    color:
+        var(--apha-muted);
+
+    font-size: 10px;
+
+    font-weight: 500;
+}
+
+.table-status {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    padding: 7px 10px;
+
+    border: 1px solid #e4eee9;
+
+    border-radius: 9px;
+
+    background: #f8fbf9;
+
+    color: #74827b;
+
+    font-size: 9px;
+
+    font-weight: 650;
+
+    white-space: nowrap;
+}
+
+.status-dot {
+
+    width: 6px;
+
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: #4a9c83;
+/* 
+    box-shadow:
+        0 0 0 3px rgb(74 156 131 / 0.10); */
 }
 
 .table-top-decoration {
+
     position: absolute;
 
-    left: 0;
+    left: 22px;
+
+    right: 22px;
 
     top: 0;
 
-    width: 100%;
+    height: 2px;
 
-    height: 3px;
+    border-radius:
+        0 0 4px 4px;
 
-    background: var(--primary);
+    background:
+        linear-gradient(
+            90deg,
+            var(--apha-primary),
+            #4a9c83,
+            var(--apha-gold)
+        );
 
-    opacity: 0.9;
+    opacity: 0.85;
 }
 
 .network-table {
+
     border-radius: 14px;
 }
 
+
+/* =========================================================
+   ASSUREUR
+========================================================= */
+
 .insurer-cell {
+
     display: flex;
 
     align-items: center;
 
     gap: 10px;
+
+    min-width: 0;
 }
 
 .insurer-avatar {
-    width: 34px;
 
-    height: 34px;
+    width: 35px;
+
+    height: 35px;
 
     flex-shrink: 0;
-
-    border-radius: 10px;
 
     display: flex;
 
@@ -802,48 +1464,82 @@ watch([period, city], reload);
 
     justify-content: center;
 
-    color: var(--primary-dark);
+    border: 1px solid #dcebe4;
 
-    background: var(--primary-soft);
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #eaf6f2,
+            #f5faf8
+        );
+
+    color:
+        var(--apha-primary-dark);
 
     font-size: 11px;
 
     font-weight: 800;
 
-    border: 1px solid color-mix(in srgb, var(--officine) 8%, transparent);
-
     transition:
-        transform 0.25s ease,
-        box-shadow 0.25s ease;
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .insurer-row:hover .insurer-avatar {
-    transform: scale(1.08);
 
-    box-shadow: 0 5px 12px color-mix(in srgb, var(--officine) 12%, transparent);
+    transform:
+        scale(1.05);
+
+    box-shadow:
+        0 5px 12px rgb(0 102 76 / 0.10);
 }
 
 .insurer-name {
+
     display: flex;
 
     flex-direction: column;
+
+    min-width: 0;
 
     gap: 2px;
 }
 
 .insurer-name span {
-    font-weight: 650;
 
-    color: var(--ink);
+    overflow: hidden;
+
+    color:
+        var(--apha-ink);
+
+    font-size: 12.5px;
+
+    font-weight: 700;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
 }
 
 .insurer-name small {
-    font-size: 12.5px;
 
-    color: color-mix(in srgb, var(--ink) 38%, transparent);
+    color:
+        var(--apha-light);
+
+    font-size: 9px;
+
+    font-weight: 500;
 }
 
+
+/* =========================================================
+   OFFICINES
+========================================================= */
+
 .pharmacy-count {
+
     display: flex;
 
     align-items: baseline;
@@ -852,56 +1548,117 @@ watch([period, city], reload);
 }
 
 .count-number {
-    font-weight: 700;
 
-    color: var(--ink);
+    color:
+        var(--apha-ink);
+
+    font-size: 13.5px;
+
+    font-weight: 750;
 }
 
 .count-label {
-    font-size: 12.5px;
 
-    color: color-mix(in srgb, var(--ink) 38%, transparent);
+    color:
+        var(--apha-light);
+
+    font-size: 9.5px;
+
+    font-weight: 500;
 }
 
+
+/* =========================================================
+   DÉLAI
+========================================================= */
+
 .delay-cell {
+
     display: flex;
 
     align-items: baseline;
+
+    flex-wrap: wrap;
 
     gap: 4px;
 }
 
 .delay-value {
-    font-weight: 750;
 
-    color: var(--ink);
+    color:
+        var(--apha-ink);
+
+    font-size: 13.5px;
+
+    font-weight: 750;
 }
 
 .delay-unit {
-    font-size: 12.5px;
 
-    color: color-mix(in srgb, var(--ink) 38%, transparent);
+    color:
+        var(--apha-light);
+
+    font-size: 9.5px;
+
+    font-weight: 500;
 }
 
 .delay-alert .delay-value {
-    color: var(--terracotta);
+
+    color:
+        #b45f50;
 }
 
-.rate-cell {
-    font-weight: 650;
+.delay-standard {
 
-    color: var(--ink);
+    display: block;
+
+    width: 100%;
+
+    margin-top: 2px;
+
+    color:
+        var(--apha-light);
+
+    font-size: 9.5px;
+
+    font-weight: 500;
+}
+
+
+/* =========================================================
+   TAUX
+========================================================= */
+
+.rate-cell {
+
+    color:
+        var(--apha-ink);
+
+    font-size: 12.5px;
+
+    font-weight: 700;
 }
 
 .rate-alert {
-    color: var(--terracotta);
+
+    color:
+        #b45f50;
 }
 
 .unpaid-cell {
-    color: var(--primary-dark);
+
+    color:
+        var(--apha-primary-dark);
 }
 
+
+/* =========================================================
+   LIEN MODIFIER SEUIL
+========================================================= */
+
 .threshold-edit {
+
     display: inline-flex;
 
     align-items: center;
@@ -910,9 +1667,10 @@ watch([period, city], reload);
 
     margin-left: 3px;
 
-    color: var(--primary);
+    color:
+        var(--apha-primary);
 
-    font-size: 12.5px;
+    font-size: 10px;
 
     font-weight: 750;
 
@@ -924,80 +1682,237 @@ watch([period, city], reload);
 }
 
 .threshold-edit-icon {
+
     font-size: 10px;
 
-    opacity: 0.7;
+    opacity: 0.65;
 
-    transition: transform 0.2s ease;
+    transition:
+        transform 0.2s ease;
 }
 
 .threshold-edit:hover {
-    color: var(--primary-dark);
+
+    color:
+        var(--apha-primary-dark);
 
     gap: 6px;
 }
 
 .threshold-edit:hover .threshold-edit-icon {
-    transform: translate(1px, -1px);
+
+    transform:
+        translate(1px, -1px);
 }
 
-/*
-  Une ligne de métadonnée, plus un panneau : la phrase mérite d'être lisible,
-  pas d'occuper une bande avec une icône « i ».
-*/
-.page-source {
-    margin-top: 16px;
 
-    color: color-mix(in srgb, var(--ink) 55%, transparent);
+/* =========================================================
+   NOTE
+========================================================= */
 
-    font-size: 12.5px;
-    line-height: 1.5;
+.network-footnote {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 9px;
+
+    margin-top: 14px;
+
+    padding: 12px 15px;
+
+    border: 1px solid
+        rgb(0 102 76 / 0.07);
+
+    border-radius: 12px;
+
+    background:
+        rgb(0 102 76 / 0.025);
 }
 
-@keyframes cardAppear {
+.footnote-icon {
+
+    width: 18px;
+
+    height: 18px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background:
+        var(--apha-primary);
+
+    color: #ffffff;
+
+    font-size: 10px;
+
+    font-weight: 800;
+}
+
+.network-footnote p {
+
+    margin: 0;
+
+    color:
+        var(--apha-muted);
+
+    font-size: 10px;
+
+    font-weight: 500;
+
+    line-height: 1.55;
+}
+
+
+/* =========================================================
+   ANIMATIONS
+========================================================= */
+
+@keyframes introAppear {
+
     from {
+
         opacity: 0;
 
-        transform: translateY(12px);
+        transform:
+            translateY(8px);
     }
 
     to {
+
         opacity: 1;
 
-        transform: translateY(0);
+        transform:
+            translateY(0);
+    }
+}
+
+@keyframes cardAppear {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            translateY(10px);
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            translateY(0);
     }
 }
 
 @keyframes tableAppear {
+
     from {
+
         opacity: 0;
 
-        transform: translateY(15px);
+        transform:
+            translateY(12px);
     }
 
     to {
+
         opacity: 1;
 
-        transform: translateY(0);
+        transform:
+            translateY(0);
     }
 }
 
-@media (max-width: 760px) {
-    .header-filters {
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1050px) {
+
+    .intro-main {
+
+        gap: 22px;
+    }
+
+    .intro-content {
+
+        min-width: auto;
+    }
+
+    .intro-filters {
+
+        padding-left: 18px;
+    }
+}
+
+
+@media (max-width: 900px) {
+
+    .network-intro {
+
+        align-items: flex-start;
+    }
+
+    .intro-main {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 18px;
+
+        width: 100%;
+    }
+
+    .intro-filters {
+
         width: 100%;
 
-        overflow-x: auto;
+        padding-left: 0;
 
-        padding-bottom: 2px;
+        padding-top: 14px;
 
-        scrollbar-width: none;
+        border-left: 0;
+
+        border-top:
+            1px solid #e8eeeb;
     }
 
-    .header-filters::-webkit-scrollbar {
-        display: none;
+    .intro-side {
+
+        position: absolute;
+
+        right: 22px;
+
+        top: 22px;
     }
+
+    .table-section-header {
+
+        align-items: flex-start;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 760px) {
 
     .header-actions {
+
         width: 100%;
 
         justify-content: stretch;
@@ -1006,68 +1921,184 @@ watch([period, city], reload);
     }
 
     .action-btn {
+
         flex: 1;
 
         min-width: 0;
+    }
 
-        padding: 0 9px;
+    .network-intro {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+        margin-top: 6px;
+    }
+
+    .intro-side {
+
+        position: static;
+
+        align-self: flex-start;
     }
 }
 
+
 @media (max-width: 640px) {
+
     .network-page {
-        padding-bottom: 80px;
+
+        padding-bottom: 70px;
     }
 
+    .network-intro {
+
+        gap: 17px;
+
+        padding: 19px 17px;
+
+        border-radius: 15px;
+    }
+
+    .network-intro::before {
+
+        left: 17px;
+
+        right: 17px;
+    }
+
+    .intro-main {
+
+        gap: 16px;
+    }
+
+    .intro-content {
+
+        align-items: flex-start;
+
+        gap: 12px;
+    }
+
+    .intro-icon {
+
+        width: 42px;
+
+        height: 42px;
+
+        border-radius: 12px;
+    }
+
+    .intro-text h1 {
+
+        font-size: 18px;
+    }
+
+    .intro-filters {
+
+        gap: 7px;
+    }
+
+    .filter-item {
+
+        flex: 1;
+
+        min-width: 0;
+    }
+
+    .privacy-badge {
+
+        font-size: 9px;
+    }
+
+    .table-section-header {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+        padding: 17px 14px;
+    }
+
+    .table-status {
+
+        align-self: flex-start;
+    }
+
+    .action-btn {
+
+        height: 35px;
+
+        padding: 0 8px;
+
+        font-size: 9.5px;
+    }
+
+    .action-icon {
+
+        width: 19px;
+
+        height: 19px;
+    }
+
+    .table-top-decoration {
+
+        left: 15px;
+
+        right: 15px;
+    }
+}
+
+
+/* =========================================================
+   TRÈS PETIT MOBILE
+========================================================= */
+
+@media (max-width: 400px) {
+
     .header-actions {
+
         gap: 5px;
     }
 
     .action-btn {
-        height: 34px;
 
-        padding: 0 7px;
+        padding: 0 6px;
 
-        gap: 5px;
-
-        font-size: 12.5px;
+        font-size: 9px;
     }
 
     .action-icon {
+
         width: 18px;
 
         height: 18px;
-
-        font-size: 11px;
     }
 
-    .table-section {
-        padding: 2px;
-    }
-}
+    .intro-filters {
 
-@media (max-width: 400px) {
-    .action-btn {
-        padding: 0 5px;
+        flex-direction: column;
 
-        gap: 4px;
-
-        font-size: 12.5px;
+        align-items: stretch;
     }
 
-    .action-icon {
-        width: 17px;
+    .filter-item {
 
-        height: 17px;
-
-        font-size: 10px;
+        width: 100%;
     }
 }
+
+
+/* =========================================================
+   ACCESSIBILITÉ
+========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
+
     .network-page *,
     .network-page *::before,
     .network-page *::after {
+
         animation-duration: 0.01ms !important;
 
         animation-iteration-count: 1 !important;
@@ -1075,4 +2106,5 @@ watch([period, city], reload);
         transition-duration: 0.01ms !important;
     }
 }
+
 </style>

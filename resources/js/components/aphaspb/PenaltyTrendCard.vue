@@ -114,7 +114,7 @@ async function exportChart() {
 
 <template>
     <section
-        class="rounded-[var(--radius-card)] bg-card p-5 shadow-[var(--surface-shadow)]"
+        class="rounded-[var(--radius-card)] bg-card p-5"
     >
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>

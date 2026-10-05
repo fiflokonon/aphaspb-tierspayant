@@ -43,11 +43,11 @@ const model = defineModel<string | number | null>({ default: null });
     >
         <span
             v-if="label"
-            class="pointer-events-none shrink-0 font-mono font-bold tracking-[0.05em] text-ink/45 uppercase"
+            class="pointer-events-none shrink-0 font-mono font-bold tracking-[0.05em] uppercase"
             :class="
                 size === 'compact'
                     ? 'pl-[11px] text-[9px]'
-                    : 'pl-[13px] text-[9.5px]'
+                    : 'pl-[13px] text-[12px]'
             "
         >
             {{ label }}
@@ -55,9 +55,9 @@ const model = defineModel<string | number | null>({ default: null });
         <select
             v-model="model"
             v-bind="$attrs"
-            class="h-full w-full cursor-pointer appearance-none bg-transparent pr-7 font-medium whitespace-nowrap text-ink/70 outline-none"
+            class="h-full w-full cursor-pointer appearance-none bg-transparent pr-7  whitespace-nowrap outline-none"
             :class="[
-                size === 'compact' ? 'text-[11.5px]' : 'text-xs',
+                size === 'compact' ? 'text-[11.5px]' : 'text-[15px]',
                 label
                     ? 'pl-[6px]'
                     : size === 'compact'

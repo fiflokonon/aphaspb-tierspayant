@@ -124,7 +124,11 @@ const delayTone = (days: number | null): KpiTone => {
 
     overflow: hidden;
 
-    border-radius: 16px;
+    border-radius: 18px;
+
+    border: 1px solid color-mix(in srgb, var(--ink) 5%, transparent);
+
+    background: var(--card);
 
     animation: cardAppear 0.55s ease both;
 
@@ -174,8 +178,8 @@ const delayTone = (days: number | null): KpiTone => {
 .kpi-icon {
     position: absolute;
 
-    top: 16px;
-    right: 16px;
+    top: 15px;
+    right: 15px;
 
     width: 37px;
     height: 37px;

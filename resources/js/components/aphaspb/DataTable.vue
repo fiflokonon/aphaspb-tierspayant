@@ -9,10 +9,10 @@ defineProps<{
 
 <template>
     <div
-        class="mt-[22px] overflow-hidden rounded-[var(--radius-card)] bg-card shadow-[var(--surface-shadow)]"
+        class="overflow-hidden rounded-[var(--radius-card)] border border-ink/[0.06] bg-card shadow-[var(--surface-shadow)]"
     >
         <div
-            class="flex flex-col gap-3 border-b border-ink/[0.08] px-4 py-[13px] sm:flex-row sm:items-center sm:gap-[10px]"
+            class="flex flex-col gap-3 border-b border-ink/[0.06] bg-white/80 px-5 sm:flex-row sm:items-center sm:gap-[10px]"
         >
             <div class="text-[12.5px] font-bold text-ink">{{ title }}</div>
             <div class="flex gap-[7px] overflow-x-auto sm:ml-auto">
@@ -23,7 +23,7 @@ defineProps<{
         <div class="overflow-x-auto">
             <div class="min-w-[720px]">
                 <div
-                    class="bg-cream-header px-4 py-[9px] font-mono text-[9.5px] font-semibold tracking-[0.14em] text-ink/50"
+                    class="bg-cream-state px-5 py-[10px] text-[11px] font-semibold tracking-[0.14em]"
                     :style="{
                         display: 'grid',
                         gridTemplateColumns: template,
@@ -41,7 +41,7 @@ defineProps<{
 
         <div
             v-if="footer"
-            class="border-t border-ink/[0.06] px-4 py-[11px] text-[12.5px] text-ink/[0.45]"
+            class="border-t border-ink/[0.06] bg-white/60 px-5 py-[12px] text-[12.5px] text-ink/[0.45]"
         >
             {{ footer }}
         </div>

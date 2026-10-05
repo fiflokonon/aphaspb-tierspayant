@@ -50,7 +50,12 @@ const losing = computed(() =>
     <Head title="Mes assureurs" />
 
     <div class="insurers-page">
-        <ConsoleHeader title="Mes assureurs" class="insurers-header" />
+         <br>
+          <div class="intro-text"> 
+                        <h1>Mes assureurs</h1>
+                       
+                    </div>
+        <ConsoleHeader title="" class="insurers-header" />
 
         <div class="insurers-layout">
             <Form
@@ -191,12 +196,23 @@ const losing = computed(() =>
 </template>
 
 <style scoped>
+.intro-text h1 {
+    margin: 0;
+
+    color: var(--ink);
+
+    font-size: 21px;
+    font-weight: 800;
+
+    letter-spacing: -0.025em;
+}
 .history-links {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
     margin-top: 14px;
+    padding: 10px;
 }
 
 .history-links-label {

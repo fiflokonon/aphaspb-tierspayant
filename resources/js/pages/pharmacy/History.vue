@@ -106,10 +106,17 @@ const footer = computed(
     <Head title="Historique" />
 
     <div class="history-page">
-        <ConsoleHeader title="Historique" class="history-header">
+        <br>
+            <div class="intro-text">
+                        
+                        <h1>Historique</h1>
+                       
+                    </div>
+        <ConsoleHeader title="" class="intro-text">
             <template #filters>
                 <div class="history-filters">
                     <div class="filter-wrapper">
+                        
                         <FilterSelect
                             v-model="insurer"
                             :options="insurerOptions"
@@ -348,6 +355,17 @@ const footer = computed(
 </template>
 
 <style scoped>
+
+.intro-text h1 {
+    margin: 0;
+
+    color: var(--ink);
+
+    font-size: 21px;
+    font-weight: 800;
+
+    letter-spacing: -0.025em;
+}
 .history-page {
     /* La palette vient de :root — voir resources/css/app.css. */
 

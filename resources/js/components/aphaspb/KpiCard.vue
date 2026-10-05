@@ -39,11 +39,11 @@ const props = withDefaults(
         "
     >
         <div
-            class="font-mono font-semibold"
+            class="font-semibold"
             :class="
                 surface === 'band'
                     ? 'text-[8.5px]/none text-white/72 min-[380px]:text-[9.5px]/none'
-                    : 'text-[10.5px]/none text-ink/[0.45]'
+                    : 'text-[11.5px]/none'
             "
         >
             {{ label }}
@@ -55,7 +55,7 @@ const props = withDefaults(
             "
         >
             <div
-                class="font-serif"
+                class=""
                 :class="
                     surface === 'band'
                         ? 'text-[15px]/none whitespace-nowrap text-white min-[380px]:text-[21px]/none'
@@ -67,7 +67,7 @@ const props = withDefaults(
             <div
                 v-if="unit"
                 class="text-xs font-medium"
-                :class="surface === 'band' ? 'text-white/72' : 'text-ink/50'"
+                :class="surface === 'band' ? 'text-white/72' : 'text-black'"
             >
                 {{ unit }}
             </div>
@@ -88,7 +88,7 @@ const props = withDefaults(
             :class="
                 surface === 'band'
                     ? 'text-[10px]/[1.3] text-white/72'
-                    : 'text-[11px]/[1.4] text-ink/50'
+                    : 'text-[11px]/[1.4]'
             "
         >
             <slot name="hint">{{ hint }}</slot>

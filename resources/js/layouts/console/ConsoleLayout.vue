@@ -49,127 +49,51 @@ defineProps<{
 </template>
 
 <style scoped>
-/* =============================================================
-   APhaSPB — GLOBAL APPLICATION SHELL
-============================================================= */
-
 .app-shell {
     position: relative;
     display: flex;
     min-height: 100vh;
     width: 100%;
-
-    /*
-     * Fond général de l'application.
-     * Même ambiance que les pages Statistiques réseau :
-     * blanc cassé + halo turquoise très léger.
-     */
-    /*
-      Le crème de la charte, pas le gris froid hérité : #f7f9f9 tirait sur le
-      bleu et refroidissait tout le canvas, cartes blanches comprises.
-    */
-    background: var(--cream);
-
+    background: transparent;
     color: var(--ink);
 }
-
-/* =============================================================
-   CONTENU
-============================================================= */
 
 .app-content {
     position: relative;
     z-index: 1;
-
     min-width: 0;
     flex: 1;
-
-    padding: 20px 16px 28px;
-
-    /*
-     * Le halo de profondeur a été retiré : un dégradé diffuse le propos là
-     * où un aplat le pose.
-     */
+    padding: 18px 18px 36px;
 }
 
-/* =============================================================
-   TABLETTE
-============================================================= */
+.app-content::before {
+    content: '';
+    position: fixed;
+    z-index: -1;
+    inset: 0 0 0 236px;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.22), transparent 22%);
+}
 
 @media (min-width: 640px) {
-    .app-content {
-        padding: 24px 26px 32px;
-    }
+    .app-content { padding: 22px 24px 42px; }
 }
-
-/* =============================================================
-   DESKTOP
-============================================================= */
 
 @media (min-width: 1024px) {
-    .app-content {
-        padding: 26px 30px 38px;
-    }
+    .app-content { padding: 18px 30px 46px; }
 }
-
-/* =============================================================
-   GRAND ÉCRAN
-============================================================= */
 
 @media (min-width: 1280px) {
-    .app-content {
-        padding: 28px 36px 42px;
-    }
+    .app-content { padding: 20px 38px 52px; }
 }
-
-/* =============================================================
-   SOUS LE POINT DE BASCULE DE LA BARRE
-============================================================= */
 
 @media (max-width: 1023px) {
-    /*
-     * Sans cette ligne, le contenu part hors écran à droite.
-     *
-     * Sous 1024 px, ConsoleSidebar passe en `width: 100%` — bordure basse,
-     * navigation en rangée, pied masqué : tout y dit « empilé ». Mais elle
-     * garde le `flex-shrink: 0` de sa règle de base, et .app-shell reste une
-     * rangée. La barre réclame donc toute la largeur sans céder, .app-content
-     * — en `flex: 1`, donc `flex-basis: 0%` — est écrasé à zéro, et ses
-     * enfants à largeur minimale débordent hors du viewport.
-     *
-     * Le symptôme est une page blanche avec une barre de défilement
-     * horizontale : le contenu existe, il commence juste après la barre.
-     */
-    .app-shell {
-        flex-direction: column;
-    }
+    .app-shell { flex-direction: column; }
+    .app-content::before { inset: 0; }
 }
-
-/* =============================================================
-   PETITS ÉCRANS
-============================================================= */
 
 @media (max-width: 639px) {
-    .app-shell {
-        min-height: 100svh;
-    }
-
-    .app-content {
-        padding: 16px 14px 28px;
-    }
-}
-
-/* =============================================================
-   ACCESSIBILITÉ
-============================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-    .app-shell *,
-    .app-shell *::before,
-    .app-shell *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
+    .app-shell { min-height: 100svh; }
+    .app-content { padding: 14px 12px 28px; }
 }
 </style>

@@ -47,7 +47,7 @@ defineProps<{ account: ConsoleAccount }>();
             rangée et le déclencheur doit pouvoir rétrécir.
         -->
         <DropdownMenuTrigger
-            class="flex h-9 min-w-0 shrink items-center gap-[6px] rounded-[10px] border border-ink/[0.10] bg-white/80 px-[10px] text-[13px] font-bold text-ink/75 transition-colors hover:bg-cream-header lg:h-10 lg:shrink-0 lg:text-[14.5px]"
+            class="flex h-9 min-w-0 shrink items-center gap-[6px] rounded-[10px] border border-[rgb(39_79_73_/_0.09)] bg-white/75 px-[10px] text-[13px] font-bold text-ink/75 transition-colors hover:bg-cream-header lg:h-10 lg:shrink-0 lg:text-[14.5px]"
             :aria-label="`Compte de ${account.name}`"
         >
             <Avatar class="-ml-[4px] size-6 lg:size-7" aria-hidden="true">

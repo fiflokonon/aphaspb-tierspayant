@@ -33,7 +33,7 @@ const props = defineProps<{
 }>();
 
 const TEMPLATE = '2fr 1fr 1fr 1.1fr';
-const COLUMNS = ['OFFICINE', 'VILLE', 'N° ONPB', 'INSCRITE LE'];
+const COLUMNS = ['Officine', 'Ville', 'N° Onpb', 'Inscrite le'];
 
 const city = ref<string | null>(props.filters.city);
 const search = ref(props.filters.search ?? '');
@@ -81,281 +81,767 @@ const footer = computed(
     <Head title="Pharmacies inscrites" />
 
     <div class="pharmacies-page">
-        <ConsoleHeader title="Pharmacies inscrites" class="pharmacies-header">
-            <template #filters>
-                <div class="header-filters">
+
+        <!-- =====================================================
+             INTRODUCTION + FILTRES
+        ====================================================== -->
+        <section class="pharmacies-intro">
+
+            <div class="intro-decoration"></div>
+
+            <div class="intro-main">
+
+                <!-- TITRE -->
+                <div class="intro-content">
+
+                    <div class="intro-icon">
+                        <span>+</span>
+                    </div>
+
+                    <div class="intro-text">
+                   
+
+                        <h1>
+                            Pharmacies inscrites
+                        </h1>
+
+                        <span class="intro-period">
+                            Officines actuellement enregistrées dans le réseau
+                            <template v-if="city !== null">
+                                · {{ city }}
+                            </template>
+                        </span>
+                    </div>
+
+                </div>
+
+                <!-- FILTRES -->
+                <div class="intro-filters">
+
                     <!-- RECHERCHE -->
+                    <div class="filter-item search-filter">
 
-                    <div class="search-box">
-                        <span class="search-icon" aria-hidden="true"> ⌕ </span>
-
-                        <input
-                            v-model="search"
-                            type="search"
-                            placeholder="Rechercher une officine…"
-                            aria-label="Rechercher une officine"
-                            class="search-input"
-                        />
-
-                        <button
-                            v-if="search"
-                            type="button"
-                            class="clear-search"
-                            aria-label="Effacer la recherche"
-                            @click="search = ''"
-                        >
-                            ×
-                        </button>
-                    </div>
-
-                    <div class="city-filter">
-                        <span class="city-filter-icon" aria-hidden="true">
-                            ◉
+                        <span class="filter-label">
+                            RECHERCHE
                         </span>
 
-                        <FilterSelect
-                            v-model="city"
-                            :options="cityOptions"
-                            aria-label="Filtrer par ville"
-                        />
-                    </div>
-                </div>
-            </template>
-        </ConsoleHeader>
+                        <div class="search-box">
 
-        <section class="pharmacies-section">
-            <div class="section-top-line"></div>
-
-            <DataTable
-                title="Officines du réseau"
-                :columns="COLUMNS"
-                :template="TEMPLATE"
-                :footer="footer"
-                class="pharmacies-table"
-            >
-                <DataTableRow
-                    v-for="row in pharmacies.data"
-                    :key="row.id"
-                    :template="TEMPLATE"
-                    class="pharmacy-row"
-                >
-                    <div class="pharmacy-name-cell">
-                        <div class="pharmacy-avatar">
-                            {{ row.name?.charAt(0)?.toUpperCase() }}
-                        </div>
-
-                        <div class="pharmacy-name-content">
-                            <div class="pharmacy-name" :title="row.name">
-                                {{ row.name }}
-                            </div>
-
-                            <span class="pharmacy-status">
-                                <span class="mini-status-dot"></span>
-
-                                Officine inscrite
+                            <span
+                                class="search-icon"
+                                aria-hidden="true"
+                            >
+                                ⌕
                             </span>
+
+                            <input
+                                v-model="search"
+                                type="search"
+                                placeholder="Rechercher une officine…"
+                                aria-label="Rechercher une officine"
+                                class="search-input"
+                            />
+
+                            <button
+                                v-if="search"
+                                type="button"
+                                class="clear-search"
+                                aria-label="Effacer la recherche"
+                                @click="search = ''"
+                            >
+                                ×
+                            </button>
+
                         </div>
+
                     </div>
 
-                    <div class="city-cell">
-                        <span class="city-marker"> ● </span>
+                    <!-- VILLE -->
+                    <div class="filter-item city-filter-item">
 
-                        <span>
-                            {{ row.city ?? '—' }}
+                        <span class="filter-label">
+                            VILLE
                         </span>
+
+                        <div class="city-filter">
+
+                            <span
+                                class="city-filter-icon"
+                                aria-hidden="true"
+                            >
+                                ●
+                            </span>
+
+                            <FilterSelect
+                                v-model="city"
+                                :options="cityOptions"
+                                aria-label="Filtrer par ville"
+                            />
+
+                        </div>
+
                     </div>
 
-                    <div class="license-cell">
-                        <span class="license-icon"> # </span>
-
-                        <span>
-                            {{ row.onpbLicense ?? '—' }}
-                        </span>
-                    </div>
-
-                    <div class="date-cell">
-                        <span class="date-icon"> ◷ </span>
-
-                        <span>
-                            {{ row.registeredAt ?? '—' }}
-                        </span>
-                    </div>
-                </DataTableRow>
-
-                <div v-if="!pharmacies.data.length" class="empty-state">
-                    <div class="empty-icon">⌕</div>
-
-                    <div class="empty-title">Aucune officine trouvée</div>
-
-                    <p>
-                        Aucune officine ne correspond aux critères sélectionnés.
-                    </p>
-
-                    <button
-                        v-if="search || city"
-                        type="button"
-                        class="empty-reset"
-                        @click="
-                            search = '';
-                            city = null;
-                        "
-                    >
-                        Réinitialiser les filtres
-                    </button>
                 </div>
-            </DataTable>
+
+            </div>
+
         </section>
 
-        <div class="pagination-wrapper">
-            <Pagination
-                :page="pharmacies.current_page"
-                :last-page="pharmacies.last_page"
-                :from="pharmacies.from"
-                :to="pharmacies.to"
-                :total="pharmacies.total"
-                noun="officine"
-                :per-page="filters.perPage"
-                :page-sizes="pageSizes"
-                @update:page="reload"
-                @update:per-page="perPage = $event"
-            />
+
+        <!-- =====================================================
+             CONTENU
+        ====================================================== -->
+        <div class="pharmacies-body">
+
+            <!-- =================================================
+                 TABLEAU
+            ================================================== -->
+            <section class="pharmacies-table-section">
+
+                <div class="section-top-line"></div>
+
+                <div class="table-heading">
+
+                    <div class="table-heading-main">
+
+                        <div class="table-heading-icon">
+                            <span>⌘</span>
+                        </div>
+
+                        <div>
+
+                            <!-- <span class="section-eyebrow">
+                                DÉTAIL DU RÉSEAU
+                            </span> -->
+
+                            <h2>
+                                Officines du réseau
+                            </h2>
+
+                           
+
+                        </div>
+
+                    </div>
+
+                    <!-- STATUT -->
+                    <!-- <div class="table-status">
+
+                        <span class="status-dot"></span>
+
+                        Réseau actif
+
+                    </div> -->
+
+                </div>
+
+
+                <!-- =================================================
+                     DATA TABLE
+                ================================================== -->
+                <DataTable
+                    title=""
+                    :columns="COLUMNS"
+                    :template="TEMPLATE"
+                    :footer="footer"
+                    class="pharmacies-table"
+                >
+
+                    <DataTableRow
+                        v-for="row in pharmacies.data"
+                        :key="row.id"
+                        :template="TEMPLATE"
+                        class="pharmacy-row"
+                    >
+
+                        <!-- NOM -->
+                        <div class="pharmacy-name-cell">
+
+                            <div class="pharmacy-avatar">
+                                {{ row.name?.charAt(0)?.toUpperCase() }}
+                            </div>
+
+                            <div class="pharmacy-name-content">
+
+                                <div
+                                    class="pharmacy-name"
+                                    :title="row.name"
+                                >
+                                    {{ row.name }}
+                                </div>
+
+                                <span class="pharmacy-status">
+
+                                    <span class="mini-status-dot"></span>
+
+                                    Officine inscrite
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- VILLE -->
+                        <div class="city-cell">
+
+                            <span
+                                class="city-marker"
+                                aria-hidden="true"
+                            >
+                                ●
+                            </span>
+
+                            <span>
+                                {{ row.city ?? '—' }}
+                            </span>
+
+                        </div>
+
+
+                        <!-- ONPB -->
+                        <div class="license-cell">
+
+                            <span
+                                class="license-icon"
+                                aria-hidden="true"
+                            >
+                                #
+                            </span>
+
+                            <span>
+                                {{ row.onpbLicense ?? '—' }}
+                            </span>
+
+                        </div>
+
+
+                        <!-- DATE -->
+                        <div class="date-cell">
+
+                            <span
+                                class="date-icon"
+                                aria-hidden="true"
+                            >
+                                ◷
+                            </span>
+
+                            <span>
+                                {{ row.registeredAt ?? '—' }}
+                            </span>
+
+                        </div>
+
+                    </DataTableRow>
+
+
+                    <!-- =================================================
+                         AUCUN RÉSULTAT
+                    ================================================== -->
+                    <div
+                        v-if="!pharmacies.data.length"
+                        class="empty-state"
+                    >
+
+                        <div class="empty-icon">
+                            ⌕
+                        </div>
+
+                        <div class="empty-title">
+                            Aucune officine trouvée
+                        </div>
+
+                        <p>
+                            Aucune officine ne correspond aux critères
+                            de recherche sélectionnés.
+                        </p>
+
+                        <button
+                            v-if="search || city"
+                            type="button"
+                            class="empty-reset"
+                            @click="
+                                search = '';
+                                city = null;
+                            "
+                        >
+                            Réinitialiser les filtres
+                        </button>
+
+                    </div>
+
+                </DataTable>
+
+            </section>
+
+
+            <!-- =================================================
+                 PAGINATION
+            ================================================== -->
+            <div class="pagination-wrapper">
+
+                <Pagination
+                    :page="pharmacies.current_page"
+                    :last-page="pharmacies.last_page"
+                    :from="pharmacies.from"
+                    :to="pharmacies.to"
+                    :total="pharmacies.total"
+                    noun="officine"
+                    :per-page="filters.perPage"
+                    :page-sizes="pageSizes"
+                    @update:page="reload"
+                    @update:per-page="perPage = $event"
+                />
+
+            </div>
+
+
+            <!-- =================================================
+                 NOTE
+            ================================================== -->
+            <div class="pharmacies-footnote">
+
+                <div class="footnote-icon">
+                    i
+                </div>
+
+                <p>
+                    Les informations affichées correspondent aux officines
+                    actuellement enregistrées dans le réseau.
+                </p>
+
+            </div>
+
         </div>
 
-        <div class="pharmacies-footnote">
-            <div class="footnote-icon">i</div>
-
-            <p>
-                Les informations affichées correspondent aux officines
-                actuellement enregistrées dans le réseau.
-            </p>
-        </div>
     </div>
 </template>
 
+
 <style scoped>
+
+/* =========================================================
+   VARIABLES
+   ========================================================= */
+
 .pharmacies-page {
-    /* La palette vient de :root — voir resources/css/app.css. */
+
+    --page-bg: #f8faf9;
+
+    --surface: #ffffff;
+    --surface-soft: #fbfdfc;
+
+    --ink: #243a32;
+
+    --muted: #788780;
+    --muted-light: #9da8a3;
+
+    --primary: #00664c;
+    --primary-dark: #005741;
+    --primary-soft: #eef7f3;
+
+    --gold: #b08a45;
+    --gold-soft: #fbf7ef;
+
+    --border: #e5ebe8;
 
     position: relative;
 
     width: 100%;
-
     min-height: 100vh;
 
-    padding: 0 10px 60px;
+    color: var(--ink);
+
+    font-family: 'Manrope', sans-serif;
 }
 
-.pharmacies-header {
-    position: relative;
 
-    z-index: 5;
-}
+/* =========================================================
+   INTRODUCTION
+   ========================================================= */
 
-.header-filters {
-    display: flex;
+.pharmacies-intro {
 
-    align-items: center;
-
-    gap: 8px;
-}
-
-.search-box {
     position: relative;
 
     display: flex;
-
     align-items: center;
 
-    width: 250px;
+    width: 100%;
 
-    height: 42px;
+    margin: 10px 0 25px;
+
+    padding: 22px 24px;
+
+    overflow: hidden;
 
     border: 1px solid var(--border);
 
-    border-radius: 10px;
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            110deg,
+            #ffffff 0%,
+            #ffffff 58%,
+            #f7fbf9 100%
+        );
+
+    animation:
+        introAppear
+        0.55s ease
+        both;
+}
+
+
+/* =========================================================
+   LIGNE SUPÉRIEURE
+   ========================================================= */
+
+.pharmacies-intro::before {
+
+    position: absolute;
+
+    left: 24px;
+    right: 24px;
+
+    top: 0;
+
+    height: 2px;
+
+    border-radius: 0 0 4px 4px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--primary),
+            #2b896d 70%,
+            var(--gold)
+        );
+
+    content: '';
+}
+
+
+/* =========================================================
+   DÉCORATION
+   ========================================================= */
+
+.intro-decoration {
+
+    position: absolute;
+
+    right: -65px;
+    top: -95px;
+
+    width: 210px;
+    height: 210px;
+
+    border: 1px solid
+        rgb(0 102 76 / 0.07);
+
+    border-radius: 50%;
+
+    pointer-events: none;
+}
+
+.intro-decoration::after {
+
+    position: absolute;
+
+    right: 28px;
+    bottom: 28px;
+
+    width: 70px;
+    height: 70px;
+
+    border-radius: 50%;
+
+    background: var(--primary-soft);
+
+    content: '';
+}
+
+
+/* =========================================================
+   INTRO MAIN
+   ========================================================= */
+
+.intro-main {
+
+    position: relative;
+
+    z-index: 2;
+
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+
+    min-width: 0;
+
+    gap: 34px;
+}
+
+
+/* =========================================================
+   TITRE
+   ========================================================= */
+
+.intro-content {
+
+    display: flex;
+    align-items: center;
+
+    min-width: 285px;
+
+    gap: 15px;
+}
+
+.intro-icon {
+
+    width: 48px;
+    height: 48px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 14px;
+
+    background:
+        linear-gradient(
+            145deg,
+            var(--primary),
+            var(--primary-dark)
+        );
+
+    color: #ffffff;
+
+    font-size: 18px;
+
+    font-weight: 850;
+}
+
+.intro-text {
+
+    min-width: 0;
+}
+
+.intro-eyebrow {
+
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: var(--primary);
+
+    font-size: 8px;
+
+    font-weight: 850;
+
+    letter-spacing: 0.15em;
+}
+
+.intro-text h1 {
+
+    margin: 0;
+
+    color: #203a31;
+
+    font-size: 21px;
+
+    font-weight: 800;
+
+    line-height: 1.25;
+
+    letter-spacing: -0.025em;
+}
+
+.intro-period {
+
+    display: block;
+
+    margin-top: 4px;
+
+    color: var(--muted);
+
+    font-size: 10px;
+
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   FILTRES
+   ========================================================= */
+
+.intro-filters {
+
+    display: flex;
+    align-items: flex-end;
+
+    flex: 1;
+
+    min-width: 0;
+
+    gap: 12px;
+
+    padding-left: 28px;
+
+    border-left: 1px solid #e8eeeb;
+}
+
+.filter-item {
+
+    display: flex;
+    flex-direction: column;
+
+    flex: 1;
+
+    min-width: 0;
+
+    gap: 5px;
+}
+
+.filter-label {
+
+    color: var(--muted-light);
+
+    font-size: 8px;
+
+    font-weight: 850;
+
+    letter-spacing: 0.12em;
+}
+
+
+/* =========================================================
+   RECHERCHE
+   ========================================================= */
+
+.search-filter {
+
+    flex: 1.4;
+}
+
+.search-box {
+
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+
+    height: 39px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 9px;
 
     background: #ffffff;
-
-    /* box-shadow:
-        0 3px 10px
-        color-mix(in srgb, var(--ink) 2.5%, transparent); */
 
     transition:
         border-color 0.2s ease,
         box-shadow 0.2s ease;
 }
 
-.search-box:focus-within {
-    border-color: color-mix(in srgb, var(--officine) 35%, transparent);
+.search-box:hover {
 
-    /* box-shadow:
+    border-color:
+        color-mix(
+            in srgb,
+            var(--primary) 25%,
+            var(--border)
+        );
+}
+
+.search-box:focus-within {
+
+    border-color:
+        color-mix(
+            in srgb,
+            var(--primary) 42%,
+            var(--border)
+        );
+
+    box-shadow:
         0 0 0 3px
-        color-mix(in srgb, var(--officine) 7%, transparent); */
+        rgb(0 102 76 / 0.06);
 }
 
 .search-icon {
+
     display: flex;
-
     align-items: center;
-
     justify-content: center;
 
-    width: 38px;
+    width: 35px;
 
     flex-shrink: 0;
 
-    color: color-mix(in srgb, var(--ink) 55%, transparent);
+    color: var(--muted);
 
-    font-size: 18px;
-
-    line-height: 1;
+    font-size: 16px;
 }
 
 .search-input {
-    width: 100%;
 
+    width: 100%;
     height: 100%;
 
-    padding: 0 34px 0 0;
+    padding: 0 32px 0 0;
 
     border: none;
-
     outline: none;
 
     background: transparent;
 
     color: var(--ink);
 
-    font-size: 11px;
+    font-size: 10.5px;
 
-    font-weight: 550;
+    font-weight: 600;
 }
 
 .search-input::placeholder {
-    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-weight: 450;
+    color:
+        color-mix(
+            in srgb,
+            var(--ink) 38%,
+            transparent
+        );
+
+    font-weight: 500;
 }
 
 .search-input::-webkit-search-cancel-button {
     display: none;
 }
 
+
+/* =========================================================
+   CLEAR SEARCH
+   ========================================================= */
+
 .clear-search {
+
     position: absolute;
 
-    right: 9px;
-
+    right: 8px;
     top: 50%;
 
-    width: 21px;
-
-    height: 21px;
+    width: 20px;
+    height: 20px;
 
     display: flex;
-
     align-items: center;
-
     justify-content: center;
 
     transform: translateY(-50%);
@@ -364,11 +850,11 @@ const footer = computed(
 
     border-radius: 50%;
 
-    background: var(--cream-state);
+    background: var(--primary-soft);
 
-    color: color-mix(in srgb, var(--ink) 55%, transparent);
+    color: var(--primary-dark);
 
-    font-size: 14px;
+    font-size: 13px;
 
     cursor: pointer;
 
@@ -378,30 +864,58 @@ const footer = computed(
 }
 
 .clear-search:hover {
-    background: var(--primary-soft);
 
-    color: var(--primary-dark);
+    background: #dcefe8;
+
+    color: var(--primary);
+}
+
+
+/* =========================================================
+   VILLE
+   ========================================================= */
+
+.city-filter-item {
+
+    flex: 0.85;
 }
 
 .city-filter {
+
     position: relative;
 
     display: flex;
-
     align-items: center;
 
-    height: 42px;
+    width: 100%;
+
+    height: 39px;
 
     border: 1px solid var(--border);
 
-    border-radius: 10px;
+    border-radius: 9px;
 
     background: #ffffff;
 
     overflow: hidden;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.city-filter:hover {
+
+    border-color:
+        color-mix(
+            in srgb,
+            var(--primary) 25%,
+            var(--border)
+        );
 }
 
 .city-filter-icon {
+
     position: absolute;
 
     left: 11px;
@@ -410,41 +924,57 @@ const footer = computed(
 
     color: var(--primary);
 
-    font-size: 12.5px;
+    font-size: 7px;
 
     pointer-events: none;
 }
 
 .city-filter :deep(select) {
+
+    width: 100%;
+
     height: 100%;
 
-    min-width: 155px;
+    min-width: 135px;
 
-    padding-left: 26px;
-
-    padding-right: 32px;
+    padding-left: 27px;
+    padding-right: 30px;
 
     border: none;
-
     outline: none;
 
     background: transparent;
 
     color: var(--ink);
 
-    font-size: 10.5px;
+    font-size: 10px;
 
     font-weight: 650;
+
+    cursor: pointer;
 }
 
-.pharmacies-section {
-    /*
-      Les 22 px que portait le panneau d'introduction supprimé. Sans eux, le
-      liseré d'accent de 3 px vient se coller sous le titre serif et se lit
-      comme un soulignement mal posé — 1 px d'écart sur l'historique, la jambe
-      du « q » touchait le trait. Même valeur que .exports-page, la référence.
-    */
-    margin-top: 22px;
+
+/* =========================================================
+   BODY
+   ========================================================= */
+
+.pharmacies-body {
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 14px;
+
+    padding-bottom: 40px;
+}
+
+
+/* =========================================================
+   TABLE SECTION
+   ========================================================= */
+
+.pharmacies-table-section {
 
     position: relative;
 
@@ -452,65 +982,234 @@ const footer = computed(
 
     overflow: hidden;
 
-    padding: 4px;
+    border: 1px solid var(--border);
 
-    border-radius: var(--radius-card);
+    border-radius: 20px;
 
-    background: #ffffff;
+    background: var(--surface);
 
-    box-shadow: var(--surface-shadow);
-
-    animation: fadeUp 0.6s ease 0.05s both;
+    animation:
+        fadeUp
+        0.55s ease
+        0.05s both;
 }
 
+
+/* =========================================================
+   LIGNE ACCENT
+   ========================================================= */
+
 .section-top-line {
+
     position: absolute;
 
     left: 0;
-
     top: 0;
 
     width: 100%;
-
     height: 3px;
 
-    background: var(--primary);
-
-    opacity: 0.9;
+    background:
+        linear-gradient(
+            90deg,
+            var(--primary),
+            #27856a 65%,
+            var(--gold)
+        );
 }
 
-.pharmacies-table {
-    border-radius: 14px;
-}
 
-.pharmacy-name-cell {
+/* =========================================================
+   TABLE HEADING
+   ========================================================= */
+
+.table-heading {
+
     display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
 
+    gap: 24px;
+
+    padding: 24px 24px 17px;
+
+    border-bottom: 1px solid var(--border);
+
+    background:
+        linear-gradient(
+            135deg,
+            #ffffff,
+            #fbfdfc
+        );
+}
+
+.table-heading-main {
+
+    display: flex;
     align-items: center;
 
-    gap: 10px;
-
-    min-width: 180px;
+    gap: 12px;
 }
 
-.pharmacy-avatar {
-    width: 34px;
+.table-heading-icon {
 
-    height: 34px;
+    width: 39px;
+    height: 39px;
 
     flex-shrink: 0;
 
     display: flex;
-
     align-items: center;
-
     justify-content: center;
 
-    border: 1px solid color-mix(in srgb, var(--officine) 8%, transparent);
+    border: 1px solid #d9ebe4;
+
+    border-radius: 12px;
+
+    background: var(--primary-soft);
+
+    color: var(--primary);
+
+    font-size: 16px;
+
+    font-weight: 850;
+}
+
+.section-eyebrow {
+
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: var(--primary);
+
+    font-size: 8.5px;
+
+    font-weight: 850;
+
+    letter-spacing: 0.16em;
+}
+
+.table-heading h2 {
+
+    margin: 0;
+
+    color: var(--ink);
+
+    font-size: 17px;
+
+    font-weight: 800;
+
+    line-height: 1.3;
+
+    letter-spacing: -0.02em;
+}
+
+.table-heading p {
+
+    max-width: 720px;
+
+    margin: 7px 0 0;
+
+    color: var(--muted);
+
+    font-size: 11px;
+
+    line-height: 1.55;
+}
+
+
+/* =========================================================
+   STATUT
+   ========================================================= */
+
+.table-status {
+
+    display: inline-flex;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    gap: 7px;
+
+    min-height: 31px;
+
+    padding: 0 11px;
+
+    border: 1px solid #dcebe5;
+
+    border-radius: 9px;
+
+    background: var(--primary-soft);
+
+    color: var(--primary-dark);
+
+    font-size: 10px;
+
+    font-weight: 750;
+
+    white-space: nowrap;
+}
+
+.status-dot {
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: var(--primary);
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.pharmacies-table {
+
+    border-radius: 0 0 18px 18px;
+
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   PHARMACY
+   ========================================================= */
+
+.pharmacy-name-cell {
+
+    display: flex;
+    align-items: center;
+
+    gap: 11px;
+
+    min-width: 220px;
+}
+
+.pharmacy-avatar {
+
+    width: 36px;
+    height: 36px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid
+        rgb(0 102 76 / 0.12);
 
     border-radius: 10px;
 
-    background: var(--primary-soft);
+    background:
+        linear-gradient(
+            145deg,
+            var(--primary-soft),
+            #f8fcfa
+        );
 
     color: var(--primary-dark);
 
@@ -519,27 +1218,31 @@ const footer = computed(
     font-weight: 850;
 
     transition:
-        transform 0.25s ease,
-        box-shadow 0.25s ease;
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .pharmacy-row:hover .pharmacy-avatar {
-    transform: scale(1.06);
 
-    box-shadow: 0 5px 12px color-mix(in srgb, var(--officine) 10%, transparent);
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 5px 14px
+        rgb(0 102 76 / 0.10);
 }
 
 .pharmacy-name-content {
+
     min-width: 0;
 
     display: flex;
-
     flex-direction: column;
 
     gap: 3px;
 }
 
 .pharmacy-name {
+
     max-width: 100%;
 
     overflow: hidden;
@@ -548,7 +1251,7 @@ const footer = computed(
 
     font-size: 11.5px;
 
-    font-weight: 700;
+    font-weight: 750;
 
     text-overflow: ellipsis;
 
@@ -556,140 +1259,213 @@ const footer = computed(
 }
 
 .pharmacy-status {
-    display: inline-flex;
 
+    display: inline-flex;
     align-items: center;
 
-    gap: 4px;
+    gap: 5px;
 
-    color: color-mix(in srgb, var(--ink) 38%, transparent);
+    color: var(--muted);
 
-    font-size: 12.5px;
+    font-size: 9.5px;
 
     font-weight: 550;
 }
 
 .mini-status-dot {
-    width: 5px;
 
+    width: 5px;
     height: 5px;
+
+    flex-shrink: 0;
 
     border-radius: 50%;
 
     background: var(--primary);
+
+    box-shadow:
+        0 0 0 3px
+        rgb(0 102 76 / 0.07);
 }
 
-.city-cell {
-    display: flex;
 
+/* =========================================================
+   VILLE
+   ========================================================= */
+
+.city-cell {
+
+    display: flex;
     align-items: center;
 
-    gap: 7px;
+    gap: 8px;
 
-    color: color-mix(in srgb, var(--ink) 62%, transparent);
+    color:
+        color-mix(
+            in srgb,
+            var(--ink) 63%,
+            transparent
+        );
 
-    font-size: 11px;
+    font-size: 10.5px;
 
-    font-weight: 550;
+    font-weight: 600;
 }
 
 .city-marker {
+
+    width: 22px;
+    height: 22px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 7px;
+
+    background: var(--primary-soft);
+
     color: var(--primary);
 
-    font-size: 12.5px;
+    font-size: 7px;
 }
 
-.license-cell {
-    display: flex;
 
+/* =========================================================
+   ONPB
+   ========================================================= */
+
+.license-cell {
+
+    display: flex;
     align-items: center;
 
-    gap: 7px;
+    gap: 8px;
 
-    color: color-mix(in srgb, var(--ink) 62%, transparent);
+    color:
+        color-mix(
+            in srgb,
+            var(--ink) 64%,
+            transparent
+        );
 
     font-family:
-        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        Consolas,
+        monospace;
 
-    font-size: 10px;
+    font-size: 9.5px;
+
+    font-weight: 600;
 }
 
 .license-icon {
-    width: 20px;
 
-    height: 20px;
+    width: 22px;
+    height: 22px;
 
     display: flex;
-
     align-items: center;
-
     justify-content: center;
 
-    border-radius: 6px;
+    border-radius: 7px;
 
-    background: var(--cream-state);
+    background: var(--gold-soft);
 
-    color: color-mix(in srgb, var(--ink) 55%, transparent);
+    color: var(--gold);
 
     font-size: 9px;
 
     font-weight: 800;
 }
 
-.date-cell {
-    display: flex;
 
+/* =========================================================
+   DATE
+   ========================================================= */
+
+.date-cell {
+
+    display: flex;
     align-items: center;
 
-    gap: 7px;
+    gap: 8px;
 
-    color: color-mix(in srgb, var(--ink) 60%, transparent);
+    color:
+        color-mix(
+            in srgb,
+            var(--ink) 60%,
+            transparent
+        );
 
-    font-size: 10.5px;
+    font-size: 10px;
 
-    font-weight: 550;
+    font-weight: 600;
 }
 
 .date-icon {
-    color: var(--primary);
 
-    font-size: 13px;
-}
+    width: 22px;
+    height: 22px;
 
-.empty-state {
-    display: flex;
-
-    flex-direction: column;
-
+    display: inline-flex;
     align-items: center;
-
     justify-content: center;
 
-    min-height: 220px;
+    border-radius: 7px;
 
-    padding: 35px 20px;
+    background:
+        rgb(0 102 76 / 0.06);
 
-    border-top: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
+    color: var(--primary);
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.empty-state {
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 250px;
+
+    padding: 40px 20px;
+
+    border-top: 1px solid
+        color-mix(
+            in srgb,
+            var(--ink) 6%,
+            transparent
+        );
 
     text-align: center;
 }
 
 .empty-icon {
-    width: 46px;
 
-    height: 46px;
+    width: 50px;
+    height: 50px;
 
     display: flex;
-
     align-items: center;
-
     justify-content: center;
 
-    margin-bottom: 11px;
+    margin-bottom: 13px;
 
-    border: 1px solid color-mix(in srgb, var(--officine) 8%, transparent);
+    border: 1px solid
+        rgb(0 102 76 / 0.12);
 
-    border-radius: 14px;
+    border-radius: 15px;
 
     background: var(--primary-soft);
 
@@ -699,6 +1475,7 @@ const footer = computed(
 }
 
 .empty-title {
+
     color: var(--ink);
 
     font-size: 12.5px;
@@ -707,23 +1484,26 @@ const footer = computed(
 }
 
 .empty-state p {
-    max-width: 360px;
 
-    margin: 5px 0 13px;
+    max-width: 390px;
 
-    color: color-mix(in srgb, var(--ink) 55%, transparent);
+    margin: 6px 0 15px;
 
-    font-size: 12.5px;
+    color: var(--muted);
 
-    line-height: 1.5;
+    font-size: 11px;
+
+    line-height: 1.55;
 }
 
 .empty-reset {
+
     height: 34px;
 
-    padding: 0 13px;
+    padding: 0 14px;
 
-    border: 1px solid color-mix(in srgb, var(--officine) 15%, transparent);
+    border: 1px solid
+        rgb(0 102 76 / 0.16);
 
     border-radius: 8px;
 
@@ -731,7 +1511,7 @@ const footer = computed(
 
     color: var(--primary-dark);
 
-    font-size: 12.5px;
+    font-size: 10.5px;
 
     font-weight: 700;
 
@@ -739,57 +1519,74 @@ const footer = computed(
 
     transition:
         background 0.2s ease,
-        border-color 0.2s ease;
+        border-color 0.2s ease,
+        transform 0.2s ease;
 }
 
 .empty-reset:hover {
-    border-color: color-mix(in srgb, var(--officine) 30%, transparent);
+
+    border-color:
+        rgb(0 102 76 / 0.30);
 
     background: var(--primary-soft);
+
+    transform: translateY(-1px);
 }
 
+
+/* =========================================================
+   PAGINATION
+   ========================================================= */
+
 .pagination-wrapper {
-    margin-top: 14px;
+
+    margin-top: 0;
 
     padding: 0 2px;
 }
 
+
+/* =========================================================
+   NOTE
+   ========================================================= */
+
 .pharmacies-footnote {
+
     display: flex;
+    align-items: center;
 
-    align-items: flex-start;
-
-    gap: 9px;
-
-    margin-top: 13px;
+    gap: 10px;
 
     padding: 11px 14px;
 
-    border-radius: var(--radius-card);
+    border: 1px solid var(--border);
 
-    background: color-mix(in srgb, var(--officine) 2.5%, transparent);
+    border-radius: 13px;
 
-    box-shadow: var(--surface-shadow);
+    background:
+        linear-gradient(
+            105deg,
+            #ffffff,
+            #fbfdfc
+        );
 }
 
 .footnote-icon {
-    width: 18px;
 
-    height: 18px;
+    width: 19px;
+    height: 19px;
 
     flex-shrink: 0;
 
     display: flex;
-
     align-items: center;
-
     justify-content: center;
 
     border-radius: 50%;
 
-    background: var(--primary);
+    background: var(--primary-soft);
 
-    color: #ffffff;
+    color: var(--primary);
 
     font-size: 9px;
 
@@ -797,127 +1594,277 @@ const footer = computed(
 }
 
 .pharmacies-footnote p {
+
     margin: 0;
 
-    color: color-mix(in srgb, var(--ink) 55%, transparent);
+    color: var(--muted);
 
-    font-size: 12.5px;
+    font-size: 10.5px;
 
     line-height: 1.5;
 }
 
-@keyframes fadeUp {
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+
+@keyframes introAppear {
+
     from {
         opacity: 0;
+        transform: translateY(7px);
+    }
 
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeUp {
+
+    from {
+        opacity: 0;
         transform: translateY(10px);
     }
 
     to {
         opacity: 1;
-
         transform: translateY(0);
     }
 }
 
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
 @media (max-width: 1000px) {
+
     .pharmacies-page {
         padding-left: 6px;
-
         padding-right: 6px;
     }
 
-    .header-filters {
-        flex-wrap: wrap;
+    .intro-main {
+        gap: 24px;
     }
 
-    .search-box {
-        width: 220px;
+    .intro-content {
+        min-width: 230px;
+    }
+
+    .intro-filters {
+        padding-left: 20px;
     }
 }
 
-@media (max-width: 760px) {
+
+/* =========================================================
+   TABLET PETIT
+   ========================================================= */
+
+@media (max-width: 850px) {
+
+    .intro-main {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+        gap: 18px;
+    }
+
+    .intro-content {
+        min-width: 0;
+    }
+
+    .intro-filters {
+
+        width: 100%;
+
+        padding-top: 16px;
+        padding-left: 0;
+
+        border-top: 1px solid #e8eeeb;
+
+        border-left: 0;
+    }
+
+    .table-heading {
+
+        flex-direction: column;
+
+        gap: 12px;
+    }
+
+    .table-status {
+
+        align-self: flex-start;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
     .pharmacies-page {
+
         padding: 0 4px 50px;
     }
 
-    /* HEADER FILTERS */
+    .pharmacies-intro {
 
-    .header-filters {
-        width: 100%;
+        padding: 20px 17px;
+
+        border-radius: 16px;
+    }
+
+    .pharmacies-intro::before {
+
+        left: 17px;
+        right: 17px;
+    }
+
+    .intro-icon {
+
+        width: 43px;
+        height: 43px;
+
+        border-radius: 12px;
+    }
+
+    .intro-text h1 {
+
+        font-size: 19px;
+    }
+
+    .intro-filters {
+
+        flex-wrap: wrap;
+    }
+
+    .filter-item {
+
+        flex: 1 1 calc(50% - 6px);
+    }
+
+    .city-filter-item {
+
+        flex-basis: 100%;
+    }
+
+    .table-heading {
+
+        padding: 20px 16px 15px;
+    }
+
+    .table-heading h2 {
+
+        font-size: 16px;
+    }
+
+    .table-heading p {
+
+        font-size: 10.5px;
+    }
+}
+
+
+/* =========================================================
+   PETIT MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    .pharmacies-intro {
+
+        padding: 19px 15px;
+    }
+
+    .intro-filters {
 
         flex-direction: column;
 
         align-items: stretch;
     }
 
-    .search-box {
+    .filter-item,
+    .city-filter-item {
+
         width: 100%;
+
+        flex: 1 1 auto;
     }
 
-    .city-filter {
-        width: 100%;
+    .table-heading-main {
+
+        align-items: flex-start;
     }
 
-    .city-filter :deep(select) {
-        width: 100%;
+    .table-heading-icon {
+
+        width: 35px;
+        height: 35px;
+
+        border-radius: 10px;
     }
 
-    /* TABLE */
+    .section-eyebrow {
 
-    .pharmacies-section {
-        padding: 2px;
+        font-size: 7.5px;
     }
 
-    /*
-       Le tableau reste scrollable horizontalement
-       afin de ne jamais casser la structure des colonnes.
-    */
-
-    .pharmacies-table {
-        overflow-x: auto;
-    }
-
-    .pharmacies-footnote {
-        margin-top: 10px;
-    }
-}
-
-@media (max-width: 480px) {
     .pharmacy-name-cell {
-        min-width: 160px;
+
+        min-width: 175px;
     }
 
     .pharmacy-avatar {
-        width: 31px;
 
-        height: 31px;
+        width: 32px;
+        height: 32px;
 
         border-radius: 9px;
     }
 
     .pharmacy-name {
+
         font-size: 10.5px;
     }
 
     .city-cell,
     .date-cell {
-        font-size: 12.5px;
+
+        font-size: 10px;
     }
 
     .license-cell {
-        font-size: 12.5px;
+
+        font-size: 9px;
     }
 
-    .empty-state {
-        min-height: 190px;
+    .pharmacies-footnote {
+
+        align-items: flex-start;
     }
 }
 
+
+/* =========================================================
+   ACCESSIBILITÉ
+   ========================================================= */
+
 @media (prefers-reduced-motion: reduce) {
+
     .pharmacies-page *,
     .pharmacies-page *::before,
     .pharmacies-page *::after {
+
         animation-duration: 0.01ms !important;
 
         animation-iteration-count: 1 !important;
@@ -925,4 +1872,6 @@ const footer = computed(
         transition-duration: 0.01ms !important;
     }
 }
+
 </style>
+

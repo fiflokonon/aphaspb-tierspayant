@@ -153,728 +153,153 @@ watch(collapsed, writeCollapsed);
 
 <style scoped>
 .apha-sidebar {
-    /*
-      --muted et --light sont ici des couleurs de TEXTE. Le thème réserve
-      --muted à une surface presque blanche : les retirer rendrait ce texte
-      blanc. À renommer au lot 3 ou 4, pas à supprimer.
-    */
-    --muted: color-mix(in srgb, var(--ink) 55%, transparent);
-    --light: color-mix(in srgb, var(--ink) 38%, transparent);
-
-    --background-soft: var(--cream-state);
-
+    --muted: rgb(255 255 255 / 0.62);
+    --light: rgb(255 255 255 / 0.40);
     position: sticky;
-
     top: 0;
-
     z-index: 30;
-
     display: flex;
-
     flex-direction: column;
-
-    /*
-      212 px auparavant. La navigation passe de 10 à 14,5 px dans ce lot, et
-      « Exporter mes données » ne tenait plus : il sortait tronqué d'une
-      ellipse. Élargir plutôt que réduire la police — c'est grossir qui était
-      demandé.
-    */
-    width: 236px;
-
-    min-width: 236px;
-
+    width: 232px;
+    min-width: 232px;
     height: 100vh;
-
     min-height: 100vh;
-
     flex-shrink: 0;
-
-    padding: 15px 11px 11px;
-
-    /* Crème chaud, comme la maquette : le blanc cru cassait la chaleur. */
-    background: var(--cream-header);
-
-    color: var(--ink);
-
-    border-right: 1px solid var(--border);
-
-    box-shadow: 8px 0 30px color-mix(in srgb, var(--ink) 3.5%, transparent);
-
+    padding: 18px 12px 12px;
+    background: linear-gradient(180deg, #0c342d 0%, #0a2b26 100%);
+    color: #fff;
+    border-right: 1px solid rgb(255 255 255 / 0.07);
+    /* box-shadow: 14px 0 38px rgb(8 43 35 / 0.12); */
     overflow: hidden;
 }
 
 .apha-sidebar::before {
     content: '';
-
     position: absolute;
-
-    left: 0;
-
-    top: 18px;
-
-    bottom: 18px;
-
+    inset: 0 auto 0 0;
     width: 3px;
+    background: linear-gradient(180deg, #7bd5c5, #1aa68e);
+    opacity: .9;
+}
 
-    background: var(--primary);
-
-    border-radius: 0 4px 4px 0;
-
-    opacity: 0.75;
+.apha-sidebar::after {
+    content: '';
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    right: -90px;
+    top: 70px;
+    border-radius: 50%;
+    background: rgb(78 190 169 / 0.08);
+    filter: blur(3px);
+    pointer-events: none;
 }
 
 .apha-sidebar-header {
     position: relative;
-
     z-index: 2;
-
     flex-shrink: 0;
-
-    padding: 2px 4px 12px;
-
-    border-bottom: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
+    padding: 2px 5px 18px;
+    border-bottom: 1px solid rgb(255 255 255 / 0.09);
 }
 
 .apha-brand {
     display: flex;
-
     align-items: center;
-
-    gap: 9px;
-
+    gap: 10px;
     text-decoration: none;
-
-    transition:
-        transform 0.25s ease,
-        opacity 0.25s ease;
+    transition: transform .22s ease;
 }
 
-.apha-brand:hover {
-    transform: translateX(2px);
-}
+.apha-brand:hover { transform: translateX(2px); }
 
 .apha-logo-wrap {
-    position: relative;
-
-    width: 34px;
-
-    height: 34px;
-
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
-    border-radius: 11px;
-
-    background: var(--primary-soft);
-
-    border: 1px solid color-mix(in srgb, var(--officine) 12%, transparent);
-
-    box-shadow: 0 5px 14px color-mix(in srgb, var(--officine) 8%, transparent);
-
-    transition:
-        transform 0.3s ease,
-        box-shadow 0.3s ease;
+    border-radius: 13px;
+    background: rgb(255 255 255 / 0.10);
+    border: 1px solid rgb(255 255 255 / 0.12);
+    box-shadow: 0 10px 24px rgb(0 0 0 / 0.12);
 }
 
-.apha-brand:hover .apha-logo-wrap {
-    transform: rotate(-4deg) scale(1.05);
-
-    box-shadow: 0 8px 18px color-mix(in srgb, var(--officine) 14%, transparent);
-}
-
-.apha-logo {
-    width: 25px;
-
-    height: 25px;
-
-    object-fit: contain;
-
-    border-radius: 50%;
-}
-
-.apha-brand-content {
-    min-width: 0;
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 1px;
-}
-
-.apha-brand-name {
-    color: var(--ink);
-
-    font-size: 17px;
-
-    font-weight: 800;
-
-    letter-spacing: -0.02em;
-}
-
-.apha-brand-subtitle {
-    color: var(--light);
-
-    font-size: 8px;
-
-    font-weight: 600;
-}
+.apha-logo { width: 29px; height: 29px; object-fit: contain; border-radius: 50%; }
+.apha-brand-content { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.apha-brand-name { color: #fff; font-size: 17px; font-weight: 800; letter-spacing: -.025em; }
+.apha-brand-subtitle { color: rgb(255 255 255 / .48); font-size: 9px; font-weight: 600; letter-spacing: .03em; }
 
 .apha-space {
-    display: flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-    margin-top: 9px;
-
-    padding-left: 43px;
-
-    color: var(--primary);
-
-    font-family: 'JetBrains Mono', monospace;
-
-    /* L'échelle du socle pour une étiquette capitale : 9,5 px / 0,14em. */
-    font-size: 9.5px;
-
-    font-weight: 700;
-
-    letter-spacing: 0.14em;
-
-    text-transform: uppercase;
+    display: flex; align-items: center; gap: 7px; margin-top: 13px; padding-left: 49px;
+    color: #8bd8ca; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
 }
-
-.space-dot {
-    width: 5px;
-
-    height: 5px;
-
-    border-radius: 50%;
-
-    background: var(--gold);
-
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold-mid) 8%, transparent);
-}
+.space-dot { width: 6px; height: 6px; border-radius: 50%; background: #d8aa3b; box-shadow: 0 0 0 4px rgb(216 170 59 / .10); }
 
 .apha-navigation {
-    position: relative;
-
-    z-index: 2;
-
-    flex: 1 1 auto;
-
-    min-height: 0;
-
-    display: flex;
-
-    flex-direction: column;
-
-    padding-top: 14px;
-
-    overflow: hidden;
+    position: relative; z-index: 2; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding-top: 18px; overflow: hidden;
 }
-
-.apha-section-label {
-    flex-shrink: 0;
-
-    margin: 0 5px 7px;
-
-    color: var(--light);
-
-    /* L'échelle du socle pour une étiquette capitale : 9,5 px / 0,14em. */
-    font-size: 9.5px;
-
-    font-weight: 800;
-
-    letter-spacing: 0.14em;
-
-    text-transform: uppercase;
-}
-
-.apha-nav {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 3px;
-
-    min-height: 0;
-
-    overflow-y: auto;
-
-    padding: 0 2px 2px;
-
-    scrollbar-width: thin;
-
-    scrollbar-color: color-mix(in srgb, var(--officine) 14%, transparent)
-        transparent;
-}
-
-.apha-nav::-webkit-scrollbar {
-    width: 3px;
-}
-
-.apha-nav::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.apha-nav::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--officine) 14%, transparent);
-
-    border-radius: 10px;
-}
-
-.apha-nav-glyph {
-    width: 18px;
-    height: 18px;
-
-    stroke-width: 1.9;
-}
-
+.apha-section-label { margin: 0 7px 9px; color: rgb(255 255 255 / .34); font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.apha-nav { display: flex; flex-direction: column; gap: 5px; min-height: 0; overflow-y: auto; padding: 0 2px 2px; scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / .12) transparent; }
+.apha-nav::-webkit-scrollbar { width: 3px; }
+.apha-nav::-webkit-scrollbar-track { background: transparent; }
+.apha-nav::-webkit-scrollbar-thumb { background: rgb(255 255 255 / .12); border-radius: 10px; }
+.apha-nav-glyph { width: 18px; height: 18px; stroke-width: 1.9; }
 .apha-nav-item {
-    position: relative;
-
-    display: flex;
-
-    align-items: center;
-
-    min-height: 36px;
-
-    gap: 9px;
-
-    padding: 7px 9px;
-
-    border-radius: var(--radius-nav);
-
-    color: var(--muted);
-
-    /* 10 px auparavant : la navigation était plus petite que le corps. */
-    font-size: 14.5px;
-
-    font-weight: 650;
-
-    text-decoration: none;
-
-    transition:
-        background 0.22s ease,
-        color 0.22s ease,
-        transform 0.22s ease,
-        box-shadow 0.22s ease;
+    position: relative; display: flex; align-items: center; min-height: 42px; gap: 10px; padding: 8px 10px; border-radius: 12px; color: var(--muted); font-size: 13.5px; font-weight: 650; text-decoration: none; transition: background .2s ease, color .2s ease, transform .2s ease, box-shadow .2s ease;
 }
-
-.apha-nav-item:hover {
-    color: var(--primary-dark);
-
-    background: color-mix(in srgb, var(--officine) 5.5%, transparent);
-
-    transform: translateX(2px);
-}
-
-/*
-  Vert plein, texte blanc, comme la maquette validée.
-
-  L'état actif était une pastille vert très pâle à texte vert, avec deux
-  ombres turquoise héritées : de loin, rien ne distinguait l'écran courant
-  des autres. Un ancrage plein est ce qui donne sa couleur à la barre ; les
-  surfaces d'accompagnement peuvent rester discrètes une fois qu'il existe.
-*/
-.apha-nav-item.active {
-    color: #fff;
-
-    background: var(--primary);
-
-    font-weight: 750;
-}
-
-.apha-nav-icon {
-    width: 23px;
-
-    height: 23px;
-
-    flex-shrink: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    border-radius: 7px;
-
-    background: var(--cream-state);
-
-    transition:
-        background 0.22s ease,
-        transform 0.22s ease;
-}
-
-.apha-nav-dot {
-    width: 5px;
-
-    height: 5px;
-
-    border-radius: 50%;
-
-    background: var(--light);
-
-    transition:
-        transform 0.22s ease,
-        background 0.22s ease;
-}
-
-.apha-nav-item:hover .apha-nav-icon {
-    background: var(--primary-soft);
-
-    transform: scale(1.05);
-}
-
-.apha-nav-item:hover .apha-nav-dot {
-    background: var(--primary);
-
-    transform: scale(1.25);
-}
-
-.apha-nav-item.active .apha-nav-icon {
-    background: rgb(255 255 255 / 0.16);
-}
-
-.apha-nav-item.active .apha-nav-dot {
-    background: #fff;
-}
-
-.apha-nav-label {
-    flex: 1;
-
-    min-width: 0;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
-}
-
-.apha-nav-arrow {
-    color: var(--primary);
-
-    font-size: 12px;
-
-    font-weight: 800;
-
-    opacity: 0;
-
-    transform: translateX(-4px);
-
-    transition:
-        opacity 0.22s ease,
-        transform 0.22s ease;
-}
-
-.apha-nav-item:hover .apha-nav-arrow,
-.apha-nav-item.active .apha-nav-arrow {
-    opacity: 1;
-
-    transform: translateX(0);
-}
-
-.apha-sidebar-footer {
-    position: relative;
-
-    z-index: 2;
-
-    flex-shrink: 0;
-
-    padding-top: 8px;
-}
-
-.apha-footer-line {
-    height: 1px;
-
-    margin-bottom: 7px;
-
-    background: var(--border);
-}
-
-.apha-footer-status {
-    display: flex;
-
-    align-items: center;
-
-    gap: 6px;
-
-    padding: 5px 7px;
-
-    border-radius: 8px;
-
-    background: color-mix(in srgb, var(--officine) 3.5%, transparent);
-
-    color: var(--light);
-
-    font-size: 7px;
-
-    font-weight: 650;
-}
-
-.apha-status-dot {
-    width: 5px;
-
-    height: 5px;
-
-    flex-shrink: 0;
-
-    border-radius: 50%;
-
-    background: var(--primary);
-
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--officine) 8%, transparent);
-
-    animation: sidebarPulse 2.5s ease-in-out infinite;
-}
-
-@keyframes sidebarPulse {
-    0%,
-    100% {
-        box-shadow: 0 0 0 3px
-            color-mix(in srgb, var(--officine) 8%, transparent);
-    }
-
-    50% {
-        box-shadow: 0 0 0 5px
-            color-mix(in srgb, var(--officine) 2%, transparent);
-    }
-}
-
-.apha-header-actions {
-    display: none;
-}
-
-/* =============================================================
-   REPLI — rail de 62 px, au-dessus de 1024 px seulement
-============================================================= */
-
-.apha-collapse {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-
-    width: 100%;
-    margin-bottom: 10px;
-    padding: 9px 10px;
-
-    border: 1px solid var(--border);
-    border-radius: 9px;
-
-    background: #fff;
-
-    color: var(--muted);
-
-    font-size: 12.5px;
-    font-weight: 600;
-
-    cursor: pointer;
-}
-
-.apha-collapse-glyph {
-    width: 17px;
-    height: 17px;
-
-    flex: none;
-
-    stroke-width: 1.9;
-}
-
-.apha-sidebar.collapsed {
-    width: 62px;
-    min-width: 62px;
-
-    padding-left: 9px;
-    padding-right: 9px;
-}
-
-/*
-  Tout ce qui porte du texte disparaît. La liste est explicite plutôt qu'un
-  sélecteur large : un `* { display: none }` emporterait les icônes, et un
-  masquage par débordement laisse des mots tronqués — « NAVIGAT »,
-  « Se déconnect » — qui se lisent comme un bug d'affichage.
-*/
-.apha-sidebar.collapsed .apha-brand-content,
-.apha-sidebar.collapsed .apha-nav-label,
-.apha-sidebar.collapsed .apha-nav-arrow,
-.apha-sidebar.collapsed .apha-space,
-.apha-sidebar.collapsed .apha-section-label,
-.apha-sidebar.collapsed .apha-footer-status,
-.apha-sidebar.collapsed .apha-collapse-label {
-    display: none;
-}
-
-/* .apha-navigation est déjà en overflow: hidden ; seul .apha-nav défile. */
-.apha-sidebar.collapsed .apha-nav {
-    overflow-x: hidden;
-}
-
-.apha-sidebar.collapsed .apha-nav-item,
-.apha-sidebar.collapsed .apha-collapse {
-    justify-content: center;
-
-    /* 100 % et non 44 px : .apha-nav a 2 px de marge intérieure, et une
-       largeur fixe débordait de 4 px sous l'overflow qu'on vient de poser. */
-    width: 100%;
-    padding-left: 0;
-    padding-right: 0;
-
-    gap: 0;
-}
-
-/*
-  Pas d'infobulle en ::after : elle vivrait à 52 px du bord d'un rail de
-  62 px, et trois ancêtres la découpent — .apha-sidebar et .apha-navigation
-  sont en overflow: hidden, .apha-nav défile. Un pseudo-élément ne sort pas
-  d'un conteneur qui défile. Le libellé passe donc par title + aria-label sur
-  le lien lui-même, posés seulement quand la barre est repliée.
-*/
+.apha-nav-item:hover { color: #fff; background: rgb(255 255 255 / .07); transform: translateX(2px); }
+.apha-nav-item.active { color: #fff; background: linear-gradient(135deg, #148f79, #0c7667); box-shadow: 0 10px 22px rgb(5 77 65 / .26); font-weight: 750; }
+.apha-nav-icon { width: 29px; height: 29px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 9px; background: rgb(255 255 255 / .07); color: rgb(255 255 255 / .72); transition: background .2s ease, transform .2s ease; }
+.apha-nav-dot { width: 5px; height: 5px; border-radius: 50%; background: rgb(255 255 255 / .42); }
+.apha-nav-item:hover .apha-nav-icon { background: rgb(255 255 255 / .10); transform: scale(1.04); }
+.apha-nav-item.active .apha-nav-icon { background: rgb(255 255 255 / .16); color: #fff; }
+.apha-nav-item.active .apha-nav-dot { background: #fff; }
+.apha-nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.apha-nav-arrow { color: #9ce0d3; font-size: 12px; font-weight: 800; opacity: 0; transform: translateX(-4px); transition: opacity .2s ease, transform .2s ease; }
+.apha-nav-item:hover .apha-nav-arrow, .apha-nav-item.active .apha-nav-arrow { opacity: 1; transform: translateX(0); }
+
+.apha-sidebar-footer { position: relative; z-index: 2; flex-shrink: 0; padding-top: 10px; }
+.apha-footer-line { height: 1px; margin-bottom: 9px; background: rgb(255 255 255 / .08); }
+.apha-footer-status { display: flex; align-items: center; gap: 7px; padding: 8px 9px; border-radius: 10px; background: rgb(255 255 255 / .045); color: rgb(255 255 255 / .46); font-size: 9px; font-weight: 650; }
+.apha-status-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: #70d2bf; box-shadow: 0 0 0 4px rgb(112 210 191 / .08); animation: sidebarPulse 2.5s ease-in-out infinite; }
+@keyframes sidebarPulse { 0%,100% { box-shadow: 0 0 0 3px rgb(112 210 191 / .07); } 50% { box-shadow: 0 0 0 6px rgb(112 210 191 / .015); } }
+.apha-header-actions { display: none; }
+
+.apha-collapse { display: flex; align-items: center; gap: 9px; width: 100%; margin-bottom: 10px; padding: 9px 10px; border: 1px solid rgb(255 255 255 / .09); border-radius: 10px; background: rgb(255 255 255 / .055); color: rgb(255 255 255 / .65); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .2s ease, color .2s ease; }
+.apha-collapse:hover { background: rgb(255 255 255 / .09); color: #fff; }
+.apha-collapse-glyph { width: 17px; height: 17px; flex: none; stroke-width: 1.9; }
+
+.apha-sidebar.collapsed { width: 68px; min-width: 68px; padding-left: 9px; padding-right: 9px; }
+.apha-sidebar.collapsed .apha-brand-content, .apha-sidebar.collapsed .apha-nav-label, .apha-sidebar.collapsed .apha-nav-arrow, .apha-sidebar.collapsed .apha-space, .apha-sidebar.collapsed .apha-section-label, .apha-sidebar.collapsed .apha-footer-status, .apha-sidebar.collapsed .apha-collapse-label { display: none; }
+.apha-sidebar.collapsed .apha-nav { overflow-x: hidden; }
+.apha-sidebar.collapsed .apha-nav-item, .apha-sidebar.collapsed .apha-collapse { justify-content: center; width: 100%; padding-left: 0; padding-right: 0; gap: 0; }
 
 @media (max-width: 1023.98px) {
-    /*
-      Le repli n'existe pas ici : la barre est déjà une bande horizontale, et
-      lui superposer un rail de 62 px la réduirait à un timbre-poste. Sans
-      cette annulation, replier sur son ordinateur mutilerait son téléphone.
-    */
-    .apha-sidebar.collapsed {
-        width: 100%;
-        min-width: 0;
-    }
-
-    /*
-      Valeurs explicites, jamais `revert` : `revert` remonte au-delà de tout
-      l'origine auteur, donc .apha-brand-content serait retombé sur le `block`
-      du navigateur au lieu de son `flex`, et la marque se serait mise sur une
-      seule ligne.
-    */
-    .apha-sidebar.collapsed .apha-brand-content {
-        display: flex;
-    }
-
-    /* .apha-space déclare `flex` ; les trois autres n'ont pas de display. */
-    .apha-sidebar.collapsed .apha-space {
-        display: flex;
-    }
-
-    .apha-sidebar.collapsed .apha-nav-label,
-    .apha-sidebar.collapsed .apha-section-label,
-    .apha-sidebar.collapsed .apha-nav-arrow {
-        display: block;
-    }
-
-    .apha-sidebar.collapsed {
-        padding-left: 12px;
-        padding-right: 12px;
-    }
-
-    .apha-sidebar.collapsed .apha-nav-item {
-        width: auto;
-        justify-content: flex-start;
-        gap: 9px;
-    }
-
-    /*
-     * Le sous-titre cède la place au nom de la personne, que le menu de compte
-     * affiche désormais en clair : sous 1024 px c'est la seule trace de
-     * l'identité, la barre du haut n'existant pas et le pied étant masqué.
-     */
-    .apha-brand-subtitle {
-        display: none;
-    }
-
-    .apha-header-actions {
-        position: absolute;
-
-        top: 0;
-        right: 0;
-
-        display: flex;
-
-        align-items: center;
-
-        gap: 8px;
-    }
-
-    .apha-sidebar {
-        position: relative;
-
-        top: auto;
-
-        width: 100%;
-
-        min-width: 0;
-
-        height: auto;
-
-        min-height: auto;
-
-        padding: 12px;
-
-        border-right: 0;
-
-        border-bottom: 1px solid var(--border);
-
-        overflow: visible;
-    }
-
-    .apha-sidebar-header {
-        padding-bottom: 9px;
-    }
-
-    .apha-navigation {
-        flex: none;
-
-        overflow: visible;
-
-        padding-top: 10px;
-    }
-
-    .apha-nav {
-        flex-direction: row;
-
-        overflow-x: auto;
-
-        overflow-y: hidden;
-
-        padding-bottom: 3px;
-    }
-
-    .apha-nav-item {
-        flex-shrink: 0;
-    }
-
-    /*
-     * Le halo est calibré pour le rail vertical du bureau : `right: -80px`
-     * sur une barre de 212 px, contenue par son `overflow: hidden`. Ici la
-     * barre passe en pleine largeur et en `overflow: visible`, et le halo
-     * déborde alors de 80 px hors de la page — une barre de défilement
-     * horizontale sur chaque écran de la console.
-     */
-    .sidebar-glow {
-        display: none;
-    }
-
-    .apha-sidebar-footer {
-        display: none;
-    }
+    .apha-sidebar { position: relative; width: 100%; min-width: 0; height: auto; min-height: 0; padding: 10px 12px; border-right: 0; border-bottom: 1px solid rgb(255 255 255 / .07); box-shadow: 0 8px 26px rgb(8 43 35 / .10); }
+    .apha-sidebar::after { display: none; }
+    .apha-sidebar-header { display: flex; align-items: center; gap: 12px; padding: 2px 3px 10px; border-bottom: 0; }
+    .apha-brand { min-width: 0; }
+    .apha-space { display: none; }
+    .apha-header-actions { display: flex; align-items: center; gap: 7px; margin-left: auto; }
+    .apha-navigation { padding-top: 7px; overflow: visible; }
+    .apha-section-label { display: none; }
+    .apha-nav { flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 0 1px 2px; }
+    .apha-nav-item { flex: 0 0 auto; min-height: 40px; padding: 7px 10px; }
+    .apha-nav-icon { width: 26px; height: 26px; }
+    .apha-nav-arrow { display: none; }
+    .apha-sidebar-footer { display: none; }
+    .apha-sidebar.collapsed { width: 100%; min-width: 0; padding-left: 12px; padding-right: 12px; }
+    .apha-sidebar.collapsed .apha-brand-content { display: flex; }
+    .apha-sidebar.collapsed .apha-nav-label { display: block; }
+    .apha-sidebar.collapsed .apha-nav-item { justify-content: flex-start; gap: 10px; width: auto; padding-left: 10px; padding-right: 10px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .apha-sidebar *,
-    .apha-sidebar *::before,
-    .apha-sidebar *::after {
-        animation: none !important;
-
-        transition: none !important;
-    }
+@media (max-width: 480px) {
+    .apha-brand-subtitle { display: none; }
+    .apha-logo-wrap { width: 36px; height: 36px; }
+    .apha-logo { width: 26px; height: 26px; }
+    .apha-nav-item { font-size: 12.5px; }
 }
 </style>

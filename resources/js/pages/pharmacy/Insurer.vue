@@ -113,15 +113,15 @@ const EXPORT_FORMATS = [
 
 const TEMPLATE = '.9fr .9fr 1fr 1fr 1fr .9fr .9fr .7fr 1.6fr';
 const COLUMNS = [
-    'MOIS',
-    'STATUT',
-    'FACTURÉ',
-    'ENCAISSÉ',
-    'RESTE DÛ',
-    'DÉPÔT',
-    'DERNIER VERS.',
-    'DÉLAI',
-    'PÉNALITÉ',
+    'Mois',
+    'Statut',
+    'Facturé',
+    'Encaissé',
+    'Reste dû',
+    'Dépôt',
+    'Dernier vers',
+    'Délai',
+    'Pénalité',
 ];
 
 /**
@@ -270,10 +270,8 @@ const reopen = (row: MonthRow) =>
                 unit="jours"
                 hint="mois réglés et encours confondus"
             />
-        </KpiRow>
 
-        <KpiRow :columns="3">
-            <KpiCard
+               <KpiCard
                 label="VOTRE DÉLAI MOYEN"
                 :value="
                     relationship.weightedDelayDays?.toLocaleString('fr-FR') ??
@@ -283,11 +281,7 @@ const reopen = (row: MonthRow) =>
                 hint="pondéré par les montants reçus"
             />
 
-            <!--
-                formatAmount() rend « — » sur null : « pas de clause » et « une
-                clause mais rien à réclamer » ne doivent pas se lire pareil.
-            -->
-            <KpiCard
+              <KpiCard
                 label="PÉNALITÉ RÉCLAMABLE"
                 :value="
                     relationship.penalty === null
@@ -298,6 +292,34 @@ const reopen = (row: MonthRow) =>
                 hint="pénalités payées ou annulées déduites"
             />
         </KpiRow>
+
+        <!-- <KpiRow :columns="3">
+            <KpiCard
+                label="VOTRE DÉLAI MOYEN"
+                :value="
+                    relationship.weightedDelayDays?.toLocaleString('fr-FR') ??
+                    '—'
+                "
+                unit="jours"
+                hint="pondéré par les montants reçus"
+            />
+
+            
+                formatAmount() rend « — » sur null : « pas de clause » et « une
+                clause mais rien à réclamer » ne doivent pas se lire pareil.
+           
+            <KpiCard
+                label="PÉNALITÉ RÉCLAMABLE"
+                :value="
+                    relationship.penalty === null
+                        ? '—'
+                        : formatMillions(relationship.penalty)
+                "
+                unit="FCFA"
+                hint="pénalités payées ou annulées déduites"
+            />
+        </KpiRow> -->
+        <br>
 
         <DataTable title="" :columns="COLUMNS" :template="TEMPLATE">
             <DataTableRow

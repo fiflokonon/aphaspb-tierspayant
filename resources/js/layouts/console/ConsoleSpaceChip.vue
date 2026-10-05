@@ -1,35 +1,17 @@
 <script setup lang="ts">
-/**
- * L'espace où la session est ouverte : une officine nommée, ou le réseau.
- *
- * Dans la coquille, pas dans l'en-tête des écrans. Ce contexte ne change
- * jamais d'un écran à l'autre : le répéter au-dessus de chaque titre coûtait
- * trois lignes et trois polices — mono capitales, sans capitales, serif —
- * empilées avant d'arriver au nom de l'écran.
- *
- * Il se lit donc là où vit déjà ce qui ne change pas : à côté du compte, dans
- * le bandeau supérieur à partir de lg, dans le bandeau vert en dessous, où ce
- * bandeau n'existe pas. Deux emplacements exclusifs, un seul composant.
- *
- * Il vient du shell et non d'une prop : tous les écrans l'affichent, et le
- * faire voyager en prop obligerait autant de contrôleurs à le répéter.
- */
 import { computed } from 'vue';
 import { useConsoleShell } from '@/composables/useConsoleShell';
 
 const { account } = useConsoleShell();
 
-/**
- * L'officine se nomme elle-même et se situe par sa ville ; l'espace réseau
- * n'a ni l'une ni l'autre et se nomme par ce qu'il est.
- *
- * @return {{ name: string, complement: string | null }|null}
- */
 const space = computed(() => {
     const pharmacy = account.value?.pharmacy ?? null;
 
     if (pharmacy !== null) {
-        return { name: pharmacy.name, complement: pharmacy.city };
+        return {
+            name: pharmacy.name,
+            complement: pharmacy.city,
+        };
     }
 
     if (account.value?.administrator === true) {
@@ -45,136 +27,226 @@ const space = computed(() => {
 
 <template>
     <div v-if="space" class="space-chip">
-        <span class="space-dot"></span>
+        <!-- <span class="space-icon" aria-hidden="true">
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
+                <path d="M3 21h18" />
+                <path d="M5 21V9l7-5 7 5v12" />
+                <path d="M9 21v-5h6v5" />
+                <path d="M8 11h.01" />
+                <path d="M12 11h.01" />
+                <path d="M16 11h.01" />
+            </svg>
+        </span> -->
 
-        <span class="space-name">{{ space.name }}</span>
+        <!-- <span class="space-content">
+            <span class="space-label">Espace de travail</span>
 
-        <span v-if="space.complement" class="space-complement">
-            · {{ space.complement }}
-        </span>
+            <span class="space-name">
+                {{ space.name }}
+            </span>
+
+            <span v-if="space.complement" class="space-city">
+                {{ space.complement }}
+            </span>
+        </span> -->
     </div>
 </template>
 
 <style scoped>
+
 .space-chip {
     display: inline-flex;
     align-items: center;
-
-    gap: 7px;
+    gap: 10px;
 
     min-width: 0;
+    max-width: 280px;
 
-    padding: 0 13px;
+    padding: 8px 12px;
 
-    height: 36px;
-
+    border: 1px solid #e2ebe6;
     border-radius: 10px;
 
-    background: var(--cream-state);
+    background: #f7faf8;
 
-    font-size: 14.5px;
-    font-weight: 700;
+    font-family: 'Manrope', sans-serif;
 
-    /* 80 % : 8,9:1 sur --cream. Le repère se lit, il ne crie pas. */
-    color: color-mix(in srgb, var(--ink) 80%, transparent);
+    color: #17372d;
 
-    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.space-chip:hover {
+    background: #f1f7f4;
+    border-color: #cfe0d8;
 }
 
 .space-dot {
     flex-shrink: 0;
 
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
 
-    border-radius: 999px;
+    border-radius: 50%;
 
-    background: var(--officine);
+    background: #00664c;
+
+    box-shadow: 0 0 0 4px rgb(0 102 76 / 0.08);
 }
 
-/*
-  Les capitales viennent de la CSS, pas de la chaîne : le nom reste lisible tel
-  qu'il a été saisi pour un lecteur d'écran, et la casse d'origine survit à un
-  copier-coller. Elles ont besoin d'air, d'où le tracking.
-*/
 .space-name {
     overflow: hidden;
 
-    letter-spacing: 0.02em;
+    font-size: 12px;
+    font-weight: 700;
 
+    color: #17372d;
+
+    white-space: nowrap;
     text-overflow: ellipsis;
-    text-transform: uppercase;
 }
 
-/*
-  Le complément recule d'une graisse et d'un contraste, pas d'un corps : c'est
-  le nom qu'on cherche du regard, mais la ville distingue deux officines
-  homonymes. 55 % ne donne que 3,84:1 sur --cream, sous le seuil AA de
-  4,5:1 ; 62 % donne 4,79:1.
-*/
 .space-complement {
     flex-shrink: 0;
 
+    font-size: 11px;
     font-weight: 500;
 
-    color: color-mix(in srgb, var(--ink) 62%, transparent);
+    color: #7a8983;
 }
 
-@media (min-width: 1024px) {
-    /* La hauteur du déclencheur de compte, à côté duquel la puce se pose. */
-    .space-chip {
-        height: 40px;
-    }
+/* Icône */
+
+.space-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    width: 34px;
+    height: 34px;
+
+    border-radius: 9px;
+
+    background: #00664c;
+    color: #ffffff;
 }
 
-/*
-  Dans le bandeau vert, la puce n'a plus de fond à elle : deux surfaces
-  emboîtées sur 343 px feraient un timbre dans un cadre. Elle garde son point
-  et sa hiérarchie, posée à même le vert.
-*/
+.space-icon svg {
+    width: 17px;
+    height: 17px;
+}
+
+/* Contenu */
+
+.space-content {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+
+    line-height: 1.15;
+}
+
+/* Petit libellé */
+
+.space-label {
+    margin-bottom: 3px;
+
+    font-size: 9px;
+    font-weight: 700;
+
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+
+    color: #6b7d76;
+}
+
+/* Nom de l'officine */
+
+
+/* Ville */
+
+.space-city {
+    margin-top: 3px;
+
+    font-size: 11px;
+    font-weight: 500;
+
+    color: #71827c;
+}
+
+/* Version utilisée dans le bandeau vert */
+
 .space-chip.on-band {
-    /*
-      Du texte, pas une rangée. Le bandeau fait 343 px : un nom long y passe à
-      la ligne plutôt que de se faire couper — l'ellipse convient au bandeau
-      supérieur, où la puce partage une rangée avec le compte et la cloche,
-      ici elle amputerait le nom de l'officine sans raison. Et en `flex`, la
-      ville restait accrochée à la première ligne pendant que le nom se
-      poursuivait sous elle.
-    */
-    display: block;
+    display: inline-flex;
 
-    height: auto;
+    max-width: 100%;
 
     padding: 0;
 
+    border: 0;
+
     background: transparent;
 
-    line-height: 1.25;
+    box-shadow: none;
 
-    white-space: normal;
+    color: #ffffff;
+}
 
-    /* 0.92 donne 7,27:1 sur --officine-dark. */
-    color: rgb(255 255 255 / 0.92);
+.space-chip.on-band:hover {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.space-chip.on-band .space-icon {
+    width: 30px;
+    height: 30px;
+
+    background: rgb(255 255 255 / 0.14);
+    color: #ffffff;
+}
+
+.space-chip.on-band .space-label {
+    color: rgb(255 255 255 / 0.65);
 }
 
 .space-chip.on-band .space-name {
-    overflow: visible;
+    color: #ffffff;
 }
 
-.space-chip.on-band .space-dot {
-    display: inline-block;
-
-    /* Le `gap` ne s'applique plus hors flex, et un point ne s'aligne pas sur
-       une ligne de base : les deux se posent à la main. */
-    margin-right: 7px;
-
-    transform: translateY(-2px);
-
-    background: rgb(255 255 255 / 0.55);
+.space-chip.on-band .space-city {
+    color: rgb(255 255 255 / 0.70);
 }
 
-/* 0.72 donne 5,14:1 ; en dessous on passe sous AA. */
-.space-chip.on-band .space-complement {
-    color: rgb(255 255 255 / 0.72);
+/* Mobile */
+
+@media (max-width: 640px) {
+    .space-chip {
+        max-width: 100%;
+        padding: 8px 12px 8px 9px;
+    }
+
+    .space-icon {
+        width: 31px;
+        height: 31px;
+    }
+
+    .space-name {
+        font-size: 12px;
+    }
+
+    .space-city {
+        font-size: 10px;
+    }
 }
 </style>

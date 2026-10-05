@@ -166,12 +166,12 @@ const donutSlices = computed(() =>
 
 const OVERDUE_TEMPLATE = '1.6fr .8fr 1fr .8fr 1.1fr 1.1fr';
 const OVERDUE_COLUMNS = [
-    'ASSUREUR',
-    'MOIS',
-    'DÉPOSÉE',
-    'RETARD',
-    'RESTE DÛ',
-    'PÉNALITÉ',
+    'Assureur',
+    'Mois',
+    'Déposée',
+    'Retard',
+    'Reste dû',
+    'Pénalité',
 ];
 
 const overdueFooter =
@@ -263,26 +263,36 @@ async function exportJourney() {
 
 const RECOVERY_TEMPLATE = '1.9fr 1fr 1fr 1fr .9fr';
 const RECOVERY_COLUMNS = [
-    'ASSUREUR',
-    'FACTURÉ',
-    'ENCAISSÉ',
-    'RESTE DÛ',
-    'TAUX',
+    'Asuureur',
+    'Facturé',
+    'Encaissé',
+    'Reste dû',
+    'Taux',
 ];
 
 const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 </script>
 
+
 <template>
     <Head title="Tableau de bord" />
-
+ 
     <PendingInvitationsModal
         v-if="pendingInvitations && pendingInvitations.length > 0"
         :invitations="pendingInvitations"
     />
 
     <div class="dashboard-page">
-        <ConsoleHeader title="Parcours des paiements" class="dashboard-header">
+        <br>
+             <div class="intro-text">
+
+                        <h1>Parcours des paiements</h1>
+
+                    </div>
+        <ConsoleHeader
+            title=""
+            class="dashboard-header"
+        >
             <template #hero>
                 <DashboardKpis
                     :summary="summary"
@@ -299,6 +309,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </template>
         </ConsoleHeader>
 
+        <!-- =====================================================
+             SYNTHÈSE DES ASSUREURS
+             ===================================================== -->
         <div
             v-if="
                 insurerBands.late.length > 0 ||
@@ -307,73 +320,107 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             "
             class="bands"
         >
-            <!--
-            Une bande par assureur en retard, puis une bande pour ceux qui
-            doivent dans les clous, puis une pour les soldés. Le détail va où
-            il y a quelque chose à faire ; le reste se contente de ses noms.
-
-            Les bandes nomment la plus vieille facture plutôt que de compter
-            au-delà d'un seuil d'ancienneté : ce retard-ci se compte depuis le
-            dépôt de facture, quand les tranches d'ancienneté se comptent
-            depuis la fin du mois déclaré. Deux seuils voisins sur deux
-            horloges se contrediraient (voir .ai/rules/pages-pharmacy.md).
-        -->
+            <!-- Assureurs en retard -->
             <section
                 v-for="band in visibleLateBands"
                 :key="band.insurerId"
                 class="insurer-banner late"
             >
-                <TriangleAlert class="insurer-banner-icon" :size="18" />
+                <div class="insurer-banner-icon-wrap">
+                    <TriangleAlert
+                        class="insurer-banner-icon"
+                        :size="17"
+                    />
+                </div>
 
                 <p class="insurer-banner-line">
-                    <Link :href="band.insurerUrl" class="insurer-banner-name">{{
-                        band.insurerName
-                    }}</Link>
-                    · {{ band.count }} facture{{ band.count > 1 ? 's' : '' }} ·
-                    <strong>{{ formatAmount(band.outstanding) }} FCFA</strong> ·
+                    <Link
+                        :href="band.insurerUrl"
+                        class="insurer-banner-name"
+                    >
+                        {{ band.insurerName }}
+                    </Link>
+
+                    <span class="banner-separator">·</span>
+
+                    {{ band.count }}
+                    facture{{ band.count > 1 ? 's' : '' }}
+
+                    <span class="banner-separator">·</span>
+
+                    <strong>
+                        {{ formatAmount(band.outstanding) }} FCFA
+                    </strong>
+
+                    <span class="banner-separator">·</span>
+
                     plus ancienne {{ band.oldestMonthLabel }}
-                    <span class="insurer-banner-days"
-                        >+{{ band.oldestOverdueDays }} j</span
-                    ><template v-if="band.penalty !== null">
-                        · pénalité {{ formatAmount(band.penalty) }}</template
-                    >
+
+                    <span class="insurer-banner-days">
+                        +{{ band.oldestOverdueDays }} j
+                    </span>
+
+                    <template v-if="band.penalty !== null">
+                        <span class="banner-separator">·</span>
+                        pénalité {{ formatAmount(band.penalty) }}
+                    </template>
                 </p>
             </section>
 
-            <section v-if="insurerBands.owing" class="insurer-banner owing">
-                <Clock class="insurer-banner-icon" :size="18" />
+            <!-- Assureurs dans le délai -->
+            <section
+                v-if="insurerBands.owing"
+                class="insurer-banner owing"
+            >
+                <div class="insurer-banner-icon-wrap">
+                    <Clock
+                        class="insurer-banner-icon"
+                        :size="17"
+                    />
+                </div>
 
                 <p class="insurer-banner-line">
-                    {{ insurerBands.owing.count }} assureur{{
-                        insurerBands.owing.count > 1 ? 's' : ''
-                    }}
-                    dans le délai convenu ·
-                    <strong
-                        >{{
-                            formatAmount(insurerBands.owing.outstanding)
-                        }}
-                        FCFA</strong
-                    >
-                    · {{ insurerBands.owing.insurerNames.join(', ') }}
+                    {{ insurerBands.owing.count }}
+                    assureur{{ insurerBands.owing.count > 1 ? 's' : '' }}
+                    dans le délai convenu
+
+                    <span class="banner-separator">·</span>
+
+                    <strong>
+                        {{ formatAmount(insurerBands.owing.outstanding) }}
+                        FCFA
+                    </strong>
+
+                    <span class="banner-separator">·</span>
+
+                    {{ insurerBands.owing.insurerNames.join(', ') }}
                 </p>
             </section>
 
-            <section v-if="insurerBands.settled" class="insurer-banner settled">
-                <CircleCheck class="insurer-banner-icon" :size="18" />
+            <!-- Assureurs soldés -->
+            <section
+                v-if="insurerBands.settled"
+                class="insurer-banner settled"
+            >
+                <div class="insurer-banner-icon-wrap">
+                    <CircleCheck
+                        class="insurer-banner-icon"
+                        :size="17"
+                    />
+                </div>
 
                 <p class="insurer-banner-line">
-                    {{ insurerBands.settled.count }} assureur{{
-                        insurerBands.settled.count > 1 ? 's' : ''
-                    }}
-                    à jour · {{ insurerBands.settled.insurerNames.join(', ') }}
+                    {{ insurerBands.settled.count }}
+                    assureur{{ insurerBands.settled.count > 1 ? 's' : '' }}
+                    à jour
+
+                    <span class="banner-separator">·</span>
+
+                    {{ insurerBands.settled.insurerNames.join(', ') }}
                 </p>
             </section>
 
-            <!--
-            Les deux commandes vivent sous la dernière bande, pas plus bas :
-            un bouton « voir le détail » flottant entre les KPI et le graphique
-            ne disait pas à quoi il se rapportait.
-        -->
+            <!-- Actions -->
             <div
                 v-if="hiddenLateBands > 0 || overdue.length > 0"
                 class="bands-footer"
@@ -397,36 +444,61 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     :aria-expanded="showOverdueTable"
                     @click="showOverdueTable = !showOverdueTable"
                 >
-                    {{ showOverdueTable ? 'Masquer' : 'Voir' }} le
-                    détail<template v-if="overdueSummary">
-                        ({{ overdueSummary.count }} facture{{
-                            overdueSummary.count > 1 ? 's' : ''
-                        }})</template
-                    >
+                    {{ showOverdueTable ? 'Masquer' : 'Voir' }} le détail
+
+                    <template v-if="overdueSummary">
+                        ({{ overdueSummary.count }}
+                        facture{{ overdueSummary.count > 1 ? 's' : '' }})
+                    </template>
                 </button>
             </div>
         </div>
 
-        <!--
-            Le réseau relance hors plateforme, sur WhatsApp, une officine dont
-            un mois manque : sans numéro, il n'a aucun moyen de la joindre.
-        -->
-        <p v-if="whatsappInvite" class="whatsapp-invite">
-            Ajoutez un numéro WhatsApp pour que le réseau puisse vous joindre.
-            <Link :href="whatsappInvite.url" class="whatsapp-invite-link">
+        <!-- =====================================================
+             INVITATION WHATSAPP
+             ===================================================== -->
+        <p
+            v-if="whatsappInvite"
+            class="whatsapp-invite"
+        >
+            <span class="whatsapp-invite-icon">•</span>
+
+            <span>
+                Ajoutez un numéro WhatsApp pour que le réseau puisse vous
+                joindre.
+            </span>
+
+            <Link
+                :href="whatsappInvite.url"
+                class="whatsapp-invite-link"
+            >
                 Ajouter un numéro
             </Link>
         </p>
 
-        <section v-if="outstandingMonths.length > 0" class="catch-up">
-            <div class="catch-up-text">
-                <span class="catch-up-label"> MOIS À RATTRAPER </span>
+        <!-- =====================================================
+             MOIS À RATTRAPER
+             ===================================================== -->
+        <section
+            v-if="outstandingMonths.length > 0"
+            class="catch-up"
+        >
+            <div class="catch-up-header">
+                <div class="catch-up-icon">
+                    <span>↻</span>
+                </div>
 
-                <p>
-                    Ces mois n'ont pas encore été déclarés pour tous vos
-                    assureurs. Le rattrapage reste possible douze mois en
-                    arrière.
-                </p>
+                <div class="catch-up-text">
+                    <span class="catch-up-label">
+                        MOIS À RATTRAPER
+                    </span>
+
+                    <p>
+                        Ces mois n'ont pas encore été déclarés pour tous vos
+                        assureurs. Le rattrapage reste possible douze mois en
+                        arrière.
+                    </p>
+                </div>
             </div>
 
             <div class="catch-up-months">
@@ -437,13 +509,41 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     class="catch-up-month"
                 >
                     {{ month.label }}
+                    <span class="month-arrow">→</span>
                 </Link>
             </div>
         </section>
 
-        <DashboardKpis :summary="summary" surface="light" class="kpis-page" />
+        <!-- =====================================================
+             KPI
+             ===================================================== -->
+        <DashboardKpis
+            :summary="summary"
+            surface="light"
+            class="kpis-page"
+        />
 
-        <section v-if="showOverdueTable" class="overdue-section">
+        <!-- =====================================================
+             FACTURES EN RETARD
+             ===================================================== -->
+        <section
+            v-if="showOverdueTable"
+            class="overdue-section"
+        >
+            <div class="section-intro">
+                <div>
+                    <span class="section-eyebrow">
+                        SUIVI DES IMPAYÉS
+                    </span>
+
+                    <h2>Factures en retard</h2>
+
+                    <p>
+                        Les déclarations dont le délai de règlement est dépassé.
+                    </p>
+                </div>
+            </div>
+
             <DataTable
                 v-if="showOverdueTable"
                 title="Factures en retard"
@@ -457,14 +557,21 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     :template="OVERDUE_TEMPLATE"
                 >
                     <div>
-                        <Link :href="row.insurerUrl" class="overdue-insurer">
+                        <Link
+                            :href="row.insurerUrl"
+                            class="overdue-insurer"
+                        >
                             {{ row.insurerName }}
                         </Link>
                     </div>
 
-                    <div>{{ row.monthLabel }}</div>
+                    <div>
+                        {{ row.monthLabel }}
+                    </div>
 
-                    <div>{{ row.depositedOn }}</div>
+                    <div>
+                        {{ row.depositedOn }}
+                    </div>
 
                     <div
                         class="overdue-days"
@@ -473,14 +580,13 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                         +{{ row.overdueDays }} j
                     </div>
 
-                    <div>{{ formatAmount(row.outstanding) }}</div>
+                    <div>
+                        {{ formatAmount(row.outstanding) }}
+                    </div>
 
-                    <!--
-                        formatAmount() rend « — » sur null et « 0 » sur zéro :
-                        « pas de clause de pénalité » et « une clause mais rien
-                        encore à réclamer » ne doivent pas se lire pareil.
-                    -->
-                    <div>{{ formatAmount(row.penalty) }}</div>
+                    <div>
+                        {{ formatAmount(row.penalty) }}
+                    </div>
                 </DataTableRow>
             </DataTable>
 
@@ -501,19 +607,30 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </p>
         </section>
 
+        <!-- =====================================================
+             PARCOURS DES PAIEMENTS
+             ===================================================== -->
         <section class="dashboard-card journey-card">
             <div class="card-top-line"></div>
 
             <div class="card-header">
                 <div class="card-title-group">
                     <div class="card-icon teal">
-                        <span>⌁</span>
+                        <span class="journey-symbol">⌁</span>
                     </div>
 
                     <div>
-                        <h2>{{ journeyHeading.title }}</h2>
+                        <span class="card-eyebrow">
+                            ACTIVITÉ FINANCIÈRE
+                        </span>
 
-                        <p>{{ journeyHeading.caption }}</p>
+                        <h2>
+                            {{ journeyHeading.title }}
+                        </h2>
+
+                        <p>
+                            {{ journeyHeading.caption }}
+                        </p>
                     </div>
                 </div>
 
@@ -530,10 +647,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     @export="exportJourney"
                 >
                     <template #filters>
-                        <!--
-                            Hidden on the donut: a distribution narrowed to one
-                            insurer is a single wedge filling the circle.
-                        -->
                         <FilterSelect
                             v-if="chartType !== 'pie'"
                             v-model="journeyInsurer"
@@ -545,36 +658,57 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 </ChartToolbar>
             </div>
 
-            <div ref="journeyArea">
+            <div
+                ref="journeyArea"
+                class="journey-chart-area"
+            >
                 <OutstandingDonutChart
                     v-if="chartType === 'pie'"
                     :slices="donutSlices"
                     :height="200"
                 />
 
-                <Deferred v-else data="journey">
+                <Deferred
+                    v-else
+                    data="journey"
+                >
                     <template #fallback>
-                        <ChartSkeleton class="mt-5" :height="200" />
+                        <ChartSkeleton
+                            class="mt-5"
+                            :height="200"
+                        />
                     </template>
 
-                    <div v-if="journey" class="chart-wrapper">
+                    <div
+                        v-if="journey"
+                        class="chart-wrapper"
+                    >
                         <JourneyLineChart
                             v-if="chartType === 'line'"
                             :points="journey"
                         />
 
-                        <InvoicedVsCollectedChart v-else :points="journey" />
+                        <InvoicedVsCollectedChart
+                            v-else
+                            :points="journey"
+                        />
                     </div>
                 </Deferred>
             </div>
         </section>
 
+        <!-- =====================================================
+             ÉVOLUTION DES PÉNALITÉS
+             ===================================================== -->
         <PenaltyTrendCard
             :ledger="penaltyTrend"
             :subtitle="pharmacyName"
             filename="aphaspb-penalites-officine"
         />
-
+<br>
+        <!-- =====================================================
+             ENCOURS PAR ANCIENNETÉ
+             ===================================================== -->
         <section class="dashboard-card analysis-card">
             <div class="card-header">
                 <div class="card-title-group">
@@ -583,9 +717,15 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     </div>
 
                     <div>
+                        <span class="card-eyebrow">
+                            ANALYSE DES ENCOURS
+                        </span>
+
                         <h2>Encours par ancienneté</h2>
 
-                        <p>Ancienneté comptée depuis la fin du mois déclaré.</p>
+                        <p>
+                            Ancienneté comptée depuis la fin du mois déclaré.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -604,7 +744,11 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                         <span
                             class="ageing-progress-fill"
                             :style="{
-                                width: `${ageingTotal === 0 ? 0 : (band.amount / ageingTotal) * 100}%`,
+                                width: `${
+                                    ageingTotal === 0
+                                        ? 0
+                                        : (band.amount / ageingTotal) * 100
+                                }%`,
                             }"
                         ></span>
                     </div>
@@ -616,279 +760,118 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </div>
         </section>
 
+        <!-- =====================================================
+             SOURCE
+             ===================================================== -->
         <p class="dashboard-source">
-            Les indicateurs sont calculés à partir des déclarations transmises
-            par les officines participantes.
+            <span class="source-mark">i</span>
+
+            Les indicateurs sont calculés à partir des déclarations
+            transmises par les officines participantes.
         </p>
     </div>
 
-    <DataTable
-        title="Recouvrement par assureur"
-        :columns="RECOVERY_COLUMNS"
-        :template="RECOVERY_TEMPLATE"
-        footer="Sur les 12 derniers mois. Un assureur coché sans déclaration reste listé, sans taux."
-    >
-        <DataTableRow
-            v-for="row in recovery"
-            :key="row.insurerId"
+    <!-- =========================================================
+         RECOUVREMENT PAR ASSUREUR
+         ========================================================= -->
+    <section class="recovery-section">
+        <div class="section-intro recovery-intro">
+            <div>
+                <span class="section-eyebrow">
+                    PERFORMANCE DES RÈGLEMENTS
+                </span>
+
+                <h2>Recouvrement par assureur</h2>
+
+                <p>
+                    Suivi des montants facturés, reçus et restant à recouvrer
+                    sur les douze derniers mois.
+                </p>
+            </div>
+
+       
+        </div>
+
+        <DataTable
+            title=""
+            :columns="RECOVERY_COLUMNS"
             :template="RECOVERY_TEMPLATE"
+            footer="Sur les 12 derniers mois. Un assureur coché sans déclaration reste listé, sans taux."
         >
-            <div>{{ row.insurerName }}</div>
-            <div>{{ formatMillions(row.invoiced) }}</div>
-            <div>{{ formatMillions(row.received) }}</div>
-            <div
-                :class="
-                    row.outstanding === 0
-                        ? 'text-officine'
-                        : 'text-terracotta-dark'
-                "
+            <DataTableRow
+                v-for="row in recovery"
+                :key="row.insurerId"
+                :template="RECOVERY_TEMPLATE"
             >
-                {{
-                    row.outstanding === 0
-                        ? 'À JOUR'
-                        : formatMillions(row.outstanding)
-                }}
-            </div>
-            <div
-                :class="
-                    row.recoveryRate === null
-                        ? 'text-ink/40'
-                        : row.recoveryRate < 60
-                          ? 'text-terracotta-dark'
-                          : 'text-officine'
-                "
-            >
-                {{
-                    row.recoveryRate === null
-                        ? '—'
-                        : `${row.recoveryRate.toLocaleString('fr-FR')} %`
-                }}
-            </div>
-        </DataTableRow>
-    </DataTable>
+                <div class="recovery-insurer">
+                    {{ row.insurerName }}
+                </div>
+
+                <div>
+                    {{ formatMillions(row.invoiced) }}
+                </div>
+
+                <div>
+                    {{ formatMillions(row.received) }}
+                </div>
+
+                <div
+                    :class="
+                        row.outstanding === 0
+                            ? 'text-officine'
+                            : 'text-terracotta-dark'
+                    "
+                    class="recovery-outstanding"
+                >
+                    {{
+                        row.outstanding === 0
+                            ? 'À JOUR'
+                            : formatMillions(row.outstanding)
+                    }}
+                </div>
+
+                <div
+                    :class="
+                        row.recoveryRate === null
+                            ? 'text-ink/40'
+                            : row.recoveryRate < 60
+                              ? 'text-terracotta-dark'
+                              : 'text-officine'
+                    "
+                    class="recovery-rate"
+                >
+                    {{
+                        row.recoveryRate === null
+                            ? '—'
+                            : `${row.recoveryRate.toLocaleString('fr-FR')} %`
+                    }}
+                </div>
+            </DataTableRow>
+        </DataTable>
+    </section>
 </template>
 
 <style scoped>
-.whatsapp-invite {
-    margin-top: 16px;
-    padding: 11px 14px;
-    border-radius: var(--radius-band);
-    background: var(--cream-header);
-    color: var(--ink);
-    font-size: var(--text-meta);
-}
-
-.whatsapp-invite-link {
-    margin-left: 6px;
-    color: var(--officine);
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-
-.insurer-banner {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.625rem;
-    padding: 0.6875rem 1rem;
-    margin-bottom: 0.5rem;
-    border: 1px solid;
-    border-left-width: 4px;
-    border-radius: var(--radius-band);
-}
-
-/* Les trois états reprennent des jetons déjà posés sur .dashboard-page. */
-
-/*
-  Rouge plein, décidé par le client contre l'avis consigné dans la spec :
-  trois blocs de force égale ne se distinguent plus les uns des autres. Le
-  blanc sur --terracotta donne 4,82:1, au-dessus du seuil AA de 4,5:1 mais
-  sans marge — ne pas éclaircir --terracotta sans recalculer.
-*/
-.insurer-banner.late {
-    border-color: var(--terracotta-dark);
-    background: var(--terracotta);
-
-    color: #fff;
-}
-
-/*
-  Le nom est un lien, le montant un <strong>, le retard un <span> : sans
-  ces règles, chacun garderait sa couleur d'encre sur le fond rouge.
-*/
-.insurer-banner.late .insurer-banner-name,
-.insurer-banner.late strong {
-    color: #fff;
-}
-
-.insurer-banner.late .insurer-banner-icon {
-    color: #fff;
-}
-
-.insurer-banner.owing {
-    border-color: var(--gold);
-    background: var(--gold-soft);
+/* =========================================================
+   BASE
+   ========================================================= */
+.intro-text h1 {
+    margin: 0;
 
     color: var(--ink);
+
+    font-size: 21px;
+    font-weight: 800;
+
+    letter-spacing: -0.025em;
 }
-
-.insurer-banner.owing .insurer-banner-icon {
-    color: var(--gold);
-}
-
-.insurer-banner.settled {
-    border-color: var(--primary);
-    background: var(--primary-soft);
-
-    color: var(--ink);
-}
-
-.insurer-banner.settled .insurer-banner-icon {
-    color: var(--primary);
-}
-
-.insurer-banner-icon {
-    flex-shrink: 0;
-    margin-top: 0.125rem;
-}
-
-/*
-  Pas de `color` ici : le <p> reposait l'encre et gagnait sur le `color: #fff`
-  de la bande, qui ne vaut que par héritage. Les mots courants sortaient donc
-  en #141d18 sur #d13b22, soit 3,58:1 — sous le seuil AA, sur l'élément qui
-  porte la plus grande partie du texte. La couleur vient désormais de l'état
-  de la bande, et ce défaut ne peut plus revenir par un quatrième état.
-*/
-.insurer-banner-line {
-    font-size: 0.9375rem;
-    font-weight: 500;
-    line-height: 1.5;
-}
-
-.insurer-banner-line strong {
-    font-weight: 700;
-}
-
-.insurer-banner-days {
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-}
-
-/*
-  Blanc, pas terracotta : depuis que la bande est un aplat rouge, cette
-  règle-ci écrivait le chiffre en #d13b22 sur #d13b22. Elle vient après la
-  règle groupée ci-dessus, à spécificité égale, donc elle l'emportait — le
-  retard devenait invisible.
-*/
-.insurer-banner.late .insurer-banner-days {
-    color: #fff;
-}
-
-.insurer-banner-name {
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-
-/*
-  Une ligne de métadonnée, plus un panneau : la phrase mérite d'être lisible,
-  pas d'occuper une bande pleine avec une icône « i ».
-*/
-.dashboard-source {
-    margin-top: 16px;
-
-    color: var(--muted);
-
-    font-size: 12.5px;
-    line-height: 1.5;
-}
-
-/*
-  Deux emplacements, jamais les deux visibles. `display: none` — et non
-  `visibility` ou une position hors écran — pour que l'emplacement masqué
-  quitte aussi l'arbre d'accessibilité : un lecteur d'écran ne doit pas
-  énoncer les trois chiffres deux fois.
-
-  Le pendant de cette règle vit dans DashboardKpis, avec le reste de son
-  style : séparées, les deux avaient la même spécificité et seul l'ordre
-  d'émission les départageait.
-*/
-@media (max-width: 1023.98px) {
-    .kpis-page {
-        display: none;
-    }
-}
-
-.bands {
-    /* Détache le bloc de l'en-tête au-dessus : collé à elle, il se lisait
-       comme une partie du titre. La marge basse était courte parce que
-       .dashboard-intro portait la sienne juste en dessous ; ce panneau a été
-       retiré, donc .bands assume désormais tout l'écart. */
-    margin: 1.125rem 0 1.375rem;
-}
-
-.bands-footer {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem 1.25rem;
-    margin-top: 0.75rem;
-}
-
-.bands-footer-action {
-    padding: 0;
-    border: 0;
-    background: none;
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--muted);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    cursor: pointer;
-}
-
-.bands-footer-action:hover {
-    color: var(--ink);
-}
-
-.overdue-section {
-    margin-bottom: 0.5rem;
-}
-
-.overdue-insurer {
-    font-weight: 700;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-
-.overdue-days {
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    color: var(--terracotta);
-}
-
-.overdue-more {
-    margin-top: 0.625rem;
-    font-size: 0.8125rem;
-    text-align: right;
-}
-
-.overdue-more a {
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-
 .dashboard-page {
-    /*
-      --muted et --light sont ici des couleurs de TEXTE. Le thème réserve
-      --muted à une surface presque blanche : les retirer rendrait ce texte
-      blanc. À renommer au lot 3 ou 4, pas à supprimer.
-    */
-    --muted: color-mix(in srgb, var(--ink) 55%, transparent);
+    --muted: color-mix(in srgb, var(--ink) 54%, transparent);
     --light: color-mix(in srgb, var(--ink) 38%, transparent);
 
     position: relative;
     min-height: 100vh;
-
-    padding-bottom: 45px;
+    /* padding-bottom: 55px; */
 
     color: var(--ink);
 }
@@ -898,157 +881,595 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     z-index: 5;
 }
 
+.kpis-band {
+    margin-top: 18px;
+}
+
+/* =========================================================
+   BANNIÈRES ASSUREURS
+   ========================================================= */
+
+.bands {
+    margin: 20px 0 26px;
+}
+
+.insurer-banner {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+
+    min-height: 48px;
+    margin-bottom: 8px;
+    padding: 10px 14px;
+
+    border: 1px solid;
+    border-left-width: 3px;
+    border-radius: 11px;
+
+    box-shadow: 0 2px 8px rgba(20, 29, 24, 0.025);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.insurer-banner:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 7px 18px rgba(20, 29, 24, 0.055);
+}
+
+.insurer-banner-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 27px;
+    height: 27px;
+    flex: 0 0 27px;
+
+    border-radius: 8px;
+}
+
+.insurer-banner-icon {
+    flex-shrink: 0;
+}
+
+.insurer-banner-line {
+    margin: 0;
+
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.55;
+}
+
+.insurer-banner-line strong {
+    font-weight: 750;
+}
+
+.banner-separator {
+    margin: 0 3px;
+    opacity: 0.55;
+}
+
+.insurer-banner-days {
+    margin-left: 3px;
+
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+
+.insurer-banner.late {
+    border-color: var(--terracotta-dark);
+    background: var(--terracotta);
+    color: #fff;
+}
+
+.insurer-banner.late .insurer-banner-icon-wrap {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.insurer-banner.late .insurer-banner-name,
+.insurer-banner.late strong,
+.insurer-banner.late .insurer-banner-days,
+.insurer-banner.late .insurer-banner-icon {
+    color: #fff;
+}
+
+.insurer-banner.owing {
+    border-color: color-mix(
+        in srgb,
+        var(--gold) 35%,
+        transparent
+    );
+
+    background: color-mix(
+        in srgb,
+        var(--gold-soft) 78%,
+        #fff
+    );
+
+    color: var(--ink);
+}
+
+.insurer-banner.owing .insurer-banner-icon-wrap {
+    background: color-mix(
+        in srgb,
+        var(--gold) 10%,
+        transparent
+    );
+}
+
+.insurer-banner.owing .insurer-banner-icon {
+    color: var(--gold);
+}
+
+.insurer-banner.settled {
+    border-color: color-mix(
+        in srgb,
+        var(--primary) 28%,
+        transparent
+    );
+
+    background: color-mix(
+        in srgb,
+        var(--primary-soft) 72%,
+        #fff
+    );
+
+    color: var(--ink);
+}
+
+.insurer-banner.settled .insurer-banner-icon-wrap {
+    background: color-mix(
+        in srgb,
+        var(--primary) 9%,
+        transparent
+    );
+}
+
+.insurer-banner.settled .insurer-banner-icon {
+    color: var(--primary);
+}
+
+.insurer-banner-name {
+    color: inherit;
+    font-weight: 750;
+
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.insurer-banner.late .insurer-banner-name {
+    text-decoration-color: rgba(255, 255, 255, 0.65);
+}
+
+/* =========================================================
+   ACTIONS DES BANNIÈRES
+   ========================================================= */
+
+.bands-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px 20px;
+
+    margin-top: 10px;
+    padding-left: 3px;
+}
+
+.bands-footer-action {
+    padding: 0;
+
+    border: 0;
+    background: none;
+
+    color: var(--muted);
+
+    font-size: 11.5px;
+    font-weight: 700;
+
+    text-decoration: underline;
+    text-decoration-color: color-mix(
+        in srgb,
+        currentColor 35%,
+        transparent
+    );
+    text-underline-offset: 3px;
+
+    cursor: pointer;
+
+    transition: color 0.2s ease;
+}
+
+.bands-footer-action:hover {
+    color: var(--ink);
+}
+
+/* =========================================================
+   WHATSAPP
+   ========================================================= */
+
+.whatsapp-invite {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    margin: 0 0 18px;
+    padding: 10px 13px;
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    background: rgba(255, 255, 255, 0.72);
+
+    color: var(--muted);
+
+    font-size: 11.5px;
+    line-height: 1.45;
+}
+
+.whatsapp-invite-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 18px;
+    height: 18px;
+
+    border-radius: 50%;
+
+    background: color-mix(
+        in srgb,
+        var(--officine) 10%,
+        transparent
+    );
+
+    color: var(--officine);
+
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.whatsapp-invite-link {
+    margin-left: 2px;
+
+    color: var(--officine);
+    font-weight: 750;
+
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* =========================================================
+   MOIS À RATTRAPER
+   ========================================================= */
+
 .catch-up {
     position: relative;
 
-    margin: 12px 0 22px;
+    margin: 16px 0 22px;
+    padding: 17px 19px;
 
-    padding: 18px 22px;
+    border: 1px solid color-mix(
+        in srgb,
+        var(--gold-mid) 30%,
+        transparent
+    );
 
-    border-radius: var(--radius-card);
+    border-radius: 14px;
 
-    box-shadow: var(--surface-shadow);
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--gold-soft) 80%, #fff),
+        #fff
+    );
+
+    box-shadow: 0 5px 18px rgba(20, 29, 24, 0.035);
+}
+
+.catch-up::before {
+    content: '';
+
+    position: absolute;
+    top: 13px;
+    bottom: 13px;
+    left: 0;
+
+    width: 3px;
+
+    border-radius: 4px;
+    background: var(--gold);
+}
+
+.catch-up-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.catch-up-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 35px;
+    height: 35px;
+    flex: 0 0 35px;
+
+    border-radius: 10px;
 
     background: var(--gold-soft);
+    color: var(--gold);
+
+    font-size: 17px;
+    font-weight: 700;
 }
 
 .catch-up-label {
     display: block;
 
-    color: var(--muted);
+    color: var(--gold);
 
-    font-size: 10.5px;
-
-    font-weight: 700;
-
-    letter-spacing: 0.05em;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    font-weight: 750;
+    letter-spacing: 0.15em;
 }
 
 .catch-up-text p {
-    margin-top: 6px;
+    max-width: 760px;
 
-    color: var(--ink);
-
-    font-size: 12px;
-
-    line-height: 1.5;
-}
-
-.catch-up-months {
-    display: flex;
-
-    flex-wrap: wrap;
-
-    gap: 8px;
-
-    margin-top: 14px;
-}
-
-.catch-up-month {
-    display: inline-flex;
-
-    align-items: center;
-
-    min-height: 38px;
-
-    padding: 0 14px;
-
-    border: 1px solid color-mix(in srgb, var(--gold-mid) 45%, transparent);
-
-    border-radius: var(--radius-nav);
-
-    background: #ffffff;
+    margin: 4px 0 0;
 
     color: var(--ink);
 
     font-size: 11.5px;
+    line-height: 1.55;
+}
 
+.catch-up-months {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+
+    margin-top: 14px;
+    padding-left: 47px;
+}
+
+.catch-up-month {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    min-height: 33px;
+    padding: 0 11px;
+
+    border: 1px solid color-mix(
+        in srgb,
+        var(--gold-mid) 38%,
+        transparent
+    );
+
+    border-radius: 9px;
+
+    background: #fff;
+
+    color: var(--ink);
+
+    font-size: 10.5px;
     font-weight: 700;
 
     transition:
+        background 0.2s ease,
         border-color 0.2s ease,
-        background 0.2s ease;
+        transform 0.2s ease;
 }
 
 .catch-up-month:hover {
     border-color: var(--gold);
-
     background: var(--gold-soft);
+    transform: translateY(-1px);
 }
 
-.badge-dot {
-    width: 7px;
-    height: 7px;
-
-    flex-shrink: 0;
-
-    border-radius: 50%;
-
-    background: var(--primary);
-
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--officine) 8%, transparent);
-
-    animation: statusPulse 2.2s infinite;
+.month-arrow {
+    color: var(--gold);
+    font-size: 12px;
 }
+
+/* =========================================================
+   KPI
+   ========================================================= */
+
+.kpis-page {
+    margin-bottom: 24px;
+}
+
+@media (max-width: 1023.98px) {
+    .kpis-page {
+        display: none;
+    }
+}
+
+/* =========================================================
+   SECTION INTRO
+   ========================================================= */
+
+.section-intro {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+
+    margin: 0 0 12px;
+    padding: 0 2px;
+}
+
+.section-eyebrow,
+.card-eyebrow {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: var(--muted);
+
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+}
+
+.section-intro h2 {
+    margin: 0;
+
+    color: var(--ink);
+
+    font-size: 17px;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+}
+
+.section-intro p {
+    max-width: 650px;
+
+    margin: 4px 0 0;
+
+    color: black;
+
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+/* =========================================================
+   FACTURES EN RETARD
+   ========================================================= */
+
+.overdue-section {
+    margin: 0 0 22px;
+}
+
+.overdue-insurer {
+    color: var(--ink);
+    font-weight: 700;
+
+    text-decoration: underline;
+    text-decoration-color: color-mix(
+        in srgb,
+        currentColor 30%,
+        transparent
+    );
+
+    text-underline-offset: 3px;
+}
+
+.overdue-days {
+    color: var(--terracotta);
+
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+
+.overdue-more {
+    margin: 8px 0 0;
+
+    color: var(--muted);
+
+    font-size: 11px;
+    text-align: right;
+}
+
+.overdue-more a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* =========================================================
+   CARTES PRINCIPALES
+   ========================================================= */
 
 .dashboard-card {
     position: relative;
 
-    background: #ffffff;
-
-    border-radius: var(--radius-card);
-
-    box-shadow: var(--surface-shadow);
-
     overflow: hidden;
 
-    animation: cardAppear 0.6s ease both;
+    margin-bottom: 15px;
+
+    border: 1px solid color-mix(
+        in srgb,
+        var(--ink) 7%,
+        transparent
+    );
+
+    border-radius: 16px;
+
+    background: #fff;
+
+    box-shadow:
+        0 4px 18px rgba(20, 29, 24, 0.035),
+        0 1px 2px rgba(20, 29, 24, 0.025);
+
+    animation: cardAppear 0.5s ease both;
+
+    transition:
+        box-shadow 0.25s ease,
+        transform 0.25s ease;
 }
 
 .dashboard-card:hover {
-    box-shadow: var(--surface-shadow-raised);
+    box-shadow:
+        0 10px 28px rgba(20, 29, 24, 0.06),
+        0 1px 2px rgba(20, 29, 24, 0.03);
 }
 
 .card-top-line {
     position: absolute;
-
     top: 0;
     left: 0;
 
     width: 100%;
-    height: 3px;
+    height: 2px;
 
-    background: var(--primary);
+    background: linear-gradient(
+        90deg,
+        var(--primary),
+        color-mix(
+            in srgb,
+            var(--primary) 25%,
+            transparent
+        )
+    );
 
     opacity: 0.9;
 }
+
+/* =========================================================
+   CARD HEADER
+   ========================================================= */
 
 .card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 18px;
 
-    gap: 15px;
-
-    padding: 18px 19px 0;
+    padding: 20px 21px 0;
 }
 
 .card-title-group {
     display: flex;
     align-items: center;
-
     gap: 12px;
+
+    min-width: 0;
 }
 
 .card-icon {
-    width: 38px;
-    height: 38px;
-
-    flex-shrink: 0;
-
     display: flex;
     align-items: center;
     justify-content: center;
+
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
 
     border-radius: 11px;
 
@@ -1071,159 +1492,297 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     color: var(--terracotta);
 }
 
+.journey-symbol {
+    font-size: 20px;
+    line-height: 1;
+}
+
 .card-header h2 {
     margin: 0;
 
-    font-size: 17px;
-    font-weight: 750;
-
     color: var(--ink);
+
+    font-size: 16px;
+    font-weight: 750;
+    letter-spacing: -0.015em;
 }
 
 .card-header p {
-    margin-top: 3px;
-
-    font-size: 12.5px;
-
-    line-height: 1.45;
+    margin: 3px 0 0;
 
     color: var(--muted);
+
+    font-size: 11.5px;
+    line-height: 1.45;
 }
 
 .card-badge {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-
-    gap: 6px;
+    gap: 7px;
 
     padding: 6px 9px;
 
     border: 1px solid var(--border);
+    border-radius: 999px;
 
-    border-radius: 20px;
+    background: #fff;
 
     color: var(--muted);
 
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
 
     white-space: nowrap;
 }
 
+/* =========================================================
+   BADGE
+   ========================================================= */
+
+.badge-dot {
+    width: 6px;
+    height: 6px;
+    flex: 0 0 6px;
+
+    border-radius: 50%;
+
+    background: var(--primary);
+
+    box-shadow:
+        0 0 0 4px color-mix(
+            in srgb,
+            var(--primary) 9%,
+            transparent
+        );
+
+    animation: statusPulse 2.5s infinite;
+}
+
+/* =========================================================
+   GRAPHIQUE
+   ========================================================= */
+
 .journey-card {
-    margin-bottom: 12px;
+    margin-bottom: 15px;
 }
 
 .chart-toolbar {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
-    margin-top: 14px;
+
+    min-height: 38px;
+
+    margin-top: 10px;
+    padding: 0 18px;
+}
+
+.journey-chart-area {
+    min-height: 210px;
 }
 
 .chart-wrapper {
-    margin-top: 17px;
-
-    padding: 0 17px 17px;
+    margin-top: 8px;
+    padding: 0 17px 18px;
 }
+
+/* =========================================================
+   PENALITES
+   ========================================================= */
 
 .analysis-card {
     min-width: 0;
-
-    padding-bottom: 16px;
+    padding-bottom: 18px;
 }
+
+/* =========================================================
+   ANCIENNETÉ
+   ========================================================= */
 
 .ageing-list {
     display: flex;
-
     flex-direction: column;
+    gap: 15px;
 
-    gap: 13px;
-
-    margin-top: 18px;
-
-    padding: 0 18px;
+    margin-top: 20px;
+    padding: 0 20px;
 }
 
 .ageing-row {
     display: grid;
-
-    grid-template-columns: 62px minmax(0, 1fr) 78px;
-
+    grid-template-columns: 64px minmax(0, 1fr) 82px;
     align-items: center;
-
-    gap: 10px;
+    gap: 11px;
 }
 
 .ageing-label {
-    font-family: 'JetBrains Mono', monospace;
-
-    font-size: 9.5px;
-
-    font-weight: 600;
-    letter-spacing: 0.14em;
-
     color: var(--muted);
+
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 650;
+    letter-spacing: 0.11em;
 }
 
 .ageing-progress {
     position: relative;
 
-    height: 7px;
+    height: 6px;
 
     overflow: hidden;
 
-    border-radius: 20px;
+    border-radius: 999px;
 
-    background: color-mix(in srgb, var(--ink) 7%, transparent);
+    background: color-mix(
+        in srgb,
+        var(--ink) 6%,
+        transparent
+    );
 }
 
 .ageing-progress-fill {
     display: block;
 
     height: 100%;
-
     min-width: 3px;
 
     border-radius: inherit;
 
-    background: var(--gold-mid);
+    background: linear-gradient(
+        90deg,
+        var(--gold-mid),
+        var(--gold)
+    );
 
     transform-origin: left center;
 
-    animation: progressAppear 0.9s ease both;
+    animation: progressAppear 0.8s ease both;
 
-    transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition:
+        width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+        transform 0.2s ease;
 }
 
 .ageing-row:hover .ageing-progress-fill {
-    filter: brightness(0.96);
-
-    transform: scaleY(1.35);
+    transform: scaleY(1.45);
 }
 
 .ageing-value {
+    color: var(--ink);
+
     text-align: right;
 
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 750;
-
-    color: var(--ink);
+    font-variant-numeric: tabular-nums;
 }
 
-/*
-  Les règles `.owed-*` et `.status-check` ont vécu ici jusqu'au 21/09/2026.
-  Elles habillaient une liste « Top débiteurs » remplacée depuis par le
-  graphique en anneau : plus aucun template de `resources/js` ne cite ces
-  classes. Le lot 4 les a d'abord *agrandies* au titre de la règle des 10 px,
-  avant de constater qu'elles ne rendaient rien — retailler du code mort le
-  laisse mort et le fait paraître vivant.
-*/
+/* =========================================================
+   SOURCE
+   ========================================================= */
+
+.dashboard-source {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    margin: 13px 2px 0;
+
+    color: var(--muted);
+
+    font-size: 10.5px;
+    line-height: 1.5;
+}
+
+.source-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+
+    border: 1px solid var(--border);
+    border-radius: 50%;
+
+    font-size: 9px;
+    font-weight: 700;
+}
+
+/* =========================================================
+   RECOUVREMENT
+   ========================================================= */
+
+.recovery-section {
+    margin-top: 10px;
+    margin-bottom: 50px;
+}
+
+.recovery-intro {
+    margin-bottom: 13px;
+}
+
+.recovery-period {
+    flex: 0 0 auto;
+
+    padding: 6px 9px;
+
+    border: 1px solid var(--border);
+    border-radius: 999px;
+
+    color: var(--muted);
+
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.recovery-insurer {
+    font-weight: 700;
+}
+
+.recovery-outstanding {
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+
+.recovery-rate {
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================
+   TABLEAUX — PETITES FINITIONS
+   ========================================================= */
+
+.dashboard-page :deep(.data-table),
+.recovery-section :deep(.data-table) {
+    border-radius: 15px;
+}
+
+.dashboard-page :deep(.data-table-header),
+.recovery-section :deep(.data-table-header) {
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.dashboard-page :deep(.data-table-row),
+.recovery-section :deep(.data-table-row) {
+    min-height: 52px;
+}
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
 
 @keyframes cardAppear {
     from {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(8px);
     }
 
     to {
@@ -1234,15 +1793,30 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
 @keyframes statusPulse {
     0% {
-        box-shadow: 0 0 0 0 color-mix(in srgb, var(--officine) 25%, transparent);
+        box-shadow:
+            0 0 0 0 color-mix(
+                in srgb,
+                var(--primary) 24%,
+                transparent
+            );
     }
 
     70% {
-        box-shadow: 0 0 0 5px transparent;
+        box-shadow:
+            0 0 0 5px color-mix(
+                in srgb,
+                var(--primary) 0%,
+                transparent
+            );
     }
 
     100% {
-        box-shadow: 0 0 0 0 transparent;
+        box-shadow:
+            0 0 0 0 color-mix(
+                in srgb,
+                var(--primary) 0%,
+                transparent
+            );
     }
 }
 
@@ -1258,65 +1832,260 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 }
 
+/* =========================================================
+   TABLETTE
+   ========================================================= */
+
+@media (max-width: 800px) {
+    .dashboard-page {
+        padding-bottom: 50px;
+    }
+
+    .bands {
+        margin-top: 16px;
+    }
+
+    .insurer-banner {
+        padding: 10px 13px;
+    }
+
+    .insurer-banner-line {
+        font-size: 12px;
+    }
+
+    .catch-up {
+        padding: 17px;
+    }
+
+    .card-header {
+        padding: 18px 17px 0;
+    }
+
+    .chart-toolbar {
+        padding: 0 15px;
+    }
+
+    .catch-up-months {
+        padding-left: 0;
+    }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
 @media (max-width: 640px) {
     .dashboard-page {
-        padding-bottom: 70px;
+        padding-bottom: 65px;
+    }
+
+    .bands {
+        margin: 14px 0 20px;
+    }
+
+    .insurer-banner {
+        align-items: flex-start;
+        gap: 9px;
+
+        padding: 10px 11px;
+        border-radius: 10px;
+    }
+
+    .insurer-banner-icon-wrap {
+        width: 25px;
+        height: 25px;
+        flex-basis: 25px;
+    }
+
+    .insurer-banner-icon {
+        margin-top: 0;
+    }
+
+    .insurer-banner-line {
+        font-size: 11.5px;
+        line-height: 1.55;
+    }
+
+    .banner-separator {
+        margin: 0 2px;
+    }
+
+    .bands-footer {
+        padding-left: 2px;
+    }
+
+    .whatsapp-invite {
+        display: block;
+        padding: 10px 12px;
+    }
+
+    .whatsapp-invite-icon {
+        display: inline-flex;
+        margin-right: 3px;
+        vertical-align: middle;
+    }
+
+    .whatsapp-invite-link {
+        display: inline-block;
+        margin-top: 3px;
+        margin-left: 0;
+    }
+
+    .catch-up {
+        margin-top: 12px;
+        padding: 16px 15px;
+        border-radius: 13px;
+    }
+
+    .catch-up-header {
+        align-items: flex-start;
+    }
+
+    .catch-up-icon {
+        width: 32px;
+        height: 32px;
+        flex-basis: 32px;
+    }
+
+    .catch-up-months {
+        gap: 6px;
+        margin-top: 12px;
+        padding-left: 0;
+    }
+
+    .catch-up-month {
+        min-height: 32px;
+        padding: 0 10px;
+        font-size: 10.5px;
+    }
+
+    .section-intro {
+        align-items: flex-start;
+    }
+
+    .section-intro h2 {
+        font-size: 15px;
+    }
+
+    .section-intro p {
+        font-size: 10.5px;
+    }
+
+    .recovery-period {
+        display: none;
     }
 
     .card-header {
         align-items: flex-start;
-
         padding: 16px 15px 0;
     }
 
     .card-title-group {
         align-items: flex-start;
+        gap: 10px;
     }
 
     .card-icon {
         width: 34px;
         height: 34px;
+        flex-basis: 34px;
+        border-radius: 9px;
+    }
 
-        border-radius: 10px;
+    .card-header h2 {
+        font-size: 15px;
+    }
+
+    .card-header p {
+        font-size: 11px;
     }
 
     .card-badge {
         display: none;
     }
 
+    .chart-toolbar {
+        justify-content: flex-start;
+
+        margin-top: 12px;
+        padding: 0 13px;
+    }
+
     .chart-wrapper {
-        padding: 0 11px 12px;
+        margin-top: 8px;
+        padding: 0 10px 12px;
+    }
+
+    .journey-chart-area {
+        min-height: 190px;
     }
 
     .ageing-list {
+        gap: 13px;
+
+        margin-top: 17px;
         padding: 0 14px;
     }
 
     .ageing-row {
-        grid-template-columns: 55px minmax(0, 1fr) 68px;
-
+        grid-template-columns: 54px minmax(0, 1fr) 67px;
         gap: 7px;
     }
 
+    .ageing-label {
+        font-size: 8.5px;
+    }
+
     .ageing-value {
-        font-size: 13px;
+        font-size: 11.5px;
+    }
+
+    .dashboard-source {
+        font-size: 10px;
+    }
+
+    .recovery-section {
+        margin-bottom: 35px;
     }
 }
 
+/* =========================================================
+   TRÈS PETITS ÉCRANS
+   ========================================================= */
+
 @media (max-width: 400px) {
     .ageing-row {
-        grid-template-columns: 50px minmax(0, 1fr) 60px;
+        grid-template-columns: 48px minmax(0, 1fr) 59px;
+    }
+
+    .ageing-list {
+        padding: 0 12px;
+    }
+
+    .insurer-banner-line {
+        font-size: 11px;
+    }
+
+    .catch-up-text p {
+        font-size: 11px;
     }
 }
+
+/* =========================================================
+   ACCESSIBILITÉ
+   ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
     .dashboard-page *,
     .dashboard-page *::before,
-    .dashboard-page *::after {
+    .dashboard-page *::after,
+    .recovery-section *,
+    .recovery-section *::before,
+    .recovery-section *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
 }
+
 </style>
-```
