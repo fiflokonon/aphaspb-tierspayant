@@ -670,7 +670,7 @@ const footer = computed(
 
     color: var(--muted);
 
-    font-size: 10px;
+    font-size: 13px;
 
     font-weight: 600;
 }
@@ -712,7 +712,7 @@ const footer = computed(
 
     color: var(--muted-light);
 
-    font-size: 8px;
+    font-size: 11px;
 
     font-weight: 850;
 
@@ -804,7 +804,7 @@ const footer = computed(
 
     color: var(--ink);
 
-    font-size: 10.5px;
+    font-size: 13px;
 
     font-weight: 600;
 }
@@ -924,7 +924,7 @@ const footer = computed(
 
     color: var(--primary);
 
-    font-size: 7px;
+    font-size: 12px;
 
     pointer-events: none;
 }
@@ -947,9 +947,9 @@ const footer = computed(
 
     color: var(--ink);
 
-    font-size: 10px;
+    font-size: 13px;
 
-    font-weight: 650;
+    /* font-weight: 650; */
 
     cursor: pointer;
 }
@@ -1249,7 +1249,7 @@ const footer = computed(
 
     color: var(--ink);
 
-    font-size: 11.5px;
+    font-size: 13px;
 
     font-weight: 750;
 
@@ -1267,7 +1267,7 @@ const footer = computed(
 
     color: var(--muted);
 
-    font-size: 9.5px;
+    font-size: 13px;
 
     font-weight: 550;
 }
@@ -1307,7 +1307,7 @@ const footer = computed(
             transparent
         );
 
-    font-size: 10.5px;
+    font-size: 13px;
 
     font-weight: 600;
 }
@@ -1349,15 +1349,9 @@ const footer = computed(
             transparent
         );
 
-    font-family:
-        ui-monospace,
-        SFMono-Regular,
-        Menlo,
-        Monaco,
-        Consolas,
-        monospace;
 
-    font-size: 9.5px;
+
+    font-size: 13px;
 
     font-weight: 600;
 }
@@ -1401,7 +1395,7 @@ const footer = computed(
             transparent
         );
 
-    font-size: 10px;
+    font-size: 13px;
 
     font-weight: 600;
 }
@@ -1599,7 +1593,7 @@ const footer = computed(
 
     color: var(--muted);
 
-    font-size: 10.5px;
+    font-size: 13px;
 
     line-height: 1.5;
 }
@@ -1834,18 +1828,18 @@ const footer = computed(
 
     .pharmacy-name {
 
-        font-size: 10.5px;
+        font-size: 13px;
     }
 
     .city-cell,
     .date-cell {
 
-        font-size: 10px;
+        font-size: 13px;
     }
 
     .license-cell {
 
-        font-size: 9px;
+        font-size: 13px;
     }
 
     .pharmacies-footnote {

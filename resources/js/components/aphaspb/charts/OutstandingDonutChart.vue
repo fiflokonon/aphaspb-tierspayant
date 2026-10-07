@@ -80,7 +80,7 @@ const color = (slice: RankedSlice) => slice.color;
                         {{ slice.label }}
                     </span>
 
-                    <span class="font-mono text-[11px] text-ink/50">
+                    <span class="font-mono text-[13px] text-ink/50">
                         {{ formatMillions(slice.value) }}
                     </span>
 

@@ -98,7 +98,7 @@ const go = (page: number) => {
         class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
         <div class="flex items-center gap-3">
-            <p class="text-[11.5px] text-ink/[0.55]">
+            <p class="text-[12px] text-ink/[0.55]">
                 {{ from }}–{{ to }} sur {{ total }} {{ noun
                 }}{{ total > 1 ? 's' : '' }}
             </p>

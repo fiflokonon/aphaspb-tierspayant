@@ -1212,8 +1212,8 @@ async function exportChart() {
 
 .insurer-details small {
     color: var(--muted-soft);
-    font-size: 9px;
-    font-weight: 600;
+    font-size: 13px;
+    
 }
 
 .pharmacy-cell,
@@ -1232,7 +1232,7 @@ async function exportChart() {
 .pharmacy-label,
 .amount-unit {
     color: var(--muted-soft);
-    font-size: 9px;
+    font-size: 13px;
     font-weight: 600;
 }
 
@@ -1313,7 +1313,7 @@ async function exportChart() {
 .evolution-footnote p {
     margin: 0;
     color: var(--muted);
-    font-size: 10.5px;
+    font-size: 12px;
     line-height: 1.55;
 }
 

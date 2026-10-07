@@ -480,7 +480,7 @@ const FORMATS = [
 
     color: var(--muted);
 
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 600;
 }
 
@@ -643,7 +643,7 @@ const FORMATS = [
 
     color: var(--muted);
 
-    font-size: 11.5px;
+    /* font-size: 13px; */
     line-height: 1.55;
 }
 
@@ -851,7 +851,7 @@ const FORMATS = [
 .exports-eyebrow {
     color: var(--gold);
 
-    font-size: 7.5px;
+    font-size: 13px;
     font-weight: 850;
 
     letter-spacing: 0.15em;
@@ -860,14 +860,14 @@ const FORMATS = [
 .exports-content strong {
     color: var(--ink);
 
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 800;
 }
 
 .exports-content > span:last-child {
     color: var(--muted);
 
-    font-size: 9.5px;
+    font-size: 13px;
 }
 
 .exports-actions {
@@ -1090,7 +1090,7 @@ const FORMATS = [
 
     .analysis-heading p,
     .table-heading p {
-        font-size: 10.5px;
+        /* font-size: 13px; */
     }
 
     .exports-actions {

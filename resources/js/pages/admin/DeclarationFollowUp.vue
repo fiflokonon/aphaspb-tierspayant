@@ -590,7 +590,7 @@ const summaryLine = computed(
     align-items: center;
     gap: 7px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
 }
 
@@ -790,7 +790,7 @@ const summaryLine = computed(
 .name {
     overflow: hidden;
     color: var(--ink);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -800,7 +800,7 @@ const summaryLine = computed(
     display: block;
     margin-top: 2px;
     color: var(--muted-light);
-    font-size: 9px;
+    font-size: 13px;
     font-weight: 600;
 }
 
@@ -813,7 +813,7 @@ const summaryLine = computed(
     align-items: center;
     gap: 6px;
     color: var(--ink);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .city-icon {
@@ -863,7 +863,7 @@ const summaryLine = computed(
     padding: 5px 8px;
     color: var(--primary);
     background: var(--primary-soft);
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 700;
 }
 
@@ -993,14 +993,14 @@ const summaryLine = computed(
     display: block;
     margin-bottom: 2px;
     color: var(--ink);
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 750;
 }
 
 .followup-footnote p {
     margin: 0;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 13px;
     line-height: 1.55;
 }
 

@@ -21,7 +21,7 @@ defineProps<{
             >
                 DONNÉES INSUFFISANTES
             </span>
-            <span class="text-[11px] text-ink/50">{{ explanation }}</span>
+            <span class="text-[13px] text-ink/50">{{ explanation }}</span>
         </div>
     </DataTableRow>
 </template>

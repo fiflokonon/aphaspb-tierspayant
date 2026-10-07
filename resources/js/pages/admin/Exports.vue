@@ -464,7 +464,7 @@ watch([period, city, insurer], reload);
 .filter-item :deep(button) {
     min-height: 36px;
     height: 36px;
-    font-size: 12px;
+    font-size: 13px;
     border-radius: 9px;
 }
 
@@ -808,7 +808,7 @@ watch([period, city, insurer], reload);
 
     color: var(--primary);
 
-    font-size: 9px;
+    font-size: 13px;
     font-weight: 850;
 
     letter-spacing: 0.14em;
@@ -832,7 +832,7 @@ watch([period, city, insurer], reload);
 
     color: var(--muted);
 
-    font-size: 11.5px;
+    font-size: 13px;
     line-height: 1.55;
 }
 
@@ -855,7 +855,7 @@ watch([period, city, insurer], reload);
 
     color: var(--primary-dark);
 
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 750;
 
     white-space: nowrap;
@@ -911,7 +911,7 @@ watch([period, city, insurer], reload);
 
     color: var(--ink);
 
-    font-size: 11px;
+    /* font-size: 11px; */
     font-weight: 750;
 }
 
@@ -920,7 +920,7 @@ watch([period, city, insurer], reload);
 
     color: var(--muted);
 
-    font-size: 11px;
+    /* font-size: 13px; */
     line-height: 1.55;
 }
 
@@ -1000,7 +1000,7 @@ watch([period, city, insurer], reload);
 
     color: var(--ink);
 
-    font-size: 11px;
+    /* font-size: 11px; */
     font-weight: 800;
 }
 
@@ -1011,7 +1011,7 @@ watch([period, city, insurer], reload);
 
     color: var(--muted);
 
-    font-size: 10px;
+    font-size: 13px;
 }
 
 .separator {
@@ -1049,7 +1049,7 @@ watch([period, city, insurer], reload);
 
     color: #ffffff;
 
-    font-size: 9.5px;
+    font-size: 12px;
     font-weight: 800;
 
     text-decoration: none;
@@ -1157,8 +1157,8 @@ watch([period, city, insurer], reload);
     margin: 0;
 
     color: var(--ink);
-
-    font-size: 12px;
+/* 
+    font-size: 12px; */
     font-weight: 800;
 }
 
@@ -1213,12 +1213,9 @@ watch([period, city, insurer], reload);
 
     color: var(--ink);
 
-    font-family:
-        "JetBrains Mono",
-        ui-monospace,
-        monospace;
+  
 
-    font-size: 9px;
+    font-size: 12px;
 
     transition:
         border-color 0.2s ease,
@@ -1315,7 +1312,7 @@ watch([period, city, insurer], reload);
 
     color: var(--gold);
 
-    font-size: 8.5px;
+    font-size: 12px;
     font-weight: 850;
 
     letter-spacing: 0.14em;
@@ -1325,8 +1322,8 @@ watch([period, city, insurer], reload);
     margin: 0;
 
     color: var(--ink);
-
-    font-size: 12px;
+/* 
+    font-size: 12px; */
     font-weight: 800;
 }
 
@@ -1335,7 +1332,7 @@ watch([period, city, insurer], reload);
 
     color: var(--muted);
 
-    font-size: 10.5px;
+    font-size: 13px;
     line-height: 1.55;
 }
 
@@ -1385,7 +1382,7 @@ watch([period, city, insurer], reload);
 
     color: var(--muted);
 
-    font-size: 10px;
+    /* font-size: 10px; */
     line-height: 1.5;
 }
 

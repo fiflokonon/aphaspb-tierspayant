@@ -815,7 +815,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .insurer-name {
     color: var(--ink);
 
-    font-size: 11.5px;
+    /* font-size: 11.5px; */
 
     font-weight: 700;
 }
@@ -833,7 +833,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 12.5px;
+    font-size: 13px;
 
     font-weight: 550;
 }
@@ -942,7 +942,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .count-number {
     color: var(--ink);
 
-    font-size: 13px;
+    font-size: 15px;
 
     font-weight: 750;
 }
@@ -950,7 +950,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 .count-label {
     color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 12.5px;
+    font-size: 15px;
 }
 
 .status-badge {
@@ -1211,7 +1211,8 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 12.5px;
+    /* font-size: 13px; */
+
 
     line-height: 1.55;
 }
@@ -1462,7 +1463,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     color: color-mix(in srgb, var(--ink) 60%, transparent);
 
-    font-size: 12.5px;
+    /* font-size: 12.5px; */
 
     line-height: 1.5;
 }
@@ -1518,7 +1519,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 12.5px;
+    font-size: 13px;
 
     line-height: 1.5;
 }
