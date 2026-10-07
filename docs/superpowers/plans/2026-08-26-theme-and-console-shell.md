@@ -716,7 +716,7 @@ const props = withDefaults(
         </div>
         <div
             v-else-if="hint"
-            class="mt-[11px] text-[11px]/[1.4] text-ink/50"
+            class="mt-[11px] text-[13px]/[1.4] text-ink/50"
         >
             <slot name="hint">{{ hint }}</slot>
         </div>

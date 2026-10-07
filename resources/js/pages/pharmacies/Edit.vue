@@ -90,7 +90,7 @@ const confirmCancelInvitation = (invitation: PharmacyInvitation) => {
         class="mt-1 max-w-[560px] rounded-[11px] border border-border bg-card p-4"
     >
         <div class="text-[12.5px] font-bold text-ink">Officine</div>
-        <p class="mt-1 text-[11px]/[1.4] text-ink/[0.45]">
+        <p class="mt-1 text-[13px]/[1.4] text-ink/[0.45]">
             Le nom affiché à vos membres et dans vos déclarations.
         </p>
 
@@ -264,7 +264,7 @@ const confirmCancelInvitation = (invitation: PharmacyInvitation) => {
         <div class="text-[12.5px] font-bold text-terracotta-dark">
             Supprimer l'officine
         </div>
-        <p class="mt-1 text-[11px]/[1.4] text-ink/[0.45]">
+        <p class="mt-1 text-[13px]/[1.4] text-ink/[0.45]">
             L'officine et ses déclarations disparaissent définitivement. Cette
             action est irréversible.
         </p>

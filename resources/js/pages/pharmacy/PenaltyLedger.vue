@@ -243,13 +243,13 @@ const FORMATS = [
     padding: 7px 14px;
     border: 1px solid var(--input);
     border-radius: 10px;
-    background: var(--card);
-    color: var(--ink);
+    background: #0f8f78;
+    color: white;
     font-size: var(--text-meta);
     font-weight: 600;
 }
 
 .export-link:hover {
-    background: var(--cream-header);
+    background: #0f8f78;
 }
 </style>

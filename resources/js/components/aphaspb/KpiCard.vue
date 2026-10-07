@@ -88,7 +88,7 @@ const props = withDefaults(
             :class="
                 surface === 'band'
                     ? 'text-[10px]/[1.3] text-white/72'
-                    : 'text-[11px]/[1.4]'
+                    : 'text-[14px]/[1.4]'
             "
         >
             <slot name="hint">{{ hint }}</slot>

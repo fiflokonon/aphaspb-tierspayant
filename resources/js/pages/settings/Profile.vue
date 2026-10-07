@@ -19,7 +19,7 @@ const user = computed(() => page.props.auth.user);
         class="mt-5 max-w-[560px] rounded-[11px] border border-border bg-card p-4"
     >
         <div class="text-[12.5px] font-bold text-ink">Identité</div>
-        <p class="mt-1 text-[11px]/[1.4] text-ink/[0.45]">
+        <p class="mt-1 text-[13px]/[1.4] text-ink/[0.45]">
             Ces informations vous identifient auprès de l'APhaSPB.
         </p>
 

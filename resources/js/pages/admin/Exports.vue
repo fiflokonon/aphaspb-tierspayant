@@ -1083,7 +1083,7 @@ watch([period, city, insurer], reload);
 .download-button-secondary {
     border-color: var(--border);
 
-    background: #ffffff;
+    background: rgba(0, 102, 76, 0.2);
 
     color: var(--ink);
 

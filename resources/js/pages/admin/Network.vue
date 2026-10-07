@@ -1514,7 +1514,7 @@ watch([period, city], reload);
     color:
         var(--apha-ink);
 
-    font-size: 12.5px;
+    font-size: 14px;
 
     font-weight: 700;
 
@@ -1528,7 +1528,7 @@ watch([period, city], reload);
     color:
         var(--apha-light);
 
-    font-size: 9px;
+    font-size: 13px;
 
     font-weight: 500;
 }
@@ -1562,7 +1562,7 @@ watch([period, city], reload);
     color:
         var(--apha-light);
 
-    font-size: 9.5px;
+    /* font-size: 9.5px; */
 
     font-weight: 500;
 }
@@ -1598,7 +1598,7 @@ watch([period, city], reload);
     color:
         var(--apha-light);
 
-    font-size: 9.5px;
+    /* font-size: 9.5px; */
 
     font-weight: 500;
 }
@@ -1620,7 +1620,7 @@ watch([period, city], reload);
     color:
         var(--apha-light);
 
-    font-size: 9.5px;
+    /* font-size: 9.5px; */
 
     font-weight: 500;
 }
@@ -1764,7 +1764,7 @@ watch([period, city], reload);
     color:
         var(--apha-muted);
 
-    font-size: 10px;
+    font-size: 13px;
 
     font-weight: 500;
 

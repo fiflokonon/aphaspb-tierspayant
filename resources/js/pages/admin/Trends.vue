@@ -417,7 +417,7 @@ async function exportChart() {
                         </div>
                     </div>
 
-                    <p>{{ chartHeading.caption }}</p>
+                    <p class="text-ink/60">{{ chartHeading.caption }}</p>
 
                     <p v-if="chartType !== 'pie' && withheldNote">
                         {{ withheldNote }}
@@ -1028,7 +1028,7 @@ async function exportChart() {
 .trend-heading p {
     max-width: 780px;
     margin: 9px 0 0;
-   color: var(--ink);
+  
     font-size: 12px;
     line-height: 1.55;
 }

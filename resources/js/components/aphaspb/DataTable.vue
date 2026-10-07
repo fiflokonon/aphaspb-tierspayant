@@ -23,7 +23,7 @@ defineProps<{
         <div class="overflow-x-auto">
             <div class="min-w-[720px]">
                 <div
-                    class="bg-cream-state px-5 py-[10px] text-[11px] font-semibold tracking-[0.14em]"
+                    class="bg-cream-state px-5 py-[10px] text-[13px] font-semibold tracking-[0.1em]"
                     :style="{
                         display: 'grid',
                         gridTemplateColumns: template,
@@ -41,7 +41,7 @@ defineProps<{
 
         <div
             v-if="footer"
-            class="border-t border-ink/[0.06] bg-white/60 px-5 py-[12px] text-[12.5px] text-ink/[0.45]"
+            class="border-t border-ink/[0.06] bg-white/60 px-5 py-[12px] text-[13px] text-ink/[0.45]"
         >
             {{ footer }}
         </div>

@@ -164,13 +164,13 @@ const footer = computed(
                         </span>
 
                         <div class="city-filter">
-
+<!-- 
                             <span
                                 class="city-filter-icon"
                                 aria-hidden="true"
                             >
                                 ●
-                            </span>
+                            </span> -->
 
                             <FilterSelect
                                 v-model="city"
@@ -884,7 +884,7 @@ const footer = computed(
 
     position: relative;
 
-    display: flex;
+    /* display: flex; */
     align-items: center;
 
     width: 100%;

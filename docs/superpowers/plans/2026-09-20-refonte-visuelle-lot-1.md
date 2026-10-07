@@ -340,7 +340,7 @@ Dans `resources/css/app.css`, juste après les trois déclarations
     --text-section--line-height: 1.3;
     --text-body: 14px;
     --text-body--line-height: 1.55;
-    --text-meta: 12.5px;
+    --text-meta: 14px;
     --text-meta--line-height: 1.5;
     --text-label: 9.5px;
     --text-label--line-height: 1;

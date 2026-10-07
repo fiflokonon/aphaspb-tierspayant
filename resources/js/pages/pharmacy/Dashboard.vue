@@ -937,7 +937,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .insurer-banner-line {
     margin: 0;
 
-    font-size: 12.5px;
+    font-size: 13.5px;
     font-weight: 500;
     line-height: 1.55;
 }
@@ -1104,7 +1104,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: var(--muted);
 
-    font-size: 11.5px;
+    /* font-size: 13px; */
     line-height: 1.45;
 }
 
@@ -1211,7 +1211,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     color: var(--gold);
 
     font-family: 'JetBrains Mono', monospace;
-    font-size: 8.5px;
+    font-size: 12px;
     font-weight: 750;
     letter-spacing: 0.15em;
 }
@@ -1223,7 +1223,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: var(--ink);
 
-    font-size: 11.5px;
+    font-size: 14px;
     line-height: 1.55;
 }
 
@@ -1335,7 +1335,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: black;
 
-    font-size: 11px;
+    font-size: 13px;
     line-height: 1.5;
 }
 
@@ -1512,7 +1512,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     color: var(--muted);
 
-    font-size: 11.5px;
+    /* font-size: 13px; */
     line-height: 1.45;
 }
 
@@ -1849,9 +1849,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         padding: 10px 13px;
     }
 
-    .insurer-banner-line {
+    /* .insurer-banner-line {
         font-size: 12px;
-    }
+    } */
 
     .catch-up {
         padding: 17px;
@@ -1901,10 +1901,10 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         margin-top: 0;
     }
 
-    .insurer-banner-line {
+    /* .insurer-banner-line {
         font-size: 11.5px;
         line-height: 1.55;
-    }
+    } */
 
     .banner-separator {
         margin: 0 2px;
@@ -1968,7 +1968,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 
     .section-intro p {
-        font-size: 10.5px;
+        font-size: 13px;
     }
 
     .recovery-period {
@@ -1997,7 +1997,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     }
 
     .card-header p {
-        font-size: 11px;
+        font-size: 13px;
     }
 
     .card-badge {
@@ -2062,9 +2062,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         padding: 0 12px;
     }
 
-    .insurer-banner-line {
+    /* .insurer-banner-line {
         font-size: 11px;
-    }
+    } */
 
     .catch-up-text p {
         font-size: 11px;

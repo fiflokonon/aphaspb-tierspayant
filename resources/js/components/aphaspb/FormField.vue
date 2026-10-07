@@ -16,10 +16,10 @@ defineProps<{
         <div class="mt-[6px]">
             <slot />
         </div>
-        <p v-if="error" class="mt-[5px] text-[11px]/[1.4] text-terracotta-dark">
+        <p v-if="error" class="mt-[5px] text-[13px]/[1.4] text-terracotta-dark">
             {{ error }}
         </p>
-        <p v-else-if="hint" class="mt-[5px] text-[11px]/[1.4] text-ink/[0.45]">
+        <p v-else-if="hint" class="mt-[5px] text-[13px]/[1.4] text-ink/[0.45]">
             {{ hint }}
         </p>
     </div>

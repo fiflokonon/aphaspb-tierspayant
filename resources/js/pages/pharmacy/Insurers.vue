@@ -335,7 +335,7 @@ const losing = computed(() =>
 
     color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 12.5px;
+    /* font-size: 12.5px; */
     line-height: 1.5;
 }
 
@@ -653,7 +653,7 @@ const losing = computed(() =>
 
     color: color-mix(in srgb, var(--ink) 55%, transparent);
 
-    font-size: 12.5px;
+    font-size: 13.5px;
     line-height: 1.55;
 }
 

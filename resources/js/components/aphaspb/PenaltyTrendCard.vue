@@ -121,7 +121,7 @@ async function exportChart() {
                 <h2 class="text-section font-semibold text-ink">
                     Évolution des pénalités
                 </h2>
-                <p class="mt-1 text-meta text-ink/60">{{ caption }}</p>
+                <p class="mt-1 text-ink/60">{{ caption }}</p>
             </div>
 
             <ChartToolbar

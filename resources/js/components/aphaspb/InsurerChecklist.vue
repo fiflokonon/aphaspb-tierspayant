@@ -189,7 +189,7 @@ function toggle(id: number) {
                         placeholder="Nom de l'assureur ou du courtier"
                         class="h-[46px] w-full rounded-[10px] border-[1.5px] border-ink/[0.13] bg-card px-3 text-[13px] font-medium text-ink outline-none focus:border-gold-mid/[0.55]"
                     />
-                    <p class="mt-[6px] text-[11px]/[1.4] text-ink/[0.45]">
+                    <p class="mt-[6px] text-[13px]/[1.4] text-ink/[0.45]">
                         L'APhaSPB validera ce nom avant qu'il entre dans les
                         statistiques du réseau.
                     </p>

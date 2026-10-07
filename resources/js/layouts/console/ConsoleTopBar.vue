@@ -26,7 +26,7 @@ defineProps<{
 
             <span class="topbar-divider"></span>
 
-            <ConsoleSpaceChip />
+            <!-- <ConsoleSpaceChip /> -->
 
             <div class="topbar-status">
                 <span class="status-icon"><ShieldCheck class="size-[14px]" /></span>

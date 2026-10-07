@@ -54,7 +54,7 @@ const label = computed(() =>
         <div class="border-t border-ink/[0.08] bg-cream px-5 pt-4 pb-5">
             <p
                 v-if="errors.insurers"
-                class="mb-3 text-[11px]/[1.4] text-terracotta-dark"
+                class="mb-3 text-[13px]/[1.4] text-terracotta-dark"
             >
                 {{ errors.insurers }}
             </p>

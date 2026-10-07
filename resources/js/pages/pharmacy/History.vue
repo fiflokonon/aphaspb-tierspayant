@@ -47,15 +47,15 @@ const props = defineProps<{
 const TEMPLATE = '1.6fr .8fr .9fr 1fr 1fr 1fr .7fr 1.4fr .8fr';
 
 const COLUMNS = [
-    'ASSUREUR',
-    'MOIS',
-    'STATUT',
-    'FACTURÉ',
-    'REÇU',
-    'RESTE DÛ',
-    'DÉLAI',
-    'NOTE PRIVÉE',
-    'ACTION',
+    'Assureur',
+    'Mois',
+    'Statut',
+    'Facturé',
+    'Reçu',
+    'Reste dû',
+    'Délai',
+    'Note privée',
+    'Action',
 ];
 
 const insurerOptions = computed(() => [
@@ -655,7 +655,7 @@ const footer = computed(
 
     color: var(--ink);
 
-    font-size: 11.5px;
+    font-size: 14px;
     font-weight: 700;
 
     text-overflow: ellipsis;
@@ -665,7 +665,7 @@ const footer = computed(
 .insurer-label {
     color: color-mix(in srgb, var(--ink) 38%, transparent);
 
-    font-size: 12.5px;
+    font-size: 13px;
 }
 
 .month-cell {

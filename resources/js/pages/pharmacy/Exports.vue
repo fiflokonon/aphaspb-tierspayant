@@ -466,7 +466,7 @@ watch([period, insurer], reload);
 
     max-width: 76ch;
 
-    font-size: 11px;
+    /* font-size: 11px; */
     line-height: 1.55;
 
     color: color-mix(
@@ -689,7 +689,7 @@ watch([period, insurer], reload);
 .intro-copy p {
     margin: 5px 0 0;
 
-    font-size: 12px;
+    /* font-size: 12px; */
     line-height: 1.55;
 
     color: color-mix(
@@ -775,7 +775,7 @@ watch([period, insurer], reload);
 .section-heading p {
     margin: 5px 0 0;
 
-    font-size: 11.5px;
+    /* font-size: 11.px; */
     line-height: 1.5;
 
     color: color-mix(
@@ -937,7 +937,7 @@ watch([period, insurer], reload);
 
     max-width: 52ch;
 
-    font-size: 11.5px;
+    /* font-size: 11.5px; */
     line-height: 1.55;
 
     color: color-mix(
@@ -1129,7 +1129,7 @@ watch([period, insurer], reload);
 
     max-width: 76ch;
 
-    font-size: 11.5px;
+    /* font-size: 11.5px; */
     line-height: 1.6;
 
     color: color-mix(
@@ -1266,14 +1266,14 @@ watch([period, insurer], reload);
 .privacy-note strong {
     display: block;
 
-    font-size: 10.5px;
+    /* font-size: 12px; */
     font-weight: 700;
 }
 
 .privacy-note p {
     margin: 3px 0 0;
 
-    font-size: 10.5px;
+    /* font-size: 10.5px; */
     line-height: 1.5;
 
     color: color-mix(

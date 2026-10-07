@@ -61,7 +61,7 @@ function onInput(event: Event) {
             <input :name="name" type="hidden" :value="model" />
         </div>
 
-        <p v-if="error" class="mt-[5px] text-[11px]/[1.4] text-terracotta-dark">
+        <p v-if="error" class="mt-[5px] text-[13px]/[1.4] text-terracotta-dark">
             {{ error }}
         </p>
     </div>

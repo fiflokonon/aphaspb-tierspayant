@@ -56,7 +56,7 @@ const props = defineProps<{
             another month was back through the dashboard.
         -->
         <div class="mt-6 rounded-xl border border-input bg-card px-[18px] py-4">
-            <p class="text-[12px]/[1.5] text-ink/60">
+            <p class="text-[14px]/[1.5] text-ink/60">
                 Un autre mois à déclarer ? Le rattrapage reste possible douze
                 mois en arrière.
             </p>
