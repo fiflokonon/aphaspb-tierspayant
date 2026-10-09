@@ -1,4 +1,4 @@
-# Unification du patron console — plan d'implémentation
+# Unification du patron console - plan d'implémentation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -28,7 +28,7 @@ Pest · Wayfinder · reka-ui (composants `components/ui`)
 - **Vérifier avec `composer ci:check`**, pas avec `pint --dirty` seul. La CI
   enchaîne `npm run lint:check`, `npm run format:check`, `phpstan analyse`,
   `pint --parallel --test` et `php artisan test`.
-- **Ne jamais lancer `php artisan wayfinder:generate` seul** — il ignore
+- **Ne jamais lancer `php artisan wayfinder:generate` seul** - il ignore
   `formVariants: true` de `vite.config.ts` et casse les appels `.form()`.
   Régénérer avec `npm run build`.
 - **Deux échecs préexistants** dans `tests/Feature/Auth/TokenVersionTest.php`
@@ -84,7 +84,7 @@ test('the assignable roles exclude the titulaire and carry the same labels', fun
 - [ ] **Step 2: Lancer le test et vérifier qu'il échoue**
 
 Run: `php artisan test --compact tests/Unit/PharmacyRoleTest.php`
-Expected: FAIL — `Failed asserting that 'Owner' is identical to 'Titulaire'.`
+Expected: FAIL - `Failed asserting that 'Owner' is identical to 'Titulaire'.`
 
 - [ ] **Step 3: Traduire les libellés**
 
@@ -115,7 +115,7 @@ Run: `php artisan test --compact tests/Feature/Pharmacies`
 Expected: PASS. `tests/Feature/Pharmacies/PharmacyTest.php:68` compare à
 `PharmacyRole::Owner->label()` et suit donc la traduction sans retouche. Si un
 test compare à la chaîne `'Owner'` en dur, le corriger vers le libellé
-français — c'est un changement de contrat assumé.
+français - c'est un changement de contrat assumé.
 
 - [ ] **Step 6: Formater et committer**
 
@@ -165,7 +165,7 @@ test('users can switch pharmacies', function () {
 - [ ] **Step 2: Lancer le test et vérifier qu'il échoue**
 
 Run: `php artisan test --compact --filter="users can switch pharmacies"`
-Expected: FAIL — la redirection observée est l'URL de repli de `back()`, pas
+Expected: FAIL - la redirection observée est l'URL de repli de `back()`, pas
 celle du tableau de bord.
 
 - [ ] **Step 3: Changer la redirection**
@@ -200,7 +200,7 @@ rester en 403.
 Note à consigner dans le message de commit : une officine dont l'onboarding
 n'est pas terminé renverra l'utilisateur vers `onboarding.profile`, le
 middleware `onboarded` gardant la route `dashboard`. C'est le comportement
-voulu — on ne peut pas travailler sur une officine inachevée.
+voulu - on ne peut pas travailler sur une officine inachevée.
 
 - [ ] **Step 5: Formater et committer**
 
@@ -290,7 +290,7 @@ use App\Models\Pharmacy;
 - [ ] **Step 2: Lancer les tests et vérifier qu'ils échouent**
 
 Run: `php artisan test --compact tests/Feature/Console/ConsoleShellTest.php`
-Expected: FAIL — `Property [console.account.pharmacies] does not exist.` pour
+Expected: FAIL - `Property [console.account.pharmacies] does not exist.` pour
 les deux premiers, `Property [console.nav] does not exist.` pour le troisième
 (le descripteur vaut `null`).
 
@@ -325,8 +325,8 @@ Account`, `forUser()` et `account()` :
         };
 
         // Attached here rather than in each shell: the way out of a session
-        // does not depend on which space the user landed in, and onboarding —
-        // which renders no navigation at all — needs it just as much.
+        // does not depend on which space the user landed in, and onboarding -
+        // which renders no navigation at all - needs it just as much.
         return [...$shell, 'account' => $this->account($user)];
     }
 
@@ -422,7 +422,7 @@ git commit -m "feat: le shell console porte les officines et n'abandonne plus le
 
 **Files:**
 - Modify: `resources/js/layouts/console/ConsoleAccountFooter.vue`
-- Test: aucun runner JS — vérification par `types:check`, `build` et la suite
+- Test: aucun runner JS - vérification par `types:check`, `build` et la suite
   Inertia existante.
 
 **Interfaces:**
@@ -449,7 +449,7 @@ defineProps<{ account: ConsoleAccount }>();
         <!--
             Listed in place rather than behind a floating dropdown: the rail is
             212px of flat colour, and a menu that escapes it reads as belonging
-            to another application. Absent below two officines — nothing to
+            to another application. Absent below two officines - nothing to
             choose.
         -->
         <div
@@ -576,7 +576,7 @@ apporte le piégeage du focus et les rôles ARIA.
 Les interpolations `{{ props.pharmacy.name }}`, `{{ props.member?.name }}`,
 `{{ props.invitation?.email }}` et `{{ role.label }}` restent inchangées, à
 leur place dans la phrase française. Attention à l'espace insécable avant les
-`?` et les `:` — utiliser `&#8239;?` là où la ponctuation double suit un mot.
+`?` et les `:` - utiliser `&#8239;?` là où la ponctuation double suit un mot.
 
 - [ ] **Step 2: Vérifier**
 
@@ -592,7 +592,7 @@ Expected: aucune erreur.
 
 Run: `php artisan test --compact tests/Feature/Pharmacies`
 Expected: PASS. Ces tests portent sur les props et les autorisations, pas sur
-le balisage — aucun ne doit bouger.
+le balisage - aucun ne doit bouger.
 
 - [ ] **Step 4: Committer**
 
@@ -607,7 +607,7 @@ git commit -m "feat: traduire les modales d'officine en français"
 
 **Files:**
 - Modify: `resources/js/pages/settings/Profile.vue` (réécriture complète)
-- Test: `tests/Feature/Settings/ProfileUpdateTest.php` (lecture seule —
+- Test: `tests/Feature/Settings/ProfileUpdateTest.php` (lecture seule -
   vérifier qu'il reste vert, il sert de garde-fou de contrat)
 
 **Interfaces:**
@@ -699,7 +699,7 @@ const user = computed(() => page.props.auth.user);
 Points de vigilance :
 - `defineOptions({ layout: { breadcrumbs: … } })` est **supprimé**. La page
   hérite du layout par défaut, qui reste `[AppLayout, SettingsLayout]` jusqu'à
-  la Task 9 — l'écran sera donc temporairement encadré deux fois. C'est
+  la Task 9 - l'écran sera donc temporairement encadré deux fois. C'est
   attendu et résorbé en Task 9.
 - `data-test="update-profile-button"` est conservé : `ProfileUpdateTest` ne
   s'en sert pas aujourd'hui, mais le retirer casserait tout test de navigateur
@@ -715,7 +715,7 @@ npm run types:check
 npm run build
 ```
 Expected: aucune erreur. Si `type="email"` est refusé par `TextInput`, c'est
-qu'il tombe en fallthrough sur un `<input type="text">` déjà typé — dans ce
+qu'il tombe en fallthrough sur un `<input type="text">` déjà typé - dans ce
 cas, retirer `type="email"` et laisser la validation serveur trancher, ou
 ajouter une prop `type?: string` à `TextInput` avec `text` par défaut. Choisir
 la prop : c'est le composant du projet, et un champ e-mail sur mobile mérite
@@ -861,7 +861,7 @@ Points de vigilance :
   `TooltipProvider`, `Tooltip`, `TooltipTrigger`, `TooltipContent` et les
   icônes `Eye`, `Pencil`, `LogOut`, `Plus` de `@lucide/vue` ne sont plus
   importés.
-- `Heading` n'est plus importé — c'est ce qui permettra sa suppression en
+- `Heading` n'est plus importé - c'est ce qui permettra sa suppression en
   Task 9.
 
 - [ ] **Step 2: Vérifier**
@@ -913,7 +913,7 @@ verbatim ; ne rien réécrire.
 - [ ] **Step 1: Remplacer les imports et l'en-tête**
 
 Retirer `Heading` des imports. Le fichier importe aujourd'hui
-`{ Form, Head, router }` depuis `@inertiajs/vue3` — y ajouter `Link`, requis
+`{ Form, Head, router }` depuis `@inertiajs/vue3` - y ajouter `Link`, requis
 par le lien de retour. Ajouter ensuite :
 
 ```ts
@@ -948,7 +948,7 @@ l'officine, et le droit de modifier se lit déjà à la présence des champs.
 Retirer le `computed` correspondant et son import `computed` s'il devient
 inutilisé.
 
-- [ ] **Step 2: Section « Officine » — le formulaire de nom**
+- [ ] **Step 2: Section « Officine » - le formulaire de nom**
 
 Remplacer le premier bloc `<div v-if="permissions.canUpdatePharmacy">` par :
 
@@ -999,7 +999,7 @@ const MEMBERS_TEMPLATE = '2fr 1.2fr 1.2fr';
 const MEMBERS_COLUMNS = ['MEMBRE', 'RÔLE', 'ACTIONS'];
 ```
 
-**Attention — `InviteMemberModal` n'expose pas de slot déclencheur.** Seul
+**Attention - `InviteMemberModal` n'expose pas de slot déclencheur.** Seul
 `CreatePharmacyModal` en a un (`<DialogTrigger as-child><slot /></DialogTrigger>`).
 Les cinq autres modales sont pilotées uniquement par `open` +
 `update:open`. Le bouton d'ouverture est donc un frère, pas un enfant.
@@ -1095,7 +1095,7 @@ Remplacer la section membres par :
 
 Trois différences avec l'ancien balisage, toutes délibérées :
 - Le déclencheur affichait `{{ member.role_label }}` ; la colonne `RÔLE` le
-  porte désormais, donc le bouton dit ce qu'il fait — « Changer de rôle ».
+  porte désormais, donc le bouton dit ce qu'il fait - « Changer de rôle ».
 - Le `<Badge v-else>{{ member.role_label }}</Badge>` disparaît pour la même
   raison : il répétait la colonne.
 - `TooltipProvider`/`Tooltip` autour du bouton « Retirer » disparaissent, le
@@ -1213,7 +1213,7 @@ npm run build
 ```
 Expected: aucune erreur. `lint:check` signalera tout import devenu inutilisé
 (`Heading`, `computed`, icônes `@lucide/vue`, `Tooltip*`, `Label`, `Input`,
-`Button`, `Badge`) — les retirer.
+`Button`, `Badge`) - les retirer.
 
 - [ ] **Step 7: Vérifier le contrat serveur**
 
@@ -1248,7 +1248,7 @@ git commit -m "feat: la page d'édition d'officine passe au patron console"
 
 - [ ] **Step 1: Créer le layout fusionné**
 
-`AdminLayout.vue` et `PharmacyLayout.vue` sont identiques octet pour octet —
+`AdminLayout.vue` et `PharmacyLayout.vue` sont identiques octet pour octet -
 le vérifier d'abord :
 
 ```bash
@@ -1369,7 +1369,7 @@ grep -rn "BreadcrumbItem\|NavItem" resources/js
 ```
 S'ils ne sont plus référencés que par `resources/js/types/navigation.ts`,
 retirer les déclarations mortes de ce fichier. `NavItem` reste utilisé si un
-composant survivant l'importe — vérifier avant de supprimer.
+composant survivant l'importe - vérifier avant de supprimer.
 
 - [ ] **Step 5: Reconstruire et vérifier**
 
@@ -1405,7 +1405,7 @@ git commit -m "refactor: un seul patron de layout, suppression du starter kit"
 
 Une fois les neuf tâches passées :
 
-- [ ] `composer ci:check` — seuls les deux échecs `TokenVersionTest`
+- [ ] `composer ci:check` - seuls les deux échecs `TokenVersionTest`
       préexistants subsistent.
 - [ ] `grep -rn "class=\"[^\"]*muted-foreground" resources/js/pages` ne renvoie
       rien : ce jeton appartenait au starter kit.

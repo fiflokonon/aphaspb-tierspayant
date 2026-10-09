@@ -80,7 +80,7 @@ const depositedOn = ref<string | null>(
  *
  * Le montant reçu n'est plus saisi : c'est leur somme, ici comme sur le
  * serveur. Une déclaration qui n'a encore rien encaissé part sans aucune
- * ligne — l'officine en ajoute une quand l'argent arrive.
+ * ligne - l'officine en ajoute une quand l'argent arrive.
  */
 const instalments = ref<Instalment[]>(
     (props.declaration?.payments ?? []).map((payment) => ({
@@ -131,7 +131,7 @@ const LABELS: Record<DeclarationStatus, string> = {
 
 /**
  * Mirrors DeclarationStatus::derive() so the pharmacist sees the consequence as
- * they type. The server recomputes it on save — the client never decides.
+ * they type. The server recomputes it on save - the client never decides.
  */
 const status = computed<DeclarationStatus>(() => {
     if (rejected.value) {
@@ -238,17 +238,17 @@ const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
 });
 
 function formatMoment(value: string | null): string {
-    return value === null ? '—' : dateFormatter.format(new Date(value));
+    return value === null ? '-' : dateFormatter.format(new Date(value));
 }
 
 function formatDay(value: string | null): string {
-    return value === null ? '—' : value.split('-').reverse().join('/');
+    return value === null ? '-' : value.split('-').reverse().join('/');
 }
 
 /**
  * L'officine annoncée en haut à droite.
  *
- * Cet écran ne passe pas par ConsoleHeader — il a son propre en-tête — mais
+ * Cet écran ne passe pas par ConsoleHeader - il a son propre en-tête - mais
  * il doit dire la même chose : c'est là qu'on saisit des montants au nom de
  * l'officine, et se tromper de session coûte cher.
  */
@@ -395,7 +395,7 @@ const officine = computed(() => {
                         c'est l'autre moitié de ce que l'officine a envoyé. Les
                         versements, eux, sont ce qui revient de l'assureur, et
                         forment leur propre bloc juste en dessous. Ce qui se
-                        déduit des deux — le délai — s'affiche à droite, près
+                        déduit des deux - le délai - s'affiche à droite, près
                         du statut auquel il appartient.
                     -->
                     <div class="dates">
@@ -711,7 +711,7 @@ const officine = computed(() => {
                                 class="delay-readout"
                                 :class="{ 'delay-beyond': beyondStandardDelay }"
                             >
-                                {{ delay ?? '—'
+                                {{ delay ?? '-'
                                 }}<span class="delay-readout-unit"> j</span>
                             </div>
                         </div>

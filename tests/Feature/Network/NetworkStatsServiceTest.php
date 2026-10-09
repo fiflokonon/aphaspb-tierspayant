@@ -69,7 +69,7 @@ test('the average delay ignores unpaid and rejected declarations', function () {
 
 test('the recovered share counts the money that arrived inside the standard delay', function () {
     // Seuil standard : 30 jours. Chaque officine règle 1 000 000 facturés en
-    // deux fois — 400 000 à J+10, 600 000 à J+50 —, donc 40 % de l'argent
+    // deux fois - 400 000 à J+10, 600 000 à J+50 -, donc 40 % de l'argent
     // seulement est arrivé dans les clous.
     foreach (range(1, 5) as $i) {
         Declaration::factory()
@@ -279,7 +279,7 @@ test('the instalment figures describe how an insurer settles a month', function 
         ->and($indicators->instalmentsPerDeclaration)->toBe(1.4)
         ->and($indicators->multiInstalmentShare)->toBe(40.0)
         // Premier versement : 20 j pour trois d'entre elles, 5 j pour les deux
-        // fractionnées — soit 14 en moyenne. Le délai des déclarations, lui,
+        // fractionnées - soit 14 en moyenne. Le délai des déclarations, lui,
         // se compte au dernier versement : 20, 20, 20, 25, 25, soit 22. L'écart
         // entre les deux chiffres est exactement ce que le fractionnement coûte.
         ->and($indicators->averageFirstInstalmentDelayDays)->toBe(14.0)
@@ -435,7 +435,7 @@ test('the delay curve follows the bounds it is handed', function () {
         recordForDistinctPharmaciesIn($this->insurer, $year, $month, 5);
     }
 
-    // A month without declarations carries no point — the chart fills the gaps.
+    // A month without declarations carries no point - the chart fills the gaps.
     expect(array_keys($this->service->delayTrend(new Period(2026, 1), new Period(2026, 8))['network']))
         ->toBe(['2026-02', '2026-08'])
         ->and(array_keys($this->service->delayTrend(new Period(2026, 7), new Period(2026, 8))['network']))
@@ -487,8 +487,8 @@ test('the aggregation costs a fixed number of queries whatever the number of ins
     $this->service->perInsurer(new Period(2026, 8), new Period(2026, 8));
 
     // One grouped aggregate over the declarations, one over the instalments,
-    // one lookup of insurer names, and — since the city partition rule of
-    // 28/09/2026 — one count of declarants per insurer and city (unfiltered
+    // one lookup of insurer names, and - since the city partition rule of
+    // 28/09/2026 - one count of declarants per insurer and city (unfiltered
     // by city only). Eight insurers, or eight hundred, must not change this
     // number.
     expect(DB::getQueryLog())->toHaveCount(4);
@@ -599,7 +599,7 @@ test('an insurer filter narrows the network summary, which otherwise spans every
 
 test('the network summary resting on fewer officines than the threshold is withheld, even unfiltered', function () {
     // Un réseau au lancement : quatre déclarantes. Publié, le résumé dirait
-    // 4 officines, 4 déclarations, 30 j — les chiffres d'officines que le
+    // 4 officines, 4 déclarations, 30 j - les chiffres d'officines que le
     // suivi des déclarations nomme.
     recordForDistinctPharmaciesIn($this->insurer, 2026, 8, 4);
 
@@ -791,7 +791,7 @@ test('an officine without a city always counts in the hidden share', function ()
 
 test('a delay curve point is withheld when its unpublishable cities hold too few officines', function () {
     // Juillet : Cotonou 5 et Parakou 5, tout est publiable. Août : Cotonou 5,
-    // Parakou 1 — une des cinq de juillet, donc Parakou reste autorisée sur
+    // Parakou 1 - une des cinq de juillet, donc Parakou reste autorisée sur
     // la période. Le point d'août non filtré moins Cotonou rendrait Parakou.
     declarePaidInCity($this->insurer, 'Cotonou', 5, month: 7);
     $parakou = Pharmacy::factory()->count(5)->create(['city' => 'Parakou']);

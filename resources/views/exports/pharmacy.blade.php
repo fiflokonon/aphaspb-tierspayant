@@ -1,8 +1,8 @@
 {{--
     Le relevé d'une officine, mis en page pour dompdf.
 
-    Mêmes contraintes moteur que le rapport réseau : ni flexbox ni grid — les
-    colonnes sont des tableaux —, `position: fixed` pour ce qui se répète de
+    Mêmes contraintes moteur que le rapport réseau : ni flexbox ni grid - les
+    colonnes sont des tableaux -, `position: fixed` pour ce qui se répète de
     page en page, et `page-break-inside: avoid` sur les lignes.
 --}}
 <style>
@@ -202,7 +202,7 @@
         </td>
         <td>
             <div class="value">
-                {{ $totals['recoveryRate'] === null ? '—' : number_format($totals['recoveryRate'], 1, ',', ' ') }}<span class="unit"> %</span>
+                {{ $totals['recoveryRate'] === null ? '-' : number_format($totals['recoveryRate'], 1, ',', ' ') }}<span class="unit"> %</span>
             </div>
             <div class="label">Taux de recouvrement</div>
         </td>
@@ -213,13 +213,13 @@
     <tr>
         <td>
             <div class="value">
-                {{ $totals['averageDelayDays'] === null ? '—' : number_format($totals['averageDelayDays'], 1, ',', ' ') }}<span class="unit"> j</span>
+                {{ $totals['averageDelayDays'] === null ? '-' : number_format($totals['averageDelayDays'], 1, ',', ' ') }}<span class="unit"> j</span>
             </div>
             <div class="label">Délai moyen</div>
         </td>
         <td>
             <div class="value">
-                {{ $totals['withinStandard'] === null ? '—' : number_format($totals['withinStandard'], 1, ',', ' ') }}<span class="unit"> %</span>
+                {{ $totals['withinStandard'] === null ? '-' : number_format($totals['withinStandard'], 1, ',', ' ') }}<span class="unit"> %</span>
             </div>
             <div class="label">Réglées dans le délai standard</div>
         </td>
@@ -268,17 +268,17 @@
                     <td>{{ \App\Support\Fcfa::format($row['invoiced']) }}</td>
                     <td>{{ \App\Support\Fcfa::format($row['received']) }}</td>
                     <td>{{ \App\Support\Fcfa::format($row['outstanding']) }}</td>
-                    <td>{{ $row['recoveryRate'] === null ? '—' : number_format($row['recoveryRate'], 1, ',', ' ').' %' }}</td>
+                    <td>{{ $row['recoveryRate'] === null ? '-' : number_format($row['recoveryRate'], 1, ',', ' ').' %' }}</td>
                     <td class="{{ $row['averageDelayDays'] !== null && $row['averageDelayDays'] > $row['standardDelayDays'] ? 'late' : '' }}">
-                        {{ $row['averageDelayDays'] === null ? '—' : number_format($row['averageDelayDays'], 1, ',', ' ').' j' }}
+                        {{ $row['averageDelayDays'] === null ? '-' : number_format($row['averageDelayDays'], 1, ',', ' ').' j' }}
                     </td>
                     <td class="{{ $row['longestDelayDays'] !== null && $row['longestDelayDays'] > $row['standardDelayDays'] ? 'late' : '' }}">
-                        {{ $row['longestDelayDays'] === null ? '—' : $row['longestDelayDays'].' j' }}
+                        {{ $row['longestDelayDays'] === null ? '-' : $row['longestDelayDays'].' j' }}
                     </td>
                     {{-- Un tiret, jamais zéro : « pas de clause de pénalité »
                          et « une clause mais rien à réclamer » ne se lisent
                          pas pareil. --}}
-                    <td>{{ $row['penalty'] === null ? '—' : \App\Support\Fcfa::format($row['penalty']) }}</td>
+                    <td>{{ $row['penalty'] === null ? '-' : \App\Support\Fcfa::format($row['penalty']) }}</td>
                     <td>
                         {{ $row['instalments'] }}
                         <div class="sub">
@@ -299,10 +299,10 @@
                 <td>{{ \App\Support\Fcfa::format($totals['invoiced']) }}</td>
                 <td>{{ \App\Support\Fcfa::format($totals['received']) }}</td>
                 <td>{{ \App\Support\Fcfa::format($totals['outstanding']) }}</td>
-                <td>{{ $totals['recoveryRate'] === null ? '—' : number_format($totals['recoveryRate'], 1, ',', ' ').' %' }}</td>
-                <td>{{ $totals['averageDelayDays'] === null ? '—' : number_format($totals['averageDelayDays'], 1, ',', ' ').' j' }}</td>
-                <td>{{ $totals['longestDelayDays'] === null ? '—' : $totals['longestDelayDays'].' j' }}</td>
-                <td>{{ $totals['penalty'] === null ? '—' : \App\Support\Fcfa::format($totals['penalty']) }}</td>
+                <td>{{ $totals['recoveryRate'] === null ? '-' : number_format($totals['recoveryRate'], 1, ',', ' ').' %' }}</td>
+                <td>{{ $totals['averageDelayDays'] === null ? '-' : number_format($totals['averageDelayDays'], 1, ',', ' ').' j' }}</td>
+                <td>{{ $totals['longestDelayDays'] === null ? '-' : $totals['longestDelayDays'].' j' }}</td>
+                <td>{{ $totals['penalty'] === null ? '-' : \App\Support\Fcfa::format($totals['penalty']) }}</td>
                 <td>{{ $totals['instalments'] }}</td>
             </tr>
         </tfoot>
@@ -344,8 +344,8 @@
                     </td>
                     <td>{{ \App\Support\Fcfa::format($declaration->amount_invoiced) }}</td>
                     <td>{{ \App\Support\Fcfa::format($declaration->amount_received) }}</td>
-                    <td>{{ $declaration->amount_outstanding > 0 ? \App\Support\Fcfa::format($declaration->amount_outstanding) : '—' }}</td>
-                    <td class="text">{{ $declaration->invoice_deposited_on?->format('d/m/Y') ?? '—' }}</td>
+                    <td>{{ $declaration->amount_outstanding > 0 ? \App\Support\Fcfa::format($declaration->amount_outstanding) : '-' }}</td>
+                    <td class="text">{{ $declaration->invoice_deposited_on?->format('d/m/Y') ?? '-' }}</td>
                     <td class="text">
                         @forelse ($declaration->payments as $payment)
                             <div>
@@ -357,7 +357,7 @@
                         @endforelse
                     </td>
                     <td class="{{ $declaration->delay_days !== null && $declaration->delay_days > $declaration->insurer->standard_delay_days ? 'late' : '' }}">
-                        {{ $declaration->delay_days === null ? '—' : $declaration->delay_days.' j' }}
+                        {{ $declaration->delay_days === null ? '-' : $declaration->delay_days.' j' }}
                         @if ($declaration->revisions_count > 1)
                             <div class="sub">{{ $declaration->revisions_count - 1 }} corr.</div>
                         @endif
@@ -402,7 +402,7 @@
                 </td>
                 <td>
                     <div class="value">
-                        {{ $page['longestDelayDays'] === null ? '—' : $page['longestDelayDays'] }}<span class="unit"> j</span>
+                        {{ $page['longestDelayDays'] === null ? '-' : $page['longestDelayDays'] }}<span class="unit"> j</span>
                     </div>
                     <div class="label">Délai le plus long</div>
                 </td>
@@ -410,7 +410,7 @@
                     {{-- Un tiret dit « pas de convention », un zéro dit « une
                          convention, rien à réclamer ». --}}
                     <div class="value">
-                        {{ $page['penalty'] === null ? '—' : \App\Support\Fcfa::format($page['penalty']) }}
+                        {{ $page['penalty'] === null ? '-' : \App\Support\Fcfa::format($page['penalty']) }}
                     </div>
                     <div class="label">Pénalité due</div>
                 </td>
@@ -438,12 +438,12 @@
                         <td>{{ \App\Support\Fcfa::format($month['invoiced']) }}</td>
                         <td>{{ \App\Support\Fcfa::format($month['received']) }}</td>
                         <td>{{ \App\Support\Fcfa::format($month['outstanding']) }}</td>
-                        <td class="text">{{ $month['depositedOn'] ?? '—' }}</td>
+                        <td class="text">{{ $month['depositedOn'] ?? '-' }}</td>
                         <td class="{{ $month['delayDays'] !== null && $month['delayDays'] > $page['standardDelayDays'] ? 'late' : '' }}">
-                            {{ $month['delayDays'] === null ? '—' : $month['delayDays'].' j' }}
+                            {{ $month['delayDays'] === null ? '-' : $month['delayDays'].' j' }}
                         </td>
                         <td>
-                            {{ $month['penalty'] === null ? '—' : \App\Support\Fcfa::format($month['penalty']) }}
+                            {{ $month['penalty'] === null ? '-' : \App\Support\Fcfa::format($month['penalty']) }}
                             @if ($month['settlementLabel'])
                                 <div class="settlement-chip">{{ $month['settlementLabel'] }}{{ $month['isPaidSettlement'] && $month['settledAmount'] !== null ? ' '.\App\Support\Fcfa::format($month['settledAmount']).' F' : '' }}</div>
                             @endif

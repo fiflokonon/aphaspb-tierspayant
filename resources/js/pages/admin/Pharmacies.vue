@@ -295,7 +295,7 @@ const footer = computed(
                             </span>
 
                             <span>
-                                {{ row.city ?? '—' }}
+                                {{ row.city ?? '-' }}
                             </span>
 
                         </div>
@@ -312,7 +312,7 @@ const footer = computed(
                             </span>
 
                             <span>
-                                {{ row.onpbLicense ?? '—' }}
+                                {{ row.onpbLicense ?? '-' }}
                             </span>
 
                         </div>
@@ -329,7 +329,7 @@ const footer = computed(
                             </span>
 
                             <span>
-                                {{ row.registeredAt ?? '—' }}
+                                {{ row.registeredAt ?? '-' }}
                             </span>
 
                         </div>
@@ -710,11 +710,11 @@ const footer = computed(
 
 .filter-label {
 
-    color: var(--muted-light);
+    color: black;
 
     font-size: 11px;
 
-    font-weight: 850;
+    /* font-weight: 850; */
 
     letter-spacing: 0.12em;
 }

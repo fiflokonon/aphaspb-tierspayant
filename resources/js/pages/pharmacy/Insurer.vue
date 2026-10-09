@@ -155,7 +155,7 @@ const reopen = (row: MonthRow) =>
                     Un menu plutôt que trois boutons dans l'en-tête : le geste
                     reste « exporter », et le format est un détail qu'on choisit
                     une fois dedans. Les trois liens portent déjà la période et
-                    l'assureur affichés — c'est ce qu'on regarde qui part dans
+                    l'assureur affichés - c'est ce qu'on regarde qui part dans
                     le fichier.
                 -->
                 <DropdownMenu v-if="exportUrls">
@@ -266,7 +266,7 @@ const reopen = (row: MonthRow) =>
 
             <KpiCard
                 label="DÉLAI LE PLUS LONG"
-                :value="relationship.longestDelayDays?.toString() ?? '—'"
+                :value="relationship.longestDelayDays?.toString() ?? '-'"
                 unit="jours"
                 hint="mois réglés et encours confondus"
             />
@@ -275,7 +275,7 @@ const reopen = (row: MonthRow) =>
                 label="VOTRE DÉLAI MOYEN"
                 :value="
                     relationship.weightedDelayDays?.toLocaleString('fr-FR') ??
-                    '—'
+                    '-'
                 "
                 unit="jours"
                 hint="pondéré par les montants reçus"
@@ -285,7 +285,7 @@ const reopen = (row: MonthRow) =>
                 label="PÉNALITÉ RÉCLAMABLE"
                 :value="
                     relationship.penalty === null
-                        ? '—'
+                        ? '-'
                         : formatMillions(relationship.penalty)
                 "
                 unit="FCFA"
@@ -298,21 +298,21 @@ const reopen = (row: MonthRow) =>
                 label="VOTRE DÉLAI MOYEN"
                 :value="
                     relationship.weightedDelayDays?.toLocaleString('fr-FR') ??
-                    '—'
+                    '-'
                 "
                 unit="jours"
                 hint="pondéré par les montants reçus"
             />
 
             
-                formatAmount() rend « — » sur null : « pas de clause » et « une
+                formatAmount() rend « - » sur null : « pas de clause » et « une
                 clause mais rien à réclamer » ne doivent pas se lire pareil.
            
             <KpiCard
                 label="PÉNALITÉ RÉCLAMABLE"
                 :value="
                     relationship.penalty === null
-                        ? '—'
+                        ? '-'
                         : formatMillions(relationship.penalty)
                 "
                 unit="FCFA"
@@ -341,7 +341,7 @@ const reopen = (row: MonthRow) =>
 
                 <div>{{ formatAmount(row.outstanding) }}</div>
 
-                <div>{{ row.depositedOn ?? '—' }}</div>
+                <div>{{ row.depositedOn ?? '-' }}</div>
 
                 <div
                     :title="
@@ -350,11 +350,11 @@ const reopen = (row: MonthRow) =>
                             : undefined
                     "
                 >
-                    {{ row.paidOn ?? '—' }}
+                    {{ row.paidOn ?? '-' }}
                 </div>
 
                 <div>
-                    {{ row.delayDays === null ? '—' : `${row.delayDays} j` }}
+                    {{ row.delayDays === null ? '-' : `${row.delayDays} j` }}
                 </div>
 
                 <div class="penalty-cell">

@@ -3,7 +3,7 @@
  * Le journal mois par mois : la ligne du total, dépliable par assureur.
  *
  * Une ligne retenue reste une ligne : absente, elle se lirait « rien couru ».
- * Un mois futur de la période n'en a pas — il n'y a encore rien à y écrire.
+ * Un mois futur de la période n'en a pas - il n'y a encore rien à y écrire.
  *
  * Payée, annulée et due suivent l'horloge « couru ». Sept colonnes : la table
  * défile à l'horizontale sur écran étroit plutôt que d'en cacher une.
@@ -61,7 +61,7 @@ const cell = (
     key: AmountKey,
 ): string => {
     if (month === undefined) {
-        return '—';
+        return '-';
     }
 
     if (month.withheld) {
@@ -74,7 +74,7 @@ const cell = (
     }
 
     // Un cumul vide sur un mois publié vient d'un mois retenu plus tôt :
-    // « — » dirait « pas de convention », ce qui serait faux.
+    // « - » dirait « pas de convention », ce qui serait faux.
     if (key === 'accruedCumulative' && month[key] === null && !month.future) {
         return 'interrompu';
     }

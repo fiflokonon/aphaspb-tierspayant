@@ -1215,7 +1215,7 @@ watch([period, city, insurer], reload);
 
   
 
-    font-size: 12px;
+    font-size: 14px;
 
     transition:
         border-color 0.2s ease,
@@ -1415,7 +1415,7 @@ watch([period, city, insurer], reload);
 }
 
 /* ================================================================
-   RESPONSIVE — 1000px
+   RESPONSIVE - 1000px
 ================================================================ */
 
 @media (max-width: 1000px) {
@@ -1443,7 +1443,7 @@ watch([period, city, insurer], reload);
 }
 
 /* ================================================================
-   RESPONSIVE — 850px
+   RESPONSIVE - 850px
 ================================================================ */
 
 @media (max-width: 850px) {
@@ -1468,7 +1468,7 @@ watch([period, city, insurer], reload);
 }
 
 /* ================================================================
-   RESPONSIVE — 700px
+   RESPONSIVE - 700px
 ================================================================ */
 
 @media (max-width: 700px) {
@@ -1544,7 +1544,7 @@ watch([period, city, insurer], reload);
 }
 
 /* ================================================================
-   RESPONSIVE — 480px
+   RESPONSIVE - 480px
 ================================================================ */
 
 @media (max-width: 480px) {

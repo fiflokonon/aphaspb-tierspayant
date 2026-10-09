@@ -33,7 +33,7 @@ const color = (slice: RankedSlice) => slice.color;
     <div>
         <div v-if="total === 0" class="py-10 text-center">
             <p class="text-[12.5px] text-ink/45">
-                Rien à recouvrer sur la période — pas de répartition à tracer.
+                Rien à recouvrer sur la période - pas de répartition à tracer.
             </p>
         </div>
 

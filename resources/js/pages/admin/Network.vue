@@ -30,7 +30,7 @@ type Indicator = {
 };
 
 /**
- * Withheld as a whole when it rests on fewer officines than the threshold —
+ * Withheld as a whole when it rests on fewer officines than the threshold -
  * a city of one declarant would otherwise print that officine's figures.
  */
 type Summary = {
@@ -57,7 +57,7 @@ const TEMPLATE = '1.6fr .9fr .85fr 1fr 1fr .75fr .8fr';
 
 const COLUMNS = [
     'Assureur',
-    'Officines (n)',
+    'Officines',
     'Délai moyen',
     'Dans les délais',
     'Argent dans les délais',
@@ -68,7 +68,7 @@ const COLUMNS = [
 /**
  * What the network KPIs are read against: the mean of the agreed delays.
  *
- * Stated as such in the card's hint — an average of rules is not a rule.
+ * Stated as such in the card's hint - an average of rules is not a rule.
  */
 const networkStandard = computed(() => {
     const agreed = props.indicators
@@ -121,10 +121,10 @@ const delayTone = (days: number | null, standard: number): KpiTone => {
 };
 
 const percent = (value: number | null): string =>
-    value === null ? '—' : `${value.toLocaleString('fr-FR')} %`;
+    value === null ? '-' : `${value.toLocaleString('fr-FR')} %`;
 
 const days = (value: number | null): string =>
-    value === null ? '—' : `${value.toLocaleString('fr-FR')} j`;
+    value === null ? '-' : `${value.toLocaleString('fr-FR')} j`;
 
 /** What a withheld KPI says under its « retenu ». */
 const withheldHint = computed(() =>
@@ -262,7 +262,7 @@ watch([period, city], reload);
         >
 
             <!-- =================================================
-                 KPI 1 — OFFICINES
+                 KPI 1 - OFFICINES
             ================================================== -->
 
             <div class="kpi-wrapper">
@@ -294,7 +294,7 @@ watch([period, city], reload);
 
 
             <!-- =================================================
-                 KPI 2 — DÉLAI MOYEN
+                 KPI 2 - DÉLAI MOYEN
             ================================================== -->
 
             <div class="kpi-wrapper">
@@ -308,7 +308,7 @@ watch([period, city], reload);
                             ? 'retenu'
                             : (summary.averageDelayDays?.toLocaleString(
                                   'fr-FR',
-                              ) ?? '—')
+                              ) ?? '-')
                     "
                     :unit="summary.withheld ? undefined : 'jours'"
                     :tone="
@@ -320,7 +320,7 @@ watch([period, city], reload);
                     :hint="
                         summary.withheld
                             ? withheldHint
-                            : 'statuts payés et partiels confondus'
+                            : 'statuts payés et partiels'
                     "
                 />
 
@@ -332,7 +332,7 @@ watch([period, city], reload);
 
 
             <!-- =================================================
-                 KPI 3 — PAYÉ DANS LES DÉLAIS
+                 KPI 3 - PAYÉ DANS LES DÉLAIS
             ================================================== -->
 
             <div class="kpi-wrapper">
@@ -346,7 +346,7 @@ watch([period, city], reload);
                             ? 'retenu'
                             : (summary.withinThresholdShare?.toLocaleString(
                                   'fr-FR',
-                              ) ?? '—')
+                              ) ?? '-')
                     "
                     :unit="summary.withheld ? undefined : '%'"
                     :tone="shareTone(summary.withinThresholdShare)"
@@ -464,7 +464,7 @@ watch([period, city], reload);
                         :explanation="`${withheldExplanation(
                             indicator.withheldReason,
                             indicator.required ?? summary.required,
-                        )} — pour garantir l’anonymat`"
+                        )} - pour garantir l’anonymat`"
                     />
 
 
@@ -657,7 +657,7 @@ watch([period, city], reload);
 <style scoped>
 
 /* =========================================================
-   APSPB — STATISTIQUES RÉSEAU
+   APSPB - STATISTIQUES RÉSEAU
    Design : Light / Elegant / Institutional
    Font : Manrope
 ========================================================= */

@@ -39,7 +39,7 @@ class NetworkOverdueDigest extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $message = (new MailMessage)
-            ->subject('Retards de paiement du réseau — '.now()->translatedFormat('j F Y'))
+            ->subject('Retards de paiement du réseau : '.now()->translatedFormat('j F Y'))
             ->line(sprintf(
                 'Au %s, %s FCFA restent dus au réseau au-delà des délais convenus.',
                 now()->translatedFormat('j F Y'),

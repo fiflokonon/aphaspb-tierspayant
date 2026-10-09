@@ -1,4 +1,4 @@
-# Notifications de retard de paiement — plan d'implémentation
+# Notifications de retard de paiement - plan d'implémentation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -18,7 +18,7 @@
 - **Formatage des montants :** `App\Support\Fcfa::format()`, jamais `number_format()` à la main.
 - **Langue :** tout le texte visible est en français. Les messages de validation propres à un formulaire vivent dans son FormRequest ; les règles du framework dans `lang/fr/validation.php`.
 - **Style :** `vendor/bin/pint --dirty --format agent` après toute modification PHP. Avant de déclarer terminé, `composer ci:check` **en entier**.
-- **Tests :** `.ai/rules/tests.md` — ne jamais poser un stub global en `beforeEach`.
+- **Tests :** `.ai/rules/tests.md` - ne jamais poser un stub global en `beforeEach`.
 
 ---
 
@@ -67,7 +67,7 @@ test('a declaration without a deposit date is refused, even unpaid', function ()
 - [ ] **Step 2 : le lancer et vérifier qu'il échoue**
 
 Run: `vendor/bin/pest tests/Feature/Pharmacy/DeclarationTest.php --filter="without a deposit date"`
-Expected: FAIL — aucune erreur de session sur `invoice_deposited_on`, la règle actuelle étant `nullable`.
+Expected: FAIL - aucune erreur de session sur `invoice_deposited_on`, la règle actuelle étant `nullable`.
 
 - [ ] **Step 3 : passer la règle en `required`**
 
@@ -123,7 +123,7 @@ Ajouter dans `messages()`, pour que l'officine lise la même phrase qu'avant plu
 - [ ] **Step 6 : lancer les tests des déclarations**
 
 Run: `vendor/bin/pest tests/Feature/Pharmacy/ tests/Feature/Declarations/`
-Expected: PASS. Si un test échoue en postant sans `invoice_deposited_on`, c'est le changement attendu — corriger le test en ajoutant la date, pas la règle.
+Expected: PASS. Si un test échoue en postant sans `invoice_deposited_on`, c'est le changement attendu - corriger le test en ajoutant la date, pas la règle.
 
 - [ ] **Step 7 : Pint puis commit**
 
@@ -133,7 +133,7 @@ git add app/Http/Requests/Pharmacy/SaveDeclarationRequest.php tests/Feature/Phar
 git commit -m "feat: exiger la date de dépôt sur toute déclaration
 
 La règle ne l'exigeait que sur les déclarations réglées, si bien qu'une
-facture impayée — celle qu'une alerte de retard vise — pouvait n'avoir
+facture impayée - celle qu'une alerte de retard vise - pouvait n'avoir
 aucun retard calculable. Le champ était déjà affiché sur toutes les
 déclarations, l'écran ne change pas."
 ```
@@ -150,7 +150,7 @@ déclarations, l'écran ne change pas."
 **Interfaces:**
 - Consumes: la garantie de la Task 1.
 - Produces:
-  - `App\Data\OverdueLine` — `readonly`, propriétés publiques `int $declarationId`, `string $insurerName`, `int $periodYear`, `int $periodMonth`, `CarbonImmutable $invoiceDepositedOn`, `int $ageDays`, `int $standardDelayDays`, `int $outstanding`.
+  - `App\Data\OverdueLine` - `readonly`, propriétés publiques `int $declarationId`, `string $insurerName`, `int $periodYear`, `int $periodMonth`, `CarbonImmutable $invoiceDepositedOn`, `int $ageDays`, `int $standardDelayDays`, `int $outstanding`.
   - `OverduePaymentsService::forPharmacy(Pharmacy $pharmacy): array` → `list<OverdueLine>`, la plus ancienne en tête.
   - `OverduePaymentsService::pharmaciesWithOverdue(): Collection` → `Collection<int, Pharmacy>`.
 
@@ -277,7 +277,7 @@ test('only officines carrying an overdue invoice come back', function () {
 - [ ] **Step 2 : les lancer et vérifier qu'ils échouent**
 
 Run: `vendor/bin/pest tests/Feature/Declarations/OverduePaymentsServiceTest.php`
-Expected: FAIL — `Class "App\Services\Declarations\OverduePaymentsService" not found`.
+Expected: FAIL - `Class "App\Services\Declarations\OverduePaymentsService" not found`.
 
 - [ ] **Step 3 : créer la classe de données**
 
@@ -408,7 +408,7 @@ class OverduePaymentsService
      * Le socle commun : tout ce qui est en retard, sans restriction d'officine.
      *
      * Le dépassement se teste contre une date butoir calculée en PHP, une par
-     * délai standard distinct — deux aujourd'hui. Comparer une date à un
+     * délai standard distinct - deux aujourd'hui. Comparer une date à un
      * intervalle porté par une colonne demanderait de l'arithmétique de dates
      * en SQL, que ce projet évite pour ne pas se lier à un moteur.
      */
@@ -553,7 +553,7 @@ Supprimer le tableau `$months` local.
 - [ ] **Step 4 : lancer les tests concernés**
 
 Run: `vendor/bin/pest tests/Feature/Pharmacy/`
-Expected: PASS. Les libellés sont couverts par les tests existants — s'ils passent, l'extraction n'a rien changé à l'affichage.
+Expected: PASS. Les libellés sont couverts par les tests existants - s'ils passent, l'extraction n'a rien changé à l'affichage.
 
 - [ ] **Step 5 : Pint puis commit**
 
@@ -752,7 +752,7 @@ test('the stored digest carries the officine and what it is owed', function () {
 - [ ] **Step 3 : les lancer et vérifier qu'ils échouent**
 
 Run: `vendor/bin/pest tests/Feature/Declarations/NotifyOverduePaymentsTest.php`
-Expected: FAIL — `The command "declarations:notify-overdue" does not exist.`
+Expected: FAIL - `The command "declarations:notify-overdue" does not exist.`
 
 - [ ] **Step 4 : écrire la notification**
 
@@ -884,7 +884,7 @@ use Illuminate\Support\Facades\Notification;
  *
  * Aucune table de suivi : ce qui empêche un second envoi dans la semaine est
  * une lecture de la table `notifications`. Le choix d'un récapitulatif groupé
- * rend inutile toute mémoire par facture — il n'y a qu'une question binaire,
+ * rend inutile toute mémoire par facture - il n'y a qu'une question binaire,
  * cette officine a-t-elle déjà reçu son digest cette semaine.
  */
 class NotifyOverduePayments extends Command
@@ -909,7 +909,7 @@ class NotifyOverduePayments extends Command
             }
 
             if (! $force && $this->alreadyNotifiedThisWeek($pharmacy)) {
-                $this->line("· {$pharmacy->name} — déjà prévenue cette semaine");
+                $this->line("· {$pharmacy->name} - déjà prévenue cette semaine");
 
                 continue;
             }
@@ -921,7 +921,7 @@ class NotifyOverduePayments extends Command
             $total = array_sum(array_map(fn ($line) => $line->outstanding, $lines));
 
             $this->line(sprintf(
-                '· %s — %d facture%s, %s FCFA, %d destinataire%s',
+                '· %s - %d facture%s, %s FCFA, %d destinataire%s',
                 $pharmacy->name,
                 count($lines),
                 count($lines) > 1 ? 's' : '',
@@ -950,7 +950,7 @@ class NotifyOverduePayments extends Command
      *
      * Limite connue : la notification est `ShouldQueue`, donc la ligne
      * n'apparaît qu'une fois le job traité. Deux exécutions à quelques
-     * secondes d'intervalle pourraient doubler l'envoi — ce que la
+     * secondes d'intervalle pourraient doubler l'envoi - ce que la
      * planification hebdomadaire et `withoutOverlapping()` rendent
      * théorique. `--force` existe pour le rattrapage délibéré.
      */
@@ -1012,7 +1012,7 @@ notifications sur la semaine en cours, sans table de suivi dédiée."
 
 **Interfaces:**
 - Consumes: `OverduePaymentsService` (Task 2), la commande (Task 4).
-- Produces: `App\Data\InsurerOverdueTotals` — `readonly`, `int $insurerId`, `string $insurerName`, `int $standardDelayDays`, `int $declarations`, `int $pharmacies`, `int $outstanding` ; `OverduePaymentsService::networkTotals(): array` → `list<InsurerOverdueTotals>`, le plus gros encours en tête.
+- Produces: `App\Data\InsurerOverdueTotals` - `readonly`, `int $insurerId`, `string $insurerName`, `int $standardDelayDays`, `int $declarations`, `int $pharmacies`, `int $outstanding` ; `OverduePaymentsService::networkTotals(): array` → `list<InsurerOverdueTotals>`, le plus gros encours en tête.
 
 - [ ] **Step 1 : écrire les tests qui échouent**
 
@@ -1125,7 +1125,7 @@ test('the network digest is not sent when nothing clears the threshold', functio
 - [ ] **Step 2 : les lancer et vérifier qu'ils échouent**
 
 Run: `vendor/bin/pest tests/Feature/Declarations/NetworkOverdueDigestTest.php`
-Expected: FAIL — `Call to undefined method ...::networkTotals()`.
+Expected: FAIL - `Call to undefined method ...::networkTotals()`.
 
 - [ ] **Step 3 : créer la classe de données**
 
@@ -1258,7 +1258,7 @@ class NetworkOverdueDigest extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $message = (new MailMessage)
-            ->subject('Retards de paiement du réseau — '.now()->translatedFormat('j F Y'))
+            ->subject('Retards de paiement du réseau - '.now()->translatedFormat('j F Y'))
             ->line(sprintf(
                 'Au %s, %s FCFA restent dus au réseau au-delà des délais convenus.',
                 now()->translatedFormat('j F Y'),
@@ -1331,7 +1331,7 @@ protected function notifyNetworkAdmins(OverduePaymentsService $overdue, bool $dr
     $totals = $overdue->networkTotals();
 
     if ($totals === []) {
-        $this->line('· Réseau — rien au-delà du seuil d’anonymat');
+        $this->line('· Réseau - rien au-delà du seuil d’anonymat');
 
         return;
     }
@@ -1345,7 +1345,7 @@ protected function notifyNetworkAdmins(OverduePaymentsService $overdue, bool $dr
         ->get();
 
     $this->line(sprintf(
-        '· Réseau — %d assureur(s), %d destinataire(s)',
+        '· Réseau - %d assureur(s), %d destinataire(s)',
         count($totals),
         $admins->count(),
     ));
@@ -1361,7 +1361,7 @@ protected function notifyNetworkAdmins(OverduePaymentsService $overdue, bool $dr
 - [ ] **Step 7 : lancer les deux fichiers de tests**
 
 Run: `vendor/bin/pest tests/Feature/Declarations/`
-Expected: PASS. Si `NotifyOverduePaymentsTest` échoue maintenant sur un compte d'envois, c'est que le digest réseau part en plus — vérifier que ces tests ne créent pas d'admin réseau ; ils n'en créent pas.
+Expected: PASS. Si `NotifyOverduePaymentsTest` échoue maintenant sur un compte d'envois, c'est que le digest réseau part en plus - vérifier que ces tests ne créent pas d'admin réseau ; ils n'en créent pas.
 
 - [ ] **Step 8 : Pint, PHPStan puis commit**
 

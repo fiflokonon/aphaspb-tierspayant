@@ -1,4 +1,4 @@
-# Pénalités de retard — lot B — Implementation Plan
+# Pénalités de retard - lot B - Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -17,9 +17,9 @@
 - **Anonymat** : le seuil (`SettingsRepository::anonymityMinPharmacies()`, plancher 2) est décidé **une seule fois**, dans `NetworkStatsService::perInsurer()`. Aucune classe de ce lot ne le réévalue ; elles reçoivent les identifiants déjà autorisés.
 - **`private_note` ne franchit jamais un chemin réseau.** Toute lecture de `app/Services/Network/**` passe par le query builder, jamais par Eloquent.
 - **Pénalité** : tranche de 30 jours, non composée, base dégressive, acquise conservée. `intdiv($base * $rateBp, 10_000)`, jamais de flottant.
-- **`null` ≠ `0`** : `null` = « pas de convention » (rendu « — »), `0` = « une convention, rien à réclamer ».
+- **`null` ≠ `0`** : `null` = « pas de convention » (rendu « - »), `0` = « une convention, rien à réclamer ».
 - **Colonnes d'export** : référencées par leur nom via `array_search()` sur `COLUMNS`, **jamais par leur index**.
-- **dompdf** : ni flexbox ni grid — les colonnes sont des `<table>` —, `page-break-inside: avoid` sur les lignes, en-tête et pied en `position: fixed`.
+- **dompdf** : ni flexbox ni grid - les colonnes sont des `<table>` -, `page-break-inside: avoid` sur les lignes, en-tête et pied en `position: fixed`.
 - **Formatage** : `vendor/bin/pint --dirty --format agent` après toute modification PHP.
 - **Vérification finale** : `composer ci:check` en entier.
 
@@ -31,7 +31,7 @@ La spec (§8) demande aussi un test vérifiant que « le nom d'un assureur masqu
 est absent de tout le document ». **C'est l'inverse de ce que le code fait, et
 délibérément** : la ligne de retenue le nomme, pour que son absence de chiffres
 ne se lise pas comme une absence de déclarations. Le plan teste donc la bonne
-propriété — pas de **page**, pas de **chiffre** — et laisse le nom où il est.
+propriété - pas de **page**, pas de **chiffre** - et laisse le nom où il est.
 
 ---
 
@@ -150,7 +150,7 @@ test('an unparseable date is refused rather than silently zero', function () {
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `vendor/bin/pest tests/Unit/Support/DayNumberTest.php`
-Expected : FAIL — `Class "App\Support\DayNumber" not found`
+Expected : FAIL - `Class "App\Support\DayNumber" not found`
 
 - [ ] **Step 3 : Écrire `DayNumber`**
 
@@ -172,7 +172,7 @@ use InvalidArgumentException;
  * Le goulot n'est pas l'arithmétique, c'est l'allocation d'objets.
  *
  * Deux dates converties ici se soustraient exactement comme diffInDays() les
- * compare — c'est la seule propriété dont le reste dépend, et un test la
+ * compare - c'est la seule propriété dont le reste dépend, et un test la
  * vérifie sur quatre années jour par jour.
  */
 class DayNumber
@@ -255,9 +255,9 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `DayNumber::fromCarbon()`, `DayNumber::today()` (Task 1) ; `Insurer::PENALTY_TRANCHE_DAYS`.
-- Produces: `PenaltyCalculator::accruedInDays(int $amountInvoiced, int $amountReceived, int $depositedDay, ?int $paidDay, int $triggerDays, int $rateBp, array $payments): int` où `$payments` est `list<array{0: int, 1: int}>` — montant, numéro de jour.
+- Produces: `PenaltyCalculator::accruedInDays(int $amountInvoiced, int $amountReceived, int $depositedDay, ?int $paidDay, int $triggerDays, int $rateBp, array $payments): int` où `$payments` est `list<array{0: int, 1: int}>` - montant, numéro de jour.
 
-> **Le contrat de non-régression** : les **17 tests existants de `PenaltyCalculatorTest` ne doivent pas être touchés**, et tous rester verts. S'il faut en modifier un, le refactor a changé le comportement et pas seulement la représentation — c'est un échec à signaler, pas un test à ajuster.
+> **Le contrat de non-régression** : les **17 tests existants de `PenaltyCalculatorTest` ne doivent pas être touchés**, et tous rester verts. S'il faut en modifier un, le refactor a changé le comportement et pas seulement la représentation - c'est un échec à signaler, pas un test à ajuster.
 
 - [ ] **Step 1 : Écrire le test d'équivalence entre les deux portes**
 
@@ -313,11 +313,11 @@ Ajouter l'import `use App\Support\DayNumber;` en tête du fichier.
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `vendor/bin/pest tests/Unit/Services/PenaltyCalculatorTest.php`
-Expected : FAIL — `Call to undefined method App\Services\Declarations\PenaltyCalculator::accruedInDays()`
+Expected : FAIL - `Call to undefined method App\Services\Declarations\PenaltyCalculator::accruedInDays()`
 
 - [ ] **Step 3 : Remplacer `accrued()` par un adaptateur et écrire le cœur**
 
-Dans `app/Services/Declarations/PenaltyCalculator.php`, remplacer `accrued()`, `clockStopsOn()` et `receivedBy()` — les deux dernières disparaissent, repliées dans le cœur — par :
+Dans `app/Services/Declarations/PenaltyCalculator.php`, remplacer `accrued()`, `clockStopsOn()` et `receivedBy()` - les deux dernières disparaissent, repliées dans le cœur - par :
 
 ```php
     /**
@@ -401,7 +401,7 @@ Dans `app/Services/Declarations/PenaltyCalculator.php`, remplacer `accrued()`, `
             // Les versements ne font que s'ajouter : une base retombée à zéro
             // ne peut plus remonter, donc les tranches suivantes ne
             // factureraient rien. Sortir plutôt que continuer est une
-            // optimisation, pas une règle — le total est le même dans les deux
+            // optimisation, pas une règle - le total est le même dans les deux
             // cas, et c'est pourquoi aucun test ne peut les distinguer.
             if ($base <= 0) {
                 break;
@@ -415,15 +415,15 @@ Dans `app/Services/Declarations/PenaltyCalculator.php`, remplacer `accrued()`, `
     }
 ```
 
-Ajouter l'import `use App\Support\DayNumber;`. Retirer l'import `Carbon\CarbonImmutable` **seulement si** plus rien ne l'utilise — `accrued()` le garde dans sa signature, donc il reste.
+Ajouter l'import `use App\Support\DayNumber;`. Retirer l'import `Carbon\CarbonImmutable` **seulement si** plus rien ne l'utilise - `accrued()` le garde dans sa signature, donc il reste.
 
 - [ ] **Step 4 : Lancer les tests et vérifier qu'ils passent, tous**
 
 Run : `vendor/bin/pest tests/Unit/Services/PenaltyCalculatorTest.php`
-Expected : PASS (18 tests — les 17 d'origine **inchangés**, plus l'équivalence)
+Expected : PASS (18 tests - les 17 d'origine **inchangés**, plus l'équivalence)
 
 Run : `php artisan test --compact tests/Feature/Declarations tests/Feature/Pharmacy`
-Expected : PASS — le chemin officine passe par `accrued()`, qui doit être resté exact.
+Expected : PASS - le chemin officine passe par `accrued()`, qui doit être resté exact.
 
 - [ ] **Step 5 : Vérifier que le gain est réel**
 
@@ -449,7 +449,7 @@ printf("40 000 declarations : %.0f ms, crete %.0f Mo\n", (microtime(true)-$t)*10
 '
 ```
 
-Expected : de l'ordre de **50 ms et 100 Mo**. Si le temps dépasse la seconde, une conversion Carbon subsiste dans la boucle — la chercher avant de continuer.
+Expected : de l'ordre de **50 ms et 100 Mo**. Si le temps dépasse la seconde, une conversion Carbon subsiste dans la boucle - la chercher avant de continuer.
 
 - [ ] **Step 6 : Formater et committer**
 
@@ -476,17 +476,17 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: `App\Data\Period`.
 - Produces:
-  - `DeclarationWindow::query(Period $from, Period $to, ?string $city = null): Builder` — `DB::table('declarations')` filtré
-  - `DeclarationWindow::apply(Builder $query, Period $from, Period $to, ?string $city = null): Builder` — le même filtre posé sur une requête qui joint déjà `declarations`
+  - `DeclarationWindow::query(Period $from, Period $to, ?string $city = null): Builder` - `DB::table('declarations')` filtré
+  - `DeclarationWindow::apply(Builder $query, Period $from, Period $to, ?string $city = null): Builder` - le même filtre posé sur une requête qui joint déjà `declarations`
 
-> **Pourquoi extraire** : la tâche 4 doit filtrer `declaration_payments` joint à `declarations` sur la même période et la même ville. Recopier le `whereExists` sur `pharmacies` mettrait **deux copies du filtre qui décide quelles officines entrent dans un agrégat réseau** — exactement le genre de duplication qui dérive et finit par faire dire deux choses différentes à deux écrans.
+> **Pourquoi extraire** : la tâche 4 doit filtrer `declaration_payments` joint à `declarations` sur la même période et la même ville. Recopier le `whereExists` sur `pharmacies` mettrait **deux copies du filtre qui décide quelles officines entrent dans un agrégat réseau** - exactement le genre de duplication qui dérive et finit par faire dire deux choses différentes à deux écrans.
 
 - [ ] **Step 1 : S'appuyer sur les tests existants comme filet**
 
 Aucun test neuf : cette tâche ne change aucun comportement. Le filet est la suite réseau, qui couvre déjà le filtre de ville et les bornes de période.
 
 Run : `php artisan test --compact tests/Feature/Admin tests/Feature/Network 2>/dev/null || php artisan test --compact tests/Feature/Admin`
-Expected : PASS — noter le nombre de tests, il doit être identique à la fin.
+Expected : PASS - noter le nombre de tests, il doit être identique à la fin.
 
 - [ ] **Step 2 : Écrire `DeclarationWindow`**
 
@@ -502,7 +502,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Quelles déclarations un agrégat réseau a le droit de voir.
  *
- * Extrait de NetworkStatsService parce que plusieurs requêtes en ont besoin —
+ * Extrait de NetworkStatsService parce que plusieurs requêtes en ont besoin -
  * dont une qui part de `declaration_payments` et joint `declarations`. Deux
  * copies du filtre qui décide quelles officines entrent dans un agrégat
  * finiraient par diverger, et l'écart ne se verrait que le jour où deux écrans
@@ -560,7 +560,7 @@ Remplacer le corps de `baseQuery()` :
      * Le socle de tout agrégat réseau : la période, et la ville s'il y en a une.
      *
      * Délègue à DeclarationWindow, que partagent les requêtes parties d'une
-     * autre table — voir InsurerPenaltyAggregates.
+     * autre table - voir InsurerPenaltyAggregates.
      */
     protected function baseQuery(Period $from, Period $to, ?string $city = null): Builder
     {
@@ -599,8 +599,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: `DayNumber` (Task 1), `PenaltyCalculator::accruedInDays()` (Task 2), `DeclarationWindow` (Task 3).
 - Produces:
-  - `App\Data\InsurerPenaltyFigures` — readonly, `?int $penalty`, `?int $longestDelayDays`
-  - `InsurerPenaltyAggregates::forInsurers(array $insurerIds, Period $from, Period $to, ?string $city = null): array` — `array<int, InsurerPenaltyFigures>`, une entrée par identifiant demandé
+  - `App\Data\InsurerPenaltyFigures` - readonly, `?int $penalty`, `?int $longestDelayDays`
+  - `InsurerPenaltyAggregates::forInsurers(array $insurerIds, Period $from, Period $to, ?string $city = null): array` - `array<int, InsurerPenaltyFigures>`, une entrée par identifiant demandé
 
 > **Quatre requêtes**, pas trois comme l'annonce la spec §5 : les clauses des assureurs, l'agrégat de délai, les versements, puis le curseur des déclarations. Le nombre est **constant**, c'est ce qui compte et c'est ce que le test vérifie.
 
@@ -788,7 +788,7 @@ test('the query count stays flat however many declarations there are', function 
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `php artisan test --compact tests/Feature/Network/InsurerPenaltyAggregatesTest.php`
-Expected : FAIL — `Target class [App\Services\Network\InsurerPenaltyAggregates] does not exist.`
+Expected : FAIL - `Target class [App\Services\Network\InsurerPenaltyAggregates] does not exist.`
 
 - [ ] **Step 3 : Écrire le DTO**
 
@@ -847,7 +847,7 @@ use Illuminate\Support\Facades\DB;
  * pourtant de concentrer les agrégats : perInsurer() est appelée par
  * maskedInsurerCount(), que ConsoleNavigation invoque sur *chaque* page admin.
  * Y greffer une boucle PHP ferait payer le calcul de pénalité à l'écran des
- * pharmacies inscrites. Et tout le reste de cette classe-là est du SQL — une
+ * pharmacies inscrites. Et tout le reste de cette classe-là est du SQL - une
  * boucle sur des dizaines de milliers de lignes n'a pas la même nature.
  *
  * Quatre requêtes, quel que soit le volume : les clauses, l'agrégat de délai,
@@ -882,7 +882,7 @@ class InsurerPenaltyAggregates
             $figures[$insurerId] = new InsurerPenaltyFigures(
                 // La décision null/zéro se prend sur la convention, pas sur les
                 // lignes : un assureur sous contrat dont rien n'a couru doit
-                // lire « 0 », pas « — » qui signifierait « pas de contrat ».
+                // lire « 0 », pas « - » qui signifierait « pas de contrat ».
                 penalty: isset($clauses[$insurerId]) ? ($penalties[$insurerId] ?? 0) : null,
                 longestDelayDays: $delays[$insurerId] ?? null,
             );
@@ -917,7 +917,7 @@ class InsurerPenaltyAggregates
      * ouverte, sinon son delay_days, et ignore les rejetées. Regroupée par
      * assureur, elle se scinde en deux agrégats purs : le pire délai des mois
      * soldés, et la plus vieille facture encore due. Prendre le maximum dans
-     * chaque groupe puis entre les groupes donne le maximum global — un test
+     * chaque groupe puis entre les groupes donne le maximum global - un test
      * confronte le résultat à LongestDelay, déclaration par déclaration.
      *
      * @param  list<int>  $insurerIds
@@ -947,7 +947,7 @@ class InsurerPenaltyAggregates
 
             if ($row->oldest_open !== null) {
                 // L'âge se compte depuis le dépôt, même horloge que delay_days
-                // et OverdueLine::ageDays — surtout pas depuis la fin du mois
+                // et OverdueLine::ageDays - surtout pas depuis la fin du mois
                 // déclaré, qui est celle des tranches d'ancienneté.
                 $candidates[] = $today - DayNumber::fromDate((string) $row->oldest_open);
             }
@@ -1069,7 +1069,7 @@ vendor/bin/pint --dirty --format agent
 git add app/Data/InsurerPenaltyFigures.php app/Services/Network/InsurerPenaltyAggregates.php tests/Feature/Network
 git commit -m "feat: agréger pénalité et pire retard à l'échelle du réseau
 
-Le pire retard se calcule entièrement en SQL — deux agrégats, aucune
+Le pire retard se calcule entièrement en SQL - deux agrégats, aucune
 boucle. Seule la pénalité en garde une, restreinte aux assureurs sous
 convention.
 
@@ -1116,7 +1116,7 @@ test('the csv carries the longest delay and the potential penalty', function () 
         ->withPenalty(triggerDays: 60, ratePercent: 2.0)
         ->create(['name' => 'NSIA', 'standard_delay_days' => 30]);
 
-    // Deux officines — le seuil d'anonymat vaut 2 —, chacune une facture de
+    // Deux officines - le seuil d'anonymat vaut 2 -, chacune une facture de
     // 1 000 000 déposée il y a 120 jours et jamais réglée : trois tranches à
     // 20 000, deux fois, et un retard de 120 jours.
     exportDeclare($insurer, 2, [
@@ -1140,7 +1140,7 @@ test('the csv carries the longest delay and the potential penalty', function () 
 });
 
 test('an insurer without a clause leaves the penalty cells empty', function () {
-    // Soldée, sinon c'est l'âge de l'encours qui l'emporte sur delay_days —
+    // Soldée, sinon c'est l'âge de l'encours qui l'emporte sur delay_days -
     // et exportDeclare() laisse 300 000 impayés par défaut.
     exportDeclare(Insurer::factory()->create(['standard_delay_days' => 30]), 2, [
         'amount_received' => 1_000_000,
@@ -1187,7 +1187,7 @@ test('an insurer under the anonymity threshold gets no penalty figure either', f
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `php artisan test --compact tests/Feature/Admin/NetworkExportTest.php`
-Expected : FAIL — `array_search()` rend `false`, la cellule lue est la colonne 0
+Expected : FAIL - `array_search()` rend `false`, la cellule lue est la colonne 0
 
 - [ ] **Step 3 : Étendre `NetworkExportRows`**
 
@@ -1273,7 +1273,7 @@ Dans `full()`, ajouter le paramètre et les cellules. La signature devient :
 
 et l'appel devient `yield $this->full($name, $entry, $amount, $penalties[$insurerId] ?? new InsurerPenaltyFigures(null, null));`.
 
-Ajouter les imports `App\Data\InsurerPenaltyFigures` et `App\Services\Network\InsurerPenaltyAggregates` (même espace de noms pour le second — pas d'import).
+Ajouter les imports `App\Data\InsurerPenaltyFigures` et `App\Services\Network\InsurerPenaltyAggregates` (même espace de noms pour le second - pas d'import).
 
 - [ ] **Step 4 : Porter la clause sur `InsurerIndicators`**
 
@@ -1304,7 +1304,7 @@ Ce sont deux colonnes SQL de plus, pas une boucle : `maskedInsurerCount()` reste
 - [ ] **Step 5 : Lancer les tests**
 
 Run : `php artisan test --compact tests/Feature/Admin`
-Expected : PASS — y compris `NetworkStatsTest` et `NetworkXlsxExportTest`, qui lisent `COLUMNS` par nom
+Expected : PASS - y compris `NetworkStatsTest` et `NetworkXlsxExportTest`, qui lisent `COLUMNS` par nom
 
 - [ ] **Step 6 : Formater et committer**
 
@@ -1330,7 +1330,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `DeclarationWindow` (Task 3).
-- Produces: `NetworkStatsService::monthlyByInsurer(array $insurerIds, Period $from, Period $to, ?string $city = null): array` — `array<int, list<array{year: int, month: int, monthLabel: string, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>`, du plus récent au plus ancien.
+- Produces: `NetworkStatsService::monthlyByInsurer(array $insurerIds, Period $from, Period $to, ?string $city = null): array` - `array<int, list<array{year: int, month: int, monthLabel: string, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>`, du plus récent au plus ancien.
 
 - [ ] **Step 1 : Écrire les tests qui échouent**
 
@@ -1410,7 +1410,7 @@ Ajouter les imports manquants en tête du fichier : `use Illuminate\Support\Faca
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `php artisan test --compact tests/Feature/Admin/NetworkStatsTest.php`
-Expected : FAIL — `Call to undefined method ...::monthlyByInsurer()`
+Expected : FAIL - `Call to undefined method ...::monthlyByInsurer()`
 
 - [ ] **Step 3 : Écrire la méthode**
 
@@ -1530,7 +1530,7 @@ test('the report gives a page to each insurer above the threshold', function () 
         ->and($payload['rows'][0])->toHaveKey('monthly')
         ->and($payload['rows'][0]['monthly'])->toHaveCount(1)
         // L'assureur sous le seuil n'a pas de page : il n'est pas dans `rows`.
-        // Son nom reste dans la liste de retenue, et c'est voulu — voir plus bas.
+        // Son nom reste dans la liste de retenue, et c'est voulu - voir plus bas.
         ->and($payload['withheld'])->toHaveCount(1)
         ->and($payload['withheld'][0]['name'])->toBe('Petit Assureur');
 });
@@ -1574,7 +1574,7 @@ test('the rendered report names each insurer above the threshold once per page',
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `php artisan test --compact tests/Feature/Admin/NetworkExportTest.php`
-Expected : FAIL — `Failed asserting that an array has the key 'figures'`
+Expected : FAIL - `Failed asserting that an array has the key 'figures'`
 
 - [ ] **Step 3 : Étendre `NetworkPdfExport::data()`**
 
@@ -1660,19 +1660,19 @@ Puis, **après la `</div>` qui ferme la section « Assureur par assureur »**, �
             <tr>
                 <td>
                     <div class="value">
-                        {{ $figures->longestDelayDays === null ? '—' : $figures->longestDelayDays }}<span class="unit"> j</span>
+                        {{ $figures->longestDelayDays === null ? '-' : $figures->longestDelayDays }}<span class="unit"> j</span>
                     </div>
                     <div class="label">Délai le plus long</div>
                 </td>
                 <td>
                     <div class="value">
-                        {{ $indicators->weightedDelayDays === null ? '—' : number_format($indicators->weightedDelayDays, 1, ',', ' ') }}<span class="unit"> j</span>
+                        {{ $indicators->weightedDelayDays === null ? '-' : number_format($indicators->weightedDelayDays, 1, ',', ' ') }}<span class="unit"> j</span>
                     </div>
                     <div class="label">Délai moyen pondéré</div>
                 </td>
                 <td>
                     <div class="value">
-                        {{ $row['amounts'] === null ? '—' : \App\Support\Fcfa::format($row['amounts']->outstanding) }}
+                        {{ $row['amounts'] === null ? '-' : \App\Support\Fcfa::format($row['amounts']->outstanding) }}
                     </div>
                     <div class="label">Reste dû au réseau</div>
                 </td>
@@ -1680,7 +1680,7 @@ Puis, **après la `</div>` qui ferme la section « Assureur par assureur »**, �
                     {{-- Un tiret dit « pas de convention », un zéro dit « une
                          convention, rien à réclamer ». --}}
                     <div class="value">
-                        {{ $figures->penalty === null ? '—' : \App\Support\Fcfa::format($figures->penalty) }}
+                        {{ $figures->penalty === null ? '-' : \App\Support\Fcfa::format($figures->penalty) }}
                     </div>
                     <div class="label">Pénalité potentielle</div>
                 </td>
@@ -1707,7 +1707,7 @@ Puis, **après la `</div>` qui ferme la section « Assureur par assureur »**, �
                         <td>{{ \App\Support\Fcfa::format($month['received']) }}</td>
                         <td>{{ \App\Support\Fcfa::format($month['outstanding']) }}</td>
                         <td class="{{ $month['averageDelayDays'] !== null && $month['averageDelayDays'] > $indicators->standardDelayDays ? 'late' : '' }}">
-                            {{ $month['averageDelayDays'] === null ? '—' : number_format($month['averageDelayDays'], 1, ',', ' ').' j' }}
+                            {{ $month['averageDelayDays'] === null ? '-' : number_format($month['averageDelayDays'], 1, ',', ' ').' j' }}
                         </td>
                     </tr>
                 @endforeach
@@ -1721,7 +1721,7 @@ Puis, **après la `</div>` qui ferme la section « Assureur par assureur »**, �
 @endforeach
 ```
 
-> **Aucune page pour un assureur sous le seuil**, et la raison est simple : il n'y a rien à y mettre. La ligne de retenue du tableau récapitulatif dit déjà son nom, son nombre d'officines et pourquoi ses chiffres manquent — une page entière de tirets n'ajouterait que du bruit.
+> **Aucune page pour un assureur sous le seuil**, et la raison est simple : il n'y a rien à y mettre. La ligne de retenue du tableau récapitulatif dit déjà son nom, son nombre d'officines et pourquoi ses chiffres manquent - une page entière de tirets n'ajouterait que du bruit.
 
 - [ ] **Step 5 : Vérifier le rendu**
 
@@ -1764,8 +1764,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Test: `tests/Feature/Pharmacy/PharmacyExportTest.php`
 
 **Interfaces:**
-- Consumes: `PenaltyCalculator::for()`, `LongestDelay::for()` — déjà injectés dans `PharmacyPdfExport` depuis le lot A. Ajouter `use App\Support\MonthLabel;` en tête du fichier.
-- Produces: la clé `insurerPages` dans les données de vue — `list<array{name: string, standardDelayDays: int, penaltyTriggerDays: ?int, penaltyRatePercent: ?float, longestDelayDays: ?int, penalty: ?int, invoiced: int, received: int, outstanding: int, months: list<Declaration>}>`.
+- Consumes: `PenaltyCalculator::for()`, `LongestDelay::for()` - déjà injectés dans `PharmacyPdfExport` depuis le lot A. Ajouter `use App\Support\MonthLabel;` en tête du fichier.
+- Produces: la clé `insurerPages` dans les données de vue - `list<array{name: string, standardDelayDays: int, penaltyTriggerDays: ?int, penaltyRatePercent: ?float, longestDelayDays: ?int, penalty: ?int, invoiced: int, received: int, outstanding: int, months: list<Declaration>}>`.
 
 - [ ] **Step 1 : Écrire les tests qui échouent**
 
@@ -1827,7 +1827,7 @@ test('the pages agree with the summary table they follow', function () {
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `php artisan test --compact tests/Feature/Pharmacy/PharmacyExportTest.php`
-Expected : FAIL — `Undefined array key "insurerPages"`
+Expected : FAIL - `Undefined array key "insurerPages"`
 
 - [ ] **Step 3 : Construire les pages**
 
@@ -1932,13 +1932,13 @@ Puis, **tout à la fin du fichier**, après la table de détail globale :
                 </td>
                 <td>
                     <div class="value">
-                        {{ $page['longestDelayDays'] === null ? '—' : $page['longestDelayDays'] }}<span class="unit"> j</span>
+                        {{ $page['longestDelayDays'] === null ? '-' : $page['longestDelayDays'] }}<span class="unit"> j</span>
                     </div>
                     <div class="label">Délai le plus long</div>
                 </td>
                 <td>
                     <div class="value">
-                        {{ $page['penalty'] === null ? '—' : \App\Support\Fcfa::format($page['penalty']) }}
+                        {{ $page['penalty'] === null ? '-' : \App\Support\Fcfa::format($page['penalty']) }}
                     </div>
                     <div class="label">Pénalité réclamable</div>
                 </td>
@@ -1966,13 +1966,13 @@ Puis, **tout à la fin du fichier**, après la table de détail globale :
                         <td>{{ \App\Support\Fcfa::format($month['invoiced']) }}</td>
                         <td>{{ \App\Support\Fcfa::format($month['received']) }}</td>
                         <td>{{ \App\Support\Fcfa::format($month['outstanding']) }}</td>
-                        <td class="text">{{ $month['depositedOn'] ?? '—' }}</td>
+                        <td class="text">{{ $month['depositedOn'] ?? '-' }}</td>
                         <td class="{{ $month['delayDays'] !== null && $month['delayDays'] > $page['standardDelayDays'] ? 'late' : '' }}">
-                            {{ $month['delayDays'] === null ? '—' : $month['delayDays'].' j' }}
+                            {{ $month['delayDays'] === null ? '-' : $month['delayDays'].' j' }}
                         </td>
                         {{-- Un tiret dit « pas de convention », un zéro dit
                              « une convention, rien à réclamer ». --}}
-                        <td>{{ $month['penalty'] === null ? '—' : \App\Support\Fcfa::format($month['penalty']) }}</td>
+                        <td>{{ $month['penalty'] === null ? '-' : \App\Support\Fcfa::format($month['penalty']) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -2023,7 +2023,7 @@ Expected : PASS sur les six étapes. `pint --parallel --test` scanne tout le pro
 - [ ] **Step 2 : Vérifier que le lot A n'a pas bougé**
 
 Run : `vendor/bin/pest tests/Unit/Services/PenaltyCalculatorTest.php tests/Unit/Services/LongestDelayTest.php`
-Expected : PASS — et `git diff d124ef3 -- tests/Unit/Services/LongestDelayTest.php` doit être **vide**. Une seule ligne de différence sur les tests du lot A signifie que le refactor a changé le comportement.
+Expected : PASS - et `git diff d124ef3 -- tests/Unit/Services/LongestDelayTest.php` doit être **vide**. Une seule ligne de différence sur les tests du lot A signifie que le refactor a changé le comportement.
 
 - [ ] **Step 3 : Contrôle négatif sur chaque garde neuve**
 
@@ -2038,10 +2038,10 @@ Casser, lancer, rétablir. Chacune doit rougir :
 | `longestDelays` : retirer la condition `status != 'rejected'` | « the longest delay agrees with the per-declaration implementation » |
 | `longestDelays` : `MIN(...)` → `MAX(...)` sur `oldest_open` | idem |
 | `forInsurers` : `isset($clauses[...])` → `true` | « an insurer with no clause has no penalty » |
-| `instalments()` : `cursor()` → `get()` | aucun — c'est attendu, le compte de requêtes ne bouge pas |
+| `instalments()` : `cursor()` → `get()` | aucun - c'est attendu, le compte de requêtes ne bouge pas |
 | `NetworkExportRows` : passer `$indicators` entier au lieu des autorisés | « an insurer under the anonymity threshold gets no penalty figure » |
 
-La huitième ligne est là pour être lue : `cursor()` contre `get()` ne change ni le résultat ni le compte de requêtes, seulement la mémoire. Aucun test ne peut les distinguer, et il ne faut pas en écrire un qui prétendrait le faire — c'est la même leçon que le `break` du lot A.
+La huitième ligne est là pour être lue : `cursor()` contre `get()` ne change ni le résultat ni le compte de requêtes, seulement la mémoire. Aucun test ne peut les distinguer, et il ne faut pas en écrire un qui prétendrait le faire - c'est la même leçon que le `break` du lot A.
 
 - [ ] **Step 4 : Mesurer sur volume réaliste**
 
@@ -2061,9 +2061,9 @@ Expected : sur la base de développement (911 déclarations), de l'ordre de la c
 
 Avec l'outil `record-rule` de Laravel Boost, jamais dans une note personnelle :
 
-1. glob `app/Support/DayNumber.php` — « Le calcul de pénalité compte en numéros de jour » : pourquoi (4 323 ms → 42 ms, 273 Mo → 34 Mo sur 40 000 déclarations), `floor()` et non `intdiv()` pour les dates antérieures à 1970, `format('Y-m-d')` et non l'horodatage pour être indépendant du fuseau, `CarbonImmutable::now()` et non `time()` pour que `travelTo()` pilote les tests.
-2. glob `app/Services/Network/**` — « L'anonymat des agrégats de pénalité est structurel » : `InsurerPenaltyAggregates::forInsurers()` et `NetworkStatsService::monthlyByInsurer()` reçoivent les identifiants **déjà autorisés** par `perInsurer()`. Le seuil n'est pas réévalué, il est en amont, et c'est ce qui rend le contournement impossible plutôt qu'improbable. Ne pas leur faire appeler `anonymityMinPharmacies()`.
-3. glob `app/Services/Network/**` — « Le pire retard se calcule en SQL, la pénalité non » : deux agrégats (`MAX(delay_days)` sur les soldés, `MIN(invoice_deposited_on)` sur les encours) suffisent au premier ; les tranches du second sont séquentielles et demandent une boucle, restreinte aux assureurs sous convention. Un test confronte l'agrégat SQL à `LongestDelay` déclaration par déclaration : le garder.
+1. glob `app/Support/DayNumber.php` - « Le calcul de pénalité compte en numéros de jour » : pourquoi (4 323 ms → 42 ms, 273 Mo → 34 Mo sur 40 000 déclarations), `floor()` et non `intdiv()` pour les dates antérieures à 1970, `format('Y-m-d')` et non l'horodatage pour être indépendant du fuseau, `CarbonImmutable::now()` et non `time()` pour que `travelTo()` pilote les tests.
+2. glob `app/Services/Network/**` - « L'anonymat des agrégats de pénalité est structurel » : `InsurerPenaltyAggregates::forInsurers()` et `NetworkStatsService::monthlyByInsurer()` reçoivent les identifiants **déjà autorisés** par `perInsurer()`. Le seuil n'est pas réévalué, il est en amont, et c'est ce qui rend le contournement impossible plutôt qu'improbable. Ne pas leur faire appeler `anonymityMinPharmacies()`.
+3. glob `app/Services/Network/**` - « Le pire retard se calcule en SQL, la pénalité non » : deux agrégats (`MAX(delay_days)` sur les soldés, `MIN(invoice_deposited_on)` sur les encours) suffisent au premier ; les tranches du second sont séquentielles et demandent une boucle, restreinte aux assureurs sous convention. Un test confronte l'agrégat SQL à `LongestDelay` déclaration par déclaration : le garder.
 
 - [ ] **Step 6 : Demander la suite complète**
 
@@ -2075,6 +2075,6 @@ Demander à l'utilisateur de lancer `php artisan test --compact` en entier et de
 
 - **Aucun écran web neuf.** L'espace admin garde ses cinq écrans.
 - **`OverduePaymentsService` et `InsurerRelationshipReport` ne changent pas** : ils restent sur `accrued()`, l'API Carbon, qui demeure exacte.
-- **Pas de table d'instantanés ni de cache** — écartés en §2 de la spec, et la porte reste ouverte : le cœur en entiers est justement ce qui les rendrait triviaux à remplir.
+- **Pas de table d'instantanés ni de cache** - écartés en §2 de la spec, et la porte reste ouverte : le cœur en entiers est justement ce qui les rendrait triviaux à remplir.
 - **Pas de mention de la pénalité dans les digests e-mail.**
 - **`ConsoleNavigation::chaseNotice()` et son horloge à 60 jours** restent en l'état.

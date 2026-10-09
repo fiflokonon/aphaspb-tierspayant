@@ -196,6 +196,6 @@ class NetworkPdfExport
         $start = MonthLabel::long($from->month, $from->year);
         $end = MonthLabel::long($to->month, $to->year);
 
-        return $start === $end ? $start : $start.' — '.$end;
+        return $start === $end ? $start : $start.' - '.$end;
     }
 }

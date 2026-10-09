@@ -240,7 +240,7 @@ const footer = computed(
                             "
                         >
                             <span>
-                                {{ row.outstanding ?? '—' }}
+                                {{ row.outstanding ?? '-' }}
                             </span>
                         </div>
 
@@ -259,7 +259,7 @@ const footer = computed(
                                 j
                             </span>
 
-                            <span v-else class="delay-empty"> — </span>
+                            <span v-else class="delay-empty"> - </span>
 
                             <!--
                                 Le délai se compte jusqu'au dernier versement :
@@ -286,7 +286,7 @@ const footer = computed(
                                 {{ row.privateNote }}
                             </span>
 
-                            <span v-else class="note-empty"> — </span>
+                            <span v-else class="note-empty"> - </span>
                         </div>
 
                         <div class="action-cell">
@@ -367,7 +367,7 @@ const footer = computed(
     letter-spacing: -0.025em;
 }
 .history-page {
-    /* La palette vient de :root — voir resources/css/app.css. */
+    /* La palette vient de :root - voir resources/css/app.css. */
 
     position: relative;
     min-height: 100vh;
@@ -406,7 +406,7 @@ const footer = computed(
     /*
       Les 22 px que portait le panneau d'introduction supprimé. Sans eux, le
       liseré d'accent de 3 px vient se coller sous le titre serif et se lit
-      comme un soulignement mal posé — 1 px d'écart sur l'historique, la jambe
+      comme un soulignement mal posé - 1 px d'écart sur l'historique, la jambe
       du « q » touchait le trait. Même valeur que .exports-page, la référence.
     */
     margin-top: 22px;

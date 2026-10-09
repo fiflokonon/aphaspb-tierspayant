@@ -177,13 +177,13 @@ class NetworkExportRows
             // Le compte non plus : non filtré moins les villes publiées, il
             // rendrait exactement la part cachée.
             $row[1] = 'retenu';
-            $row[2] = 'chiffres retenus — hors filtre ville, les villes non publiees et les officines sans ville y pesent moins de '.$entry->required.' officines, qui se deduiraient par difference';
+            $row[2] = 'chiffres retenus hors filtre ville, les villes non publiees et les officines sans ville y pesent moins de '.$entry->required.' officines, qui se deduiraient par difference';
 
             return $row;
         }
 
         $row[1] = 'moins de '.$entry->required;
-        $row[2] = 'donnees insuffisantes — moins de '.$entry->required.' officines declarantes, agregation a partir de '.$entry->required;
+        $row[2] = 'donnees insuffisantes moins de '.$entry->required.' officines declarantes, agregation a partir de '.$entry->required;
 
         return $row;
     }

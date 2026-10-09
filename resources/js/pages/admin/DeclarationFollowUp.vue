@@ -3,7 +3,7 @@
  * Qui a déclaré quel mois, pour relancer hors plateforme.
  *
  * Exception délimitée au CDC : un nom d'officine et son numéro de contact à
- * côté de l'état de son mois, et rien d'autre — ni assureur, ni nombre
+ * côté de l'état de son mois, et rien d'autre - ni assureur, ni nombre
  * d'assureurs, ni montant. La relance part sur WhatsApp ou par téléphone ; la
  * plateforme ne l'envoie pas.
  */
@@ -175,7 +175,7 @@ const summaryLine = computed(
 
                     <div class="filters-grid">
                         <div class="filter-item">
-                              <label for="month" style="font-weight: 600;">Mois</label>
+                              <label for="month" style="font-size: 11px;">MOIS</label>
                             <FilterSelect
                                 v-model="month"
                                 :options="months"
@@ -184,7 +184,7 @@ const summaryLine = computed(
                         </div>
 
                         <div class="filter-item">
-                              <label for="city" style="font-weight: 600;">Ville</label>
+                              <label for="city" style="font-size: 11px;">VILLE</label>
 
                             <FilterSelect
                                 v-model="city"
@@ -195,7 +195,7 @@ const summaryLine = computed(
                         </div>
 
                         <div class="filter-item">
-                              <label for="state" style="font-weight: 600;">État</label>
+                              <label for="state" style="font-size: 11px;">ÉTAT</label>
 
                             <FilterSelect
                                 v-model="state"
@@ -292,7 +292,7 @@ const summaryLine = computed(
                             </span>
 
                             <span>
-                                {{ row.city ?? '—' }}
+                                {{ row.city ?? '-' }}
                             </span>
                         </div>
 
@@ -327,7 +327,7 @@ const summaryLine = computed(
                                 class="muted-cell"
                                 aria-label="Pas de numéro"
                             >
-                                —
+                                -
                             </span>
                         </div>
 
@@ -363,7 +363,7 @@ const summaryLine = computed(
                                 class="muted-cell"
                                 aria-label="Rien à relancer"
                             >
-                                —
+                                -
                             </span>
                         </div>
                     </DataTableRow>
@@ -446,7 +446,7 @@ const summaryLine = computed(
 
 <style scoped>
 /* ================================================================
-   PALETTE — MÊME UNIVERS QUE LE JOURNAL DES PÉNALITÉS
+   PALETTE - MÊME UNIVERS QUE LE JOURNAL DES PÉNALITÉS
 ================================================================ */
 
 .followup-page {
@@ -1045,7 +1045,7 @@ const summaryLine = computed(
 }
 
 /* ================================================================
-   RESPONSIVE — 1000px
+   RESPONSIVE - 1000px
 ================================================================ */
 
 @media (max-width: 1000px) {
@@ -1070,7 +1070,7 @@ const summaryLine = computed(
 }
 
 /* ================================================================
-   RESPONSIVE — 850px
+   RESPONSIVE - 850px
 ================================================================ */
 
 @media (max-width: 850px) {
@@ -1094,7 +1094,7 @@ const summaryLine = computed(
 }
 
 /* ================================================================
-   RESPONSIVE — 700px
+   RESPONSIVE - 700px
 ================================================================ */
 
 @media (max-width: 700px) {
@@ -1145,7 +1145,7 @@ const summaryLine = computed(
 }
 
 /* ================================================================
-   RESPONSIVE — 480px
+   RESPONSIVE - 480px
 ================================================================ */
 
 @media (max-width: 480px) {

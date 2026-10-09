@@ -1,15 +1,15 @@
-# Refonte visuelle — lot 4 : le socle sur tous les écrans
+# Refonte visuelle - lot 4 : le socle sur tous les écrans
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Appliquer à tous les écrans ce que la spec appelle le socle — des
+**Goal:** Appliquer à tous les écrans ce que la spec appelle le socle - des
 surfaces à ombre basse plutôt qu'à bordure, une échelle typographique avec du
 serif sur les titres et les chiffres, et plus un seul littéral de couleur.
 
 **Architecture:** Trois mouvements, du partagé vers le particulier. D'abord des
 **jetons de surface** dans `app.css`, pour que « ombre basse, rayon 12 » soit
 une valeur et non une recette recopiée quatre-vingts fois. Ensuite le retrait
-des **sept panneaux d'introduction sans données** — le même patron que celui
+des **sept panneaux d'introduction sans données** - le même patron que celui
 supprimé du tableau de bord, répété sur six écrans de plus. Enfin l'application
 écran par écran, groupée par espace. Le lot se referme sur une garde devenue
 **globale** : la liste des fichiers assainis disparaît, puisqu'il ne reste plus
@@ -29,7 +29,7 @@ Pest 4, Chromium headless pour les captures.
   redéclaration d'un token, la référence non résolue et le littéral dans les
   fichiers assainis.
 - **Le projet est clair uniquement.** Le seuil responsive est **1024 px**, et
-  s'écrit `max-width: 1023.98px` — la paire 1023/1024 laisse passer les
+  s'écrit `max-width: 1023.98px` - la paire 1023/1024 laisse passer les
   largeurs fractionnaires, où deux états mutuellement exclusifs s'affichent
   ensemble.
 - **Ne jamais viser une classe utilitaire Tailwind depuis `:deep()`.** Deux
@@ -62,17 +62,17 @@ retirerait leur contour aux champs de saisie.
 
 | Famille | Exemples relevés | Traitement |
 |---|---|---|
-| **Surface** — carte, panneau, section, tableau | `.export-card`, `.status-card`, `.configuration-card`, `.insurers-table-section`, `.trend-card`, `.declare-shell`, `.note-content`, `.catch-up`, `.convention`, `.message-error` | Bordure retirée, `box-shadow: var(--surface-shadow)`, `border-radius: var(--radius-card)` |
-| **Contrôle** — champ, bouton, filtre | `.edit-input`, `.modern-input`, `.note-textarea`, `.number-input`, `.action-button`, `.secondary-action`, `.download-button-secondary`, `.search-box`, `.city-filter` | **Bordure conservée.** Un champ sans contour n'est plus un champ. |
-| **Jeton** — puce, badge, compteur, avatar | `.column-tag`, `.status-badge`, `.intro-badge`, `.columns-count`, `.insurer-avatar`, `.declaration-count`, `.file-icon`, `.empty-icon` | **Bordure conservée**, rayon inchangé : ce sont des éléments de 20 à 40 px, une ombre n'y veut rien dire. |
-| **Décor** — pseudo-éléments de fond | `.declare-page::before`, `.declare-page::after` | Examiner : la plupart ne peignent plus rien depuis le lot 1 et se suppriment. |
+| **Surface** - carte, panneau, section, tableau | `.export-card`, `.status-card`, `.configuration-card`, `.insurers-table-section`, `.trend-card`, `.declare-shell`, `.note-content`, `.catch-up`, `.convention`, `.message-error` | Bordure retirée, `box-shadow: var(--surface-shadow)`, `border-radius: var(--radius-card)` |
+| **Contrôle** - champ, bouton, filtre | `.edit-input`, `.modern-input`, `.note-textarea`, `.number-input`, `.action-button`, `.secondary-action`, `.download-button-secondary`, `.search-box`, `.city-filter` | **Bordure conservée.** Un champ sans contour n'est plus un champ. |
+| **Jeton** - puce, badge, compteur, avatar | `.column-tag`, `.status-badge`, `.intro-badge`, `.columns-count`, `.insurer-avatar`, `.declaration-count`, `.file-icon`, `.empty-icon` | **Bordure conservée**, rayon inchangé : ce sont des éléments de 20 à 40 px, une ombre n'y veut rien dire. |
+| **Décor** - pseudo-éléments de fond | `.declare-page::before`, `.declare-page::after` | Examiner : la plupart ne peignent plus rien depuis le lot 1 et se suppriment. |
 
 **Règle d'arrêt : une règle qui ne rentre dans aucune des quatre familles se
 signale, elle ne s'improvise pas.**
 
 ### Les sept panneaux d'introduction
 
-Le tableau de bord en portait un — icône, remarque en capitales, un `<h1>` qui
+Le tableau de bord en portait un - icône, remarque en capitales, un `<h1>` qui
 répétait le titre, une phrase, une pastille de statut, et **aucune donnée**. Le
 lot 3 l'a supprimé. Le même patron existe sur six écrans de plus :
 
@@ -83,7 +83,7 @@ lot 3 l'a supprimé. Le même patron existe sur six écrans de plus :
 
 **Attention, ils ne sont pas tous équivalents.** Sur `admin/Network`,
 `ConsoleHeader` affiche la **période** comme titre (« juillet → septembre
-2026 ») et le `<h1>` du panneau — « Performance du réseau » — est le seul
+2026 ») et le `<h1>` du panneau - « Performance du réseau » - est le seul
 endroit où l'écran porte son nom. Sur le tableau de bord, le titre de l'en-tête
 et le `<h1>` disaient la même chose, d'où la suppression pure.
 
@@ -96,7 +96,7 @@ devient alors une ligne de métadonnée, comme `.dashboard-source`.
 ### Le harnais de capture
 
 `php artisan serve --port=8000` doit tourner. Si `public/hot` existe, vérifier
-que le port qu'il annonce écoute réellement — sinon **toutes les captures
+que le port qu'il annonce écoute réellement - sinon **toutes les captures
 sortent uniformément crème** et ne prouvent rien. Sans `public/hot`,
 l'application sert les assets construits : `npm run build` après chaque
 modification.
@@ -129,7 +129,7 @@ PY
 | Fichier | Rôle |
 |---|---|
 | `resources/css/app.css` | Gagne `--surface-shadow`, `--radius-card`, `--radius-band`, `--radius-nav`. |
-| `resources/js/pages/pharmacy/Dashboard.vue` | Conteneurs et échelle typographique — le lot 3 ne l'a aligné que sur la couleur. |
+| `resources/js/pages/pharmacy/Dashboard.vue` | Conteneurs et échelle typographique - le lot 3 ne l'a aligné que sur la couleur. |
 | `resources/js/pages/pharmacy/{Declare,History,Insurers,Insurer,Exports,DeclareDone}.vue` | Socle appliqué, panneaux d'introduction retirés, littéraux remplacés. |
 | `resources/js/pages/admin/{Network,Trends,Pharmacies,Insurers,Exports}.vue` | Idem. |
 | `resources/js/pages/notifications/Index.vue`, `resources/js/components/aphaspb/PaymentInstalments.vue` | Littéraux et conteneurs. |
@@ -179,7 +179,7 @@ lui, chaque écran réinventerait son ombre de survol.
 - [ ] **Step 2 : Vérifier que la garde accepte ces valeurs**
 
 `rgb(20 29 24 / …)` est de l'encre en clair, et la garde interdit les
-littéraux — mais `:root` est dépouillé avant l'examen, donc ces déclarations
+littéraux - mais `:root` est dépouillé avant l'examen, donc ces déclarations
 sont hors de portée. Le confirmer plutôt que le supposer :
 
 ```bash
@@ -187,7 +187,7 @@ vendor/bin/pest tests/Feature/Design/PaletteSourceTest.php --compact
 ```
 
 Attendu : 5 tests verts. Si le test rougit sur `app.css`, le dépouillement de
-`:root` ne fonctionne pas et **il faut le réparer avant d'aller plus loin** —
+`:root` ne fonctionne pas et **il faut le réparer avant d'aller plus loin** -
 sans lui, tout ce lot travaillera sans filet.
 
 - [ ] **Step 3 : Construire**
@@ -228,7 +228,7 @@ l'écran que le client regarde, et c'est la cause que la spec nomme en premier :
 
 **Interfaces:**
 - Consumes: les jetons de la tâche 1.
-- Produces: rien de nommé. Sert d'étalon visuel aux tâches 4 et 5 — les deux
+- Produces: rien de nommé. Sert d'étalon visuel aux tâches 4 et 5 - les deux
   suivantes s'y réfèrent pour juger « à quoi doit ressembler une surface ».
 
 - [ ] **Step 1 : Relever l'état de référence**
@@ -246,7 +246,7 @@ awk '/<style/,0' resources/js/pages/pharmacy/Dashboard.vue \
 
 Classer chacune selon la table des quatre familles. Les surfaces attendues :
 `.catch-up`, `.dashboard-card`, `.overdue-section`. `.catch-up-month` est un
-jeton — il garde sa bordure.
+jeton - il garde sa bordure.
 
 - [ ] **Step 3 : Appliquer le socle aux surfaces**
 
@@ -272,7 +272,7 @@ et, là où un survol élevait la carte, `var(--surface-shadow-raised)`.
 Sinon `--radius-band` et `--radius-nav` sont des jetons que personne ne lit,
 et la prochaine retouche les manquera. Le tableau de bord porte déjà 11 px
 sur `.insurer-banner` et 10 px sur `.catch-up-month` : le premier cite
-`var(--radius-band)`, le second `var(--radius-nav)` — c'est un élément
+`var(--radius-band)`, le second `var(--radius-nav)` - c'est un élément
 cliquable de taille de navigation, et 9 px au lieu de 10 est l'écart que la
 spec assume.
 
@@ -301,7 +301,7 @@ Les correspondances de cet écran : `.card-header h2` → 17 px ;
 
 **Le chiffre clé passe en serif.** Dans `KpiCard`, la valeur porte
 `text-[28px]/none font-extrabold` : elle devient
-`font-serif text-[29px]/none` — et **sans `font-extrabold`**, Instrument
+`font-serif text-[29px]/none` - et **sans `font-extrabold`**, Instrument
 Serif n'ayant qu'une graisse, qu'une demande de gras rendrait synthétique et
 baveuse. Dans le bandeau, 21 px au lieu de 19.
 
@@ -315,7 +315,7 @@ for w in 1440 768 390; do shot officine dash-apres 'http://localhost:8000/' $w; 
 
 Attendu : plus une seule bordure de carte, les panneaux posés par leur ombre,
 les chiffres en serif. Comparer `dash-apres-1440.png` à `dash-avant-1440.png`
-à l'œil — c'est le seul écran de ce lot qu'on regarde entièrement.
+à l'œil - c'est le seul écran de ce lot qu'on regarde entièrement.
 
 - [ ] **Step 6 : Vérifier le contraste du serif**
 
@@ -339,7 +339,7 @@ PY
 ```
 
 Attendu : le vert et le terracotta passent AA ; **l'or ne le passe pas**
-(≈2,3:1). Il ne le passait pas davantage en Jakarta — c'est un défaut
+(≈2,3:1). Il ne le passait pas davantage en Jakarta - c'est un défaut
 antérieur, à signaler, pas à corriger en douce dans un lot de forme.
 
 - [ ] **Step 7 : Lancer la suite**
@@ -409,7 +409,7 @@ nom de l'écran, et la période descend en remarque :
         >
 ```
 
-La période est déjà lisible dans les filtres et dans le bandeau de portée —
+La période est déjà lisible dans les filtres et dans le bandeau de portée -
 elle n'a pas besoin d'être le titre.
 
 **Vérifier écran par écran** : si l'en-tête nomme déjà l'écran, supprimer sans
@@ -597,7 +597,7 @@ git add resources/js/pages/pharmacy
 git commit -m "style: appliquer le socle aux écrans officine
 
 Surfaces posées par leur ombre, contrôles et jetons conservant leur
-contour — un champ sans bordure n'est plus un champ, et la spec ne fait pas
+contour - un champ sans bordure n'est plus un champ, et la spec ne fait pas
 cette distinction. Échelle typographique appliquée, 110 littéraux remplacés.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
@@ -635,14 +635,14 @@ métadonnée 12,5 px, étiquette capitale 9,5 px avec `letter-spacing: 0.14em`.
 
 Ces écrans portent des **tableaux** : leurs en-têtes de colonne sont des
 étiquettes capitales (9,5 px), leurs cellules du corps (14 px). Ne pas
-grossir une cellule numérique au point de casser l'alignement des colonnes —
+grossir une cellule numérique au point de casser l'alignement des colonnes -
 vérifier la largeur du tableau après coup.
 
 - [ ] **Step 3 : Remplacer les littéraux**
 
 `Insurers.vue` en porte 43, `Exports.vue` 36, `Trends.vue` 23,
 `Pharmacies.vue` 19, `Network.vue` 18. Appliquer **la même table qu'à la
-tâche 4, étape 3** — elle est reproduite ici pour que cette tâche se lise
+tâche 4, étape 3** - elle est reproduite ici pour que cette tâche se lise
 seule :
 
 | Littéral | Remplacement |
@@ -684,7 +684,7 @@ done
 ```
 
 Attendu : aucune colonne tronquée, aucun débordement horizontal. Le corps
-passant de ~11 à 14 px, une colonne serrée peut céder — l'élargir plutôt que
+passant de ~11 à 14 px, une colonne serrée peut céder - l'élargir plutôt que
 rapetisser le texte.
 
 - [ ] **Step 6 : Lancer la suite et commit**
@@ -768,7 +768,7 @@ et remplacer le commentaire d'ouverture :
 ```php
     // La dérive est revenue par là : les tokens étaient propres, et 293
     // hexadécimaux vivaient dans les pages. Interdire le littéral est le seul
-    // moyen de rendre le nettoyage durable — les autres cas n'interdisent que
+    // moyen de rendre le nettoyage durable - les autres cas n'interdisent que
     // de *redéclarer* un token, pas d'en réécrire la valeur.
     //
     // La liste des fichiers couverts a disparu au lot 4 : elle s'allongeait à
@@ -783,7 +783,7 @@ vendor/bin/pest tests/Feature/Design/PaletteSourceTest.php --compact
 ```
 
 Attendu : vert. Puis la mutation, sur un fichier que la liste **ne couvrait
-pas** auparavant — c'est le point de la tâche :
+pas** auparavant - c'est le point de la tâche :
 
 ```bash
 cp resources/js/pages/admin/Trends.vue /tmp/trends.bak
@@ -822,7 +822,7 @@ vendor/bin/pint --dirty --format agent
 ```
 
 Attendu : 594 tests Pest, 14 Vitest, zéro erreur partout. **Lire la sortie de
-`vue-tsc`, ne pas l'enchaîner derrière un `echo` de succès** — une erreur de
+`vue-tsc`, ne pas l'enchaîner derrière un `echo` de succès** - une erreur de
 type est passée plusieurs commits au lot 3 par ce biais.
 
 - [ ] **Step 6 : Commit**
@@ -844,10 +844,10 @@ Avec l'outil Boost `record-rule` :
 
 - glob : `resources/css/**, resources/js/**`
 - titre : `Le socle visuel : surfaces, échelle, et une garde sans liste`
-- note : les quatre familles de bordure — surface, contrôle, jeton, décor —
+- note : les quatre familles de bordure - surface, contrôle, jeton, décor -
   et le fait que seule la première perd son contour ; les jetons
   `--surface-shadow`, `--radius-card` / `--radius-band` / `--radius-nav` et
   l'interdiction de réécrire l'ombre à la main ; l'échelle typographique et le
   serif sans `font-bold` ; le seuil responsive écrit `1023.98px` ; et le fait
   que `PaletteSourceTest` couvre désormais tout `resources/js`, sans liste
-  d'exceptions — un littéral nouveau le fait rougir où qu'il soit.
+  d'exceptions - un littéral nouveau le fait rougir où qu'il soit.

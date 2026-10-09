@@ -34,7 +34,7 @@ export function parseFcfa(input: string): number {
  */
 export function formatAmount(value: number | null): string {
     if (value === null) {
-        return '—';
+        return '-';
     }
 
     // formatFcfa() filtre zéro **et** les négatifs. Aucun appelant ne produit

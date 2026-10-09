@@ -126,7 +126,7 @@ const insurerOptions = computed(() => [
 /**
  * Unlike the trends screen, the journey is aggregated server-side and is not
  * broken down by insurer in the payload, so narrowing it costs a round trip.
- * Only the curve and the filter come back — the KPIs above stay put.
+ * Only the curve and the filter come back - the KPIs above stay put.
  */
 watch(journeyInsurer, (insurer) => {
     router.get(
@@ -180,8 +180,8 @@ const overdueFooter =
 /**
  * Trois bandes rouges, puis un lien pour le reste.
  *
- * La gravité décroît vite — les bandes sont triées par la plus vieille
- * facture — et six bandes repoussaient les KPI et le graphique sous la ligne
+ * La gravité décroît vite - les bandes sont triées par la plus vieille
+ * facture - et six bandes repoussaient les KPI et le graphique sous la ligne
  * de flottaison d'un portable. Les trois premières portent l'essentiel.
  */
 const LATE_BANDS_SHOWN = 3;
@@ -842,7 +842,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 >
                     {{
                         row.recoveryRate === null
-                            ? '—'
+                            ? '-'
                             : `${row.recoveryRate.toLocaleString('fr-FR')} %`
                     }}
                 </div>
@@ -1756,7 +1756,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 }
 
 /* =========================================================
-   TABLEAUX — PETITES FINITIONS
+   TABLEAUX - PETITES FINITIONS
    ========================================================= */
 
 .dashboard-page :deep(.data-table),

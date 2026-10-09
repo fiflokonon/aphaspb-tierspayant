@@ -21,7 +21,7 @@ class InsurerSeeder extends Seeder
         "L'Africaine des Assurances",
         'Sanlam Assurances',
         'Atlantique Assurances',
-        'Courtier — Ascoma Bénin',
+        'Courtier - Ascoma Bénin',
     ];
 
     /**

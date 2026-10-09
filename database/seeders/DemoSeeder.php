@@ -47,7 +47,7 @@ class DemoSeeder extends Seeder
     /** Insurers the demo officine has not declared yet this month. */
     protected const LEFT_TO_DECLARE = [
         "L'Africaine des Assurances",
-        'Courtier — Ascoma Bénin',
+        'Courtier - Ascoma Bénin',
     ];
 
     /**
@@ -88,7 +88,7 @@ class DemoSeeder extends Seeder
         "L'Africaine des Assurances" => ['standard' => 45, 'delay' => 58, 'drift' => 1.8, 'rejection' => 0.19, 'pharmacies' => 16],
         'Sanlam Assurances' => ['standard' => 30, 'delay' => 47, 'drift' => 0.4, 'rejection' => 0.06, 'pharmacies' => 11],
         'Atlantique Assurances' => ['standard' => 60, 'delay' => 40, 'drift' => 0.3, 'rejection' => 0.05, 'pharmacies' => 3],
-        'Courtier — Ascoma Bénin' => ['standard' => 30, 'delay' => 35, 'drift' => 0.1, 'rejection' => 0.03, 'pharmacies' => 1],
+        'Courtier - Ascoma Bénin' => ['standard' => 30, 'delay' => 35, 'drift' => 0.1, 'rejection' => 0.03, 'pharmacies' => 1],
     ];
 
     public function run(): void

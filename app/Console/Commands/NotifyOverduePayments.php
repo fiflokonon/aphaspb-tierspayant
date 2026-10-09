@@ -43,7 +43,7 @@ class NotifyOverduePayments extends Command
             }
 
             if (! $force && $this->alreadyNotifiedThisWeek($pharmacy)) {
-                $this->line("· {$pharmacy->name} — déjà prévenue cette semaine");
+                $this->line("· {$pharmacy->name} déjà prévenue cette semaine");
 
                 continue;
             }
@@ -55,7 +55,7 @@ class NotifyOverduePayments extends Command
             $total = array_sum(array_map(fn ($line) => $line->outstanding, $lines));
 
             $this->line(sprintf(
-                '· %s — %d facture%s, %s FCFA, %d destinataire%s',
+                '· %s - %d facture%s, %s FCFA, %d destinataire%s',
                 $pharmacy->name,
                 count($lines),
                 count($lines) > 1 ? 's' : '',
@@ -94,7 +94,7 @@ class NotifyOverduePayments extends Command
         $totals = $overdue->networkTotals();
 
         if ($totals === []) {
-            $this->line("· Réseau — rien au-delà du seuil d'anonymat");
+            $this->line("· Réseau rien au-delà du seuil d'anonymat");
 
             return;
         }
@@ -108,7 +108,7 @@ class NotifyOverduePayments extends Command
             ->get();
 
         $this->line(sprintf(
-            '· Réseau — %d assureur(s), %d destinataire(s)',
+            '· Réseau : %d assureur(s), %d destinataire(s)',
             count($totals),
             $admins->count(),
         ));

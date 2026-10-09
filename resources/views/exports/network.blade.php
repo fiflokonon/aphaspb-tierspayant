@@ -187,25 +187,25 @@
     <tr>
         <td>
             <div class="value">
-                {{ $summary['averageDelayDays'] === null ? '—' : number_format($summary['averageDelayDays'], 1, ',', ' ') }}<span class="unit"> j</span>
+                {{ $summary['averageDelayDays'] === null ? '-' : number_format($summary['averageDelayDays'], 1, ',', ' ') }}<span class="unit"> j</span>
             </div>
             <div class="label">Délai moyen</div>
         </td>
         <td>
             <div class="value">
-                {{ $summary['weightedDelayDays'] === null ? '—' : number_format($summary['weightedDelayDays'], 1, ',', ' ') }}<span class="unit"> j</span>
+                {{ $summary['weightedDelayDays'] === null ? '-' : number_format($summary['weightedDelayDays'], 1, ',', ' ') }}<span class="unit"> j</span>
             </div>
             <div class="label">Pondéré par les montants</div>
         </td>
         <td>
             <div class="value">
-                {{ $summary['withinThresholdShare'] === null ? '—' : number_format($summary['withinThresholdShare'], 1, ',', ' ') }}<span class="unit"> %</span>
+                {{ $summary['withinThresholdShare'] === null ? '-' : number_format($summary['withinThresholdShare'], 1, ',', ' ') }}<span class="unit"> %</span>
             </div>
             <div class="label">Déclarations dans les délais</div>
         </td>
         <td>
             <div class="value">
-                {{ $summary['rejectionRate'] === null ? '—' : number_format($summary['rejectionRate'], 1, ',', ' ') }}<span class="unit"> %</span>
+                {{ $summary['rejectionRate'] === null ? '-' : number_format($summary['rejectionRate'], 1, ',', ' ') }}<span class="unit"> %</span>
             </div>
             <div class="label">Taux de rejet</div>
         </td>
@@ -251,26 +251,26 @@
                     <td>{{ $indicators->declaringPharmacies }}</td>
                     <td>{{ $indicators->declarations }}</td>
                     <td class="{{ $indicators->averageDelayDays !== null && $indicators->averageDelayDays > $indicators->standardDelayDays ? 'late' : '' }}">
-                        {{ $indicators->averageDelayDays === null ? '—' : number_format($indicators->averageDelayDays, 1, ',', ' ').' j' }}
+                        {{ $indicators->averageDelayDays === null ? '-' : number_format($indicators->averageDelayDays, 1, ',', ' ').' j' }}
                     </td>
                     <td>
-                        {{ $indicators->averageFirstInstalmentDelayDays === null ? '—' : number_format($indicators->averageFirstInstalmentDelayDays, 1, ',', ' ').' j' }}
+                        {{ $indicators->averageFirstInstalmentDelayDays === null ? '-' : number_format($indicators->averageFirstInstalmentDelayDays, 1, ',', ' ').' j' }}
                     </td>
                     <td>
-                        {{ $indicators->withinThresholdShare === null ? '—' : number_format($indicators->withinThresholdShare, 1, ',', ' ').' %' }}
+                        {{ $indicators->withinThresholdShare === null ? '-' : number_format($indicators->withinThresholdShare, 1, ',', ' ').' %' }}
                     </td>
                     <td>
-                        {{ $indicators->recoveredWithinDelayShare === null ? '—' : number_format($indicators->recoveredWithinDelayShare, 1, ',', ' ').' %' }}
+                        {{ $indicators->recoveredWithinDelayShare === null ? '-' : number_format($indicators->recoveredWithinDelayShare, 1, ',', ' ').' %' }}
                     </td>
                     <td>
-                        {{ $indicators->instalmentsPerDeclaration === null ? '—' : number_format($indicators->instalmentsPerDeclaration, 1, ',', ' ') }}
+                        {{ $indicators->instalmentsPerDeclaration === null ? '-' : number_format($indicators->instalmentsPerDeclaration, 1, ',', ' ') }}
                         <div class="sub">
-                            {{ $indicators->multiInstalmentShare === null ? '—' : number_format($indicators->multiInstalmentShare, 0, ',', ' ').' % fractionnés' }}
+                            {{ $indicators->multiInstalmentShare === null ? '-' : number_format($indicators->multiInstalmentShare, 0, ',', ' ').' % fractionnés' }}
                         </div>
                     </td>
-                    <td>{{ $row['amounts'] === null ? '—' : \App\Support\Fcfa::format($row['amounts']->invoiced) }}</td>
-                    <td>{{ $row['amounts'] === null ? '—' : \App\Support\Fcfa::format($row['amounts']->received) }}</td>
-                    <td>{{ $row['amounts'] === null ? '—' : \App\Support\Fcfa::format($row['amounts']->outstanding) }}</td>
+                    <td>{{ $row['amounts'] === null ? '-' : \App\Support\Fcfa::format($row['amounts']->invoiced) }}</td>
+                    <td>{{ $row['amounts'] === null ? '-' : \App\Support\Fcfa::format($row['amounts']->received) }}</td>
+                    <td>{{ $row['amounts'] === null ? '-' : \App\Support\Fcfa::format($row['amounts']->outstanding) }}</td>
                 </tr>
             @endforeach
 
@@ -282,7 +282,7 @@
                             Chiffres retenus : hors filtre ville, les villes non publiées y pèsent
                             moins de {{ $anonymityThreshold }} officines, qui se déduiraient par différence
                         @else
-                            Données insuffisantes · moins de {{ $anonymityThreshold }} officines déclarantes —
+                            Données insuffisantes · moins de {{ $anonymityThreshold }} officines déclarantes -
                             chiffres retenus
                         @endif
                     </td>
@@ -303,7 +303,7 @@
         <p class="note">
             Les assureurs déclarés par moins de {{ $anonymityThreshold }} officines
             figurent sans chiffres, ni le nombre exact de leurs officines. En deçà de ce seuil, une moyenne réseau
-            redonnerait les données d'une officine identifiable — la ligne est
+            redonnerait les données d'une officine identifiable - la ligne est
             conservée pour que son absence ne se lise pas comme une absence de
             déclarations.
         </p>
@@ -333,19 +333,19 @@
             <tr>
                 <td>
                     <div class="value">
-                        {{ $figures->longestDelayDays === null ? '—' : $figures->longestDelayDays }}<span class="unit"> j</span>
+                        {{ $figures->longestDelayDays === null ? '-' : $figures->longestDelayDays }}<span class="unit"> j</span>
                     </div>
                     <div class="label">Délai le plus long</div>
                 </td>
                 <td>
                     <div class="value">
-                        {{ $indicators->weightedDelayDays === null ? '—' : number_format($indicators->weightedDelayDays, 1, ',', ' ') }}<span class="unit"> j</span>
+                        {{ $indicators->weightedDelayDays === null ? '-' : number_format($indicators->weightedDelayDays, 1, ',', ' ') }}<span class="unit"> j</span>
                     </div>
                     <div class="label">Délai moyen pondéré</div>
                 </td>
                 <td>
                     <div class="value">
-                        {{ $row['amounts'] === null ? '—' : \App\Support\Fcfa::format($row['amounts']->outstanding) }}
+                        {{ $row['amounts'] === null ? '-' : \App\Support\Fcfa::format($row['amounts']->outstanding) }}
                     </div>
                     <div class="label">Reste dû au réseau</div>
                 </td>
@@ -356,7 +356,7 @@
                         @if ($row['splitWithheld'])
                             retenu
                         @else
-                            {{ $figures->penalty === null ? '—' : \App\Support\Fcfa::format($figures->penalty) }}
+                            {{ $figures->penalty === null ? '-' : \App\Support\Fcfa::format($figures->penalty) }}
                         @endif
                     </div>
                     <div class="label">Pénalité due</div>
@@ -403,7 +403,7 @@
                             <td class="text">{{ $month['monthLabel'] }}</td>
                             <td colspan="5">
                                 Moins de {{ $anonymityThreshold }} officines déclarantes ce mois-là,
-                                ou dans les villes non publiées — chiffres retenus
+                                ou dans les villes non publiées - chiffres retenus
                             </td>
                         </tr>
                     @else
@@ -414,7 +414,7 @@
                             <td>{{ \App\Support\Fcfa::format($month['received']) }}</td>
                             <td>{{ \App\Support\Fcfa::format($month['outstanding']) }}</td>
                             <td class="{{ $month['averageDelayDays'] !== null && $month['averageDelayDays'] > $indicators->standardDelayDays ? 'late' : '' }}">
-                                {{ $month['averageDelayDays'] === null ? '—' : number_format($month['averageDelayDays'], 1, ',', ' ').' j' }}
+                                {{ $month['averageDelayDays'] === null ? '-' : number_format($month['averageDelayDays'], 1, ',', ' ').' j' }}
                             </td>
                         </tr>
                     @endif

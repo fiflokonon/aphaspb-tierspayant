@@ -123,7 +123,7 @@ const THREE_INSURERS: LegendEntry[] = [
         shape: 'square',
     },
     {
-        label: 'Courtier — Ascoma Bénin · 33 %',
+        label: 'Courtier - Ascoma Bénin · 33 %',
         color: 'var(--terracotta)',
         shape: 'square',
     },

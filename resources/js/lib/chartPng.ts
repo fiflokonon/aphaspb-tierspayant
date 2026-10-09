@@ -343,7 +343,7 @@ export async function exportChartToPng(
     context.fillStyle = 'rgba(23, 33, 28, 0.4)';
     context.font = `400 10px ${FONT}`;
     context.fillText(
-        `APHASPB · Tiers payant — ${today()}`,
+        `APHASPB · Tiers payant : ${today()}`,
         PADDING,
         totalHeight - PADDING + 12,
     );

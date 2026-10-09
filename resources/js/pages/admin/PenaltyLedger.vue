@@ -510,10 +510,10 @@ const FORMATS = [
 }
 
 .filter-label {
-    color: var(--muted-light);
+    color: black;
 
-    font-size: 8px;
-    font-weight: 850;
+    font-size: 11px;
+    /* font-weight: 850; */
 
     letter-spacing: 0.12em;
 }

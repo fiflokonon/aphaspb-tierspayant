@@ -1,10 +1,10 @@
-# Pénalités de retard — lot A — Implementation Plan
+# Pénalités de retard - lot A - Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Donner à chaque assureur un délai de déclenchement et un taux de pénalité, calculer la pénalité courue déclaration par déclaration, et l'exposer dans le tableau de bord officine, une page par assureur et les exports officine.
 
-**Architecture :** Deux colonnes nullables sur `insurers` et **aucune colonne de cache** sur `declarations` — la pénalité croît avec le temps, donc elle est recalculée à chaque lecture par trois petites classes pures (`PenaltyCalculator`, `LongestDelay`, `InsurerRelationshipReport`). Les surfaces existantes (`OverduePaymentsService`, `PharmacyExportRows`, `PharmacyPdfExport`) sont enrichies, jamais dupliquées.
+**Architecture :** Deux colonnes nullables sur `insurers` et **aucune colonne de cache** sur `declarations` - la pénalité croît avec le temps, donc elle est recalculée à chaque lecture par trois petites classes pures (`PenaltyCalculator`, `LongestDelay`, `InsurerRelationshipReport`). Les surfaces existantes (`OverduePaymentsService`, `PharmacyExportRows`, `PharmacyPdfExport`) sont enrichies, jamais dupliquées.
 
 **Tech Stack :** Laravel 13 · PHP 8.4 · Pest · Inertia 3 · Vue 3 `<script setup>` · Tailwind 4 · Wayfinder · dompdf · OpenSpout
 
@@ -15,16 +15,16 @@
 Ces contraintes valent pour **toutes** les tâches. Elles sortent de la spec, de `CLAUDE.md` et de `.ai/rules/`.
 
 - **PHP** : accolades obligatoires même sur un corps d'une ligne ; promotion de propriétés dans le constructeur ; types de retour et de paramètres explicites partout ; PHPDoc plutôt que commentaires en ligne ; formes de tableaux (`array{...}`) dans les PHPDoc.
-- **Langue** : le code et les PHPDoc de ce projet mêlent anglais et français selon le fichier — **suivre la langue du fichier voisin**. Tout texte visible par l'utilisateur est en français.
+- **Langue** : le code et les PHPDoc de ce projet mêlent anglais et français selon le fichier - **suivre la langue du fichier voisin**. Tout texte visible par l'utilisateur est en français.
 - **Pénalité** : taux par tranche de **30 jours**, **non composé**, base **dégressive**, pénalité **acquise conservée** quand le mois finit par être soldé.
 - **Points de base** : `penalty_rate_bp`, entier. `250` = 2,50 %. Calcul par `intdiv($base * $rateBp, 10_000)`, **jamais** en flottant.
-- **Clause optionnelle** : les deux colonnes à `NULL` = pas de pénalité. Affichage « — », **jamais** « 0 ».
+- **Clause optionnelle** : les deux colonnes à `NULL` = pas de pénalité. Affichage « - », **jamais** « 0 ».
 - **Aucune colonne de cache** pour la pénalité. Ne pas l'ajouter au hook `saving` de `Declaration`.
-- **Migrations** : aucune valeur par défaut, aucun remplissage — les assureurs existants sortent sans clause.
+- **Migrations** : aucune valeur par défaut, aucun remplissage - les assureurs existants sortent sans clause.
 - **Tests** : Pest. `php artisan make:test --pest {name}` sans le dossier de suite dans le nom. Une colonne d'export se référence **par son nom** via `array_search(...)` sur `COLUMNS`, **jamais par son index**.
 - **Vue** : `<script setup>` uniquement, un seul élément racine, `<style scoped>` **obligatoire** dans les pages et layouts.
-- **`formatFcfa()` rend une chaîne vide pour `0` et les négatifs** (`resources/js/lib/fcfa.ts`, contrôlé). Or un zéro est une information — « rien encaissé », « rien à réclamer ». Toute page de ce lot passe par `formatAmount()` (ajouté à `lib/fcfa.ts` en Task 5), jamais par `formatFcfa()` nu.
-- **Icônes** : composants `@lucide/vue` uniquement, jamais un caractère Unicode de Geometric Shapes (U+25A0–U+25FF) — la police ne les couvre pas et le navigateur ne dessine rien.
+- **`formatFcfa()` rend une chaîne vide pour `0` et les négatifs** (`resources/js/lib/fcfa.ts`, contrôlé). Or un zéro est une information - « rien encaissé », « rien à réclamer ». Toute page de ce lot passe par `formatAmount()` (ajouté à `lib/fcfa.ts` en Task 5), jamais par `formatFcfa()` nu.
+- **Icônes** : composants `@lucide/vue` uniquement, jamais un caractère Unicode de Geometric Shapes (U+25A0–U+25FF) - la police ne les couvre pas et le navigateur ne dessine rien.
 - **Wayfinder** : après toute modification de `routes/web.php`, régénérer avec **`npm run build`**, jamais `php artisan wayfinder:generate` (qui casse les variantes `.form`).
 - **Formatage** : `vendor/bin/pint --dirty --format agent` après toute modification PHP.
 - **Vérification finale** : `composer ci:check` en entier, pas seulement `pint --dirty`.
@@ -153,7 +153,7 @@ test('the migration leaves every existing insurer without a clause', function ()
 - [ ] **Step 2 : Lancer les tests pour vérifier qu'ils échouent**
 
 Run : `php artisan test --compact tests/Feature/Declarations/InsurerTest.php`
-Expected : FAIL — `Call to undefined method App\Models\Insurer::hasPenaltyClause()`
+Expected : FAIL - `Call to undefined method App\Models\Insurer::hasPenaltyClause()`
 
 - [ ] **Step 3 : Créer la migration**
 
@@ -181,7 +181,7 @@ return new class extends Migration
      * assureur existant sort d'ici sans clause, donc sans pénalité, et aucun
      * chiffre ne bouge le jour du déploiement. C'est l'inverse du choix fait
      * pour `standard_delay_days`, qui devait semer chaque ligne avec l'ancien
-     * seuil global — ici il n'y a pas d'ancienne valeur à préserver.
+     * seuil global - ici il n'y a pas d'ancienne valeur à préserver.
      */
     public function up(): void
     {
@@ -214,7 +214,7 @@ return new class extends Migration
 
 - [ ] **Step 4 : Étendre le modèle `Insurer`**
 
-Dans `app/Models/Insurer.php` — ajouter au PHPDoc de classe, à `Fillable`, aux casts, et les trois membres :
+Dans `app/Models/Insurer.php` - ajouter au PHPDoc de classe, à `Fillable`, aux casts, et les trois membres :
 
 ```php
 /**
@@ -248,8 +248,8 @@ Puis, après `casts()` :
     /**
      * Whether a penalty was actually agreed with this insurer.
      *
-     * The two columns are meaningless apart — a trigger without a rate accrues
-     * nothing, a rate without a trigger never starts — so they are read as one
+     * The two columns are meaningless apart - a trigger without a rate accrues
+     * nothing, a rate without a trigger never starts - so they are read as one
      * clause, and half a clause is no clause.
      */
     public function hasPenaltyClause(): bool
@@ -332,8 +332,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Produces:
   - `PenaltyCalculator::accrued(int $amountInvoiced, int $amountReceived, CarbonImmutable $depositedOn, ?CarbonImmutable $paidOn, int $triggerDays, int $rateBp, array $payments): int`
     où `$payments` est `list<array{amount: int, paid_on: CarbonImmutable}>`
-  - `PenaltyCalculator::for(Declaration $declaration): ?int` — exige `insurer` et `payments` préchargés
-  - `PenaltyCalculator::total(iterable $declarations): ?int` — `null` si aucune déclaration ne porte de clause
+  - `PenaltyCalculator::for(Declaration $declaration): ?int` - exige `insurer` et `payments` préchargés
+  - `PenaltyCalculator::total(iterable $declarations): ?int` - `null` si aucune déclaration ne porte de clause
   - `LongestDelay::for(iterable $declarations): ?int`
 
 > **Note pour l'implémenteur :** ces deux classes sont pures et testées en `Unit`, donc **sans base de données**. `tests/Unit` n'utilise pas `RefreshDatabase` (voir `tests/Pest.php`) : les déclarations des tests sont construites avec `Declaration::factory()->make()` et `setRelation()`, jamais `create()`.
@@ -557,7 +557,7 @@ test('the total sums what carries a clause and ignores what does not', function 
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `vendor/bin/pest tests/Unit/Services/PenaltyCalculatorTest.php`
-Expected : FAIL — `Class "App\Services\Declarations\PenaltyCalculator" not found`
+Expected : FAIL - `Class "App\Services\Declarations\PenaltyCalculator" not found`
 
 - [ ] **Step 3 : Écrire `PenaltyCalculator`**
 
@@ -577,7 +577,7 @@ use Carbon\CarbonImmutable;
 /**
  * Ce qu'un assureur doit en plus pour avoir payé trop tard.
  *
- * Calcul pur, sans écriture, sans colonne de cache — et c'est la rupture
+ * Calcul pur, sans écriture, sans colonne de cache - et c'est la rupture
  * assumée avec `delay_days`. Ce dernier est stocké parce qu'il ne dépend que
  * des données saisies : deux dates entrent, un entier sort. La pénalité, elle,
  * **croît toute seule** : un mois jamais réglé voit la sienne augmenter tous
@@ -660,7 +660,7 @@ class PenaltyCalculator
      * L'algorithme, sur des valeurs nues.
      *
      * Séparé de for() parce que OverduePaymentsService lit en query builder et
-     * n'hydrate jamais de Declaration — il ne doit pas charger `private_note`.
+     * n'hydrate jamais de Declaration - il ne doit pas charger `private_note`.
      * Une seule implémentation, deux portes d'entrée.
      *
      * @param  list<array{amount: int, paid_on: CarbonImmutable}>  $payments
@@ -826,7 +826,7 @@ test('an open month never deposited has no age', function () {
 - [ ] **Step 6 : Lancer pour vérifier l'échec**
 
 Run : `vendor/bin/pest tests/Unit/Services/LongestDelayTest.php`
-Expected : FAIL — `Class "App\Services\Declarations\LongestDelay" not found`
+Expected : FAIL - `Class "App\Services\Declarations\LongestDelay" not found`
 
 - [ ] **Step 7 : Écrire `LongestDelay`**
 
@@ -847,7 +847,7 @@ use Carbon\CarbonImmutable;
  * Deux natures de retard dans un seul chiffre, délibérément : le plus long
  * délai d'un mois réglé, et l'âge de la plus vieille facture encore due. Ne
  * garder que le premier ferait disparaître une facture ouverte depuis quatre
- * cents jours — exactement le cas le plus grave, et celui qui pèse le plus en
+ * cents jours - exactement le cas le plus grave, et celui qui pèse le plus en
  * négociation.
  *
  * Une classe à part plutôt qu'une méthode : la synthèse du PDF officine et
@@ -888,7 +888,7 @@ class LongestDelay
     /**
      * L'âge d'une facture encore due, comptée depuis le dépôt.
      *
-     * Même horloge que `OverdueLine::ageDays` et que `delay_days` — surtout
+     * Même horloge que `OverdueLine::ageDays` et que `delay_days` - surtout
      * pas depuis la fin du mois déclaré, qui est celle des tranches
      * d'ancienneté et donnerait un second chiffre pour la même facture.
      */
@@ -1028,7 +1028,7 @@ test('the management screen carries each clause', function () {
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `php artisan test --compact tests/Feature/Admin/InsurerManagementTest.php`
-Expected : FAIL — la clause n'est pas persistée, les props n'existent pas
+Expected : FAIL - la clause n'est pas persistée, les props n'existent pas
 
 - [ ] **Step 3 : Étendre `SaveInsurerRequest`**
 
@@ -1105,7 +1105,7 @@ Expected : PASS
 
 - [ ] **Step 6 : Ajouter la colonne à `admin/Insurers.vue`**
 
-Dans le `<script setup>` — étendre le type et la grille :
+Dans le `<script setup>` - étendre le type et la grille :
 
 ```ts
 type Row = {
@@ -1153,7 +1153,7 @@ Dans le `<template>`, insérer une cellule **juste après** le `<div>` du formul
                                     type="number"
                                     min="1"
                                     max="365"
-                                    placeholder="—"
+                                    placeholder="-"
                                     :disabled="processing"
                                     :aria-label="`Déclenchement de la pénalité de ${row.name}, en jours`"
                                     class="row-delay-input"
@@ -1169,7 +1169,7 @@ Dans le `<template>`, insérer une cellule **juste après** le `<div>` du formul
                                     min="0.01"
                                     max="100"
                                     step="0.01"
-                                    placeholder="—"
+                                    placeholder="-"
                                     :disabled="processing"
                                     :aria-label="`Taux de pénalité de ${row.name}, en pourcent`"
                                     class="row-delay-input"
@@ -1218,8 +1218,8 @@ vendor/bin/pint --dirty --format agent
 git add app/Http/Requests/Admin/SaveInsurerRequest.php app/Http/Controllers/Admin/InsurerManagementController.php resources/js/pages/admin/Insurers.vue tests/Feature/Admin/InsurerManagementTest.php
 git commit -m "feat: saisir la clause de pénalité par assureur
 
-Les deux champs voyagent dans un seul formulaire — une demi-clause
-n'accumule rien — et les deux vides l'effacent.
+Les deux champs voyagent dans un seul formulaire - une demi-clause
+n'accumule rien - et les deux vides l'effacent.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
@@ -1305,11 +1305,11 @@ use App\Actions\Declarations\RecordPaymentInstalments;
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `php artisan test --compact tests/Feature/Declarations/OverduePaymentsServiceTest.php`
-Expected : FAIL — `Undefined property: App\Data\OverdueLine::$penalty`
+Expected : FAIL - `Undefined property: App\Data\OverdueLine::$penalty`
 
 - [ ] **Step 3 : Étendre `OverdueLine`**
 
-Ajouter `insurerId` **avant** `insurerName` — la table du tableau de bord (Task 5) lie chaque nom vers la page de son assureur, et la ligne ne porte pas encore son id :
+Ajouter `insurerId` **avant** `insurerName` - la table du tableau de bord (Task 5) lie chaque nom vers la page de son assureur, et la ligne ne porte pas encore son id :
 
 ```php
         public int $insurerId,
@@ -1373,7 +1373,7 @@ Et dans le `map()`, après le calcul de `$deposited` :
                 );
 ```
 
-`paidOn: null` est correct et non un oubli : une ligne en retard doit encore quelque chose par définition — `whereColumn('amount_invoiced', '>', 'amount_received')` —, donc l'horloge court jusqu'à aujourd'hui et la date de solde n'est jamais lue.
+`paidOn: null` est correct et non un oubli : une ligne en retard doit encore quelque chose par définition - `whereColumn('amount_invoiced', '>', 'amount_received')` -, donc l'horloge court jusqu'à aujourd'hui et la date de solde n'est jamais lue.
 
 Passer `insurerId: (int) $row->insurer_id,` avant `insurerName`, et `penalty: $penalty` après `outstanding`.
 
@@ -1384,7 +1384,7 @@ Enfin, ajouter la méthode :
      * Les versements de ces déclarations, groupés, en une requête.
      *
      * Une par déclaration ferait un N+1 sur l'écran qui ouvre le tableau de
-     * bord — première cause de lenteur perçue de cette application.
+     * bord - première cause de lenteur perçue de cette application.
      *
      * @param  \Illuminate\Support\Collection<int, mixed>  $declarationIds
      * @return array<int, list<array{amount: int, paid_on: CarbonImmutable}>>
@@ -1408,7 +1408,7 @@ Enfin, ajouter la méthode :
     }
 ```
 
-Ajouter l'import `use App\Services\Declarations\PenaltyCalculator;` — même espace de noms, donc **aucun import nécessaire** ; supprimer cette ligne si l'éditeur l'ajoute.
+Ajouter l'import `use App\Services\Declarations\PenaltyCalculator;` - même espace de noms, donc **aucun import nécessaire** ; supprimer cette ligne si l'éditeur l'ajoute.
 
 - [ ] **Step 5 : Corriger l'appelant du digest**
 
@@ -1416,12 +1416,12 @@ Ajouter l'import `use App\Services\Declarations\PenaltyCalculator;` — même es
 
 Run : `grep -rn "new OverdueLine" app tests`
 
-Pour chaque occurrence hors `OverduePaymentsService`, ajouter `penalty: null` — le digest n'affiche pas la pénalité dans ce lot.
+Pour chaque occurrence hors `OverduePaymentsService`, ajouter `penalty: null` - le digest n'affiche pas la pénalité dans ce lot.
 
 - [ ] **Step 6 : Lancer les tests**
 
 Run : `php artisan test --compact tests/Feature/Declarations/`
-Expected : PASS — y compris `NotifyOverduePaymentsTest` et `NetworkOverdueDigestTest`, inchangés
+Expected : PASS - y compris `NotifyOverduePaymentsTest` et `NetworkOverdueDigestTest`, inchangés
 
 - [ ] **Step 7 : Formater et committer**
 
@@ -1451,8 +1451,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: `OverduePaymentsService::forPharmacy()` avec `penalty` (Task 4).
 - Produces: props Inertia
-  - `overdue: list<array{declarationId: int, insurerName: string, insurerId: int, monthLabel: string, depositedOn: string, overdueDays: int, standardDelayDays: int, outstanding: int, penalty: int|null, insurerUrl: string}>` — **8 entrées au plus**
-  - `overdueSummary: array{count: int, outstanding: int, penalty: int|null, worst: array{insurerName: string, monthLabel: string, overdueDays: int}|null, hidden: int, historyUrl: string}|null` — `null` quand rien n'est en retard
+  - `overdue: list<array{declarationId: int, insurerName: string, insurerId: int, monthLabel: string, depositedOn: string, overdueDays: int, standardDelayDays: int, outstanding: int, penalty: int|null, insurerUrl: string}>` - **8 entrées au plus**
+  - `overdueSummary: array{count: int, outstanding: int, penalty: int|null, worst: array{insurerName: string, monthLabel: string, overdueDays: int}|null, hidden: int, historyUrl: string}|null` - `null` quand rien n'est en retard
 
 > `insurerUrl` pointe sur une route créée en **Task 7**. Cette tâche la produit déjà : le lien sera mort jusqu'à la Task 7. Implémenter les deux à la suite.
 
@@ -1578,7 +1578,7 @@ Ajouter les imports manquants en tête du fichier : `use App\Enums\DeclarationSt
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `php artisan test --compact tests/Feature/Pharmacy/PaymentJourneyTest.php`
-Expected : FAIL — `Inertia property [overdueSummary] does not exist`
+Expected : FAIL - `Inertia property [overdueSummary] does not exist`
 
 - [ ] **Step 3 : Étendre `PaymentJourneyController`**
 
@@ -1619,8 +1619,8 @@ Puis les deux méthodes, après `outstandingMonths()` :
      * Les pires factures en retard, prêtes à l'affichage.
      *
      * Tronquée volontairement : une officine portant quarante factures en
-     * retard noierait le reste du tableau de bord, et le registre — qui sait
-     * déjà filtrer par assureur — est fait pour la liste complète.
+     * retard noierait le reste du tableau de bord, et le registre - qui sait
+     * déjà filtrer par assureur - est fait pour la liste complète.
      *
      * @param  list<OverdueLine>  $overdue
      * @return list<array{declarationId: int, insurerId: int, insurerName: string, monthLabel: string, depositedOn: string, overdueDays: int, standardDelayDays: int, outstanding: int, penalty: int|null, insurerUrl: string}>
@@ -1692,7 +1692,7 @@ Ajouter les imports : `use App\Data\OverdueLine;`, `use App\Services\Declaration
 - [ ] **Step 4 : Lancer les tests back-end**
 
 Run : `php artisan test --compact tests/Feature/Pharmacy/PaymentJourneyTest.php`
-Expected : FAIL sur `route('pharmacy.insurers.show')` — **attendu**, la route arrive en Task 7. Enchaîner sur l'étape 5 puis revenir ici après la Task 7.
+Expected : FAIL sur `route('pharmacy.insurers.show')` - **attendu**, la route arrive en Task 7. Enchaîner sur l'étape 5 puis revenir ici après la Task 7.
 
 > Pour dérouler la Task 5 seule, ajouter d'abord à `routes/web.php`, dans le groupe `pharmacy.`, la ligne de la Task 7 :
 > `Route::get('insurers/{insurer}', InsurerRelationshipController::class)->name('insurers.show');`
@@ -1744,18 +1744,18 @@ D'abord le garde partagé. Dans `resources/js/lib/fcfa.ts`, après `formatFcfa()
  * formatFcfa() rend une chaîne vide dès que la valeur est nulle ou négative,
  * ce qui convient à un champ de saisie mais pas à une cellule : « 0 » dit
  * « rien encaissé », une cellule vide ne dit rien. Le tiret est réservé à
- * l'absence de donnée — typiquement une clause de pénalité jamais convenue.
+ * l'absence de donnée - typiquement une clause de pénalité jamais convenue.
  */
 export function formatAmount(value: number | null): string {
     if (value === null) {
-        return '—';
+        return '-';
     }
 
     return value === 0 ? '0' : formatFcfa(value);
 }
 ```
 
-Et son test, `resources/js/lib/fcfa.test.ts` — Vitest, environnement `node`, pas de DOM :
+Et son test, `resources/js/lib/fcfa.test.ts` - Vitest, environnement `node`, pas de DOM :
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -1763,7 +1763,7 @@ import { formatAmount, formatFcfa } from './fcfa';
 
 describe('formatAmount', () => {
     it('renders null as a dash, for an absent clause', () => {
-        expect(formatAmount(null)).toBe('—');
+        expect(formatAmount(null)).toBe('-');
     });
 
     it('renders zero as zero, where formatFcfa renders nothing', () => {
@@ -1865,7 +1865,7 @@ La table, **après `</KpiRow>` et avant `<section class="dashboard-card journey-
                     <div>{{ formatAmount(row.outstanding) }}</div>
 
                     <!--
-                        formatAmount() rend « — » sur null et « 0 » sur zéro : « pas
+                        formatAmount() rend « - » sur null et « 0 » sur zéro : « pas
                         de clause de pénalité » et « une clause mais rien
                         encore à réclamer » ne doivent pas se lire pareil.
                     -->
@@ -1983,7 +1983,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: `PenaltyCalculator::total()`, `LongestDelay::for()` (Task 2) ; `Period` ; `Insurer` (Task 1).
 - Produces:
   - `InsurerRelationshipReport::build(Pharmacy $pharmacy, Insurer $insurer, Period $from, Period $to): array{summary: InsurerRelationship, months: list<array<string, mixed>>}`
-  - `App\Data\InsurerRelationship` — voir le constructeur ci-dessous
+  - `App\Data\InsurerRelationship` - voir le constructeur ci-dessous
 
 - [ ] **Step 1 : Écrire les tests qui échouent**
 
@@ -2141,7 +2141,7 @@ test('the report never carries the private note', function () {
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `php artisan test --compact tests/Feature/Pharmacy/InsurerRelationshipTest.php`
-Expected : FAIL — `Target class [App\Services\Pharmacy\InsurerRelationshipReport] does not exist.`
+Expected : FAIL - `Target class [App\Services\Pharmacy\InsurerRelationshipReport] does not exist.`
 
 - [ ] **Step 3 : Écrire le DTO**
 
@@ -2156,7 +2156,7 @@ namespace App\Data;
  * Ce qu'une officine a vécu avec un assureur, sur une période.
  *
  * Le pendant nominatif d'InsurerIndicators : celui-là agrège le réseau sous
- * seuil d'anonymat, celui-ci ne lit qu'une officine et ne cache rien — c'est
+ * seuil d'anonymat, celui-ci ne lit qu'une officine et ne cache rien - c'est
  * son propre dossier qui lui revient.
  */
 readonly class InsurerRelationship
@@ -2186,7 +2186,7 @@ readonly class InsurerRelationship
         public ?int $longestDelayDays,
         /**
          * La pénalité réclamable sur la période, mois soldés tardivement
-         * compris — là où le bandeau du tableau de bord ne compte que les
+         * compris - là où le bandeau du tableau de bord ne compte que les
          * factures encore en retard.
          */
         public ?int $penalty,
@@ -2221,8 +2221,8 @@ use Illuminate\Database\Eloquent\Collection;
  * Pas une méthode de PharmacyStatsService, et pour deux raisons que l'en-tête
  * de cette classe-là énonce : elle ne lit qu'en query builder, précisément
  * pour ne jamais charger `private_note`, et elle ne produit que des agrégats.
- * Cet écran a besoin des versements de chaque déclaration — la pénalité ne se
- * somme pas en SQL — et d'une ligne par mois. Y greffer cette lecture
+ * Cet écran a besoin des versements de chaque déclaration - la pénalité ne se
+ * somme pas en SQL - et d'une ligne par mois. Y greffer cette lecture
  * obligerait à réécrire cet en-tête pour dire l'inverse de ce qu'il dit.
  *
  * Les colonnes sont sélectionnées explicitement et `private_note` reste dehors :
@@ -2260,7 +2260,7 @@ class InsurerRelationshipReport
      * Les déclarations de la période, versements préchargés.
      *
      * Filtrées sur l'ordinal (year * 12 + month), comme
-     * PharmacyExportRows::declarations() — surtout pas via la fenêtre glissante
+     * PharmacyExportRows::declarations() - surtout pas via la fenêtre glissante
      * de PharmacyStatsService::window(), sinon l'écran et le fichier qu'il
      * propose de télécharger ne couvriraient pas les mêmes mois.
      *
@@ -2362,7 +2362,7 @@ class InsurerRelationshipReport
 }
 ```
 
-> `summary()` attache l'assureur **avant** que `months()` appelle `for()` — `build()` respecte cet ordre. Ne pas l'inverser.
+> `summary()` attache l'assureur **avant** que `months()` appelle `for()` - `build()` respecte cet ordre. Ne pas l'inverser.
 
 - [ ] **Step 5 : Lancer les tests**
 
@@ -2378,7 +2378,7 @@ git commit -m "feat: agréger la relation d'une officine avec un assureur
 
 Classe à part plutôt qu'une méthode de PharmacyStatsService, qui ne lit
 qu'en query builder pour ne jamais toucher la note privée et ne produit
-que des agrégats — cet écran a besoin des deux contraires.
+que des agrégats - cet écran a besoin des deux contraires.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
@@ -2515,7 +2515,7 @@ Ajouter l'import `use App\Models\User;` et `use Inertia\Testing\AssertableInerti
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `php artisan test --compact tests/Feature/Pharmacy/InsurerRelationshipTest.php`
-Expected : FAIL — `Route [pharmacy.insurers.show] not defined.`
+Expected : FAIL - `Route [pharmacy.insurers.show] not defined.`
 
 - [ ] **Step 3 : Déclarer la route**
 
@@ -2552,7 +2552,7 @@ use Inertia\Response;
  *
  * Contrôleur à part de PharmacyInsurersController, dont le métier est la case
  * à cocher « je travaille avec cet assureur ». Celui-ci n'écrit rien et ne fait
- * que lire — ce sont deux écrans, donc deux contrôleurs, comme partout dans cet
+ * que lire - ce sont deux écrans, donc deux contrôleurs, comme partout dans cet
  * espace.
  */
 class InsurerRelationshipController extends Controller
@@ -2610,7 +2610,7 @@ class InsurerRelationshipController extends Controller
 
 - [ ] **Step 5 : Écrire la page**
 
-Créer `resources/js/pages/pharmacy/Insurer.vue`. Structure imposée — un seul élément racine, `<style scoped>`, icônes lucide :
+Créer `resources/js/pages/pharmacy/Insurer.vue`. Structure imposée - un seul élément racine, `<style scoped>`, icônes lucide :
 
 ```vue
 <script setup lang="ts">
@@ -2766,7 +2766,7 @@ const COLUMNS = [
 
             <KpiCard
                 label="DÉLAI LE PLUS LONG"
-                :value="relationship.longestDelayDays?.toString() ?? '—'"
+                :value="relationship.longestDelayDays?.toString() ?? '-'"
                 unit="jours"
                 hint="mois réglés et encours confondus"
             />
@@ -2777,7 +2777,7 @@ const COLUMNS = [
                 label="VOTRE DÉLAI MOYEN"
                 :value="
                     relationship.weightedDelayDays?.toLocaleString('fr-FR') ??
-                    '—'
+                    '-'
                 "
                 unit="jours"
                 hint="pondéré par les montants reçus"
@@ -2791,7 +2791,7 @@ const COLUMNS = [
                 label="PÉNALITÉ RÉCLAMABLE"
                 :value="
                     relationship.penalty === null
-                        ? '—'
+                        ? '-'
                         : formatMillions(relationship.penalty)
                 "
                 unit="FCFA"
@@ -2817,11 +2817,11 @@ const COLUMNS = [
 
                 <div>{{ formatAmount(row.outstanding) }}</div>
 
-                <div>{{ row.depositedOn ?? '—' }}</div>
+                <div>{{ row.depositedOn ?? '-' }}</div>
 
-                <div>{{ row.paidOn ?? '—' }}</div>
+                <div>{{ row.paidOn ?? '-' }}</div>
 
-                <div>{{ row.delayDays === null ? '—' : `${row.delayDays} j` }}</div>
+                <div>{{ row.delayDays === null ? '-' : `${row.delayDays} j` }}</div>
 
                 <div>{{ formatAmount(row.penalty) }}</div>
             </DataTableRow>
@@ -2870,7 +2870,7 @@ const COLUMNS = [
 </style>
 ```
 
-> Confronter `ConsoleHeader`, `KpiCard`, `KpiRow`, `DataTable` et `DataTableRow` à leurs props réelles avant d'écrire — les lire dans `resources/js/components/aphaspb/` et `resources/js/layouts/console/`, ne pas deviner. Reprendre le squelette de `pharmacy/History.vue`, qui est la page la plus proche.
+> Confronter `ConsoleHeader`, `KpiCard`, `KpiRow`, `DataTable` et `DataTableRow` à leurs props réelles avant d'écrire - les lire dans `resources/js/components/aphaspb/` et `resources/js/layouts/console/`, ne pas deviner. Reprendre le squelette de `pharmacy/History.vue`, qui est la page la plus proche.
 
 - [ ] **Step 6 : Lier depuis « Mes assureurs »**
 
@@ -2896,12 +2896,12 @@ Côté Vue, envelopper le nom :
 - [ ] **Step 7 : Régénérer Wayfinder et vérifier**
 
 Run : `npm run build && npm run types:check && npm run format:check && npm run lint:check`
-Expected : tout passe. Si `types:check` sort `Property 'form' does not exist`, c'est que `php artisan wayfinder:generate` a été lancé seul — relancer `npm run build`.
+Expected : tout passe. Si `types:check` sort `Property 'form' does not exist`, c'est que `php artisan wayfinder:generate` a été lancé seul - relancer `npm run build`.
 
 - [ ] **Step 8 : Lancer la suite**
 
 Run : `php artisan test --compact tests/Feature/Pharmacy/`
-Expected : PASS — y compris les tests de la Task 5, dont le lien `insurerUrl` résout maintenant
+Expected : PASS - y compris les tests de la Task 5, dont le lien `insurerUrl` résout maintenant
 
 - [ ] **Step 9 : Formater et committer**
 
@@ -2992,12 +2992,12 @@ test('the pdf summary carries the longest delay and the penalty', function () {
 });
 ```
 
-> `csvRowsFor(User $user, array $query = [])` est l'aide déjà présente en tête de ce fichier — elle parse le CSV et retire le BOM. Ajouter les imports `use App\Data\Period;` et `use App\Services\Pharmacy\PharmacyPdfExport;`.
+> `csvRowsFor(User $user, array $query = [])` est l'aide déjà présente en tête de ce fichier - elle parse le CSV et retire le BOM. Ajouter les imports `use App\Data\Period;` et `use App\Services\Pharmacy\PharmacyPdfExport;`.
 
 - [ ] **Step 2 : Lancer pour vérifier l'échec**
 
 Run : `php artisan test --compact tests/Feature/Pharmacy/PharmacyExportTest.php`
-Expected : FAIL — `array_search()` rend `false`, la colonne n'existe pas
+Expected : FAIL - `array_search()` rend `false`, la colonne n'existe pas
 
 - [ ] **Step 3 : Étendre `PharmacyExportRows`**
 
@@ -3062,7 +3062,7 @@ Dans `perInsurer()`, ajouter au tableau retourné :
 
 - [ ] **Step 5 : Étendre la vue PDF**
 
-Dans `resources/views/exports/pharmacy.blade.php`, table de synthèse (autour de la ligne 228) — ajouter deux `<th>` après `<th>Délai moyen</th>` :
+Dans `resources/views/exports/pharmacy.blade.php`, table de synthèse (autour de la ligne 228) - ajouter deux `<th>` après `<th>Délai moyen</th>` :
 
 ```blade
                 <th>Délai max</th>
@@ -3072,8 +3072,8 @@ Dans `resources/views/exports/pharmacy.blade.php`, table de synthèse (autour de
 Et dans le `@foreach`, deux `<td>` à la même position :
 
 ```blade
-                <td>{{ $row['longestDelayDays'] === null ? '—' : $row['longestDelayDays'] . ' j' }}</td>
-                <td>{{ $row['penalty'] === null ? '—' : number_format($row['penalty'], 0, ',', ' ') }}</td>
+                <td>{{ $row['longestDelayDays'] === null ? '-' : $row['longestDelayDays'] . ' j' }}</td>
+                <td>{{ $row['penalty'] === null ? '-' : number_format($row['penalty'], 0, ',', ' ') }}</td>
 ```
 
 Mettre à jour le `colspan` de la ligne « aucune donnée » (`@if (count($perInsurer) === 0)`) : huit colonnes deviennent dix.
@@ -3089,12 +3089,12 @@ La table passe de huit à dix colonnes en A4 portrait. Générer un PDF de contr
 php artisan tinker --execute 'file_put_contents("/tmp/controle.pdf", app(App\Services\Pharmacy\PharmacyPdfExport::class)->document(App\Models\Pharmacy::first(), new App\Data\Period(2025, 9), new App\Data\Period(2026, 8))->output());'
 ```
 
-Si une colonne déborde, réduire `font-size` de `.grid` ou raccourcir les en-têtes (« Délai moy. », « Pénal. ») — ne pas passer en paysage, le reste du rapport est calibré pour le portrait.
+Si une colonne déborde, réduire `font-size` de `.grid` ou raccourcir les en-têtes (« Délai moy. », « Pénal. ») - ne pas passer en paysage, le reste du rapport est calibré pour le portrait.
 
 - [ ] **Step 7 : Lancer la suite d'exports**
 
 Run : `php artisan test --compact tests/Feature/Pharmacy/PharmacyExportTest.php tests/Feature/Admin/NetworkExportTest.php`
-Expected : PASS — l'export réseau est intouché, c'est le lot B
+Expected : PASS - l'export réseau est intouché, c'est le lot B
 
 - [ ] **Step 8 : Formater et committer**
 
@@ -3103,8 +3103,8 @@ vendor/bin/pint --dirty --format agent
 git add app/Services/Pharmacy/PharmacyExportRows.php app/Services/Pharmacy/PharmacyPdfExport.php resources/views/exports/pharmacy.blade.php tests/Feature/Pharmacy/PharmacyExportTest.php
 git commit -m "feat: chiffrer la pénalité dans les exports officine
 
-Trois colonnes par déclaration dans le CSV et le XLSX — le délai et le
-taux rendent le montant vérifiable — et deux de plus dans la table de
+Trois colonnes par déclaration dans le CSV et le XLSX - le délai et le
+taux rendent le montant vérifiable - et deux de plus dans la table de
 synthèse du PDF, calculées sur les lignes que le fichier liste.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
@@ -3115,7 +3115,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ### Task 9 : Clôture
 
 **Files:**
-- Modify: aucun fichier de production — vérification et consignation
+- Modify: aucun fichier de production - vérification et consignation
 
 - [ ] **Step 1 : Lancer la chaîne complète**
 
@@ -3127,20 +3127,20 @@ Expected : PASS sur les six étapes (`lint:check`, `format:check`, `types:check`
 - [ ] **Step 2 : Vérifier qu'aucun glyphe Unicode n'a été introduit**
 
 Run : `grep -nP '[\x{25A0}-\x{25FF}]' resources/js/pages/pharmacy/Insurer.vue resources/js/pages/pharmacy/Dashboard.vue resources/js/pages/admin/Insurers.vue`
-Expected : aucune sortie. Toute occurrence est une icône invisible au navigateur — la remplacer par un composant `@lucide/vue`.
+Expected : aucune sortie. Toute occurrence est une icône invisible au navigateur - la remplacer par un composant `@lucide/vue`.
 
 - [ ] **Step 3 : Vérifier le compte de requêtes du tableau de bord**
 
 Run : `php artisan test --compact tests/Feature/Pharmacy/PaymentJourneyTest.php tests/Feature/Declarations/OverduePaymentsServiceTest.php`
-Expected : PASS, dont le test « three queries whatever their number ». Un échec ici signale un N+1 sur les versements — première cause de lenteur perçue de cette application.
+Expected : PASS, dont le test « three queries whatever their number ». Un échec ici signale un N+1 sur les versements - première cause de lenteur perçue de cette application.
 
 - [ ] **Step 4 : Consigner les règles durables**
 
-Trois décisions méritent de survivre à ce lot. Les enregistrer avec l'outil `record-rule` de Laravel Boost (jamais dans une note personnelle — seul `.ai/rules` est partagé avec l'équipe) :
+Trois décisions méritent de survivre à ce lot. Les enregistrer avec l'outil `record-rule` de Laravel Boost (jamais dans une note personnelle - seul `.ai/rules` est partagé avec l'équipe) :
 
-1. glob `app/Services/Declarations/**` — titre « La pénalité n'a pas de colonne de cache, et c'est voulu » : `delay_days` est stocké parce qu'il ne dépend que des données saisies ; la pénalité croît avec le temps, donc une colonne serait fausse entre deux passages d'un job. Conséquence : elle ne se somme pas en SQL, elle exige `with('payments')`, et l'échelle réseau demandera une autre stratégie.
-2. glob `app/Models/Insurer.php` — titre « Le taux de pénalité vit en points de base » : `penalty_rate_bp`, 250 = 2,50 %. `intdiv($base * $rateBp, 10000)` reste exact ; le pourcentage n'est qu'une commodité de saisie, converti dans `InsurerManagementController`. Les deux colonnes de clause sont nullables et se lisent comme un tout (`hasPenaltyClause()`).
-3. glob `resources/js/pages/pharmacy/**` — titre « Trois horloges cohabitent, ne pas en inventer une quatrième » : `delay_days` et `OverdueLine::ageDays` comptent depuis le dépôt de facture ; `PharmacyStatsService::outstandingByMonth()` et `chaseNotice` comptent depuis la fin du mois déclaré. Le bandeau du tableau de bord nomme la pire ligne au lieu de compter au-delà d'un seuil, précisément pour ne pas en ajouter une troisième lecture.
+1. glob `app/Services/Declarations/**` - titre « La pénalité n'a pas de colonne de cache, et c'est voulu » : `delay_days` est stocké parce qu'il ne dépend que des données saisies ; la pénalité croît avec le temps, donc une colonne serait fausse entre deux passages d'un job. Conséquence : elle ne se somme pas en SQL, elle exige `with('payments')`, et l'échelle réseau demandera une autre stratégie.
+2. glob `app/Models/Insurer.php` - titre « Le taux de pénalité vit en points de base » : `penalty_rate_bp`, 250 = 2,50 %. `intdiv($base * $rateBp, 10000)` reste exact ; le pourcentage n'est qu'une commodité de saisie, converti dans `InsurerManagementController`. Les deux colonnes de clause sont nullables et se lisent comme un tout (`hasPenaltyClause()`).
+3. glob `resources/js/pages/pharmacy/**` - titre « Trois horloges cohabitent, ne pas en inventer une quatrième » : `delay_days` et `OverdueLine::ageDays` comptent depuis le dépôt de facture ; `PharmacyStatsService::outstandingByMonth()` et `chaseNotice` comptent depuis la fin du mois déclaré. Le bandeau du tableau de bord nomme la pire ligne au lieu de compter au-delà d'un seuil, précisément pour ne pas en ajouter une troisième lecture.
 
 - [ ] **Step 5 : Contrôle négatif du calcul**
 
@@ -3162,7 +3162,7 @@ Renvoyé au **lot B**, qui aura son propre spec et son propre plan :
 
 Hors périmètre des deux lots, sauf demande explicite :
 
-- mention de la pénalité dans `OverduePaymentsDigest` et `NetworkOverdueDigest` — `OverdueLine::penalty` leur est disponible mais n'est pas rendue ;
+- mention de la pénalité dans `OverduePaymentsDigest` et `NetworkOverdueDigest` - `OverdueLine::penalty` leur est disponible mais n'est pas rendue ;
 - refonte de `ConsoleNavigation::chaseNotice()` et de son horloge à 60 jours ;
 - pénalités composées ;
 - historisation des pénalités.

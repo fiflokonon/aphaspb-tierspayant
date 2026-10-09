@@ -31,7 +31,7 @@ const TONES: Record<
         card: 'bg-ink/[0.05] border-ink/[0.14]',
         badge: 'bg-ink/50',
         fill: 'bg-ink/40',
-        glyph: '—',
+        glyph: '-',
     },
     rejected: {
         card: 'bg-terracotta/[0.09] border-terracotta/[0.30]',

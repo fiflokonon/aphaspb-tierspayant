@@ -3,7 +3,7 @@ import { formatAmount, formatFcfa } from './fcfa';
 
 describe('formatAmount', () => {
     it('renders null as a dash, for an absent clause', () => {
-        expect(formatAmount(null)).toBe('—');
+        expect(formatAmount(null)).toBe('-');
     });
 
     it('renders zero as zero, where formatFcfa renders nothing', () => {

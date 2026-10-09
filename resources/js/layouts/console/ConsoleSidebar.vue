@@ -221,7 +221,8 @@ watch(collapsed, writeCollapsed);
     align-items: center;
     justify-content: center;
     border-radius: 13px;
-    background: rgb(255 255 255 / 0.10);
+    background: white;
+    /* background: rgb(255 255 255 / 0.10); */
     border: 1px solid rgb(255 255 255 / 0.12);
     box-shadow: 0 10px 24px rgb(0 0 0 / 0.12);
 }

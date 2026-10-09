@@ -79,7 +79,7 @@ const props = defineProps<{
 }>();
 
 const TEMPLATE = '1.9fr .9fr 1fr 1fr .9fr';
-const COLUMNS = ['Assureur', 'Officines (n)', 'Facturé', 'En cours', 'Recouvré'];
+const COLUMNS = ['Assureur', 'Officines', 'Facturé', 'Encours', 'Recouvré'];
 
 const delayTone = (days: number | null): KpiTone => {
     if (days === null) {
@@ -104,7 +104,7 @@ const recoveryTone = (rate: number | null): KpiTone => {
 /** Both the amount and its share, never one without the other. */
 const share = (value: number | null): string =>
     value === null || !props.summary.invoiced
-        ? '—'
+        ? '-'
         : `${Math.round((value / props.summary.invoiced) * 100)} %`;
 
 /** What a withheld KPI says under its « retenu ». */
@@ -139,7 +139,7 @@ const cityOptions = computed(() => [
 
 /**
  * The curve is a deferred prop, so it has to be named in `only` for the partial
- * reload to fetch it again — otherwise the KPIs move and the chart does not.
+ * reload to fetch it again - otherwise the KPIs move and the chart does not.
  */
 function reload() {
     router.get(
@@ -166,7 +166,7 @@ watch([period, city], reload);
 
 /**
  * Every insurer's curve arrives in the deferred payload, so narrowing to one is
- * a filter over data the browser already holds — no round trip, unlike the
+ * a filter over data the browser already holds - no round trip, unlike the
  * period and city filters above which change what the server aggregates.
  */
 const allSeries = computed(() =>
@@ -383,7 +383,7 @@ async function exportChart() {
                             ? 'retenu'
                             : (summary.weightedDelayDays?.toLocaleString(
                                   'fr-FR',
-                              ) ?? '—')
+                              ) ?? '-')
                     "
                     :unit="summary.withheld ? undefined : 'jours'"
                     :tone="delayTone(summary.weightedDelayDays)"
@@ -425,7 +425,7 @@ async function exportChart() {
                 </div>
 
                 <div v-if="chartType !== 'pie'" class="threshold-badge">
-                    <span class="threshold-line"></span>
+                    <!-- <span class="threshold-line"></span> -->
 
                     <span> Référence · {{ threshold }} jours </span>
                 </div>
@@ -506,7 +506,7 @@ async function exportChart() {
                                 ? 'retenu'
                                 : (summary.weightedDelayDays?.toLocaleString(
                                       'fr-FR',
-                                  ) ?? '—')
+                                  ) ?? '-')
                         }}
                         <small v-if="!summary.withheld">j</small>
                     </strong>
@@ -563,7 +563,7 @@ async function exportChart() {
                         :explanation="`${withheldExplanation(
                             row.withheldReason,
                             row.required ?? summary.required,
-                        )} — les montants restent retenus`"
+                        )} - les montants restent retenus`"
                     />
 
                     <DataTableRow
@@ -620,7 +620,7 @@ async function exportChart() {
                             <div class="recovery-value">
                                 {{
                                     row.recoveryRate?.toLocaleString('fr-FR') ??
-                                    '—'
+                                    '-'
                                 }}
 
                                 <span> % </span>

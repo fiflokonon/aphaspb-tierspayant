@@ -1,4 +1,4 @@
-# Clôture des pénalités — plan d'implémentation
+# Clôture des pénalités - plan d'implémentation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -12,14 +12,14 @@
 
 ## Global Constraints
 
-- Montants en entiers FCFA ; aucune colonne de pénalité **courue** (règle « pas de cache ») — `penalty_settled_amount` est un fait, pas un cache.
+- Montants en entiers FCFA ; aucune colonne de pénalité **courue** (règle « pas de cache ») - `penalty_settled_amount` est un fait, pas un cache.
 - Les quatre colonnes de clôture se posent et se lèvent **ensemble**, uniquement par `Declaration::settlePenalty()` / `clearPenaltySettlement()` (jamais par `fill()` depuis une requête).
 - Condition du geste (spec §5.1) : `amount_received >= amount_invoiced` **et** `hasPenaltyClause()` **et** `PenaltyCalculator::for() > 0`.
 - Levée automatique (spec §5.3) : mois plus couvert **ou** pénalité recalculée ≠ `penalty_settled_amount`.
 - Déclaration d'une autre officine → **404**. L'officine vient toujours de la session.
 - `penalite_fcfa` (export officine) garde le sens **courue** ; `penalite_potentielle_fcfa` (export réseau) devient la **due**.
 - Anonymat réseau : aucune nouvelle colonne pour un assureur retenu ; mois retenu du journal → nouvelles colonnes vidées.
-- Null ≠ zéro : « — » = pas de convention, « 0 » = rien à réclamer.
+- Null ≠ zéro : « - » = pas de convention, « 0 » = rien à réclamer.
 - Tests : colonnes d'export référencées par leur nom ; décor de référence = exemple du §2 de la spec.
 - Messages en français ; toasts via `Inertia::flash('toast', ['type' => …, 'message' => …])`, testés par `assertInertiaFlash`.
 - Chaque tâche : `vendor/bin/pint --dirty --format agent`, PHPStan sur les fichiers touchés, commit terminé par `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`. Dernière tâche : `composer ci:check`.
@@ -29,7 +29,7 @@
 1. **Formulaire pré-rempli sur « payée » pendant une correction (cas B via le formulaire)** : la levée automatique ne doit pas être aussitôt annulée par le choix renvoyé tel quel. Le choix n'est appliqué que s'il **diffère de l'état d'avant l'enregistrement**. Test : Task 6 (`an unchanged choice does not re-settle a penalty the correction just reopened`).
 2. **Déclaration rejetée après clôture** : `for()` rend null → recalcul 0 ≠ montant clos → levée. Test : Task 3 (`rejecting a settled month reopens its penalty`).
 3. **Double clic / geste répété** sur un mois déjà clos de la même façon : pas de nouvelle date, pas de révision. Test : Task 4 (`settling twice the same way changes nothing`).
-4. **Journal : facture close dont les tranches tombent sur plusieurs mois** — chaque tranche va à « dont payée » de son propre mois. Test : Task 8.
+4. **Journal : facture close dont les tranches tombent sur plusieurs mois** - chaque tranche va à « dont payée » de son propre mois. Test : Task 8.
 5. **Réseau : la due ne peut pas devenir négative** et un assureur retenu ne reçoit aucune des deux nouvelles colonnes. Test : Task 7.
 
 ---
@@ -41,8 +41,8 @@
 - Modify : `app/Models/Declaration.php`, `app/Models/DeclarationRevision.php`, `app/Actions/Declarations/RecordDeclarationRevision.php`, `database/factories/DeclarationFactory.php`
 - Test : `tests/Feature/Declarations/PenaltySettlementModelTest.php`
 
-**Interfaces — Produces :**
-- `enum PenaltySettlement: string { case Paid = 'paid'; case Waived = 'waived'; public function label(): string }` — « Payée » / « Annulée ».
+**Interfaces - Produces :**
+- `enum PenaltySettlement: string { case Paid = 'paid'; case Waived = 'waived'; public function label(): string }` - « Payée » / « Annulée ».
 - `Declaration::settlePenalty(PenaltySettlement $outcome, int $amount, User $by): void`, `clearPenaltySettlement(): void`, `isPenaltySettled(): bool`, `isFullyCovered(): bool`.
 - Propriétés : `?PenaltySettlement $penalty_settlement`, `?int $penalty_settled_amount`, `?CarbonImmutable $penalty_settled_on`, `?int $penalty_settled_by`.
 - Fabrique : `DeclarationFactory::penaltySettled(PenaltySettlement $outcome, int $amount)`.
@@ -109,7 +109,7 @@ test('a month is fully covered only when nothing is left to receive', function (
 });
 ```
 
-- [ ] **Step 2 : le voir échouer** — `php artisan test --compact tests/Feature/Declarations/PenaltySettlementModelTest.php` → FAIL (`PenaltySettlement` introuvable).
+- [ ] **Step 2 : le voir échouer** - `php artisan test --compact tests/Feature/Declarations/PenaltySettlementModelTest.php` → FAIL (`PenaltySettlement` introuvable).
 
 - [ ] **Step 3 : implémenter**
 
@@ -252,8 +252,8 @@ enum PenaltySettlement: string
     }
 ```
 
-- [ ] **Step 4 : les tests passent** — le fichier ci-dessus, plus `tests/Feature/Pharmacy/DeclarationTest.php` (révisions).
-- [ ] **Step 5 : commit** — `feat: poser les colonnes de clôture de pénalité`
+- [ ] **Step 4 : les tests passent** - le fichier ci-dessus, plus `tests/Feature/Pharmacy/DeclarationTest.php` (révisions).
+- [ ] **Step 5 : commit** - `feat: poser les colonnes de clôture de pénalité`
 
 ---
 
@@ -261,9 +261,9 @@ enum PenaltySettlement: string
 
 **Files :** Modify `app/Services/Declarations/PenaltyCalculator.php` ; Test `tests/Unit/Services/PenaltyCalculatorTest.php`
 
-**Interfaces — Produces :**
-- `PenaltyCalculator::due(Declaration $declaration): ?int` — null si `for()` null **et** pas de clause ; 0 si close ; sinon `for()`.
-- `PenaltyCalculator::dueTotal(iterable $declarations): ?int` — même règle null / zéro que `total()` (décidée sur la clause).
+**Interfaces - Produces :**
+- `PenaltyCalculator::due(Declaration $declaration): ?int` - null si `for()` null **et** pas de clause ; 0 si close ; sinon `for()`.
+- `PenaltyCalculator::dueTotal(iterable $declarations): ?int` - même règle null / zéro que `total()` (décidée sur la clause).
 
 - [ ] **Step 1 : tests** (dans le fichier unitaire existant, avec ses helpers `insurerWith` / `declarationFor`) :
 
@@ -332,7 +332,7 @@ test('the due total keeps the null-or-zero rule of the accrued total', function 
     }
 ```
 
-- [ ] **Step 4 : PASS** ; **Step 5 : commit** — `feat: distinguer la pénalité due de la pénalité courue`
+- [ ] **Step 4 : PASS** ; **Step 5 : commit** - `feat: distinguer la pénalité due de la pénalité courue`
 
 ---
 
@@ -343,17 +343,17 @@ test('the due total keeps the null-or-zero rule of the accrued total', function 
 - Modify : `app/Actions/Declarations/RecordPaymentInstalments.php`
 - Test : `tests/Feature/Declarations/PenaltySettlementTest.php`
 
-**Interfaces — Produces :**
-- `SettlePenalty::refusal(Declaration $declaration): ?string` — null si §5.1 tient, sinon le message.
-- `SettlePenalty::settle(Declaration $declaration, PenaltySettlement $outcome, User $by): bool` — false si refusé ou déjà clos de la même façon ; true si écrit.
-- `SettlePenalty::reopen(Declaration $declaration): bool` — false si rien à lever.
+**Interfaces - Produces :**
+- `SettlePenalty::refusal(Declaration $declaration): ?string` - null si §5.1 tient, sinon le message.
+- `SettlePenalty::settle(Declaration $declaration, PenaltySettlement $outcome, User $by): bool` - false si refusé ou déjà clos de la même façon ; true si écrit.
+- `SettlePenalty::reopen(Declaration $declaration): bool` - false si rien à lever.
 - `readonly class PenaltyReopened(string $reason /* 'uncovered'|'amountChanged' */, int $previousAmount, ?int $currentAmount)` + `message(string $monthLabel, string $insurerName): string`.
 - `ReconcilePenaltySettlement::handle(Declaration $declaration): ?PenaltyReopened`.
 - `RecordPaymentInstalments::handle(Declaration, array): ?PenaltyReopened` (était `void`).
 
 Aucune de ces actions n'écrit de révision : leurs appelants le font (Tasks 4 et 6).
 
-- [ ] **Step 1 : tests** — décor de référence. `referenceMonth()` va dans `tests/Pest.php` (section Functions) : les Tasks 4 à 6 le réutilisent.
+- [ ] **Step 1 : tests** - décor de référence. `referenceMonth()` va dans `tests/Pest.php` (section Functions) : les Tasks 4 à 6 le réutilisent.
 
 `tests/Pest.php` :
 
@@ -450,7 +450,7 @@ test('settling twice the same way changes nothing', function () {
         ->and($declaration->fresh()->penalty_settled_on->toDateString())->toBe('2026-08-05');
 });
 
-test('case A — a correction that reopens the month lifts the settlement', function () {
+test('case A - a correction that reopens the month lifts the settlement', function () {
     $declaration = referenceMonth($this->user);
     $this->settle->settle($declaration, PenaltySettlement::Paid, $this->user);
 
@@ -463,7 +463,7 @@ test('case A — a correction that reopens the month lifts the settlement', func
         ->and($declaration->fresh()->isPenaltySettled())->toBeFalse();
 });
 
-test('case B — a correction that changes the amount lifts the settlement', function () {
+test('case B - a correction that changes the amount lifts the settlement', function () {
     $declaration = referenceMonth($this->user);
     $this->settle->settle($declaration, PenaltySettlement::Paid, $this->user);
 
@@ -705,7 +705,7 @@ class ReconcilePenaltySettlement
 Mettre à jour le docblock `@return` et vérifier les appelants (`DeclarationController`, `DeclarationFactory::instalments()`) : ils ignorent le retour, rien à changer chez eux à ce stade.
 
 - [ ] **Step 4 : PASS** + `tests/Feature/Pharmacy/DeclarationTest.php` vert.
-- [ ] **Step 5 : commit** — `feat: clore une pénalité, et la rouvrir quand le mois ne la justifie plus`
+- [ ] **Step 5 : commit** - `feat: clore une pénalité, et la rouvrir quand le mois ne la justifie plus`
 
 ---
 
@@ -716,7 +716,7 @@ Mettre à jour le docblock `@return` et vérifier les appelants (`DeclarationCon
 - Modify : `routes/web.php`
 - Test : `tests/Feature/Pharmacy/PenaltySettlementHttpTest.php`
 
-**Interfaces — Produces :** routes `pharmacy.penalty-settlement.store` (`POST /pharmacy/declarations/{declaration}/penalty-settlement`, champ `outcome`) et `pharmacy.penalty-settlement.destroy` (`DELETE`, même URL).
+**Interfaces - Produces :** routes `pharmacy.penalty-settlement.store` (`POST /pharmacy/declarations/{declaration}/penalty-settlement`, champ `outcome`) et `pharmacy.penalty-settlement.destroy` (`DELETE`, même URL).
 
 - [ ] **Step 1 : tests**
 
@@ -888,7 +888,7 @@ Routes, groupe `pharmacy.` :
         Route::delete('declarations/{declaration}/penalty-settlement', [PenaltySettlementController::class, 'destroy'])->name('penalty-settlement.destroy');
 ```
 
-- [ ] **Step 4 : PASS** ; **Step 5 : commit** — `feat: clore une pénalité depuis l'écran assureur`
+- [ ] **Step 4 : PASS** ; **Step 5 : commit** - `feat: clore une pénalité depuis l'écran assureur`
 
 ---
 
@@ -898,7 +898,7 @@ Routes, groupe `pharmacy.` :
 
 **Interfaces :** chaque ligne de `months` gagne `penaltyDue: int|null`, `settlement: {outcome: 'paid'|'waived', label: string, amount: int, on: string}|null`, `canSettle: bool`, `settlementUrl: string`. `relationship.penalty` devient la **due** (`dueTotal`).
 
-- [ ] **Step 1 : tests** — dans `InsurerRelationshipTest.php`, avec `referenceMonth()` :
+- [ ] **Step 1 : tests** - dans `InsurerRelationshipTest.php`, avec `referenceMonth()` :
 
 ```php
 test('a settled month is due no more, and says how it was closed', function () {
@@ -993,7 +993,7 @@ const reopen = (row: MonthRow) =>
 Styles `.penalty-cell`, `.settlement-chip`, `.settlement-action` en `<style scoped>`, jetons de couleur seulement (pastille : fond `var(--cream-header)`, texte `var(--ink)` ; bouton : texte `var(--officine)`, souligné au survol). Élargir la dernière colonne de `TEMPLATE` si les boutons débordent.
 
 - [ ] **Step 4 : PASS** + `npm run types:check && npm run lint:check && npm run format:check`.
-- [ ] **Step 5 : commit** — `feat: montrer et clore les pénalités sur l'écran assureur`
+- [ ] **Step 5 : commit** - `feat: montrer et clore les pénalités sur l'écran assureur`
 
 ---
 
@@ -1108,7 +1108,7 @@ test('the form knows the penalty of the month', function () {
 Adapter les champs obligatoires de `referencePayload` à ce que `SaveDeclarationRequest` exige réellement (lire un `post(route('pharmacy.declare.store'), …)` de `DeclarationTest.php`) : c'est le décor, pas la règle, qui s'ajuste.
 
 - [ ] **Step 2 : FAIL.**
-- [ ] **Step 3 : implémenter** — `SaveDeclarationRequest::rules()` + méthode `penaltyChoice(): ?string` ; dans `DeclarationController::store()`, injecter `SettlePenalty $settle` :
+- [ ] **Step 3 : implémenter** - `SaveDeclarationRequest::rules()` + méthode `penaltyChoice(): ?string` ; dans `DeclarationController::store()`, injecter `SettlePenalty $settle` :
 
 ```php
         $before = Declaration::query()
@@ -1194,7 +1194,7 @@ const penaltyChoice = ref(props.declaration?.penalty?.settlement ?? 'due');
 Styles scoped, jetons seulement, calqués sur `.note-content`.
 
 - [ ] **Step 4 : PASS** + `DeclarationTest.php` + checks front.
-- [ ] **Step 5 : commit** — `feat: clore la pénalité depuis le formulaire du mois`
+- [ ] **Step 5 : commit** - `feat: clore la pénalité depuis le formulaire du mois`
 
 ---
 
@@ -1224,7 +1224,7 @@ Styles scoped, jetons seulement, calqués sur `.note-content`.
   - `exports/network.blade.php` : « Pénalité potentielle » → « Pénalité due », et une ligne sous la valeur « dont recouvrée X · abandonnée Y » quand l'un des deux est > 0.
 
 - [ ] **Step 4 : PASS** (fichiers ci-dessus + `NetworkXlsxExportTest.php`).
-- [ ] **Step 5 : commit** — `feat: compter la pénalité due, recouvrée et abandonnée dans les exports`
+- [ ] **Step 5 : commit** - `feat: compter la pénalité due, recouvrée et abandonnée dans les exports`
 
 ---
 
@@ -1248,19 +1248,19 @@ Styles scoped, jetons seulement, calqués sur `.note-content`.
 - [ ] **Step 3 : implémenter**
   - Tally : trois tableaux par assureur et pour le total (`accruedPaid`, `accruedWaived`, `declaredSettled`) ; dans `add()`, si `$settlement` : chaque tranche en période va aussi dans `accruedPaid`/`accruedWaived` de son mois, et la somme de la facture dans `declaredSettled` de son mois déclaré. `series()` calcule `accruedDue = accrued − paid − waived`, `declaredDue = declared − declaredSettled`, et met les quatre à null quand le mois est futur ou retenu.
   - Lecteurs : ajouter `declarations.penalty_settlement` aux `select` et passer `PenaltySettlement::tryFrom((string) $row->penalty_settlement)`.
-  - Front : `PenaltyView` + `isPenaltyView`, troisième entrée de `VIEWS` (« Reste due »), `pick()` dans `penaltySeries.ts`, trois colonnes dans `PenaltyLedgerTable.vue` (masquées sous 720 px si la table déborde — vérifier au navigateur).
-  - Exports du journal et vues PDF : trois colonnes, mêmes règles de rendu (`retenu`, « — »).
+  - Front : `PenaltyView` + `isPenaltyView`, troisième entrée de `VIEWS` (« Reste due »), `pick()` dans `penaltySeries.ts`, trois colonnes dans `PenaltyLedgerTable.vue` (masquées sous 720 px si la table déborde - vérifier au navigateur).
+  - Exports du journal et vues PDF : trois colonnes, mêmes règles de rendu (`retenu`, « - »).
 - [ ] **Step 4 : PASS** (tous les fichiers du journal + Vitest + checks front).
-- [ ] **Step 5 : commit** — `feat: dire dans le journal ce qui a été payé, annulé, et ce qui reste dû`
+- [ ] **Step 5 : commit** - `feat: dire dans le journal ce qui a été payé, annulé, et ce qui reste dû`
 
 ---
 
 ### Task 9 : règles, spec, vérification complète
 
-- [ ] **Step 1** — `record-rule` :
-  1. `app/Actions/Declarations/**` — « Une clôture de pénalité tombe d'elle-même » : ReconcilePenaltySettlement à la fin de RecordPaymentInstalments ; cas A / cas B ; colonnes hors Fillable ; aucune action de clôture n'écrit de révision, les appelants le font.
-  2. `app/Http/Controllers/Pharmacy/DeclarationController.php` — « Le choix de pénalité du formulaire n'agit que s'il change » : comparaison à l'état d'avant l'enregistrement, sinon le cas B est aussitôt reclos.
-  3. `app/Services/**` — « Courue, close, due » : `penalite_fcfa` = courue, `penalite_potentielle_fcfa` = due ; `due()` rend 0 pour une close car le montant clos égale la courue par construction.
-- [ ] **Step 2** — spec : §10 « Écarts » avec tout écart décidé à l'exécution.
-- [ ] **Step 3** — `composer ci:check` vert ; mutation de chaque garde ajoutée (condition du geste, 404, levée A, levée B, comparaison à l'état d'avant, due réseau) ; contrôle navigateur de l'écran assureur et du formulaire.
-- [ ] **Step 4** — commit `docs: consigner les règles de la clôture des pénalités`.
+- [ ] **Step 1** - `record-rule` :
+  1. `app/Actions/Declarations/**` - « Une clôture de pénalité tombe d'elle-même » : ReconcilePenaltySettlement à la fin de RecordPaymentInstalments ; cas A / cas B ; colonnes hors Fillable ; aucune action de clôture n'écrit de révision, les appelants le font.
+  2. `app/Http/Controllers/Pharmacy/DeclarationController.php` - « Le choix de pénalité du formulaire n'agit que s'il change » : comparaison à l'état d'avant l'enregistrement, sinon le cas B est aussitôt reclos.
+  3. `app/Services/**` - « Courue, close, due » : `penalite_fcfa` = courue, `penalite_potentielle_fcfa` = due ; `due()` rend 0 pour une close car le montant clos égale la courue par construction.
+- [ ] **Step 2** - spec : §10 « Écarts » avec tout écart décidé à l'exécution.
+- [ ] **Step 3** - `composer ci:check` vert ; mutation de chaque garde ajoutée (condition du geste, 404, levée A, levée B, comparaison à l'état d'avant, due réseau) ; contrôle navigateur de l'écran assureur et du formulaire.
+- [ ] **Step 4** - commit `docs: consigner les règles de la clôture des pénalités`.

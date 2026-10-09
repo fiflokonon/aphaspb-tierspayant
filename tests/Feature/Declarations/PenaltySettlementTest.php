@@ -48,7 +48,7 @@ test('settling twice the same way changes nothing', function () {
         ->and($declaration->fresh()->penalty_settled_on->toDateString())->toBe('2026-08-05');
 });
 
-test('case A — a correction that reopens the month lifts the settlement', function () {
+test('case A - a correction that reopens the month lifts the settlement', function () {
     $declaration = referenceMonth($this->user);
     $this->settle->settle($declaration, PenaltySettlement::Paid, $this->user);
 
@@ -61,7 +61,7 @@ test('case A — a correction that reopens the month lifts the settlement', func
         ->and($declaration->fresh()->isPenaltySettled())->toBeFalse();
 });
 
-test('case B — a correction that changes the amount lifts the settlement', function () {
+test('case B - a correction that changes the amount lifts the settlement', function () {
     $declaration = referenceMonth($this->user);
     $this->settle->settle($declaration, PenaltySettlement::Paid, $this->user);
 

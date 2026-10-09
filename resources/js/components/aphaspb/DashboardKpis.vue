@@ -31,7 +31,7 @@ defineProps<{
      * `band` rend les cartes lisibles sur le bandeau vert.
      *
      * Nommée `surface` et non `tone` : `KpiCard` a déjà une prop `tone`, au
-     * sens sémantique — neutre, bon, alerte — qui colore la valeur. Les deux
+     * sens sémantique - neutre, bon, alerte - qui colore la valeur. Les deux
      * coexistent sur la même carte.
      */
     surface: 'light' | 'band';
@@ -81,7 +81,7 @@ const delayTone = (days: number | null): KpiTone => {
 
             <KpiCard
                 label="TAUX DE RECOUVREMENT"
-                :value="summary.recoveryRate?.toLocaleString('fr-FR') ?? '—'"
+                :value="summary.recoveryRate?.toLocaleString('fr-FR') ?? '-'"
                 unit="%"
                 :tone="recoveryTone(summary.recoveryRate)"
                 :surface="surface"
@@ -99,7 +99,7 @@ const delayTone = (days: number | null): KpiTone => {
             <KpiCard
                 label="VOTRE DÉLAI MOYEN"
                 :value="
-                    summary.weightedDelayDays?.toLocaleString('fr-FR') ?? '—'
+                    summary.weightedDelayDays?.toLocaleString('fr-FR') ?? '-'
                 "
                 unit="jours"
                 :tone="delayTone(summary.weightedDelayDays)"
@@ -246,7 +246,7 @@ const delayTone = (days: number | null): KpiTone => {
     overflow: visible;
     border-radius: 0;
 
-    /* min-width: 0 — sans quoi le min-content d'un montant long déborde la
+    /* min-width: 0 - sans quoi le min-content d'un montant long déborde la
        piste de grille et fait défiler la page à 320 px. */
     min-width: 0;
 }
@@ -260,7 +260,7 @@ const delayTone = (days: number | null): KpiTone => {
   Les trois chiffres côte à côte dans le bandeau, même à 320 px.
 
   KpiRow empile à une colonne sous 640 px, ce qui donnait un bandeau de
-  450 px de haut et repoussait les bandes d'alerte hors de l'écran — le
+  450 px de haut et repoussait les bandes d'alerte hors de l'écran - le
   défaut même que ce bandeau existe pour éviter. KpiCard rétrécit son texte
   lui-même via sa prop `surface`, plutôt qu'un :deep() sur ses classes
   utilitaires Tailwind.

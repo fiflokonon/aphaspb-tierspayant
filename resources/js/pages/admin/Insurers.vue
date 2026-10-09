@@ -25,7 +25,7 @@ defineProps<{
 const TEMPLATE = '1.8fr .7fr 1fr 1.4fr .8fr 1fr';
 const COLUMNS = [
     'Assureur',
-    'Officines (n)',
+    'Officines',
     'Délai standard',
     'Clause de pénalité',
     'État',
@@ -129,7 +129,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
                         suite du nom : elle est facultative, et la mettre au
                         même rang que le nom laisserait croire qu'il faut la
                         remplir. Les deux champs se valident l'un l'autre côté
-                        serveur — une moitié seule est refusée avec son
+                        serveur - une moitié seule est refusée avec son
                         message, il n'y a donc rien à garder ici, contrairement
                         à l'édition en ligne qui soumet à chaque `change`.
                     -->
@@ -144,7 +144,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
                                 type="number"
                                 min="1"
                                 max="365"
-                                placeholder="—"
+                                placeholder="-"
                                 aria-label="Déclenchement de la pénalité, en jours"
                                 class="modern-input"
                             />
@@ -159,7 +159,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
                                 min="0.01"
                                 max="100"
                                 step="0.01"
-                                placeholder="—"
+                                placeholder="-"
                                 aria-label="Taux de pénalité, en pourcent"
                                 class="modern-input"
                             />
@@ -171,7 +171,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
                             Le bouton ferme le formulaire, il ne le coupe pas
                             en deux : sous 700 px `.form-row` passe en colonne,
                             et le laisser sur la première ligne le plaçait
-                            avant la clause de pénalité — on pouvait valider
+                            avant la clause de pénalité - on pouvait valider
                             sans avoir vu les deux derniers champs.
                         -->
                         <button
@@ -479,7 +479,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
                                     type="number"
                                     min="1"
                                     max="365"
-                                    placeholder="—"
+                                    placeholder="-"
                                     :disabled="processing"
                                     :aria-label="`Déclenchement de la pénalité de ${row.name}, en jours`"
                                     class="row-delay-input"
@@ -494,7 +494,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
                                     min="0.01"
                                     max="100"
                                     step="0.01"
-                                    placeholder="—"
+                                    placeholder="-"
                                     :disabled="processing"
                                     :aria-label="`Taux de pénalité de ${row.name}, en pourcent`"
                                     class="row-delay-input"
@@ -612,8 +612,8 @@ function submitWhenComplete(event: Event, submit: () => void) {
 /*
   La légende occupe la place du champ de nom, en `flex: 1` comme lui : c'est
   ce qui cale la fin des deux lignes sur le même bord droit. Les champs ne
-  tombent pas l'un sous l'autre pour autant — la seconde ligne en porte deux
-  et le bouton, la première un seul — et il ne faut pas chercher à les y
+  tombent pas l'un sous l'autre pour autant - la seconde ligne en porte deux
+  et le bouton, la première un seul - et il ne faut pas chercher à les y
   forcer : il faudrait figer la largeur du bouton, donc la faire dépendre de
   la longueur de son libellé.
 */
@@ -697,7 +697,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 }
 
 .insurers-page {
-    /* La palette vient de :root — voir resources/css/app.css. */
+    /* La palette vient de :root - voir resources/css/app.css. */
 
     width: 100%;
 
@@ -964,8 +964,8 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
     border-radius: 7px;
 
-    font-family:
-        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; */
 
     font-size: 12.5px;
 
