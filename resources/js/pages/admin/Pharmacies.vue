@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
+import { CalendarDays, Phone } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
@@ -12,6 +13,7 @@ type Row = {
     name: string;
     city: string | null;
     onpbLicense: string | null;
+    phone: { href: string; label: string } | null;
     registeredAt: string | null;
 };
 
@@ -32,8 +34,8 @@ const props = defineProps<{
     pageSizes: number[];
 }>();
 
-const TEMPLATE = '2fr 1fr 1fr 1.1fr';
-const COLUMNS = ['Officine', 'Ville', 'N° Onpb', 'Inscrite le'];
+const TEMPLATE = '2fr 1fr 1fr 1.3fr 1.1fr';
+const COLUMNS = ['Officine', 'Ville', 'N° Onpb', 'WhatsApp', 'Inscrite le'];
 
 const city = ref<string | null>(props.filters.city);
 const search = ref(props.filters.search ?? '');
@@ -318,6 +320,36 @@ const footer = computed(
                         </div>
 
 
+                        <!-- WHATSAPP -->
+                        <div class="phone-cell">
+
+                            <a
+                                v-if="row.phone"
+                                :href="row.phone.href"
+                                class="phone-link"
+                            >
+                                <span class="phone-icon">
+                                    <Phone
+                                        class="size-[13px]"
+                                        :stroke-width="2"
+                                        aria-hidden="true"
+                                    />
+                                </span>
+
+                                <span>{{ row.phone.label }}</span>
+                            </a>
+
+                            <span
+                                v-else
+                                class="phone-missing"
+                                aria-label="Pas de numéro"
+                            >
+                                -
+                            </span>
+
+                        </div>
+
+
                         <!-- DATE -->
                         <div class="date-cell">
 
@@ -325,7 +357,10 @@ const footer = computed(
                                 class="date-icon"
                                 aria-hidden="true"
                             >
-                                ◷
+                                <CalendarDays
+                                    class="size-[13px]"
+                                    :stroke-width="2"
+                                />
                             </span>
 
                             <span>
@@ -1374,6 +1409,64 @@ const footer = computed(
     font-size: 9px;
 
     font-weight: 800;
+}
+
+
+/* =========================================================
+   WHATSAPP
+   ========================================================= */
+
+.phone-cell {
+
+    display: flex;
+    align-items: center;
+
+    min-width: 0;
+
+    font-size: 13px;
+
+    font-weight: 600;
+}
+
+.phone-link {
+
+    display: inline-flex;
+    align-items: center;
+
+    gap: 8px;
+
+    color: var(--primary);
+
+    text-decoration: none;
+
+    white-space: nowrap;
+}
+
+.phone-link:hover {
+
+    color: var(--primary-dark);
+
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.phone-icon {
+
+    width: 22px;
+    height: 22px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 7px;
+
+    background: var(--primary-soft);
+}
+
+.phone-missing {
+
+    color: var(--muted-light);
 }
 
 

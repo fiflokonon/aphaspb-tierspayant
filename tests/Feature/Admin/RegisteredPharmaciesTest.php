@@ -29,6 +29,22 @@ test('the list carries the identity the CDC allows', function () {
         });
 });
 
+test('the list carries the WhatsApp number when the officine gave one', function () {
+    Pharmacy::factory()->create(['name' => 'Joignable', 'whatsapp_phone' => '+2290197000000']);
+    Pharmacy::factory()->create(['name' => 'Injoignable', 'whatsapp_phone' => null]);
+
+    $this->actingAs(User::factory()->networkAdmin()->create())
+        ->get(route('admin.pharmacies'))
+        ->assertInertia(function (AssertableInertia $page) {
+            $rows = collect($page->toArray()['props']['pharmacies']['data'])->keyBy('name');
+
+            expect($rows['Joignable']['phone'])->toBe([
+                'href' => 'tel:+2290197000000',
+                'label' => '+229 01 97 00 00 00',
+            ])->and($rows['Injoignable']['phone'])->toBeNull();
+        });
+});
+
 test('the list exposes no declaration data whatsoever', function () {
     $pharmacy = Pharmacy::factory()->create(['name' => 'Pharmacie Témoin']);
 
@@ -56,7 +72,7 @@ test('the list exposes no declaration data whatsoever', function () {
 
             expect($row)->not->toBeNull()
                 ->and(array_keys($row))
-                ->toBe(['id', 'name', 'city', 'onpbLicense', 'registeredAt']);
+                ->toBe(['id', 'name', 'city', 'onpbLicense', 'phone', 'registeredAt']);
 
             $serialised = json_encode($props, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
 

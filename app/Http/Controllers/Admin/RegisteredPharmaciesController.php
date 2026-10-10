@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
 use App\Support\PageSize;
+use App\Support\WhatsappNumber;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,6 +17,9 @@ use Inertia\Response;
  * « nom, ville, date d'inscription » explicitly, and forbids in the same breath
  * any access to their declarations or amounts. The rule is therefore not « no
  * officine names » but « nothing about a declaration next to a name ».
+ *
+ * The WhatsApp number is a contact detail, not declaration data: it sits on
+ * the same side of that line as the name and the city.
  *
  * This controller queries Pharmacy directly and never touches declarations —
  * that is what keeps the promise structural rather than a matter of care. It
@@ -41,13 +45,16 @@ class RegisteredPharmaciesController extends Controller
                 ['%'.mb_strtolower($search).'%'],
             ))
             ->orderBy('name')
-            ->paginate($perPage, ['id', 'name', 'city', 'onpb_license', 'created_at'])
+            ->paginate($perPage, ['id', 'name', 'city', 'onpb_license', 'whatsapp_phone', 'created_at'])
             ->withQueryString()
             ->through(fn (Pharmacy $pharmacy) => [
                 'id' => $pharmacy->id,
                 'name' => $pharmacy->name,
                 'city' => $pharmacy->city,
                 'onpbLicense' => $pharmacy->onpb_license,
+                'phone' => $pharmacy->whatsapp_phone === null
+                    ? null
+                    : ['href' => 'tel:'.$pharmacy->whatsapp_phone, 'label' => WhatsappNumber::display($pharmacy->whatsapp_phone)],
                 'registeredAt' => $pharmacy->created_at?->translatedFormat('j F Y'),
             ]);
 
