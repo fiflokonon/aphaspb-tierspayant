@@ -3,13 +3,14 @@ import { Deferred, Head, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
-import PenaltyLedgerTable from '@/components/aphaspb/PenaltyLedgerTable.vue';
+import PenaltyTrace from '@/components/aphaspb/PenaltyTrace.vue';
 import PenaltyTrendCard from '@/components/aphaspb/PenaltyTrendCard.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
-import type { PenaltyLedger } from '@/types/aphaspb';
+import type { PenaltyLedger, PenaltyTrace as Trace } from '@/types/aphaspb';
 
 const props = defineProps<{
     penaltyTrend?: PenaltyLedger;
+    penaltyTrace?: Trace;
     period: string;
     periodLabel: string;
     periods: { value: string; label: string }[];
@@ -27,13 +28,19 @@ const insurerOptions = computed(() => [
     ...props.insurers.map((one) => ({ value: one.id, label: one.name })),
 ]);
 
-/** Le journal est différé : il doit être nommé dans `only` pour revenir. */
+/** Le journal et la trace sont différés : ils doivent être nommés dans `only` pour revenir. */
 watch([period, insurer], () =>
     router.get(
         '/pharmacy/penalties',
         { period: period.value, insurer: insurer.value },
         {
-            only: ['penaltyTrend', 'period', 'periodLabel', 'insurer'],
+            only: [
+                'penaltyTrend',
+                'penaltyTrace',
+                'period',
+                'periodLabel',
+                'insurer',
+            ],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -63,71 +70,57 @@ const FORMATS = [
     <Head title="Journal des pénalités" />
 
     <div class="history-page">
-        <br>
-          <div class="intro-text"> 
-                        <h1>Journal des pénalités</h1>
-                       
-                    </div>
+        <div class="intro-text">
+            <h1>Journal des pénalités</h1>
+        </div>
+
         <ConsoleHeader title="" class="intro-text">
-
-          
             <template #filters>
+                <div class="compact-filters">
+                    <div class="filter-item">
+                        <span class="filter-label">Période de la courbe</span>
+                        <FilterSelect
+                            v-model="period"
+                            :options="periods"
+                            aria-label="Filtrer la courbe par période"
+                        />
+                    </div>
 
-                               <div class="compact-filters">
-
-
-    <div class="filter-item">
-     
-         <label for="period">Période</label>
-                <FilterSelect
-                    v-model="period"
-                    :options="periods"
-        
-                    aria-label="Filtrer par période"
-                />
-    </div>
-
-    <div class="filter-item">
-        <label for="insurer">Assureur</label>
-             <FilterSelect
-                    v-model="insurer"
-                    :options="insurerOptions"
-                  
-                    aria-label="Filtrer par assureur"
-                />
-    </div>
-</div>
-                
-          
+                    <div class="filter-item">
+                        <span class="filter-label">Assureur</span>
+                        <FilterSelect
+                            v-model="insurer"
+                            :options="insurerOptions"
+                            aria-label="Filtrer par assureur"
+                        />
+                    </div>
+                </div>
             </template>
         </ConsoleHeader>
 
         <div class="ledger-body">
+            <!--
+                D'abord ce qui est exigible aujourd'hui et d'où vient chaque
+                franc ; la courbe mensuelle ne vient qu'ensuite, en vue d'ensemble.
+            -->
+            <Deferred data="penaltyTrace">
+                <template #fallback>
+                    <ChartSkeleton :height="260" />
+                </template>
+
+                <PenaltyTrace
+                    v-if="penaltyTrace"
+                    :key="`${insurer ?? 'all'}`"
+                    :trace="penaltyTrace"
+                />
+            </Deferred>
+
             <PenaltyTrendCard
                 :ledger="penaltyTrend"
                 :subtitle="`${pharmacyName} · ${periodLabel}`"
                 filename="aphaspb-journal-penalites-officine"
                 :show-insurer-filter="false"
             />
-
-            <Deferred data="penaltyTrend">
-                <template #fallback>
-                    <ChartSkeleton :height="320" />
-                </template>
-
-                <!--
-                    Sans assureur sous convention, un tableau de zéros ne dirait
-                    rien de plus que la carte au-dessus : il se tait.
-                -->
-                <PenaltyLedgerTable
-                    v-if="
-                        penaltyTrend &&
-                        (penaltyTrend.insurers.length > 0 ||
-                            penaltyTrend.maskedInsurers > 0)
-                    "
-                    :ledger="penaltyTrend"
-                />
-            </Deferred>
 
             <div class="exports">
                 <span class="exports-label text-ink/70"
@@ -171,12 +164,12 @@ const FORMATS = [
     width: 170px;
 }
 
-.filter-item label {
+.filter-label {
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: .08em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: black;
+    color: var(--ink);
 }
 
 .filter-item :deep(select),
@@ -211,7 +204,7 @@ const FORMATS = [
 }
 
 .intro-text h1 {
-    margin: 0;
+    margin: 16px 0 0;
 
     color: var(--ink);
 
@@ -220,6 +213,7 @@ const FORMATS = [
 
     letter-spacing: -0.025em;
 }
+
 .ledger-body {
     display: flex;
     flex-direction: column;
@@ -243,13 +237,13 @@ const FORMATS = [
     padding: 7px 14px;
     border: 1px solid var(--input);
     border-radius: 10px;
-    background: #0f8f78;
-    color: white;
+    background: var(--primary);
+    color: var(--primary-foreground);
     font-size: var(--text-meta);
     font-weight: 600;
 }
 
 .export-link:hover {
-    background: #0f8f78;
+    background: var(--primary-dark);
 }
 </style>

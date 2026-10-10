@@ -10,6 +10,7 @@ use App\Services\Exports\XlsxWriter;
 use App\Services\Pharmacy\PharmacyPenaltyLedger;
 use App\Services\Pharmacy\PharmacyPenaltyLedgerPdf;
 use App\Services\Pharmacy\PharmacyPenaltyLedgerRows;
+use App\Services\Pharmacy\PharmacyPenaltyTrace;
 use Barryvdh\DomPDF\PDF as PdfDocument;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,6 +34,7 @@ class PharmacyPenaltyLedgerController extends Controller
     public function __construct(
         protected PharmacyPenaltyLedger $ledger,
         protected PharmacyPenaltyLedgerRows $rows,
+        protected PharmacyPenaltyTrace $trace,
         protected PharmacyPenaltyLedgerPdf $pdf,
         protected CsvRenderer $csv,
         protected XlsxWriter $xlsx,
@@ -51,6 +53,11 @@ class PharmacyPenaltyLedgerController extends Controller
         return Inertia::render('pharmacy/PenaltyLedger', [
             'penaltyTrend' => Inertia::defer(
                 fn () => $this->ledger->for($pharmacy, $from, $to, $insurerId)->toArray(),
+            ),
+            // À la date du jour, quelle que soit la période : la période ne
+            // borne que la courbe mensuelle.
+            'penaltyTrace' => Inertia::defer(
+                fn () => $this->trace->for($pharmacy, $insurerId),
             ),
             'period' => $period->value,
             'periodLabel' => $period->describe(),

@@ -144,13 +144,14 @@ test('an overdue line carries the penalty accrued since the trigger', function (
     expect($this->service->forPharmacy($this->pharmacy)[0]->penalty)->toBe(60_000);
 });
 
-test('an instalment lightens the penalty of an overdue line', function () {
+test('an instalment does not lighten the penalty of an overdue line', function () {
     $insurer = Insurer::factory()
         ->withPenalty(triggerDays: 60, ratePercent: 2.0)
         ->create(['standard_delay_days' => 30]);
 
     // Déposée il y a 120 jours, déclenchement à 60 : tranches il y a 60, 30 et
-    // 0 jours. Le versement à 45 jours tombe entre la première et la deuxième.
+    // 0 jours. Le versement à 45 jours tombe entre la première et la deuxième,
+    // sans solder le mois.
     $declaration = overdueCandidate($this->pharmacy, $insurer, 120);
 
     app(RecordPaymentInstalments::class)->handle($declaration, [[
@@ -158,25 +159,29 @@ test('an instalment lightens the penalty of an overdue line', function () {
         'paid_on' => CarbonImmutable::create(2026, 8, 31)->subDays(45)->toDateString(),
     ]]);
 
-    // 20 000 sur la base entière, puis deux tranches sur 600 000.
-    expect($this->service->forPharmacy($this->pharmacy)[0]->penalty)->toBe(44_000);
+    // L'acompte allège l'encours, pas la pénalité : base fixe, trois tranches
+    // de 20 000 sur le montant facturé.
+    $line = $this->service->forPharmacy($this->pharmacy)[0];
+
+    expect($line->outstanding)->toBe(600_000)
+        ->and($line->penalty)->toBe(60_000);
 });
 
-test('an instalment received before the trigger lightens every tranche', function () {
+test('an instalment received before the trigger lightens no tranche', function () {
     $insurer = Insurer::factory()
         ->withPenalty(triggerDays: 60, ratePercent: 2.0)
         ->create(['standard_delay_days' => 30]);
 
     $declaration = overdueCandidate($this->pharmacy, $insurer, 120);
 
-    // À 70 jours, donc avant la première tranche : aucune ne voit la base
-    // entière.
+    // À 70 jours, donc avant la première tranche : le mois n'est pas soldé,
+    // et chaque tranche porte quand même sur la base entière.
     app(RecordPaymentInstalments::class)->handle($declaration, [[
         'amount' => 400_000,
         'paid_on' => CarbonImmutable::create(2026, 8, 31)->subDays(70)->toDateString(),
     ]]);
 
-    expect($this->service->forPharmacy($this->pharmacy)[0]->penalty)->toBe(36_000);
+    expect($this->service->forPharmacy($this->pharmacy)[0]->penalty)->toBe(60_000);
 });
 
 test('an overdue line names the insurer it belongs to', function () {

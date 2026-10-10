@@ -57,7 +57,7 @@ test('an unknown outcome is rejected', function () {
 test('putting a penalty back as due', function () {
     $user = User::factory()->create();
     $declaration = referenceMonth($user);
-    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+    $declaration->settlePenalty(PenaltySettlement::Paid, 40_000, $user);
 
     $this->actingAs($user)
         ->delete(route('pharmacy.penalty-settlement.destroy', $declaration))
@@ -69,7 +69,7 @@ test('putting a penalty back as due', function () {
 test('marking a penalty already marked that way says so instead of claiming a change', function () {
     $user = User::factory()->create();
     $declaration = referenceMonth($user);
-    $declaration->settlePenalty(PenaltySettlement::Waived, 32_000, $user);
+    $declaration->settlePenalty(PenaltySettlement::Waived, 40_000, $user);
 
     $this->actingAs($user)
         ->post(route('pharmacy.penalty-settlement.store', $declaration), ['outcome' => 'waived'])

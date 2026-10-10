@@ -344,16 +344,16 @@ test('a settled month is due no more, and says how it was closed', function () {
     $user = User::factory()->create();
     $declaration = referenceMonth($user);
     $user->currentPharmacy->insurers()->attach($declaration->insurer_id);
-    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+    $declaration->settlePenalty(PenaltySettlement::Paid, 40_000, $user);
 
     $this->actingAs($user)
         ->get(route('pharmacy.insurers.show', $declaration->insurer_id).'?period=calendar-year')
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('relationship.penalty', 0)
-            ->where('months.0.penalty', 32_000)
+            ->where('months.0.penalty', 40_000)
             ->where('months.0.penaltyDue', 0)
             ->where('months.0.settlement.label', 'Payée')
-            ->where('months.0.settlement.amount', 32_000)
+            ->where('months.0.settlement.amount', 40_000)
             ->where('months.0.canSettle', false));
 });
 

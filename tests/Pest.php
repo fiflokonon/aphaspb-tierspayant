@@ -71,7 +71,9 @@ function inertiaPropsJson(TestResponse $response): string
 
 /**
  * L'exemple de la spec : 1 000 000 F déposés le 31/03, clause 60 j / 2 %,
- * 400 000 F le 15/06 puis 600 000 F le 20/07 → 32 000 F de pénalité.
+ * 400 000 F le 15/06 puis 600 000 F le 20/07 → 40 000 F de pénalité : deux
+ * tranches (30/05 et 29/06) de 20 000 F sur la base fixe, le solde du 20/07
+ * arrêtant la course avant celle du 29/07.
  *
  * Le nom d'assureur est unique en base : un test qui crée deux mois de
  * référence passe un second nom.

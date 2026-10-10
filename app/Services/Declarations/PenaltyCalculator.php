@@ -218,6 +218,10 @@ class PenaltyCalculator
      * milliers de fois par export réseau, et des clés de chaîne y coûteraient
      * plus que le calcul lui-même. Les tranches rendues suivent la même forme.
      *
+     * Depuis le passage à la base fixe, les versements ne pèsent plus sur le
+     * montant d'une tranche : seul le solde, par `$paidDay`, arrête la course.
+     * Le paramètre reste pour ne pas déplacer tous les appelants d'un coup.
+     *
      * `$today` se passe quand l'appelant boucle : DayNumber::today() traverse
      * Carbon, et le laisser se recalculer à chaque ligne coûtait 406 ms sur
      * 40 000 déclarations contre 52 quand il est hissé hors de la boucle.
@@ -251,27 +255,14 @@ class PenaltyCalculator
         $tranches = [];
         $tranche = $depositedDay + $triggerDays;
 
+        // La base est fixe : chaque tranche porte sur le montant facturé, même
+        // après un acompte (décision de recette du 10/10/2026, qui remplace la
+        // base dégressive du lot A). Les versements n'agissent que sur la fin
+        // de la course, par $end : un mois soldé cesse de courir.
+        $amount = intdiv($amountInvoiced * $rateBp, 10_000);
+
         while ($tranche <= $end) {
-            $base = $amountInvoiced;
-
-            foreach ($payments as [$amount, $day]) {
-                // Comparaison inclusive : de l'argent viré le jour même allège
-                // cette tranche-là plutôt que la suivante.
-                if ($day <= $tranche) {
-                    $base -= $amount;
-                }
-            }
-
-            // Les versements ne font que s'ajouter : une base retombée à zéro
-            // ne peut plus remonter, donc les tranches suivantes ne
-            // factureraient rien. Sortir plutôt que continuer est une
-            // optimisation, pas une règle — le total est le même dans les deux
-            // cas, et c'est pourquoi aucun test ne peut les distinguer.
-            if ($base <= 0) {
-                break;
-            }
-
-            $tranches[] = [$tranche, intdiv($base * $rateBp, 10_000)];
+            $tranches[] = [$tranche, $amount];
             $tranche += Insurer::PENALTY_TRANCHE_DAYS;
         }
 

@@ -84,7 +84,7 @@ test('a settlement on the insurer screen is not counted as a correction', functi
             ->where('declaration.revisions.0.penaltyOnly', true)
             ->where('declaration.revisions.0.penaltySettlement', 'paid')
             ->where('declaration.revisions.0.penaltySettlementLabel', 'Payée')
-            ->where('declaration.revisions.0.penaltySettledAmount', 32_000)
+            ->where('declaration.revisions.0.penaltySettledAmount', 40_000)
             ->where('declaration.revisions.1.penaltyOnly', false)
             ->where('declaration.revisions.1.penaltySettlement', null));
 });
@@ -138,7 +138,7 @@ test('the revision after a closure from the form carries the settlement', functi
 
     expect($declaration->revisions()->count())->toBe(2)
         ->and($revision->penalty_settlement)->toBe(PenaltySettlement::Paid)
-        ->and($revision->penalty_settled_amount)->toBe(32_000)
+        ->and($revision->penalty_settled_amount)->toBe(40_000)
         ->and($revision->penalty_only)->toBeTrue();
 });
 
@@ -146,7 +146,7 @@ test('the first revision is never penalty-only, even on a month already closed',
     $user = User::factory()->create();
     $declaration = referenceMonth($user);
     $user->currentPharmacy->insurers()->attach($declaration->insurer_id);
-    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+    $declaration->settlePenalty(PenaltySettlement::Paid, 40_000, $user);
 
     $this->actingAs($user)
         ->post(route('pharmacy.declare.store'), monthForm($declaration->insurer_id, referenceInstalments()));

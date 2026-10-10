@@ -12,7 +12,7 @@ Conséquence à connaître avant d'optimiser : `PenaltyCalculator` ne se somme p
 
 Deux portes d'entrée sur un seul algorithme : `for(Declaration)` pour du code qui hydrate de l'Eloquent, `accrued(...)` sur valeurs nues pour `OverduePaymentsService`, qui lit en query builder et ne doit jamais charger `private_note`.
 
-Le `break` sur base nulle est une **optimisation, pas une règle** : une base retombée à zéro ne remonte jamais, donc `break` et `continue` donnent le même total. Aucun test ne peut les distinguer — ne pas en écrire un qui prétendrait le faire.
+Le `break` sur base nulle a disparu avec la base fixe (10/10/2026) : une tranche ne dépend plus des versements, la course ne s'arrête qu'au solde (voir la règle « base fixe » plus bas).
 
 ## paid_on existe dès le premier versement — ne pas le lire comme « mois réglé »
 `syncFromInstalments()` pose `paid_on` sur le **versement le plus récent**, y compris quand il ne solde rien. Le hook `saving` en tire donc un `delay_days` pour tout mois seulement *entamé* : un acompte reçu au 9ᵉ jour donne `delay_days = 9` pendant que la dette vieillit depuis 261 jours.
@@ -29,3 +29,10 @@ La vue « pénalité courue » ne peut pas filtrer sur le mois déclaré : une f
 `accruedInDays()` est la somme de `tranches()` : un seul algorithme pour le total et le journal. Ne pas y remettre une boucle propre.
 
 `PenaltyTally` ne fait aucune requête et ne retient rien : il compte les officines derrière chaque mois et laisse la décision à l'appelant (closure `$withheld`).
+
+## Pénalité : base fixe (montant facturé) depuis le 10/10/2026
+Décision du client en recette, qui **remplace la base dégressive** de la spec lot A (docs/superpowers/specs/2026-09-19-penalites-de-retard-lot-a-design.md, l. 36 et 117) : chaque tranche de 30 jours vaut `intdiv(amount_invoiced × rate_bp, 10000)`, même après un acompte. Les versements n'agissent plus que sur la fin de la course : un mois soldé (`amount_received >= amount_invoiced`) s'arrête à `paid_on`, sinon il court jusqu'à aujourd'hui. Ne pas réintroduire la déduction des versements.
+
+Le paramètre `$payments` de `PenaltyCalculator::tranches()` / `accruedInDays()` / `accrued()` n'a plus d'effet sur le calcul. Il est gardé pour ne pas déplacer tous les appelants d'un coup. Le retirer (et le chargement des versements côté réseau, qui ne sert qu'à lui) est un nettoyage à faire, en recalant les tests qui épinglent le nombre de requêtes.
+
+La trace par facture (`App\Services\Pharmacy\PharmacyPenaltyTrace`, prop différée `penaltyTrace` du journal officine) passe par `tranches()` : ne pas lui donner sa propre boucle.

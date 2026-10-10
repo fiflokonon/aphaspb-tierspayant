@@ -117,6 +117,62 @@ export type PenaltyLedger = {
     maskedInsurers: number;
 };
 
+/** Un fait daté de la vie d'une facture, tel que la trace le raconte. */
+export type PenaltyTraceEvent = {
+    kind: 'deposit' | 'trigger' | 'tranche' | 'payment' | 'paidOff' | 'settled';
+    /** « 14 juin 2026 » */
+    on: string;
+    amount: number | null;
+    /** Le rang de la tranche. */
+    number: number | null;
+    /** La pénalité cumulée après cette tranche. */
+    cumulative: number | null;
+    /** Le reste dû de la facture après ce versement. */
+    remaining: number | null;
+    /** « Payée » / « Annulée » pour une clôture. */
+    label: string | null;
+};
+
+export type PenaltyTraceInvoice = {
+    id: number;
+    periodLabel: string;
+    amountInvoiced: number;
+    amountReceived: number;
+    depositedOn: string;
+    triggerOn: string;
+    trancheAmount: number;
+    tranches: number;
+    accrued: number;
+    due: number;
+    /** La facture doit encore quelque chose : la pénalité court toujours. */
+    running: boolean;
+    nextTrancheOn: string | null;
+    settlement: {
+        label: string;
+        amount: number | null;
+        on: string | null;
+    } | null;
+    events: PenaltyTraceEvent[];
+};
+
+export type PenaltyTraceInsurer = {
+    id: number;
+    name: string;
+    triggerDays: number;
+    ratePercent: number;
+    trancheDays: number;
+    accrued: number;
+    due: number;
+    invoices: PenaltyTraceInvoice[];
+};
+
+/** La pénalité exigible à la date du jour, facture par facture. */
+export type PenaltyTrace = {
+    asOf: string;
+    due: number;
+    insurers: PenaltyTraceInsurer[];
+};
+
 /**
  * Les vues du journal : le mois où la tranche tombe, celui de la facture, ou
  * ce qui reste dû du couru une fois le payé et l'annulé retirés.

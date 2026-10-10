@@ -18,7 +18,7 @@ test('a covered month with a penalty can be marked paid, at the computed amount'
     $declaration = referenceMonth($this->user);
 
     expect($this->settle->settle($declaration, PenaltySettlement::Paid, $this->user))->toBeTrue()
-        ->and($declaration->fresh()->penalty_settled_amount)->toBe(32_000);
+        ->and($declaration->fresh()->penalty_settled_amount)->toBe(40_000);
 });
 
 test('an uncovered month cannot be settled', function () {
@@ -65,15 +65,18 @@ test('case B - a correction that changes the amount lifts the settlement', funct
     $declaration = referenceMonth($this->user);
     $this->settle->settle($declaration, PenaltySettlement::Paid, $this->user);
 
+    // Le solde corrigé du 20/07 au 20/06 arrête la course avant la tranche du
+    // 29/06 : seule celle du 30/05 reste, 20 000 au lieu de 2 × 20 000. Avec
+    // la base fixe, déplacer un acompte ne changerait plus rien.
     $reopened = app(RecordPaymentInstalments::class)->handle($declaration->fresh(), [
-        ['amount' => 400_000, 'paid_on' => '2026-05-25'],
-        ['amount' => 600_000, 'paid_on' => '2026-07-20'],
+        ['amount' => 400_000, 'paid_on' => '2026-06-15'],
+        ['amount' => 600_000, 'paid_on' => '2026-06-20'],
     ]);
 
     expect($reopened?->reason)->toBe('amountChanged')
-        ->and($reopened?->previousAmount)->toBe(32_000)
-        ->and($reopened?->currentAmount)->toBe(24_000)
-        ->and($reopened?->message('Mars 26', 'NSIA'))->toBe("La pénalité de Mars 26 (NSIA) n'est plus close : son montant a changé (24\u{202F}000 F au lieu de 32\u{202F}000 F).");
+        ->and($reopened?->previousAmount)->toBe(40_000)
+        ->and($reopened?->currentAmount)->toBe(20_000)
+        ->and($reopened?->message('Mars 26', 'NSIA'))->toBe("La pénalité de Mars 26 (NSIA) n'est plus close : son montant a changé (20\u{202F}000 F au lieu de 40\u{202F}000 F).");
 });
 
 test('an identical re-save keeps the settlement', function () {

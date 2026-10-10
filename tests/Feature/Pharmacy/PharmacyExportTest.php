@@ -223,7 +223,7 @@ test('the csv carries the penalty and what produced it', function () {
 
     // Déposée le 2026-08-01, 400 000 le 06 puis 600 000 le 26, donc soldée :
     // l'horloge s'arrête au 26 et une seule tranche mord, le 11, sur la base
-    // déjà ramenée à 600 000 par le premier versement.
+    // fixe du montant facturé : 2 % de 1 000 000. L'acompte du 06 n'allège rien.
     declareSplit($pharmacy, $insurer);
 
     $rows = csvRowsFor($user);
@@ -233,7 +233,7 @@ test('the csv carries the penalty and what produced it', function () {
 
     expect($cell('delai_declenchement_penalite_jours'))->toBe('10')
         ->and($cell('taux_penalite_pct'))->toBe('2')
-        ->and($cell('penalite_fcfa'))->toBe('12000');
+        ->and($cell('penalite_fcfa'))->toBe('20000');
 });
 
 test('an insurer without a clause leaves the three penalty cells empty', function () {
@@ -266,7 +266,7 @@ test('the pdf summary carries the longest delay and the penalty', function () {
 
     expect($payload['perInsurer'])->toHaveCount(1)
         ->and($payload['perInsurer'][0])->toHaveKeys(['longestDelayDays', 'penalty'])
-        ->and($payload['perInsurer'][0]['penalty'])->toBe(12_000)
+        ->and($payload['perInsurer'][0]['penalty'])->toBe(20_000)
         ->and($payload['perInsurer'][0]['longestDelayDays'])->toBe(25);
 });
 
@@ -310,10 +310,10 @@ test('the officine report gives a page to each of its insurers', function () {
 
     $pages = collect($payload['insurerPages'])->keyBy('name');
 
-    expect($pages['NSIA Assurances']['penalty'])->toBe(12_000)
+    expect($pages['NSIA Assurances']['penalty'])->toBe(20_000)
         ->and($pages['NSIA Assurances']['longestDelayDays'])->toBe(25)
         ->and($pages['NSIA Assurances']['months'])->toHaveCount(1)
-        ->and($pages['NSIA Assurances']['months'][0]['penalty'])->toBe(12_000)
+        ->and($pages['NSIA Assurances']['months'][0]['penalty'])->toBe(20_000)
         ->and($pages['SUNU Assurances']['penalty'])->toBeNull()
         ->and($pages['SUNU Assurances']['longestDelayDays'])->toBe(12);
 });
@@ -340,7 +340,7 @@ test('a settled month leaves the due at zero and carries the closing figures', f
     $declaration = referenceMonth($user);
 
     $this->travelTo(CarbonImmutable::create(2026, 8, 5));
-    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+    $declaration->settlePenalty(PenaltySettlement::Paid, 40_000, $user);
     $this->travelTo(CarbonImmutable::create(2026, 8, 15));
 
     $rows = csvRowsFor($user);
@@ -348,9 +348,9 @@ test('a settled month leaves the due at zero and carries the closing figures', f
     $row = collect($rows)->first(fn (array $r) => in_array('NSIA', $r, true));
     $cell = fn (string $column): string => $row[array_search($column, $header, true)];
 
-    expect($cell('penalite_fcfa'))->toBe('32000')
+    expect($cell('penalite_fcfa'))->toBe('40000')
         ->and($cell('penalite_statut'))->toBe('payee')
-        ->and($cell('penalite_close_fcfa'))->toBe('32000')
+        ->and($cell('penalite_close_fcfa'))->toBe('40000')
         ->and($cell('penalite_close_le'))->toBe('2026-08-05')
         ->and($cell('penalite_due_fcfa'))->toBe('0');
 });
@@ -367,8 +367,8 @@ test('an unsettled month under a clause reads due, with the due equal to the acc
     expect($cell('penalite_statut'))->toBe('due')
         ->and($cell('penalite_close_fcfa'))->toBe('')
         ->and($cell('penalite_close_le'))->toBe('')
-        ->and($cell('penalite_fcfa'))->toBe('32000')
-        ->and($cell('penalite_due_fcfa'))->toBe('32000');
+        ->and($cell('penalite_fcfa'))->toBe('40000')
+        ->and($cell('penalite_due_fcfa'))->toBe('40000');
 });
 
 test('an insurer without a clause leaves the four new penalty cells empty', function () {
@@ -391,7 +391,7 @@ test('the pdf totals read the due, zero once the only month is settled', functio
     $declaration = referenceMonth($user);
 
     $this->travelTo(CarbonImmutable::create(2026, 8, 5));
-    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+    $declaration->settlePenalty(PenaltySettlement::Paid, 40_000, $user);
     $this->travelTo(CarbonImmutable::create(2026, 8, 15));
 
     $export = app(PharmacyPdfExport::class);
@@ -405,20 +405,20 @@ test('the pdf totals read the due, zero once the only month is settled', functio
 
     expect($page['penalty'])->toBe(0)
         ->and($page['months'][0]['settlementLabel'])->toBe('Payée')
-        ->and($page['months'][0]['settledAmount'])->toBe(32_000);
+        ->and($page['months'][0]['settledAmount'])->toBe(40_000);
 });
 
 test('the pdf pill of a paid month carries the closed amount', function () {
     [$user] = exportingOfficine();
     $declaration = referenceMonth($user);
-    $declaration->settlePenalty(PenaltySettlement::Paid, 32_000, $user);
+    $declaration->settlePenalty(PenaltySettlement::Paid, 40_000, $user);
 
     $export = app(PharmacyPdfExport::class);
     $reflected = new ReflectionMethod($export, 'data');
     $payload = $reflected->invoke($export, $user->currentPharmacy, new Period(2025, 9), new Period(2026, 8), null);
 
     expect(view('exports.pharmacy', $payload)->render())
-        ->toContain("<div class=\"settlement-chip\">Payée 32\u{202F}000 F</div>");
+        ->toContain("<div class=\"settlement-chip\">Payée 40\u{202F}000 F</div>");
 });
 
 test('the pdf month keeps a null settlement label when nothing was closed', function () {
@@ -431,6 +431,6 @@ test('the pdf month keeps a null settlement label when nothing was closed', func
 
     $page = collect($payload['insurerPages'])->firstWhere('name', 'NSIA');
 
-    expect($page['penalty'])->toBe(32_000)
+    expect($page['penalty'])->toBe(40_000)
         ->and($page['months'][0]['settlementLabel'])->toBeNull();
 });
