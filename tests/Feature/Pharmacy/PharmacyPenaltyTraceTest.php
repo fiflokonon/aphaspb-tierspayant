@@ -120,6 +120,20 @@ test('a paid-off invoice stops accruing on the day it was settled', function () 
         ->toBe(['deposit', 'trigger', 'tranche', 'tranche', 'payment', 'paidOff']);
 });
 
+test('an overpayment shows in the trace but the penalty stops on the day the invoice was settled', function () {
+    [$user, $insurer] = traceOfficine();
+    traceInvoice($user, $insurer, instalments: [
+        ['amount' => 1_000_000, 'paid_on' => '2026-07-10'],
+        ['amount' => 50_000, 'paid_on' => '2026-09-01'],
+    ]);
+
+    $invoice = traceOf($user)['insurers'][0]['invoices'][0];
+
+    expect($invoice)->toMatchArray(['tranches' => 2, 'accrued' => 40_000, 'running' => false])
+        ->and(array_column($invoice['events'], 'kind'))
+        ->toBe(['deposit', 'trigger', 'tranche', 'tranche', 'payment', 'paidOff', 'payment']);
+});
+
 test('a closed penalty owes nothing more and comes after the due ones', function () {
     [$user, $insurer] = traceOfficine();
     $closed = traceInvoice($user, $insurer, instalments: [['amount' => 1_000_000, 'paid_on' => '2026-07-10']]);

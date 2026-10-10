@@ -197,6 +197,17 @@ test('the payment that settles the month stops the tranches that would follow', 
     expect($this->calculator->for($declaration))->toBe(40_000);
 });
 
+test('an overpayment after the settlement does not prolong the penalty', function () {
+    // Soldée le 2026-06-15 (une tranche, le 2026-05-31) ; un trop-perçu du
+    // 2026-09-01 devient le `paid_on` mais ne fait pas repartir la course.
+    $declaration = declarationFor(insurerWith(30, 200), 1_000_000, '2026-05-01', [
+        ['amount' => 1_000_000, 'paid_on' => '2026-06-15'],
+        ['amount' => 50_000, 'paid_on' => '2026-09-01'],
+    ]);
+
+    expect($this->calculator->for($declaration))->toBe(20_000);
+});
+
 test('the total is null when not one declaration carries a clause', function () {
     $insurer = insurerWith(null, null);
 

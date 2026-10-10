@@ -121,6 +121,10 @@ class PharmacyPenaltyTrace
         $depositedDay = DayNumber::fromDate((string) $declaration->invoice_deposited_on);
         $paidDay = $declaration->paid_on === null ? null : DayNumber::fromDate((string) $declaration->paid_on);
         $triggerDay = $depositedDay + (int) $clause->penalty_trigger_days;
+        $paymentDays = array_values($payments->map(fn (stdClass $payment): array => [
+            (int) $payment->amount,
+            DayNumber::fromDate((string) $payment->paid_on),
+        ])->all());
 
         $tranches = $this->penalties->tranches(
             amountInvoiced: $invoiced,
@@ -129,7 +133,7 @@ class PharmacyPenaltyTrace
             paidDay: $paidDay,
             triggerDays: (int) $clause->penalty_trigger_days,
             rateBp: (int) $clause->penalty_rate_bp,
-            payments: [],
+            payments: $paymentDays,
             today: $today,
         );
 
@@ -153,16 +157,16 @@ class PharmacyPenaltyTrace
 
         $remaining = $invoiced;
 
-        foreach ($payments as $payment) {
-            $day = DayNumber::fromDate((string) $payment->paid_on);
-            $remaining -= (int) $payment->amount;
-            $timeline[] = [$day, 3, $this->event('payment', $day, amount: (int) $payment->amount, remaining: max($remaining, 0))];
+        foreach ($paymentDays as [$amount, $day]) {
+            $remaining -= $amount;
+            $timeline[] = [$day, 3, $this->event('payment', $day, amount: $amount, remaining: max($remaining, 0))];
         }
 
         $running = $received < $invoiced;
+        $paidOffDay = $running ? null : ($this->penalties->paidOffDay($invoiced, $paymentDays) ?? $paidDay);
 
-        if (! $running && $paidDay !== null) {
-            $timeline[] = [$paidDay, 4, $this->event('paidOff', $paidDay)];
+        if ($paidOffDay !== null) {
+            $timeline[] = [$paidOffDay, 4, $this->event('paidOff', $paidOffDay)];
         }
 
         $settlement = PenaltySettlement::tryFrom((string) $declaration->penalty_settlement);

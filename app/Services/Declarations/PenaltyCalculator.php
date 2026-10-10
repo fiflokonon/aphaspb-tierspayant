@@ -219,8 +219,9 @@ class PenaltyCalculator
      * plus que le calcul lui-même. Les tranches rendues suivent la même forme.
      *
      * Depuis le passage à la base fixe, les versements ne pèsent plus sur le
-     * montant d'une tranche : seul le solde, par `$paidDay`, arrête la course.
-     * Le paramètre reste pour ne pas déplacer tous les appelants d'un coup.
+     * montant d'une tranche : ils ne servent qu'à dater le solde, qui arrête la
+     * course (voir paidOffDay()). `$paidDay` n'est que le repli quand l'appelant
+     * ne les fournit pas.
      *
      * `$today` se passe quand l'appelant boucle : DayNumber::today() traverse
      * Carbon, et le laisser se recalculer à chaque ligne coûtait 406 ms sur
@@ -241,12 +242,12 @@ class PenaltyCalculator
         array $payments,
         ?int $today = null,
     ): array {
-        // Un mois entièrement soldé cesse de courir au dernier versement, et ce
+        // Un mois entièrement soldé cesse de courir le jour du solde, et ce
         // qu'il avait accumulé lui reste acquis. Un mois qui doit encore quelque
         // chose court jusqu'à aujourd'hui.
         $end = $amountReceived < $amountInvoiced
             ? ($today ?? DayNumber::today())
-            : $paidDay;
+            : ($this->paidOffDay($amountInvoiced, $payments) ?? $paidDay);
 
         if ($end === null) {
             return [];
@@ -267,5 +268,31 @@ class PenaltyCalculator
         }
 
         return $tranches;
+    }
+
+    /**
+     * Le jour où le cumul des versements atteint le montant facturé, ou null.
+     *
+     * Et non `paid_on`, qui porte le versement **le plus récent** : un
+     * trop-perçu arrivé des semaines après le solde ferait sinon courir la
+     * pénalité jusqu'à lui (décision de recette du 11/10/2026).
+     *
+     * Les versements arrivent triés par date, comme tous les appelants les lisent.
+     *
+     * @param  list<array{0: int, 1: int}>  $payments
+     */
+    public function paidOffDay(int $amountInvoiced, array $payments): ?int
+    {
+        $received = 0;
+
+        foreach ($payments as [$amount, $day]) {
+            $received += $amount;
+
+            if ($received >= $amountInvoiced) {
+                return $day;
+            }
+        }
+
+        return null;
     }
 }
