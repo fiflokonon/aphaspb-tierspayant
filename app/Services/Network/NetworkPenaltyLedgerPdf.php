@@ -10,13 +10,15 @@ use Barryvdh\DomPDF\PDF as PdfDocument;
 /**
  * Le journal des pénalités du réseau, mis en page pour être joint à un courrier.
  *
- * Les pages itèrent le journal publié par NetworkPenaltyJournal : un assureur
- * masqué n'a pas de page, et un mois retenu y est écrit « retenu ».
+ * D'abord la pénalité exigible par assureur (NetworkPenaltyClaims), puis le
+ * journal publié par NetworkPenaltyJournal : un assureur masqué n'a pas de
+ * page, et un mois retenu y est écrit « retenu ».
  */
 class NetworkPenaltyLedgerPdf
 {
     public function __construct(
         protected NetworkPenaltyJournal $journal,
+        protected NetworkPenaltyClaims $claims,
         protected SettingsRepository $settings,
     ) {
         //
@@ -26,6 +28,7 @@ class NetworkPenaltyLedgerPdf
     {
         return Pdf::loadView('exports.penalty-ledger-network', [
             'ledger' => $this->journal->for($from, $to, $city, $insurerId),
+            'claims' => $this->claims->for($from, $to, $city, $insurerId),
             'city' => $city,
             'periodLabel' => $periodLabel,
             'anonymityThreshold' => $this->settings->anonymityMinPharmacies(),

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
 use App\Services\Exports\CsvRenderer;
 use App\Services\Exports\XlsxWriter;
+use App\Services\Network\NetworkPenaltyClaims;
 use App\Services\Network\NetworkPenaltyJournal;
 use App\Services\Network\NetworkPenaltyLedgerPdf;
 use App\Services\Network\NetworkPenaltyLedgerRows;
@@ -18,7 +19,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Le journal mensuel des pénalités du réseau, et ses trois exports.
+ * Le journal des pénalités du réseau — exigible par assureur et courbe
+ * mensuelle —, et ses trois exports.
  *
  * Ne nomme aucune officine. Toute rétention se décide dans
  * NetworkPenaltyJournal : ce contrôleur n'en prend aucune.
@@ -29,6 +31,7 @@ class NetworkPenaltyLedgerController extends Controller
 
     public function __construct(
         protected NetworkPenaltyJournal $journal,
+        protected NetworkPenaltyClaims $claims,
         protected NetworkPenaltyLedgerRows $rows,
         protected NetworkPenaltyLedgerPdf $pdf,
         protected CsvRenderer $csv,
@@ -48,6 +51,10 @@ class NetworkPenaltyLedgerController extends Controller
         return Inertia::render('admin/PenaltyLedger', [
             'penaltyTrend' => Inertia::defer(
                 fn () => $this->journal->for($from, $to, $city, $insurerId)->toArray(),
+            ),
+            // Même périmètre que l'export réseau, dont il reprend les rétentions.
+            'penaltyClaims' => Inertia::defer(
+                fn () => $this->claims->for($from, $to, $city, $insurerId),
             ),
             'period' => $period->value,
             'periodLabel' => $period->describe(),

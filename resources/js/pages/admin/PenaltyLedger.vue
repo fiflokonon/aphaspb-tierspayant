@@ -3,13 +3,17 @@ import { Deferred, Head, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
+import NetworkPenaltyClaims from '@/components/aphaspb/NetworkPenaltyClaims.vue';
 import PenaltyLedgerTable from '@/components/aphaspb/PenaltyLedgerTable.vue';
 import PenaltyTrendCard from '@/components/aphaspb/PenaltyTrendCard.vue';
-import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
-import type { PenaltyLedger } from '@/types/aphaspb';
+import type {
+    NetworkPenaltyClaims as Claims,
+    PenaltyLedger,
+} from '@/types/aphaspb';
 
 const props = defineProps<{
     penaltyTrend?: PenaltyLedger;
+    penaltyClaims?: Claims;
     period: string;
     periodLabel: string;
     periods: { value: string; label: string }[];
@@ -34,13 +38,20 @@ const insurerOptions = computed(() => [
     ...props.insurers.map((one) => ({ value: one.id, label: one.name })),
 ]);
 
-/** Le journal est différé : il doit être nommé dans `only` pour revenir. */
+/** Le journal et l'exigible sont différés : ils doivent être nommés dans `only` pour revenir. */
 watch([period, city, insurer], () =>
     router.get(
         '/admin/penalties',
         { period: period.value, city: city.value, insurer: insurer.value },
         {
-            only: ['penaltyTrend', 'period', 'periodLabel', 'city', 'insurer'],
+            only: [
+                'penaltyTrend',
+                'penaltyClaims',
+                'period',
+                'periodLabel',
+                'city',
+                'insurer',
+            ],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -74,8 +85,6 @@ const FORMATS = [
     <Head title="Journal des pénalités" />
 
     <div class="penalty-ledger-page">
-        
-
         <!-- INTRODUCTION + FILTRES -->
         <section class="ledger-intro">
             <div class="intro-decoration"></div>
@@ -87,8 +96,6 @@ const FORMATS = [
                     </div>
 
                     <div class="intro-text">
-                       
-
                         <h1>Journal des pénalités</h1>
 
                         <span class="intro-period">
@@ -135,6 +142,31 @@ const FORMATS = [
         </section>
 
         <div class="ledger-body">
+            <!-- EXIGIBLE PAR ASSUREUR -->
+            <section class="penalty-analysis">
+                <div class="analysis-heading">
+                    <div>
+                        <span class="section-eyebrow">À RÉCLAMER</span>
+                        <h2>Pénalité exigible par assureur</h2>
+                    </div>
+                    <p>
+                        Ce que chaque assureur doit encore au réseau à ce jour,
+                        sur les factures de la période.
+                    </p>
+                </div>
+
+                <Deferred data="penaltyClaims">
+                    <template #fallback>
+                        <ChartSkeleton :height="220" />
+                    </template>
+
+                    <NetworkPenaltyClaims
+                        v-if="penaltyClaims"
+                        :claims="penaltyClaims"
+                    />
+                </Deferred>
+            </section>
+
             <!-- TENDANCE DES PÉNALITÉS -->
             <section class="penalty-analysis">
                 <div class="section-top-line"></div>
@@ -209,9 +241,7 @@ const FORMATS = [
                             </div>
                         </div>
 
-                        <PenaltyLedgerTable
-                            :ledger="penaltyTrend"
-                        />
+                        <PenaltyLedgerTable :ledger="penaltyTrend" />
                     </div>
                 </Deferred>
 
@@ -231,9 +261,7 @@ const FORMATS = [
 
             <!-- EXPORTS -->
             <section class="exports-card">
-                <div class="exports-icon">
-                    ↓
-                </div>
+                <div class="exports-icon">↓</div>
 
                 <div class="exports-content">
                     <span class="exports-eyebrow">DOCUMENTS</span>
@@ -327,13 +355,7 @@ const FORMATS = [
     border: 1px solid var(--border);
     border-radius: 18px;
 
-    background:
-        linear-gradient(
-            110deg,
-            #ffffff 0%,
-            #ffffff 58%,
-            #f7fbf9 100%
-        );
+    background: linear-gradient(110deg, #ffffff 0%, #ffffff 58%, #f7fbf9 100%);
 
     /* box-shadow:
         0 7px 28px rgb(35 70 68 / 0.045); */
@@ -352,13 +374,12 @@ const FORMATS = [
 
     border-radius: 0 0 4px 4px;
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--primary),
-            #2b896d 70%,
-            var(--gold)
-        );
+    background: linear-gradient(
+        90deg,
+        var(--primary),
+        #2b896d 70%,
+        var(--gold)
+    );
 
     content: '';
 }
@@ -428,12 +449,7 @@ const FORMATS = [
 
     border-radius: 14px;
 
-    background:
-        linear-gradient(
-            145deg,
-            var(--primary),
-            var(--primary-dark)
-        );
+    background: linear-gradient(145deg, var(--primary), var(--primary-dark));
 
     color: #ffffff;
 
@@ -566,13 +582,12 @@ const FORMATS = [
     width: 100%;
     height: 3px;
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--primary),
-            #27856a 65%,
-            var(--gold)
-        );
+    background: linear-gradient(
+        90deg,
+        var(--primary),
+        #27856a 65%,
+        var(--gold)
+    );
 }
 
 .analysis-heading {
@@ -688,12 +703,7 @@ const FORMATS = [
 
     border-bottom: 1px solid var(--border);
 
-    background:
-        linear-gradient(
-            135deg,
-            #ffffff,
-            #fbfdfc
-        );
+    background: linear-gradient(135deg, #ffffff, #fbfdfc);
 }
 
 .table-status {
@@ -806,12 +816,7 @@ const FORMATS = [
     border: 1px solid var(--border);
     border-radius: 16px;
 
-    background:
-        linear-gradient(
-            105deg,
-            #ffffff,
-            #fbfdfc
-        );
+    background: linear-gradient(105deg, #ffffff, #fbfdfc);
 
     /* box-shadow:
         0 6px 22px rgb(30 68 57 / 0.04); */
@@ -1109,4 +1114,3 @@ const FORMATS = [
     }
 }
 </style>
-

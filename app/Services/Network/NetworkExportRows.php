@@ -84,6 +84,21 @@ class NetworkExportRows
      */
     public function rows(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): iterable
     {
+        foreach ($this->byInsurer($from, $to, $city, $insurerId) as $row) {
+            yield $row;
+        }
+    }
+
+    /**
+     * The same rows, keyed by insurer id.
+     *
+     * For NetworkPenaltyClaims, which shows part of these rows on screen and
+     * must obey the very same withholding decisions rather than re-take them.
+     *
+     * @return iterable<int, ExportRow>
+     */
+    public function byInsurer(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): iterable
+    {
         $indicators = $this->stats->perInsurer($from, $to, $city, $insurerId);
         $amounts = $this->stats->aggregatedByInsurer($from, $to, $city, $insurerId);
         $names = Insurer::query()->whereIn('id', array_keys($indicators))->pluck('name', 'id');
@@ -105,7 +120,7 @@ class NetworkExportRows
             $name = (string) ($names[$insurerId] ?? '');
 
             if ($entry instanceof InsufficientData) {
-                yield $this->withheld($name, $entry);
+                yield $insurerId => $this->withheld($name, $entry);
 
                 continue;
             }
@@ -117,7 +132,7 @@ class NetworkExportRows
             // ever ceased to hold, withholding is the safe reading — never
             // emitting a row of blanks that looks like « nothing was invoiced ».
             if (! $amount instanceof InsurerAmounts) {
-                yield $this->withheld($name, new InsufficientData(
+                yield $insurerId => $this->withheld($name, new InsufficientData(
                     $entry->declaringPharmacies,
                     $minimum,
                 ));
@@ -125,7 +140,7 @@ class NetworkExportRows
                 continue;
             }
 
-            yield $this->full(
+            yield $insurerId => $this->full(
                 $name,
                 $entry,
                 $amount,

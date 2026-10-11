@@ -117,6 +117,29 @@ export type PenaltyLedger = {
     maskedInsurers: number;
 };
 
+/** Ce qu'un assureur doit encore au réseau, avec les rétentions de l'export. */
+export type NetworkPenaltyClaim = {
+    id: number;
+    name: string;
+    triggerDays: number | null;
+    ratePercent: number | null;
+    /** `insurer` : l'assureur entier est retenu ; `split` : ses seuls montants. */
+    withheld: 'insurer' | 'split' | null;
+    note: string | null;
+    due: number | null;
+    recovered: number | null;
+    waived: number | null;
+    longestDelayDays: number | null;
+};
+
+export type NetworkPenaltyClaims = {
+    asOf: string;
+    threshold: number;
+    /** La somme des seules lignes publiées. */
+    publishedDue: number;
+    insurers: NetworkPenaltyClaim[];
+};
+
 /** Un fait daté de la vie d'une facture, tel que la trace le raconte. */
 export type PenaltyTraceEvent = {
     kind: 'deposit' | 'trigger' | 'tranche' | 'payment' | 'paidOff' | 'settled';

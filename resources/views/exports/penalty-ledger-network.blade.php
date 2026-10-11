@@ -1,6 +1,9 @@
 {{--
     Le journal des pénalités du réseau, mis en page pour dompdf.
 
+    En tête, la pénalité exigible par assureur à la date d'édition, lue chez
+    NetworkPenaltyClaims, qui reprend les rétentions de l'export réseau.
+
     Mêmes contraintes moteur que le rapport réseau : tableaux seulement,
     `position: fixed` pour l'en-tête et le pied, lignes insécables. Aucune
     rétention n'est décidée ici : les mois retenus arrivent déjà vidés de
@@ -166,6 +169,10 @@
     .ledger .total td { font-weight: bold; }
     .ledger .current, .ledger .withheld { color: #8b9797; font-weight: normal; }
     .ledger-section { margin-top: 18px; }
+    .claims .claim-name { font-weight: bold; }
+    .claims .claim-note { margin-top: 2px; color: #8b9797; font-size: 7px; }
+    .claims .convention { white-space: nowrap; }
+    .journal-start { page-break-before: always; }
 </style>
 
 <div class="sheet-header">
@@ -192,6 +199,67 @@
     </table>
 </div>
 
+@php
+    $claimMoney = fn (array $claim, ?int $value): string => $claim['withheld'] !== null ? 'retenu' : \App\Support\Fcfa::format($value ?? 0);
+@endphp
+<h2>Pénalité exigible par assureur au {{ $claims['asOf'] }}</h2>
+<p class="lede">
+    Pour chaque assureur sous convention, la pénalité que le réseau peut encore
+    lui réclamer à ce jour sur les factures de la période, celle qu'il a déjà
+    payée et celle que les officines ont abandonnée. Pire retard : l'âge de sa
+    facture la plus ancienne encore due, ou son plus long délai de paiement.
+    Un assureur, ou ses montants, sont retenus quand ils reposeraient sur moins
+    de {{ $claims['threshold'] }} officines.
+</p>
+
+@if ($claims['insurers'] === [])
+    <p class="lede">Aucun assureur sous convention n'a de facture sur ce périmètre.</p>
+@else
+<table class="ledger claims">
+    <thead>
+        <tr>
+            <th class="text">Assureur</th>
+            <th class="text">Convention</th>
+            <th>Exigible</th>
+            <th>Déjà payée</th>
+            <th>Abandonnée</th>
+            <th>Pire retard</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach ($claims['insurers'] as $claim)
+            <tr>
+                <td class="text">
+                    <div class="claim-name">{{ $claim['name'] }}</div>
+                    @if ($claim['note']) <div class="claim-note">{{ $claim['note'] }}</div> @endif
+                </td>
+                <td class="text convention">
+                    {{ $claim['triggerDays'] }} jours ·
+                    {{ rtrim(rtrim(number_format((float) $claim['ratePercent'], 2, ',', ''), '0'), ',') }} % / 30 jours
+                </td>
+                <td class="claim-name">{{ $claimMoney($claim, $claim['due']) }}</td>
+                <td>{{ $claimMoney($claim, $claim['recovered']) }}</td>
+                <td>{{ $claimMoney($claim, $claim['waived']) }}</td>
+                <td>
+                    @if ($claim['withheld'] === 'insurer') retenu
+                    @elseif ($claim['longestDelayDays'] === null) —
+                    @else {{ $claim['longestDelayDays'] }} j
+                    @endif
+                </td>
+            </tr>
+        @endforeach
+    </tbody>
+    <tfoot>
+        <tr class="total">
+            <td class="text" colspan="2">Total des assureurs publiés</td>
+            <td>{{ \App\Support\Fcfa::format($claims['publishedDue']) }}</td>
+            <td colspan="3"></td>
+        </tr>
+    </tfoot>
+</table>
+@endif
+
+<div class="journal-start"></div>
 <h2>{{ $ledger->total->name }}</h2>
 <p class="lede">
     Pénalité courue : ce qui est tombé pendant le mois, toutes factures
