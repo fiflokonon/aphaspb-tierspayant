@@ -64,7 +64,7 @@ test('the network admin reads what each insurer still owes today', function () {
                     'name' => 'NSIA',
                     'triggerDays' => 60,
                     'ratePercent' => 2,
-                    'withheld' => null,
+                    'withheld' => false,
                     'note' => null,
                     'due' => 400_000,
                     'recovered' => 0,
@@ -84,21 +84,34 @@ test('an insurer under the threshold is listed, withheld, and left out of the to
     $sunu = collect($claims['insurers'])->firstWhere('name', 'SUNU');
 
     expect($claims['publishedDue'])->toBe(400_000)
-        ->and($sunu)->toMatchArray(['withheld' => 'insurer', 'due' => null, 'recovered' => null, 'waived' => null, 'longestDelayDays' => null])
+        ->and($sunu)->toMatchArray(['withheld' => true, 'due' => null, 'recovered' => null, 'waived' => null, 'longestDelayDays' => null])
         ->and($sunu['note'])->toContain('moins de 5 officines')
         ->and(array_column($claims['insurers'], 'name'))->toBe(['NSIA', 'SUNU']);
 });
 
-test('a penalty closed by a single officine withholds the three amounts together', function () {
+test('the due is published even when a single officine closed its penalty', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
+    [$closed] = claimsDeclare($insurer, 6);
+    $closed->settlePenalty(PenaltySettlement::Waived, 80_000, User::factory()->create());
+
+    $claim = claimsFor()['insurers'][0];
+
+    // Décision du 11/10/2026 : la due (cinq officines) se publie seule ;
+    // l'abandonnée, sur une officine, nommerait son montant exact.
+    expect($claim)->toMatchArray(['withheld' => false, 'due' => 400_000, 'recovered' => null, 'waived' => null])
+        ->and($claim['note'])->toStartWith('Déjà payée et abandonnée retenues')
+        ->and(claimsFor()['publishedDue'])->toBe(400_000);
+});
+
+test('a due resting on too few officines stays withheld', function () {
     $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create();
     [$closed] = claimsDeclare($insurer, 5);
     $closed->settlePenalty(PenaltySettlement::Waived, 80_000, User::factory()->create());
 
     $claim = claimsFor()['insurers'][0];
 
-    // Abandonnée publiée seule, elle nommerait le montant exact d'une officine.
-    expect($claim)->toMatchArray(['withheld' => 'split', 'due' => null, 'recovered' => null, 'waived' => null])
-        ->and($claim['note'])->not->toBeNull()
+    expect($claim)->toMatchArray(['withheld' => false, 'due' => null])
+        ->and($claim['note'])->toStartWith('Pénalité exigible retenue')
         ->and(claimsFor()['publishedDue'])->toBe(0);
 });
 

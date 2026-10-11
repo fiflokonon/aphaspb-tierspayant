@@ -407,10 +407,12 @@ test('the report withholds the status split with the same rule, and says so', fu
     $payload = (new ReflectionMethod($export, 'data'))->invoke($export, new Period(2026, 1), new Period(2026, 8), null);
     $html = view('exports.network', $payload)->render();
 
+    // La due repose sur quatre officines : retenue sous son propre seuil.
     expect($payload['rows'][0]['splitWithheld'])->toBeTrue()
+        ->and($payload['rows'][0]['dueWithheld'])->toBeTrue()
         ->and($html)->toContain('Pénalité due')
         ->and($html)->toContain('retenu')
-        ->and($html)->toContain('répartition due / recouvrée / abandonnée retenue')
+        ->and($html)->toContain('pénalité due retenue')
         ->and($html)->not->toContain(Fcfa::format(20_000))
         ->and($html)->not->toContain(Fcfa::format(240_000));
 });
@@ -433,6 +435,60 @@ test('the report publishes the status split when every part rests on enough offi
         ->and($html)->toContain('dont recouvrée '.Fcfa::format(100_000));
 });
 
+test('the due is published on its own when only the closed parts rest on too few officines', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    // Cinq officines doivent encore leur pénalité, une sixième l'a annulée.
+    // Décision du 11/10/2026 : la due, le chiffre qu'on négocie, se publie
+    // sur ses cinq officines ; payée et annulée restent retenues ensemble.
+    unpaidPenaltyMonths($insurer, 5, 2);
+    settledCoveredMonth($insurer, 4, PenaltySettlement::Waived, 20_000);
+
+    $cell = networkCsvCell('NSIA');
+
+    expect($cell('penalite_potentielle_fcfa'))->toBe('300000')
+        ->and($cell('penalite_recouvree_fcfa'))->toBe('')
+        ->and($cell('penalite_abandonnee_fcfa'))->toBe('');
+
+    $export = app(NetworkPdfExport::class);
+    $payload = (new ReflectionMethod($export, 'data'))->invoke($export, new Period(2026, 1), new Period(2026, 8), null);
+    $html = view('exports.network', $payload)->render();
+
+    expect($payload['rows'][0]['dueWithheld'])->toBeFalse()
+        ->and($html)->toContain(Fcfa::format(300_000))
+        ->and($html)->toContain('recouvrée / abandonnée retenues')
+        ->and($html)->not->toContain(Fcfa::format(20_000));
+});
+
+test('a due resting on too few officines in the hidden cities stays withheld', function () {
+    $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
+
+    // Cinq dues à Cotonou. Parakou compte cinq officines déclarantes (la
+    // ville se publie), mais une seule y doit une pénalité : non filtrée, la
+    // due moins celle de chaque ville publiée rendrait la sienne.
+    unpaidPenaltyMonths($insurer, 5, 2);
+    unpaidPenaltyMonths($insurer, 1, 2, 'Parakou');
+
+    foreach (range(1, 4) as $ignored) {
+        Declaration::factory()->instalments([['amount' => 1_000_000, 'paid_on' => '2026-03-10']])->create([
+            'pharmacy_id' => Pharmacy::factory()->create(['city' => 'Parakou']),
+            'insurer_id' => $insurer->id,
+            'period_year' => 2026,
+            'period_month' => 2,
+            'amount_invoiced' => 1_000_000,
+        ]);
+    }
+
+    $unfiltered = networkCsvCell('NSIA');
+
+    // Six officines doivent une pénalité : seul le partage par ville retient.
+    expect($unfiltered('officines_declarantes'))->toBe('10')
+        ->and($unfiltered('penalite_potentielle_fcfa'))->toBe('')
+        ->and(networkCsvCell('NSIA', ['city' => 'Parakou'])('penalite_potentielle_fcfa'))->toBe('');
+
+    expect(networkCsvCell('NSIA')('penalite_potentielle_fcfa'))->toBe('');
+});
+
 test('a month whose status split the journal withholds withholds the export split too', function () {
     $insurer = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'NSIA']);
 
@@ -450,8 +506,11 @@ test('a month whose status split the journal withholds withholds the export spli
 
     $cell = networkCsvCell('NSIA');
 
+    // Rien n'est encore dû : la due vide se publie à zéro, elle ne repose
+    // sur personne (décision du 11/10/2026 : elle ne tombe plus avec le
+    // découpage).
     expect($cell('officines_declarantes'))->toBe('11')
-        ->and($cell('penalite_potentielle_fcfa'))->toBe('')
+        ->and($cell('penalite_potentielle_fcfa'))->toBe('0')
         ->and($cell('penalite_recouvree_fcfa'))->toBe('')
         ->and($cell('penalite_abandonnee_fcfa'))->toBe('');
 
@@ -479,7 +538,7 @@ test('a month the journal withholds entirely withholds the export split too', fu
     $cell = networkCsvCell('NSIA');
 
     expect($cell('officines_declarantes'))->toBe('6')
-        ->and($cell('penalite_potentielle_fcfa'))->toBe('')
+        ->and($cell('penalite_potentielle_fcfa'))->toBe('0')
         ->and($cell('penalite_recouvree_fcfa'))->toBe('')
         ->and($cell('penalite_abandonnee_fcfa'))->toBe('');
 });

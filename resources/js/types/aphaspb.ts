@@ -123,8 +123,8 @@ export type NetworkPenaltyClaim = {
     name: string;
     triggerDays: number | null;
     ratePercent: number | null;
-    /** `insurer` : l'assureur entier est retenu ; `split` : ses seuls montants. */
-    withheld: 'insurer' | 'split' | null;
+    /** L'assureur entier est retenu ; sinon, un montant null est un montant retenu. */
+    withheld: boolean;
     note: string | null;
     due: number | null;
     recovered: number | null;

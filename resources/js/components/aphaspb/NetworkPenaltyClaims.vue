@@ -21,11 +21,12 @@ const percent = (value: number | null): string =>
         ? '—'
         : `${value.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`;
 
-const money = (claim: NetworkPenaltyClaim, value: number | null): string =>
-    claim.withheld !== null ? 'retenu' : `${formatAmount(value)} F`;
+/** Un assureur sous convention a toujours ses montants : null dit « retenu ». */
+const money = (value: number | null): string =>
+    value === null ? 'retenu' : `${formatAmount(value)} F`;
 
 const delay = (claim: NetworkPenaltyClaim): string => {
-    if (claim.withheld === 'insurer') {
+    if (claim.withheld) {
         return 'retenu';
     }
 
@@ -120,17 +121,17 @@ const delay = (claim: NetworkPenaltyClaim): string => {
                         <td
                             class="px-3 py-3 text-right align-top font-bold whitespace-nowrap text-ink tabular-nums"
                         >
-                            {{ money(claim, claim.due) }}
+                            {{ money(claim.due) }}
                         </td>
                         <td
                             class="px-3 py-3 text-right align-top whitespace-nowrap text-ink/80 tabular-nums"
                         >
-                            {{ money(claim, claim.recovered) }}
+                            {{ money(claim.recovered) }}
                         </td>
                         <td
                             class="px-3 py-3 text-right align-top whitespace-nowrap text-ink/80 tabular-nums"
                         >
-                            {{ money(claim, claim.waived) }}
+                            {{ money(claim.waived) }}
                         </td>
                         <td
                             class="px-5 py-3 text-right align-top whitespace-nowrap text-ink/80 tabular-nums"

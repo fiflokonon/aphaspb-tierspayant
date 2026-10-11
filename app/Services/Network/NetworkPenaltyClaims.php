@@ -26,7 +26,7 @@ use Carbon\CarbonImmutable;
  * retenus : total moins lignes publiées les rendrait. Le seul total est celui
  * des lignes publiées, qui ne dit rien de plus qu'elles.
  *
- * @phpstan-type ClaimRow array{id: int, name: string, triggerDays: int|null, ratePercent: float|null, withheld: 'insurer'|'split'|null, note: string|null, due: int|null, recovered: int|null, waived: int|null, longestDelayDays: int|null}
+ * @phpstan-type ClaimRow array{id: int, name: string, triggerDays: int|null, ratePercent: float|null, withheld: bool, note: string|null, due: int|null, recovered: int|null, waived: int|null, longestDelayDays: int|null}
  */
 class NetworkPenaltyClaims
 {
@@ -64,24 +64,25 @@ class NetworkPenaltyClaims
             $insurerWithheld = ! is_int($row[$column['officines_declarantes']]);
             $due = $insurerWithheld ? null : $row[$column['penalite_potentielle_fcfa']];
 
+            $recovered = $insurerWithheld ? null : $row[$column['penalite_recouvree_fcfa']];
+
             $claims[] = [
                 'id' => (int) $id,
                 'name' => $insurer->name,
                 'triggerDays' => $insurer->penalty_trigger_days,
                 'ratePercent' => $insurer->penaltyRatePercent(),
-                'withheld' => match (true) {
-                    $insurerWithheld => 'insurer',
-                    $due === null => 'split',
-                    default => null,
-                },
+                // Un montant null est un montant retenu : l'assureur porte une
+                // clause, sans quoi il n'aurait pas de ligne.
+                'withheld' => $insurerWithheld,
                 'note' => match (true) {
                     $insurerWithheld && $row[$column['officines_declarantes']] === 'retenu' => "Retenu hors filtre ville : les villes non publiées y pèsent moins de {$threshold} officines.",
                     $insurerWithheld => "Retenu : moins de {$threshold} officines déclarantes sur ce périmètre.",
-                    $due === null => 'Montants retenus : une part repose sur trop peu d\'officines, ou le journal retient un mois du périmètre.',
+                    $due === null => "Pénalité exigible retenue : elle repose sur moins de {$threshold} officines, ici ou dans les villes non publiées.",
+                    $recovered === null => 'Déjà payée et abandonnée retenues : l\'une repose sur trop peu d\'officines, ou le journal retient un mois du périmètre.',
                     default => null,
                 },
-                'due' => $due === null ? null : (int) $due,
-                'recovered' => $this->amount($insurerWithheld ? null : $row[$column['penalite_recouvree_fcfa']]),
+                'due' => $this->amount($due),
+                'recovered' => $this->amount($recovered),
                 'waived' => $this->amount($insurerWithheld ? null : $row[$column['penalite_abandonnee_fcfa']]),
                 'longestDelayDays' => $this->amount($insurerWithheld ? null : $row[$column['delai_le_plus_long_jours']]),
             ];

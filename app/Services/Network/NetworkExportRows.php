@@ -22,8 +22,9 @@ use App\Services\Settings\SettingsRepository;
  * The same holds one level down for the penalty split by settlement status —
  * due, recovered, waived. An authorised insurer may still have a single
  * officine behind one of those parts, whose exact amount it would then name.
- * The three columns are emptied together (« partition rule »): any one of
- * them, next to another published figure, would give a hidden one back.
+ * Recovered and waived are emptied together (« partition rule »). The due is
+ * published on its own since 11/10/2026 (acceptance decision, to be signed by
+ * the APhaSPB), under its own threshold only — see full().
  *
  * One more way back: the network penalty journal of the same scope publishes
  * the split month by month. When it withholds a month of this insurer — whole,
@@ -226,6 +227,13 @@ class NetworkExportRows
             || $figures->splitPharmacies->restsOnFewerThan($minimum)
             || ($unfilteredByCity && CityPartition::withholdsSplit($figures->citySplitPharmacies, $minimum));
 
+        // La due, elle, se publie seule (décision du 11/10/2026, à faire
+        // signer par l'APhaSPB) : c'est le chiffre qu'on négocie avec
+        // l'assureur. Elle ne tombe plus avec payée et annulée ni avec un mois
+        // retenu du journal, mais garde son propre seuil, ici et par ville.
+        $dueWithheld = $figures->splitPharmacies->dueRestsOnFewerThan($minimum)
+            || ($unfilteredByCity && CityPartition::withholdsDue($figures->citySplitPharmacies, $minimum));
+
         return [
             $name,
             $entry->declaringPharmacies,
@@ -251,7 +259,7 @@ class NetworkExportRows
             $amount->received,
             $amount->outstanding,
             $amount->recoveryRate,
-            $splitWithheld ? null : $figures->penalty,
+            $dueWithheld ? null : $figures->penalty,
             $splitWithheld ? null : $figures->recovered,
             $splitWithheld ? null : $figures->waived,
         ];

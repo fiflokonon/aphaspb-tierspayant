@@ -353,21 +353,26 @@
                     {{-- Un tiret dit « pas de convention », un zéro dit « une
                          convention, rien à réclamer ». --}}
                     <div class="value">
-                        @if ($row['splitWithheld'])
+                        @if ($row['dueWithheld'])
                             retenu
                         @else
                             {{ $figures->penalty === null ? '-' : \App\Support\Fcfa::format($figures->penalty) }}
                         @endif
                     </div>
                     <div class="label">Pénalité due</div>
-                    @if ($row['splitWithheld'])
+                    @if ($row['dueWithheld'])
+                        <div class="sub">
+                            pénalité due retenue : elle repose sur moins de {{ $anonymityThreshold }} officines, ici ou dans les villes non publiées
+                        </div>
+                    @elseif ($row['splitWithheld'])
                         {{-- Une part publiée à côté d'une part cachée la rendrait
-                             par différence : les trois tombent ensemble. --}}
+                             par différence : recouvrée et abandonnée tombent
+                             ensemble. La due se publie seule (11/10/2026). --}}
                         <div class="sub">
                             @if ($row['splitWithheldByLedger'])
-                                répartition due / recouvrée / abandonnée retenue : un mois du journal des pénalités est retenu sur la même période, et s'en déduirait
+                                recouvrée / abandonnée retenues : un mois du journal des pénalités est retenu sur la même période, et s'en déduirait
                             @else
-                                répartition due / recouvrée / abandonnée retenue : une part repose sur moins de {{ $anonymityThreshold }} officines, ici ou dans les villes non publiées
+                                recouvrée / abandonnée retenues : une part repose sur moins de {{ $anonymityThreshold }} officines, ici ou dans les villes non publiées
                             @endif
                         </div>
                     @elseif (($figures->recovered ?? 0) > 0 || ($figures->waived ?? 0) > 0)

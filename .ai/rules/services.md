@@ -15,3 +15,5 @@ Trois mots, trois chiffres distincts à ne pas confondre dans les exports et agr
 `InsurerPenaltyAggregates` ajoute `penalty_settled_amount` à recouvrée/abandonnée **sans** recalculer les tranches. Le journal (`PenaltyTally`), lui, recalcule les tranches des factures closes et les répartit en `accruedPaid`/`accruedWaived`/`accruedDue` : les deux chemins ne s'accordent que grâce à l'invariant de réconciliation.
 
 Un décor de test qui clôt un mois doit utiliser un mois couvert dont le montant clos égale sa pénalité courue — sinon la réconciliation le lève à la prochaine sauvegarde.
+
+Depuis le 11/10/2026, côté exports réseau, la due (`penalite_potentielle_fcfa`) se publie seule sous son propre seuil, sans tomber avec recouvrée/abandonnée : voir l'exception dans network.md.

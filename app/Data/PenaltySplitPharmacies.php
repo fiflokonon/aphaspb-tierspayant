@@ -37,4 +37,17 @@ readonly class PenaltySplitPharmacies
 
         return false;
     }
+
+    /**
+     * Si la seule part due repose sur 1 à `$minimum` − 1 officines.
+     *
+     * La due se publie seule depuis le 11/10/2026 (décision de recette, à
+     * faire signer par l'APhaSPB) : payée et annulée restent soumises à
+     * restsOnFewerThan(), mais la due ne tombe plus avec elles. Elle garde
+     * son propre seuil : publiée sur une seule officine, elle la nommerait.
+     */
+    public function dueRestsOnFewerThan(int $minimum): bool
+    {
+        return $this->due > 0 && $this->due < $minimum;
+    }
 }

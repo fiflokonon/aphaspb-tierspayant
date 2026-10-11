@@ -200,7 +200,8 @@
 </div>
 
 @php
-    $claimMoney = fn (array $claim, ?int $value): string => $claim['withheld'] !== null ? 'retenu' : \App\Support\Fcfa::format($value ?? 0);
+    // Un assureur sous convention a toujours ses montants : null dit « retenu ».
+    $claimMoney = fn (?int $value): string => $value === null ? 'retenu' : \App\Support\Fcfa::format($value);
 @endphp
 <h2>Pénalité exigible par assureur au {{ $claims['asOf'] }}</h2>
 <p class="lede">
@@ -237,11 +238,11 @@
                     {{ $claim['triggerDays'] }} jours ·
                     {{ rtrim(rtrim(number_format((float) $claim['ratePercent'], 2, ',', ''), '0'), ',') }} % / 30 jours
                 </td>
-                <td class="claim-name">{{ $claimMoney($claim, $claim['due']) }}</td>
-                <td>{{ $claimMoney($claim, $claim['recovered']) }}</td>
-                <td>{{ $claimMoney($claim, $claim['waived']) }}</td>
+                <td class="claim-name">{{ $claimMoney($claim['due']) }}</td>
+                <td>{{ $claimMoney($claim['recovered']) }}</td>
+                <td>{{ $claimMoney($claim['waived']) }}</td>
                 <td>
-                    @if ($claim['withheld'] === 'insurer') retenu
+                    @if ($claim['withheld']) retenu
                     @elseif ($claim['longestDelayDays'] === null) —
                     @else {{ $claim['longestDelayDays'] }} j
                     @endif

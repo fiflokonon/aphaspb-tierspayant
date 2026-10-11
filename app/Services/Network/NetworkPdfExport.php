@@ -102,13 +102,17 @@ class NetworkPdfExport
         foreach ($rows as $index => $row) {
             $rows[$index]['figures'] = $figures[$row['insurerId']]
                 ?? new InsurerPenaltyFigures(null, null);
-            // Même règle que NetworkExportRows : due, recouvrée et abandonnée
+            // Même règle que NetworkExportRows : recouvrée et abandonnée
             // tombent ensemble dès qu'une part repose sur trop peu d'officines,
             // ou dès que le journal retient un mois de l'assureur.
             $rows[$index]['splitWithheldByLedger'] = in_array($row['insurerId'], $ledgerWithheld, true);
             $rows[$index]['splitWithheld'] = $rows[$index]['splitWithheldByLedger']
                 || $rows[$index]['figures']->splitPharmacies->restsOnFewerThan($minimum)
                 || ($city === null && CityPartition::withholdsSplit($rows[$index]['figures']->citySplitPharmacies, $minimum));
+            // La due se publie seule, sous son propre seuil : même règle que
+            // NetworkExportRows (décision du 11/10/2026).
+            $rows[$index]['dueWithheld'] = $rows[$index]['figures']->splitPharmacies->dueRestsOnFewerThan($minimum)
+                || ($city === null && CityPartition::withholdsDue($rows[$index]['figures']->citySplitPharmacies, $minimum));
             $rows[$index]['monthly'] = $this->withheldMonths($monthly[$row['insurerId']] ?? []);
         }
 

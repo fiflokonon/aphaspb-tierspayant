@@ -123,6 +123,30 @@ class CityPartition
     }
 
     /**
+     * La même règle, pour la seule part due.
+     *
+     * Une ville cache sa due quand celle-ci repose sur 1 à seuil − 1
+     * officines ; les officines sans ville sont toujours cachées. La due non
+     * filtrée est retenue si cette part cachée repose sur 1 à seuil − 1
+     * officines : la due non filtrée moins les dues publiées par ville la
+     * rendrait.
+     *
+     * @param  array<string, PenaltySplitPharmacies>  $perCity
+     */
+    public static function withholdsDue(array $perCity, int $minimum): bool
+    {
+        $hidden = 0;
+
+        foreach ($perCity as $city => $split) {
+            if ((string) $city === self::NO_CITY || $split->dueRestsOnFewerThan($minimum)) {
+                $hidden += $split->due;
+            }
+        }
+
+        return $hidden > 0 && $hidden < $minimum;
+    }
+
+    /**
      * La clé canonique de la ville d'une officine, calculée par la base.
      *
      * Le filtre ville compare en SQL, donc selon la collation de la colonne :
