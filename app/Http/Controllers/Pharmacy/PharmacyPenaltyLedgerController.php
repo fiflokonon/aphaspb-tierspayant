@@ -9,8 +9,8 @@ use App\Services\Exports\CsvRenderer;
 use App\Services\Exports\XlsxWriter;
 use App\Services\Pharmacy\PharmacyPenaltyLedger;
 use App\Services\Pharmacy\PharmacyPenaltyLedgerPdf;
-use App\Services\Pharmacy\PharmacyPenaltyLedgerRows;
 use App\Services\Pharmacy\PharmacyPenaltyTrace;
+use App\Services\Pharmacy\PharmacyPenaltyTraceRows;
 use Barryvdh\DomPDF\PDF as PdfDocument;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Le journal mensuel des pénalités d'une officine, et ses trois exports.
+ * Le journal des pénalités d'une officine, et ses trois exports.
  *
  * Distinct de NetworkPenaltyLedgerController pour la même raison que les deux
  * exports : celui-ci nomme une officine et ne retient rien, l'autre ne nomme
@@ -33,7 +33,7 @@ class PharmacyPenaltyLedgerController extends Controller
 
     public function __construct(
         protected PharmacyPenaltyLedger $ledger,
-        protected PharmacyPenaltyLedgerRows $rows,
+        protected PharmacyPenaltyTraceRows $rows,
         protected PharmacyPenaltyTrace $trace,
         protected PharmacyPenaltyLedgerPdf $pdf,
         protected CsvRenderer $csv,
@@ -90,19 +90,19 @@ class PharmacyPenaltyLedgerController extends Controller
     public function download(Request $request): StreamedResponse|BinaryFileResponse
     {
         $pharmacy = $request->user()->currentPharmacy;
-        $period = StatsPeriod::fromRequest($request->string('period')->value(), self::DEFAULT_PERIOD);
         $insurerId = $this->insurerId($request, $pharmacy);
 
-        [$from, $to] = $period->bounds();
+        // Le fichier est la trace par facture, à joindre à une réclamation :
+        // comme elle, il se lit à la date du jour, que le nom porte. La période
+        // ne borne que la courbe et n'a rien à faire ici.
+        $stem = sprintf('%s-penalites-au-%s', $pharmacy->slug, now()->toDateString());
 
-        $stem = sprintf('%s-penalites-%04d-%02d', $pharmacy->slug, $to->year, $to->month);
-
-        // Un seul point d'entrée : le fichier ne peut pas couvrir une période
-        // ou un assureur différents de l'écran.
+        // Un seul point d'entrée : le fichier ne peut pas couvrir un assureur
+        // différent de l'écran.
         return match ($request->string('format')->value()) {
-            'xlsx' => $this->workbook($stem.'.xlsx', $this->rows->rows($pharmacy, $from, $to, $insurerId)),
-            'pdf' => $this->report($stem.'.pdf', $this->pdf->document($pharmacy, $from, $to, $insurerId, $period->describe())),
-            default => $this->spreadsheet($stem.'.csv', $this->rows->rows($pharmacy, $from, $to, $insurerId)),
+            'xlsx' => $this->workbook($stem.'.xlsx', $this->rows->rows($pharmacy, $insurerId)),
+            'pdf' => $this->report($stem.'.pdf', $this->pdf->document($pharmacy, $insurerId)),
+            default => $this->spreadsheet($stem.'.csv', $this->rows->rows($pharmacy, $insurerId)),
         };
     }
 
@@ -111,7 +111,7 @@ class PharmacyPenaltyLedgerController extends Controller
      */
     protected function spreadsheet(string $filename, iterable $rows): StreamedResponse
     {
-        $lines = $this->csv->render(PharmacyPenaltyLedgerRows::COLUMNS, $rows);
+        $lines = $this->csv->render(PharmacyPenaltyTraceRows::COLUMNS, $rows);
 
         return response()->streamDownload(function () use ($lines) {
             $handle = fopen('php://output', 'wb');
@@ -145,7 +145,7 @@ class PharmacyPenaltyLedgerController extends Controller
         // second fichier et abandonnerait le premier, orphelin.
         $path = tempnam(sys_get_temp_dir(), 'aphaspb');
 
-        $this->xlsx->write($path, 'Journal des pénalités', PharmacyPenaltyLedgerRows::COLUMNS, $rows);
+        $this->xlsx->write($path, 'Journal des pénalités', PharmacyPenaltyTraceRows::COLUMNS, $rows);
 
         return response()->download($path, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

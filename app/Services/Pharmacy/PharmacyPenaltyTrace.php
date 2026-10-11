@@ -27,8 +27,8 @@ use stdClass;
  * Query builder et non Eloquent, comme PharmacyPenaltyLedger : `private_note`
  * n'a rien à faire ici. Trois requêtes quel que soit le nombre de factures.
  *
- * @phpstan-type TraceEvent array{kind: 'deposit'|'trigger'|'tranche'|'payment'|'paidOff'|'settled', on: string, amount: int|null, number: int|null, cumulative: int|null, remaining: int|null, label: string|null}
- * @phpstan-type TraceInvoice array{id: int, periodLabel: string, amountInvoiced: int, amountReceived: int, depositedOn: string, triggerOn: string, trancheAmount: int, tranches: int, accrued: int, due: int, running: bool, nextTrancheOn: string|null, settlement: array{label: string, amount: int|null, on: string|null}|null, events: list<TraceEvent>}
+ * @phpstan-type TraceEvent array{kind: 'deposit'|'trigger'|'tranche'|'payment'|'paidOff'|'settled', on: string, date: string, amount: int|null, number: int|null, cumulative: int|null, remaining: int|null, label: string|null}
+ * @phpstan-type TraceInvoice array{id: int, period: string, periodLabel: string, amountInvoiced: int, amountReceived: int, depositedOn: string, triggerOn: string, trancheAmount: int, tranches: int, accrued: int, due: int, running: bool, nextTrancheOn: string|null, settlement: array{label: string, amount: int|null, on: string|null}|null, events: list<TraceEvent>}
  * @phpstan-type TraceInsurer array{id: int, name: string, triggerDays: int, ratePercent: float, trancheDays: int, accrued: int, due: int, invoices: list<TraceInvoice>}
  */
 class PharmacyPenaltyTrace
@@ -41,7 +41,7 @@ class PharmacyPenaltyTrace
     }
 
     /**
-     * @return array{asOf: string, due: int, insurers: list<TraceInsurer>}
+     * @return array{asOf: string, asOfDate: string, due: int, insurers: list<TraceInsurer>}
      */
     public function for(Pharmacy $pharmacy, ?int $insurerId = null): array
     {
@@ -103,6 +103,7 @@ class PharmacyPenaltyTrace
 
         return [
             'asOf' => $this->label($today),
+            'asOfDate' => $this->date($today)->toDateString(),
             'due' => array_sum(array_column($rows, 'due')),
             'insurers' => $rows,
         ];
@@ -182,6 +183,7 @@ class PharmacyPenaltyTrace
 
         return [
             'id' => (int) $declaration->id,
+            'period' => sprintf('%04d-%02d', (int) $declaration->period_year, (int) $declaration->period_month),
             'periodLabel' => MonthLabel::short((int) $declaration->period_month, (int) $declaration->period_year),
             'amountInvoiced' => $invoiced,
             'amountReceived' => $received,
@@ -220,6 +222,7 @@ class PharmacyPenaltyTrace
         return [
             'kind' => $kind,
             'on' => $this->label($day),
+            'date' => $this->date($day)->toDateString(),
             'amount' => $amount,
             'number' => $number,
             'cumulative' => $cumulative,
@@ -231,6 +234,11 @@ class PharmacyPenaltyTrace
     /** « 14 juin 2026 » */
     protected function label(int $day): string
     {
-        return CarbonImmutable::createFromTimestampUTC($day * 86400)->translatedFormat('j M Y');
+        return $this->date($day)->translatedFormat('j M Y');
+    }
+
+    protected function date(int $day): CarbonImmutable
+    {
+        return CarbonImmutable::createFromTimestampUTC($day * 86400);
     }
 }

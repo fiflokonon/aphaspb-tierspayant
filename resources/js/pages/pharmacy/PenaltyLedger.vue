@@ -48,9 +48,12 @@ watch([period, insurer], () =>
     ),
 );
 
-/** Chaque lien porte les filtres : le fichier couvre l'écran, pas autre chose. */
+/**
+ * Le fichier est la trace par facture, à la date du jour : il suit le filtre
+ * assureur, pas la période, qui ne borne que la courbe.
+ */
 const hrefFor = (format: 'csv' | 'xlsx' | 'pdf') => {
-    const query = new URLSearchParams({ period: period.value, format });
+    const query = new URLSearchParams({ format });
 
     if (insurer.value) {
         query.set('insurer', String(insurer.value));
@@ -124,7 +127,7 @@ const FORMATS = [
 
             <div class="exports">
                 <span class="exports-label text-ink/70"
-                    >Exporter ce journal</span
+                    >Exporter le détail par facture</span
                 >
                 <a
                     v-for="format in FORMATS"

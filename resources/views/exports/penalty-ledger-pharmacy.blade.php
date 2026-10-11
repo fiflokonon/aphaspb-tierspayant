@@ -1,14 +1,16 @@
 {{--
-    Le journal des pénalités d'une officine, mis en page pour dompdf.
+    La trace des pénalités d'une officine, mise en page pour dompdf et pour
+    être jointe à une réclamation : la pénalité exigible au jour, puis, par
+    assureur et par facture, le calcul et chaque événement qui y mène.
 
     Mêmes contraintes moteur que le relevé : ni flexbox ni grid — les colonnes
     sont des tableaux —, `position: fixed` pour ce qui se répète de page en
-    page, et `page-break-inside: avoid` sur les lignes. Le style est celui du
-    relevé, pour que les deux documents se lisent comme une famille.
+    page, et `page-break-inside: avoid` sur les lignes. Les libellés viennent de
+    PharmacyPenaltyTraceRows ($wording), pour que le PDF et le tableur disent
+    les mêmes mots.
 --}}
 @php
-    // Null se lit « — » : un mois sans chiffre n'est pas un mois à zéro.
-    $money = fn (?int $value): string => $value === null ? '—' : \App\Support\Fcfa::format($value);
+    $money = fn (?int $value): string => \App\Support\Fcfa::format($value ?? 0).' F';
 @endphp
 <style>
     @page { margin: 112px 32px 62px; }
@@ -148,12 +150,20 @@
 
     .grid .total td { font-weight: bold; }
     .grid .current { color: #8b9797; font-weight: normal; }
+
+    .invoice { margin-top: 16px; }
+    .invoice h3 { margin: 0 0 2px; font-size: 9px; }
+    .invoice .meta { color: #6b7878; font-size: 7.5px; }
+    .invoice .calc { margin: 4px 0 0; color: #1d4a46; font-size: 8px; font-weight: bold; }
+    .grid .muted { color: #8b9797; }
+    .status-running { background: #f4eceb; color: #b4472e; }
+    .status-closed { background: #eceeee; color: #556161; }
 </style>
 
 <div class="sheet-header">
     <div class="kicker">APhaSPB · Journal des pénalités</div>
     <div class="brand">{{ $pharmacyName }}</div>
-    <div class="scope">{{ $periodLabel }}</div>
+    <div class="scope">Pénalité exigible au {{ $trace['asOf'] }} · détail par facture</div>
 </div>
 
 <div class="sheet-footer">
@@ -161,92 +171,124 @@
         <tr>
             <td style="text-align: left;">
                 Édité le {{ $generatedAt->translatedFormat('d/m/Y à H:i') }} ·
-                Document interne à l'officine, établi à partir de ses seules
-                déclarations.
+                Établi à partir des déclarations de l'officine et des
+                conventions de pénalité de chaque assureur.
             </td>
             <td style="text-align: right;">Page <span class="page-number"></span></td>
         </tr>
     </table>
 </div>
 
-@if ($ledger->insurers === [])
-    <h2>Aucun assureur sous convention de pénalité</h2>
+@if ($trace['insurers'] === [])
+    <h2>Aucune pénalité à ce jour</h2>
     <p class="lede">
-        Aucun des assureurs déclarés par l'officine ne porte de clause de
-        pénalité : il n'y a rien à reporter dans ce journal.
+        Aucune facture déposée chez un assureur sous convention n'a encore
+        atteint son délai de déclenchement : il n'y a rien à réclamer.
     </p>
 @else
-<h2>Tous assureurs</h2>
-<p class="lede">
-    Pénalité courue : ce qui est tombé pendant le mois, toutes factures
-    confondues. Factures du mois : la pénalité, à ce jour, des factures de ce
-    mois déclaré. Dont payée, dont annulée : la part du couru dont la pénalité
-    a été close ; reste due : ce qui peut encore être réclamé. Le mois en cours
-    est partiel.
-</p>
-
-<table class="grid">
-    <thead>
-        <tr>
-            <th class="text">Mois</th>
-            <th>Pénalité courue</th>
-            <th>Cumul couru</th>
-            <th>Factures du mois</th>
-            <th>Dont payée</th>
-            <th>Dont annulée</th>
-            <th>Reste due</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach ($ledger->total->months as $month)
-            @continue($month->future)
-            <tr class="total">
-                <td class="text">
-                    {{ $month->label }}
-                    @if ($month->current) <span class="current">· en cours</span> @endif
-                </td>
-                <td>{{ $money($month->accrued) }}</td>
-                <td>{{ $money($month->accruedCumulative) }}</td>
-                <td>{{ $money($month->declared) }}</td>
-                <td>{{ $money($month->accruedPaid) }}</td>
-                <td>{{ $money($month->accruedWaived) }}</td>
-                <td>{{ $money($month->accruedDue) }}</td>
-            </tr>
-        @endforeach
-    </tbody>
+<table class="kpis">
+    <tr>
+        <td>
+            <div class="value">{{ \App\Support\Fcfa::format($trace['due']) }} <span class="unit">F</span></div>
+            <div class="label">Pénalité exigible au {{ $trace['asOf'] }}</div>
+        </td>
+    </tr>
 </table>
 
-@foreach ($ledger->insurers as $series)
-    <div class="section">
-        <h2>{{ $series->name }}</h2>
+<p class="note">
+    Mode de calcul : la pénalité se déclenche à la fin du délai de la
+    convention, compté depuis le dépôt de la facture. Chaque tranche de 30 jours
+    commencée ajoute le montant facturé × le taux de la convention, même après
+    un acompte. La pénalité cesse de courir le jour où la facture est soldée.
+</p>
 
-        <table class="grid">
-            <thead>
+<div class="section">
+    <h2>Par assureur</h2>
+    <table class="grid">
+        <thead>
+            <tr>
+                <th class="text">Assureur</th>
+                <th class="text">Convention</th>
+                <th>Factures</th>
+                <th>Pénalité courue</th>
+                <th>Exigible</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($trace['insurers'] as $insurer)
                 <tr>
-                    <th class="text">Mois</th>
-                    <th>Pénalité courue</th>
-                    <th>Cumul couru</th>
-                    <th>Factures du mois</th>
-                    <th>Dont payée</th>
-                    <th>Dont annulée</th>
-                    <th>Reste due</th>
+                    <td class="text name">{{ $insurer['name'] }}</td>
+                    <td class="text">{{ $insurer['triggerDays'] }} jours · {{ $wording->percent($insurer['ratePercent']) }} / {{ $insurer['trancheDays'] }} jours</td>
+                    <td>{{ count($insurer['invoices']) }}</td>
+                    <td>{{ $money($insurer['accrued']) }}</td>
+                    <td class="name">{{ $money($insurer['due']) }}</td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach ($series->months as $month)
-                    @continue($month->future)
-                    <tr>
-                        <td class="text">{{ $month->label }}</td>
-                        <td>{{ $money($month->accrued) }}</td>
-                        <td>{{ $money($month->accruedCumulative) }}</td>
-                        <td>{{ $money($month->declared) }}</td>
-                        <td>{{ $money($month->accruedPaid) }}</td>
-                        <td>{{ $money($month->accruedWaived) }}</td>
-                        <td>{{ $money($month->accruedDue) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+            @endforeach
+        </tbody>
+        <tfoot>
+            <tr>
+                <td class="text" colspan="4">Total exigible au {{ $trace['asOf'] }}</td>
+                <td>{{ $money($trace['due']) }}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+@foreach ($trace['insurers'] as $insurer)
+    <div class="insurer-page">
+        <h2>{{ $insurer['name'] }}</h2>
+        <p class="convention">
+            Pénalité à partir de {{ $insurer['triggerDays'] }} jours après le dépôt ·
+            {{ $wording->percent($insurer['ratePercent']) }} du montant facturé par
+            tranche de {{ $insurer['trancheDays'] }} jours ·
+            exigible : <strong>{{ $money($insurer['due']) }}</strong>
+        </p>
+
+        @foreach ($insurer['invoices'] as $invoice)
+            @php
+                $tone = $invoice['settlement'] !== null ? 'status-closed' : ($invoice['running'] ? 'status-running' : 'status-partial');
+            @endphp
+            <div class="invoice">
+                <h3>Mois déclaré {{ $invoice['periodLabel'] }} · {{ $money($invoice['amountInvoiced']) }} facturés</h3>
+                <div class="meta">
+                    <span class="status {{ $tone }}">{{ $wording->status($invoice) }}</span> ·
+                    Déposée le {{ $invoice['depositedOn'] }} · déclenchement le {{ $invoice['triggerOn'] }} ·
+                    encaissé {{ $money($invoice['amountReceived']) }}
+                    @if ($invoice['nextTrancheOn'] !== null) · prochaine tranche le {{ $invoice['nextTrancheOn'] }} @endif
+                </div>
+
+                <table class="grid">
+                    <thead>
+                        <tr>
+                            <th class="text">Date</th>
+                            <th class="text">Événement</th>
+                            <th class="text">Détail</th>
+                            <th>Pénalité</th>
+                            <th>Cumul</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($invoice['events'] as $event)
+                            <tr>
+                                <td class="text">{{ $event['on'] }}</td>
+                                <td class="text">{{ $wording->title($event) }}</td>
+                                <td class="text muted">{{ $wording->detail($event, $invoice, $insurer) }}</td>
+                                <td>{{ $event['kind'] === 'tranche' ? '+ '.$money($event['amount']) : '' }}</td>
+                                <td>{{ $event['cumulative'] === null ? '' : $money($event['cumulative']) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="text" colspan="4">
+                                Exigible au {{ $trace['asOf'] }} · {{ $wording->dueDetail($invoice) }}
+                            </td>
+                            <td>{{ $money($invoice['due']) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        @endforeach
     </div>
 @endforeach
 @endif

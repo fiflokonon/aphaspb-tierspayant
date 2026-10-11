@@ -122,6 +122,8 @@ export type PenaltyTraceEvent = {
     kind: 'deposit' | 'trigger' | 'tranche' | 'payment' | 'paidOff' | 'settled';
     /** « 14 juin 2026 » */
     on: string;
+    /** 2026-06-14 */
+    date: string;
     amount: number | null;
     /** Le rang de la tranche. */
     number: number | null;
@@ -135,6 +137,8 @@ export type PenaltyTraceEvent = {
 
 export type PenaltyTraceInvoice = {
     id: number;
+    /** 2026-03 */
+    period: string;
     periodLabel: string;
     amountInvoiced: number;
     amountReceived: number;
@@ -169,6 +173,8 @@ export type PenaltyTraceInsurer = {
 /** La pénalité exigible à la date du jour, facture par facture. */
 export type PenaltyTrace = {
     asOf: string;
+    /** 2026-10-11 */
+    asOfDate: string;
     due: number;
     insurers: PenaltyTraceInsurer[];
 };

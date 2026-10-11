@@ -2,27 +2,33 @@
 
 namespace App\Services\Pharmacy;
 
-use App\Data\Period;
 use App\Models\Pharmacy;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as PdfDocument;
 
 /**
- * Le journal des pénalités d'une officine, mis en page pour être lu.
+ * La trace des pénalités d'une officine, mise en page pour être jointe à une
+ * réclamation : la pénalité exigible au jour, puis, facture par facture, le
+ * calcul et chaque événement qui y mène.
+ *
+ * Les libellés viennent de PharmacyPenaltyTraceRows : le PDF et le tableur
+ * disent les mêmes mots.
  */
 class PharmacyPenaltyLedgerPdf
 {
-    public function __construct(protected PharmacyPenaltyLedger $ledger)
-    {
+    public function __construct(
+        protected PharmacyPenaltyTrace $trace,
+        protected PharmacyPenaltyTraceRows $wording,
+    ) {
         //
     }
 
-    public function document(Pharmacy $pharmacy, Period $from, Period $to, ?int $insurerId, string $periodLabel): PdfDocument
+    public function document(Pharmacy $pharmacy, ?int $insurerId): PdfDocument
     {
         return Pdf::loadView('exports.penalty-ledger-pharmacy', [
-            'ledger' => $this->ledger->for($pharmacy, $from, $to, $insurerId),
+            'trace' => $this->trace->for($pharmacy, $insurerId),
+            'wording' => $this->wording,
             'pharmacyName' => $pharmacy->name,
-            'periodLabel' => $periodLabel,
             'generatedAt' => now(),
         ])->setPaper('a4', 'portrait');
     }

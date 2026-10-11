@@ -5,7 +5,7 @@ use App\Enums\PenaltySettlement;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\User;
-use App\Services\Pharmacy\PharmacyPenaltyLedgerRows;
+use App\Services\Pharmacy\PharmacyPenaltyTraceRows;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia;
 
@@ -100,21 +100,46 @@ function ledgerCsv(User $user, array $query = []): array
     );
 }
 
-test('the CSV has one row per month and insurer, then the total', function () {
+/**
+ * Les lignes d'une facture, repérées par son mois déclaré.
+ *
+ * @param  list<list<string>>  $rows
+ * @return list<array<string, string>>
+ */
+function invoiceRows(array $rows, string $period): array
+{
+    $columns = PharmacyPenaltyTraceRows::COLUMNS;
+
+    return array_values(array_map(
+        fn (array $row): array => array_combine($columns, $row),
+        array_filter(array_slice($rows, 1), fn (array $row) => $row[array_search('facture_mois', $columns)] === $period),
+    ));
+}
+
+test('the file traces each invoice event by event, then what it owes today', function () {
     [$user] = ledgerOfficine();
 
     $rows = ledgerCsv($user, ['format' => 'csv']);
-    $columns = PharmacyPenaltyLedgerRows::COLUMNS;
-    $may = array_values(array_filter($rows, fn (array $row) => $row[array_search('mois', $columns)] === '2026-05'));
+    $march = invoiceRows($rows, '2026-03');
+    $due = end($march);
 
-    expect($rows[0])->toBe($columns)
-        ->and(array_column($may, array_search('assureur', $columns)))->toBe(['NSIA', 'Tous assureurs'])
-        ->and($may[0][array_search('penalite_courue', $columns)])->toBe('20000')
-        // Octobre et la suite ne sont pas encore arrivés : aucune ligne.
-        ->and(array_filter($rows, fn (array $row) => $row[0] === '2026-10'))->toBe([]);
+    expect($rows[0])->toBe(PharmacyPenaltyTraceRows::COLUMNS)
+        ->and(array_column($march, 'evenement'))->toBe([
+            'Facture déposée', 'Déclenchement de la pénalité',
+            'Tranche n° 1', 'Tranche n° 2', 'Tranche n° 3', 'Tranche n° 4',
+            'Pénalité exigible',
+        ])
+        ->and(array_column($march, 'date'))->toBe([
+            '2026-03-31', '2026-05-30', '2026-05-30', '2026-06-29', '2026-07-29', '2026-08-28', '2026-09-19',
+        ])
+        ->and($march[2]['detail'])->toBe("1\u{202F}000\u{202F}000 F × 2 %")
+        ->and(array_column($march, 'penalite_cumulee'))->toBe(['', '', '20000', '40000', '60000', '80000', ''])
+        ->and($due['detail'])->toBe("4 tranches × 20\u{202F}000 F = 80\u{202F}000 F")
+        ->and($due['penalite_exigible'])->toBe('80000')
+        ->and(array_filter(array_column($march, 'penalite_exigible')))->toBe([6 => '80000']);
 });
 
-test('the file says what was paid, waived and what remains due', function () {
+test('the file shows each instalment and a closed penalty owes nothing more', function () {
     [$user, $insurer] = ledgerOfficine();
     // Une facture d'avril soldée le 01/09, sa pénalité (juin à août) close « payée ».
     Declaration::factory()
@@ -129,25 +154,33 @@ test('the file says what was paid, waived and what remains due', function () {
             'invoice_deposited_on' => '2026-04-30',
         ]);
 
-    $rows = ledgerCsv($user, ['format' => 'csv']);
-    $columns = PharmacyPenaltyLedgerRows::COLUMNS;
-    $july = array_values(array_filter($rows, fn (array $row) => $row[0] === '2026-07' && $row[1] === 'NSIA'))[0];
+    $april = invoiceRows(ledgerCsv($user, ['format' => 'csv']), '2026-04');
+    $payment = collect($april)->firstWhere('evenement', 'Versement reçu');
 
-    expect(array_slice($columns, array_search('penalite_mois_declare', $columns) + 1, 3))->toBe(['dont_payee', 'dont_annulee', 'reste_due'])
-        ->and($july[array_search('penalite_courue', $columns)])->toBe('40000')
-        ->and($july[array_search('dont_payee', $columns)])->toBe('20000')
-        ->and($july[array_search('dont_annulee', $columns)])->toBe('0')
-        ->and($july[array_search('reste_due', $columns)])->toBe('20000');
+    expect($payment)->toMatchArray(['date' => '2026-09-01', 'versement' => '1000000', 'reste_du_facture' => '0'])
+        ->and(collect($april)->pluck('statut_penalite')->unique()->all())->toBe(['Pénalité payée'])
+        ->and(end($april)['penalite_exigible'])->toBe('0');
 });
 
-test('the current month is flagged in the file', function () {
+test('the file follows the insurer filter', function () {
     [$user] = ledgerOfficine();
+    $sunu = Insurer::factory()->withPenalty(triggerDays: 60, ratePercent: 2.0)->create(['name' => 'SUNU']);
+    Declaration::factory()->create([
+        'pharmacy_id' => $user->currentPharmacy->id,
+        'insurer_id' => $sunu->id,
+        'period_year' => 2026,
+        'period_month' => 3,
+        'amount_invoiced' => 500_000,
+        'amount_received' => 0,
+        'status' => DeclarationStatus::Unpaid,
+        'is_status_manual' => true,
+        'invoice_deposited_on' => '2026-03-31',
+        'paid_on' => null,
+    ]);
 
-    $rows = ledgerCsv($user, ['format' => 'csv']);
-    $columns = PharmacyPenaltyLedgerRows::COLUMNS;
-    $september = array_values(array_filter($rows, fn (array $row) => $row[0] === '2026-09'))[0];
+    $rows = array_slice(ledgerCsv($user, ['format' => 'csv', 'insurer' => $sunu->id]), 1);
 
-    expect($september[array_search('mois_en_cours', $columns)])->toBe('oui');
+    expect(array_unique(array_column($rows, array_search('assureur', PharmacyPenaltyTraceRows::COLUMNS))))->toBe(['SUNU']);
 });
 
 test('the three formats download with their own type and name', function (string $format, string $type) {
@@ -158,7 +191,7 @@ test('the three formats download with their own type and name', function (string
         ->get(route('pharmacy.penalty-ledger.download', ['format' => $format]))
         ->assertOk()
         ->assertHeader('Content-Type', $type)
-        ->assertDownload("{$slug}-penalites-2026-09.{$format}");
+        ->assertDownload("{$slug}-penalites-au-2026-09-19.{$format}");
 })->with([
     ['csv', 'text/csv; charset=UTF-8'],
     ['xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
@@ -175,7 +208,7 @@ test('without any insurer under a clause the file carries its header only', func
     ]);
 
     // Une ligne « Tous assureurs » à zéro se lirait « convention respectée ».
-    expect(ledgerCsv($user, ['format' => 'csv']))->toBe([PharmacyPenaltyLedgerRows::COLUMNS]);
+    expect(ledgerCsv($user, ['format' => 'csv']))->toBe([PharmacyPenaltyTraceRows::COLUMNS]);
 
     $this->actingAs($user)
         ->get(route('pharmacy.penalty-ledger.download', ['format' => 'pdf']))
