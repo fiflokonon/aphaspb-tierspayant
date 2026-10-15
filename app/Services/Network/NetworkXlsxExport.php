@@ -3,6 +3,7 @@
 namespace App\Services\Network;
 
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Services\Exports\XlsxWriter;
 
 /**
@@ -24,7 +25,7 @@ class NetworkXlsxExport
     /**
      * Write the workbook to $path, overwriting whatever is there.
      */
-    public function writeTo(string $path, Period $from, Period $to, ?string $city = null, ?int $insurerId = null): void
+    public function writeTo(string $path, Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): void
     {
         $this->writer->write(
             $path,

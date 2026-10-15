@@ -3,6 +3,7 @@
 namespace App\Services\Network;
 
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Models\Insurer;
 use App\Services\Settings\SettingsRepository;
 use Carbon\CarbonImmutable;
@@ -41,7 +42,7 @@ class NetworkPenaltyClaims
     /**
      * @return array{asOf: string, threshold: int, publishedDue: int, insurers: list<ClaimRow>}
      */
-    public function for(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
+    public function for(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): array
     {
         $clauses = Insurer::query()
             ->whereIn('id', $this->journal->clauseInsurers()->pluck('id'))

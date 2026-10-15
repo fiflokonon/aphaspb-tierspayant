@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Enums\StatsPeriod;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\InsurerAmountsResource;
@@ -10,6 +11,7 @@ use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Services\Network\NetworkPenaltyJournal;
 use App\Services\Network\NetworkStatsService;
+use App\Services\Network\RegionScopes;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,9 +36,9 @@ class NetworkTrendsController extends Controller
         //
     }
 
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request, RegionScopes $regions): Response
     {
-        $city = $request->string('city')->value() ?: null;
+        $city = $regions->filterFrom($request);
         $period = StatsPeriod::fromRequest($request->string('period')->value(), self::DEFAULT_PERIOD);
 
         [$from, $to] = $period->bounds();
@@ -48,7 +50,9 @@ class NetworkTrendsController extends Controller
             'period' => $period->value,
             'periodLabel' => $period->describe(),
             'periods' => StatsPeriod::options(),
-            'city' => $city,
+            'city' => is_string($city) ? $city : null,
+            'regions' => $regions->options(),
+            'selectedRegions' => $city instanceof RegionScope ? $city->regionIds : [],
             'cities' => Pharmacy::filterableCities(),
 
             // The curve is the expensive read; it arrives after first paint.
@@ -71,7 +75,7 @@ class NetworkTrendsController extends Controller
      *
      * @return array<string, mixed>
      */
-    protected function summary(Period $from, Period $to, ?string $city): array
+    protected function summary(Period $from, Period $to, string|RegionScope|null $city): array
     {
         return [
             ...$this->stats->networkSummary($from, $to, $city),
@@ -84,7 +88,7 @@ class NetworkTrendsController extends Controller
      *
      * @return list<array<string, mixed>>
      */
-    protected function amounts(Period $from, Period $to, ?string $city): array
+    protected function amounts(Period $from, Period $to, string|RegionScope|null $city): array
     {
         $entries = $this->stats->aggregatedByInsurer($from, $to, $city);
         $names = Insurer::query()->whereIn('id', array_keys($entries))->pluck('name', 'id');

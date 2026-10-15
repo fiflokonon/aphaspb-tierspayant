@@ -143,7 +143,7 @@
     <div class="brand">Rapport réseau</div>
     <div class="scope">
         {{ $periodLabel }}
-        @if ($city) · officines de {{ $city }} @else · toutes les officines @endif
+        @if ($city) · officines de {{ $city }} @elseif ($regions) · officines des régions {{ $regions }} @else · toutes les officines @endif
     </div>
 </div>
 

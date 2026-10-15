@@ -6,6 +6,7 @@ use App\Data\InsufficientData;
 use App\Data\InsurerAmounts;
 use App\Data\InsurerIndicators;
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Enums\DeclarationStatus;
 use App\Models\Insurer;
 use App\Services\Settings\SettingsRepository;
@@ -49,7 +50,7 @@ class NetworkStatsService
      *
      * @return array<int, InsurerIndicators|InsufficientData> keyed by insurer id
      */
-    public function perInsurer(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
+    public function perInsurer(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): array
     {
         $minimum = $this->settings->anonymityMinPharmacies();
 
@@ -91,7 +92,7 @@ class NetworkStatsService
                 continue;
             }
 
-            if (CityPartition::withholds($partition[$insurerId] ?? [], $minimum)) {
+            if (CityPartition::withholdsIn($city, $partition[$insurerId] ?? [], $minimum)) {
                 $indicators[$insurerId] = new InsufficientData($declaring, $minimum, cityShare: true);
 
                 continue;
@@ -157,7 +158,7 @@ class NetworkStatsService
      *
      * @return Collection<int|string, \stdClass> aggregates keyed by insurer id
      */
-    protected function instalmentAggregates(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): Collection
+    protected function instalmentAggregates(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): Collection
     {
         $perDeclaration = $this->withStandardDelay($this->baseQuery($from, $to, $city, $insurerId))
             ->join('declaration_payments', 'declaration_payments.declaration_id', '=', 'declarations.id')
@@ -286,7 +287,7 @@ class NetworkStatsService
      *
      * @return array{insurers: array<int, array{name: string, points: array<string, float>, withheld: list<string>}>, network: array<string, float>, withheldMonths: list<string>, threshold: int, required: int}
      */
-    public function delayTrend(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
+    public function delayTrend(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): array
     {
         $minimum = $this->settings->anonymityMinPharmacies();
 
@@ -306,11 +307,12 @@ class NetworkStatsService
 
         $names = Insurer::query()->whereIn('id', $eligible)->pluck('name', 'id');
 
-        // Non filtré par ville, un point est aussi publié ville par ville : il
-        // suit la règle de partition, au même grain (assureur × mois).
+        // Non filtré par ville (ou filtré par régions), un point est aussi
+        // publié ville par ville : il suit la règle de partition, au même
+        // grain (assureur × mois). Comptes de tout le réseau, dans les deux cas.
         $partition = [];
 
-        if ($city === null && $eligible !== []) {
+        if (! is_string($city) && $eligible !== []) {
             $counts = $this->perCity(
                 $this->baseQuery($from, $to, null, $insurerId)
                     ->whereIn('declarations.insurer_id', $eligible)
@@ -340,7 +342,7 @@ class NetworkStatsService
             $months[$key] = true;
 
             if (! $this->isSufficient((int) $row->declaring_pharmacies, $minimum)
-                || CityPartition::withholds($partition[$insurerId][$key] ?? [], $minimum)) {
+                || CityPartition::withholdsIn($city, $partition[$insurerId][$key] ?? [], $minimum)) {
                 $insurers[$insurerId]['withheld'][] = $key;
 
                 continue;
@@ -401,7 +403,7 @@ class NetworkStatsService
      * @param  list<int>  $insurerIds
      * @return array<int, list<array{year: int, month: int, monthLabel: string, declaringPharmacies: int, cityPharmacies: array<string, int>, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>
      */
-    public function monthlyByInsurer(array $insurerIds, Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
+    public function monthlyByInsurer(array $insurerIds, Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): array
     {
         if ($insurerIds === []) {
             return [];
@@ -425,7 +427,9 @@ class NetworkStatsService
 
         $cities = [];
 
-        if ($city === null) {
+        // Tout le réseau, filtre régions compris : la règle régionale lit la
+        // partition entière (CityPartition).
+        if (! is_string($city)) {
             $counts = $this->perCity(
                 $this->baseQuery($from, $to, null, $insurerId)->whereIn('declarations.insurer_id', $insurerIds),
                 ['declarations.insurer_id', 'declarations.period_year', 'declarations.period_month'],
@@ -479,7 +483,7 @@ class NetworkStatsService
      *
      * @return array{withheld: bool, withheldReason: 'too-few'|'city-share'|null, required: int, declaringPharmacies: int|null, declarations: int|null, averageDelayDays: float|null, weightedDelayDays: float|null, withinThresholdShare: float|null, rejectionRate: float|null, outstandingBeyond90: int|null}
      */
-    public function networkSummary(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
+    public function networkSummary(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): array
     {
         $minimum = $this->settings->anonymityMinPharmacies();
 
@@ -539,7 +543,7 @@ class NetworkStatsService
      *
      * @return array<int, InsurerAmounts|InsufficientData> keyed by insurer id
      */
-    public function aggregatedByInsurer(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
+    public function aggregatedByInsurer(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): array
     {
         $minimum = $this->settings->anonymityMinPharmacies();
 
@@ -571,7 +575,7 @@ class NetworkStatsService
 
             // Même règle de partition que perInsurer() : les deux écrans
             // doivent retenir les mêmes assureurs.
-            if (CityPartition::withholds($partition[$insurerId] ?? [], $minimum)) {
+            if (CityPartition::withholdsIn($city, $partition[$insurerId] ?? [], $minimum)) {
                 $amounts[$insurerId] = new InsufficientData($declaring, $minimum, cityShare: true);
 
                 continue;
@@ -602,7 +606,7 @@ class NetworkStatsService
      * Protected: it carries no threshold of its own, and is only published
      * through networkSummary(), which withholds it with the rest.
      */
-    protected function outstandingBeyond(Period $from, Period $to, ?string $city, int $days, ?int $insurerId = null): int
+    protected function outstandingBeyond(Period $from, Period $to, string|RegionScope|null $city, int $days, ?int $insurerId = null): int
     {
         $rows = $this->baseQuery($from, $to, $city, $insurerId)
             ->whereRaw('amount_invoiced > amount_received')
@@ -646,7 +650,7 @@ class NetworkStatsService
      *
      * @return array{withheld: bool, withheldReason: 'too-few'|'city-share'|null, required: int, invoiced: int|null, received: int|null, outstanding: int|null, recoveryRate: float|null, declaringPharmacies: int|null}
      */
-    public function aggregatedAmounts(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): array
+    public function aggregatedAmounts(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): array
     {
         $minimum = $this->settings->anonymityMinPharmacies();
 
@@ -704,11 +708,13 @@ class NetworkStatsService
      *   over every such insurer, in distinct officines, must not rest on 1 to
      *   threshold − 1 of them.
      *
-     * One query, only when no city is chosen and the own count passed.
+     * One query, only when no single city is chosen and the own count passed.
+     * Under a region filter, the same two checks follow the region partition
+     * rule (CityPartition::*In()).
      *
      * @return 'too-few'|'city-share'|null
      */
-    protected function summaryWithheldReason(int $declaringPharmacies, int $minimum, Period $from, Period $to, ?string $city, ?int $insurerId): ?string
+    protected function summaryWithheldReason(int $declaringPharmacies, int $minimum, Period $from, Period $to, string|RegionScope|null $city, ?int $insurerId): ?string
     {
         if ($declaringPharmacies === 0) {
             return null;
@@ -718,7 +724,7 @@ class NetworkStatsService
             return 'too-few';
         }
 
-        if ($city !== null) {
+        if (is_string($city)) {
             return null;
         }
 
@@ -732,11 +738,11 @@ class NetworkStatsService
             }
         }
 
-        if (CityPartition::withholds(array_map('count', $perCity), $minimum)) {
+        if (CityPartition::withholdsIn($city, array_map('count', $perCity), $minimum)) {
             return 'city-share';
         }
 
-        $hidden = CityPartition::hiddenCellsOfCityShareInsurers($cells, $minimum);
+        $hidden = CityPartition::hiddenCellsOfCityShareInsurersIn($city, $cells, $minimum);
 
         return $hidden > 0 && $hidden < $minimum ? 'city-share' : null;
     }
@@ -745,13 +751,14 @@ class NetworkStatsService
      * Declaring pharmacies per insurer and city, for the city partition rule.
      *
      * Empty when a city is chosen: a single city is published whole, there is
-     * nothing to subtract it from. One query otherwise.
+     * nothing to subtract it from. One query otherwise — over the whole
+     * network even under a region filter, which reads the entire partition.
      *
      * @return array<int, array<string, int>>
      */
-    protected function insurerPartition(Period $from, Period $to, ?string $city, ?int $insurerId): array
+    protected function insurerPartition(Period $from, Period $to, string|RegionScope|null $city, ?int $insurerId): array
     {
-        if ($city !== null) {
+        if (is_string($city)) {
             return [];
         }
 
@@ -845,7 +852,7 @@ class NetworkStatsService
      * autre table — voir InsurerPenaltyAggregates, qui filtre
      * `declaration_payments` sur la même fenêtre.
      */
-    protected function baseQuery(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): Builder
+    protected function baseQuery(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): Builder
     {
         return $this->window->query($from, $to, $city, $insurerId);
     }

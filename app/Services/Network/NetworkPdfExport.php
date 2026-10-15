@@ -6,6 +6,7 @@ use App\Data\InsufficientData;
 use App\Data\InsurerAmounts;
 use App\Data\InsurerPenaltyFigures;
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Models\Insurer;
 use App\Services\Settings\SettingsRepository;
 use App\Support\MonthLabel;
@@ -38,7 +39,7 @@ class NetworkPdfExport
         //
     }
 
-    public function document(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): PdfDocument
+    public function document(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): PdfDocument
     {
         return Pdf::loadView('exports.network', $this->data($from, $to, $city, $insurerId))
             ->setPaper('a4', 'portrait');
@@ -49,7 +50,7 @@ class NetworkPdfExport
      *
      * @return array<string, mixed>
      */
-    protected function data(Period $from, Period $to, ?string $city, ?int $insurerId = null): array
+    protected function data(Period $from, Period $to, string|RegionScope|null $city, ?int $insurerId = null): array
     {
         $indicators = $this->stats->perInsurer($from, $to, $city, $insurerId);
         $amounts = $this->stats->aggregatedByInsurer($from, $to, $city, $insurerId);
@@ -89,6 +90,11 @@ class NetworkPdfExport
         $allowed = array_map(fn (array $row): int => $row['insurerId'], $rows);
 
         $figures = $this->penalties->forInsurers($allowed, $from, $to, $city);
+        // Sous filtre régions, la règle régionale lit la partition de tout le
+        // réseau (même lecture que NetworkExportRows).
+        $partitionFigures = $city instanceof RegionScope
+            ? $this->penalties->forInsurers($allowed, $from, $to)
+            : $figures;
         $monthly = $this->stats->monthlyByInsurer($allowed, $from, $to, $city, $insurerId);
 
         $minimum = $this->settings->anonymityMinPharmacies();
@@ -108,12 +114,12 @@ class NetworkPdfExport
             $rows[$index]['splitWithheldByLedger'] = in_array($row['insurerId'], $ledgerWithheld, true);
             $rows[$index]['splitWithheld'] = $rows[$index]['splitWithheldByLedger']
                 || $rows[$index]['figures']->splitPharmacies->restsOnFewerThan($minimum)
-                || ($city === null && CityPartition::withholdsSplit($rows[$index]['figures']->citySplitPharmacies, $minimum));
+                || CityPartition::withholdsSplitIn($city, ($partitionFigures[$row['insurerId']] ?? $rows[$index]['figures'])->citySplitPharmacies, $minimum);
             // La due se publie seule, sous son propre seuil : même règle que
             // NetworkExportRows (décision du 11/10/2026).
             $rows[$index]['dueWithheld'] = $rows[$index]['figures']->splitPharmacies->dueRestsOnFewerThan($minimum)
-                || ($city === null && CityPartition::withholdsDue($rows[$index]['figures']->citySplitPharmacies, $minimum));
-            $rows[$index]['monthly'] = $this->withheldMonths($monthly[$row['insurerId']] ?? []);
+                || CityPartition::withholdsDueIn($city, ($partitionFigures[$row['insurerId']] ?? $rows[$index]['figures'])->citySplitPharmacies, $minimum);
+            $rows[$index]['monthly'] = $this->withheldMonths($monthly[$row['insurerId']] ?? [], $city);
         }
 
         // Le plus mauvais payeur en tête : un rapport se lit du haut, et c'est
@@ -125,7 +131,8 @@ class NetworkPdfExport
             'summary' => $this->summary($from, $to, $city, $insurerId),
             'rows' => $rows,
             'withheld' => $withheld,
-            'city' => $city,
+            'city' => is_string($city) ? $city : null,
+            'regions' => $city instanceof RegionScope ? $city->label() : null,
             'anonymityThreshold' => $minimum,
             'periodLabel' => $this->periodLabel($from, $to),
             'generatedAt' => now(),
@@ -144,7 +151,7 @@ class NetworkPdfExport
      *
      * @return array<string, mixed>
      */
-    protected function summary(Period $from, Period $to, ?string $city, ?int $insurerId): array
+    protected function summary(Period $from, Period $to, string|RegionScope|null $city, ?int $insurerId): array
     {
         return $this->stats->networkSummary($from, $to, $city, $insurerId);
     }
@@ -165,11 +172,11 @@ class NetworkPdfExport
      * @param  list<array<string, mixed>>  $months
      * @return list<array<string, mixed>>
      */
-    protected function withheldMonths(array $months): array
+    protected function withheldMonths(array $months, string|RegionScope|null $city): array
     {
         $minimum = $this->settings->anonymityMinPharmacies();
 
-        return array_map(function (array $month) use ($minimum): array {
+        return array_map(function (array $month) use ($minimum, $city): array {
             // Les comptes par ville ne sortent jamais : sous le seuil, ce
             // sont des comptes exacts (règle « aucun compte sous le seuil »).
             $perCity = $month['cityPharmacies'] ?? [];
@@ -177,7 +184,7 @@ class NetworkPdfExport
 
             // Règle de partition : ce mois, moins le même mois des rapports
             // par ville, rendrait les villes retenues (CityPartition).
-            if ($month['declaringPharmacies'] >= $minimum && ! CityPartition::withholds($perCity, $minimum)) {
+            if ($month['declaringPharmacies'] >= $minimum && ! CityPartition::withholdsIn($city, $perCity, $minimum)) {
                 return [...$month, 'withheld' => false];
             }
 

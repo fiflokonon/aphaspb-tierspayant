@@ -6,7 +6,9 @@ use App\Data\InsufficientData;
 use App\Data\InsurerAmounts;
 use App\Data\InsurerIndicators;
 use App\Data\InsurerPenaltyFigures;
+use App\Data\PenaltySplitPharmacies;
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Models\Insurer;
 use App\Services\Settings\SettingsRepository;
 
@@ -83,7 +85,7 @@ class NetworkExportRows
      *
      * @return iterable<int, ExportRow>
      */
-    public function rows(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): iterable
+    public function rows(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): iterable
     {
         foreach ($this->byInsurer($from, $to, $city, $insurerId) as $row) {
             yield $row;
@@ -98,7 +100,7 @@ class NetworkExportRows
      *
      * @return iterable<int, ExportRow>
      */
-    public function byInsurer(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): iterable
+    public function byInsurer(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): iterable
     {
         $indicators = $this->stats->perInsurer($from, $to, $city, $insurerId);
         $amounts = $this->stats->aggregatedByInsurer($from, $to, $city, $insurerId);
@@ -115,6 +117,11 @@ class NetworkExportRows
         ));
 
         $figures = $this->penalties->forInsurers($allowed, $from, $to, $city);
+        // Sous filtre régions, la règle régionale lit la partition de tout le
+        // réseau : les découpages par ville viennent d'une lecture non filtrée.
+        $partitionFigures = $city instanceof RegionScope
+            ? $this->penalties->forInsurers($allowed, $from, $to)
+            : $figures;
         $ledgerWithheld = $this->ledgerWithheld($allowed, $from, $to, $city, $insurerId);
 
         foreach ($indicators as $insurerId => $entry) {
@@ -148,7 +155,8 @@ class NetworkExportRows
                 $figures[$insurerId] ?? new InsurerPenaltyFigures(null, null),
                 $minimum,
                 in_array($insurerId, $ledgerWithheld, true),
-                $city === null,
+                $city,
+                ($partitionFigures[$insurerId] ?? new InsurerPenaltyFigures(null, null))->citySplitPharmacies,
             );
         }
     }
@@ -164,7 +172,7 @@ class NetworkExportRows
      * @param  list<int>  $allowed
      * @return list<int>
      */
-    protected function ledgerWithheld(array $allowed, Period $from, Period $to, ?string $city, ?int $insurerId): array
+    protected function ledgerWithheld(array $allowed, Period $from, Period $to, string|RegionScope|null $city, ?int $insurerId): array
     {
         if ($allowed === []) {
             return [];
@@ -205,6 +213,8 @@ class NetworkExportRows
     }
 
     /**
+     * @param  array<string, PenaltySplitPharmacies>  $partitionSplits  découpage par ville, tout le réseau sous filtre régions
+     * @param  array<string, PenaltySplitPharmacies>  $partitionSplits  découpage par ville, tout le réseau sous filtre régions
      * @return ExportRow
      */
     protected function full(
@@ -214,7 +224,8 @@ class NetworkExportRows
         InsurerPenaltyFigures $figures,
         int $minimum,
         bool $ledgerWithheld,
-        bool $unfilteredByCity,
+        string|RegionScope|null $city,
+        array $partitionSplits,
     ): array {
         // Les trois ensemble, jamais une seule : une part publiée à côté d'une
         // part cachée finit toujours par la rendre, par différence avec un
@@ -225,14 +236,14 @@ class NetworkExportRows
         // moins les exports par ville les rendrait (CityPartition).
         $splitWithheld = $ledgerWithheld
             || $figures->splitPharmacies->restsOnFewerThan($minimum)
-            || ($unfilteredByCity && CityPartition::withholdsSplit($figures->citySplitPharmacies, $minimum));
+            || CityPartition::withholdsSplitIn($city, $partitionSplits, $minimum);
 
         // La due, elle, se publie seule (décision du 11/10/2026, à faire
         // signer par l'APhaSPB) : c'est le chiffre qu'on négocie avec
         // l'assureur. Elle ne tombe plus avec payée et annulée ni avec un mois
         // retenu du journal, mais garde son propre seuil, ici et par ville.
         $dueWithheld = $figures->splitPharmacies->dueRestsOnFewerThan($minimum)
-            || ($unfilteredByCity && CityPartition::withholdsDue($figures->citySplitPharmacies, $minimum));
+            || CityPartition::withholdsDueIn($city, $partitionSplits, $minimum);
 
         return [
             $name,

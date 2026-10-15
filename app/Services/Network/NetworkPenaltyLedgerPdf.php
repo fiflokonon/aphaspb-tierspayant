@@ -3,6 +3,7 @@
 namespace App\Services\Network;
 
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Services\Settings\SettingsRepository;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as PdfDocument;
@@ -24,12 +25,13 @@ class NetworkPenaltyLedgerPdf
         //
     }
 
-    public function document(Period $from, Period $to, ?string $city, ?int $insurerId, string $periodLabel): PdfDocument
+    public function document(Period $from, Period $to, string|RegionScope|null $city, ?int $insurerId, string $periodLabel): PdfDocument
     {
         return Pdf::loadView('exports.penalty-ledger-network', [
             'ledger' => $this->journal->for($from, $to, $city, $insurerId),
             'claims' => $this->claims->for($from, $to, $city, $insurerId),
-            'city' => $city,
+            'city' => is_string($city) ? $city : null,
+            'regions' => $city instanceof RegionScope ? $city->label() : null,
             'periodLabel' => $periodLabel,
             'anonymityThreshold' => $this->settings->anonymityMinPharmacies(),
             'generatedAt' => now(),

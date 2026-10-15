@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Enums\StatsPeriod;
 use App\Http\Controllers\Controller;
 use App\Models\Insurer;
@@ -10,6 +11,7 @@ use App\Models\Pharmacy;
 use App\Services\Network\NetworkCsvExport;
 use App\Services\Network\NetworkPdfExport;
 use App\Services\Network\NetworkXlsxExport;
+use App\Services\Network\RegionScopes;
 use App\Services\Settings\SettingsRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -44,9 +46,9 @@ class NetworkExportController extends Controller
         //
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request, RegionScopes $regions): Response
     {
-        $city = $request->string('city')->value() ?: null;
+        $city = $regions->filterFrom($request);
         $period = StatsPeriod::fromRequest($request->string('period')->value(), self::DEFAULT_PERIOD);
 
         return Inertia::render('admin/Exports', [
@@ -55,7 +57,9 @@ class NetworkExportController extends Controller
             'period' => $period->value,
             'periodLabel' => $period->describe(),
             'periods' => StatsPeriod::options(),
-            'city' => $city,
+            'city' => is_string($city) ? $city : null,
+            'regions' => $regions->options(),
+            'selectedRegions' => $city instanceof RegionScope ? $city->regionIds : [],
             'cities' => Pharmacy::filterableCities(),
             'insurer' => $this->chosenInsurer($request)?->id,
             'insurers' => $this->declaredInsurers(),
@@ -64,9 +68,9 @@ class NetworkExportController extends Controller
         ]);
     }
 
-    public function download(Request $request): StreamedResponse|BinaryFileResponse
+    public function download(Request $request, RegionScopes $regions): StreamedResponse|BinaryFileResponse
     {
-        $city = $request->string('city')->value() ?: null;
+        $city = $regions->filterFrom($request);
         $period = StatsPeriod::fromRequest($request->string('period')->value(), self::DEFAULT_PERIOD);
         $insurer = $this->chosenInsurer($request);
         $insurerId = $insurer?->id;
@@ -118,7 +122,7 @@ class NetworkExportController extends Controller
      * A file rather than a stream: OpenSpout's browser writer sets its own
      * headers and fights streamDownload() for control of the response.
      */
-    protected function workbook(string $filename, Period $from, Period $to, ?string $city, ?int $insurerId = null): BinaryFileResponse
+    protected function workbook(string $filename, Period $from, Period $to, string|RegionScope|null $city, ?int $insurerId = null): BinaryFileResponse
     {
         // Le chemin rendu par tempnam() tel quel : y concaténer une extension
         // écrirait dans un second fichier et abandonnerait celui que tempnam()
@@ -141,7 +145,7 @@ class NetworkExportController extends Controller
      * stream helper takes over the response, and a downloaded file is one code
      * path for both binary formats rather than two.
      */
-    protected function report(string $filename, Period $from, Period $to, ?string $city, ?int $insurerId = null): BinaryFileResponse
+    protected function report(string $filename, Period $from, Period $to, string|RegionScope|null $city, ?int $insurerId = null): BinaryFileResponse
     {
         $path = tempnam(sys_get_temp_dir(), 'aphaspb');
 

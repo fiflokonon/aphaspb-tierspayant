@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Data\Period;
 use App\Data\PharmacyCompleteness;
+use App\Data\RegionScope;
 use App\Enums\CompletenessState;
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
 use App\Services\Network\DeclarationCompleteness;
+use App\Services\Network\RegionScopes;
 use App\Support\MonthLabel;
 use App\Support\PageSize;
 use App\Support\WhatsappNumber;
@@ -36,11 +38,11 @@ class DeclarationFollowUpController extends Controller
         //
     }
 
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request, RegionScopes $regions): Response
     {
         $months = $this->months();
         $month = $this->month($request, $months);
-        $city = $request->string('city')->value() ?: null;
+        $city = $regions->filterFrom($request);
         $state = in_array($request->string('state')->value(), self::STATES, true) ? $request->string('state')->value() : 'to-chase';
 
         $rows = $this->completeness->forMonth($month, $city);
@@ -67,7 +69,9 @@ class DeclarationFollowUpController extends Controller
                 'value' => $this->key($one),
                 'label' => $this->label($one),
             ], $months),
-            'city' => $city,
+            'city' => is_string($city) ? $city : null,
+            'regions' => $regions->options(),
+            'selectedRegions' => $city instanceof RegionScope ? $city->regionIds : [],
             'cities' => Pharmacy::filterableCities(),
             'state' => $state,
             'summary' => [

@@ -4,6 +4,7 @@ namespace App\Services\Network;
 
 use App\Data\Period;
 use App\Data\PharmacyCompleteness;
+use App\Data\RegionScope;
 use App\Enums\CompletenessState;
 use App\Models\Pharmacy;
 use Carbon\CarbonImmutable;
@@ -27,7 +28,7 @@ class DeclarationCompleteness
     /**
      * @return list<PharmacyCompleteness>
      */
-    public function forMonth(Period $month, ?string $city = null): array
+    public function forMonth(Period $month, string|RegionScope|null $city = null): array
     {
         $dayAfter = CarbonImmutable::create($month->year, $month->month, 1)->addMonth();
 
@@ -36,7 +37,10 @@ class DeclarationCompleteness
             ->withCount('insurers')
             ->whereHas('insurers')
             ->where('created_at', '<', $dayAfter)
-            ->when($city, fn ($query, string $filtered) => $query->where('city', $filtered))
+            ->when(is_string($city), fn ($query) => $query->where('city', $city))
+            // Aucune règle d'anonymat ici : ni montant ni agrégat, l'écran
+            // nomme déjà chaque officine. Les régions se filtrent en SQL.
+            ->when($city instanceof RegionScope, fn ($query) => $query->whereIn('city', $city instanceof RegionScope ? $city->cities : []))
             ->orderBy('name')
             ->get();
 

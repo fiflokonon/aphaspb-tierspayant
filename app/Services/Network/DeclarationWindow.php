@@ -3,6 +3,7 @@
 namespace App\Services\Network;
 
 use App\Data\Period;
+use App\Data\RegionScope;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -29,7 +30,7 @@ class DeclarationWindow
      * Les déclarations de la période, éventuellement d'une seule ville et d'un
      * seul assureur.
      */
-    public function query(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): Builder
+    public function query(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): Builder
     {
         return $this->apply(DB::table('declarations'), $from, $to, $city, $insurerId);
     }
@@ -37,7 +38,7 @@ class DeclarationWindow
     /**
      * Le même filtre, posé sur une requête qui joint déjà `declarations`.
      */
-    public function apply(Builder $query, Period $from, Period $to, ?string $city = null, ?int $insurerId = null): Builder
+    public function apply(Builder $query, Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): Builder
     {
         return $this->narrow(
             $query->whereRaw(
@@ -50,19 +51,25 @@ class DeclarationWindow
     }
 
     /**
-     * La ville et l'assureur seuls, sans la période.
+     * La ville (ou les régions) et l'assureur seuls, sans la période.
      *
      * Pour le journal des pénalités, dont la fenêtre n'est pas le mois déclaré
      * (PenaltyLedgerWindow) mais qui doit filtrer la ville exactement comme
      * tous les autres agrégats réseau.
      */
-    public function narrow(Builder $query, ?string $city = null, ?int $insurerId = null): Builder
+    public function narrow(Builder $query, string|RegionScope|null $city = null, ?int $insurerId = null): Builder
     {
         return $query
-            ->when($city, fn (Builder $inner, string $filtered) => $inner->whereExists(
+            ->when($city !== null, fn (Builder $inner) => $inner->whereExists(
                 fn (Builder $sub) => $sub->from('pharmacies')
                     ->whereColumn('pharmacies.id', 'declarations.pharmacy_id')
-                    ->where('pharmacies.city', $filtered),
+                    // Une région se filtre sur ses communes, comparées en SQL :
+                    // la collation y range les graphies comme pour une ville.
+                    ->when(
+                        $city instanceof RegionScope,
+                        fn (Builder $pharmacies) => $pharmacies->whereIn('pharmacies.city', $city instanceof RegionScope ? $city->cities : []),
+                        fn (Builder $pharmacies) => $pharmacies->where('pharmacies.city', $city),
+                    ),
             ))
             ->when($insurerId, fn (Builder $inner, int $filtered) => $inner->where(
                 'declarations.insurer_id',

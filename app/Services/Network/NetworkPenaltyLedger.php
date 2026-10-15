@@ -3,6 +3,7 @@
 namespace App\Services\Network;
 
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Enums\PenaltySettlement;
 use App\Services\Declarations\PenaltyCalculator;
 use App\Services\Declarations\PenaltyLedgerWindow;
@@ -30,7 +31,7 @@ class NetworkPenaltyLedger
         //
     }
 
-    public function tally(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): PenaltyTally
+    public function tally(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): PenaltyTally
     {
         $tally = new PenaltyTally($this->penalties, $from, $to);
 
@@ -93,7 +94,7 @@ class NetworkPenaltyLedger
      * @param  list<int>  $insurerIds
      * @return array<int, list<array{0: int, 1: int}>>
      */
-    protected function instalments(array $insurerIds, Period $from, Period $to, ?string $city): array
+    protected function instalments(array $insurerIds, Period $from, Period $to, string|RegionScope|null $city): array
     {
         $query = DB::table('declaration_payments')
             ->join('declarations', 'declarations.id', '=', 'declaration_payments.declaration_id');
@@ -118,7 +119,7 @@ class NetworkPenaltyLedger
      *
      * @param  list<int>  $insurerIds
      */
-    protected function scope(Builder $query, array $insurerIds, Period $from, Period $to, ?string $city): Builder
+    protected function scope(Builder $query, array $insurerIds, Period $from, Period $to, string|RegionScope|null $city): Builder
     {
         return $this->window->narrow(
             $this->ledgerWindow->apply($query, $from, $to)->whereIn('declarations.insurer_id', $insurerIds),

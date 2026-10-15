@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Data\RegionScope;
 use App\Enums\StatsPeriod;
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
@@ -11,6 +12,7 @@ use App\Services\Network\NetworkPenaltyClaims;
 use App\Services\Network\NetworkPenaltyJournal;
 use App\Services\Network\NetworkPenaltyLedgerPdf;
 use App\Services\Network\NetworkPenaltyLedgerRows;
+use App\Services\Network\RegionScopes;
 use Barryvdh\DomPDF\PDF as PdfDocument;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -40,9 +42,9 @@ class NetworkPenaltyLedgerController extends Controller
         //
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request, RegionScopes $regions): Response
     {
-        $city = $request->string('city')->value() ?: null;
+        $city = $regions->filterFrom($request);
         $period = StatsPeriod::fromRequest($request->string('period')->value(), self::DEFAULT_PERIOD);
         $insurerId = $this->insurerId($request);
 
@@ -59,7 +61,9 @@ class NetworkPenaltyLedgerController extends Controller
             'period' => $period->value,
             'periodLabel' => $period->describe(),
             'periods' => StatsPeriod::options(),
-            'city' => $city,
+            'city' => is_string($city) ? $city : null,
+            'regions' => $regions->options(),
+            'selectedRegions' => $city instanceof RegionScope ? $city->regionIds : [],
             'cities' => Pharmacy::filterableCities(),
             'insurer' => $insurerId,
             'insurers' => $this->journal->clauseInsurers()
@@ -84,9 +88,9 @@ class NetworkPenaltyLedgerController extends Controller
         return $this->journal->clauseInsurers()->contains('id', $requested) ? $requested : null;
     }
 
-    public function download(Request $request): StreamedResponse|BinaryFileResponse
+    public function download(Request $request, RegionScopes $regions): StreamedResponse|BinaryFileResponse
     {
-        $city = $request->string('city')->value() ?: null;
+        $city = $regions->filterFrom($request);
         $period = StatsPeriod::fromRequest($request->string('period')->value(), self::DEFAULT_PERIOD);
         $insurerId = $this->insurerId($request);
 

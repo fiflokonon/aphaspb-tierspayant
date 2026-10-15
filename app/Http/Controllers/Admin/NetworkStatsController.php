@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Data\InsufficientData;
 use App\Data\InsurerIndicators;
+use App\Data\RegionScope;
 use App\Enums\StatsPeriod;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\InsurerIndicatorsResource;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Services\Network\NetworkStatsService;
+use App\Services\Network\RegionScopes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -31,9 +33,9 @@ class NetworkStatsController extends Controller
         //
     }
 
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request, RegionScopes $regions): Response
     {
-        $city = $request->string('city')->value() ?: null;
+        $city = $regions->filterFrom($request);
         $period = StatsPeriod::fromRequest($request->string('period')->value(), self::DEFAULT_PERIOD);
 
         [$from, $to] = $period->bounds();
@@ -47,7 +49,9 @@ class NetworkStatsController extends Controller
             'period' => $period->value,
             'periodLabel' => $period->describe(),
             'periods' => StatsPeriod::options(),
-            'city' => $city,
+            'city' => is_string($city) ? $city : null,
+            'regions' => $regions->options(),
+            'selectedRegions' => $city instanceof RegionScope ? $city->regionIds : [],
             'cities' => Pharmacy::filterableCities(),
         ]);
     }

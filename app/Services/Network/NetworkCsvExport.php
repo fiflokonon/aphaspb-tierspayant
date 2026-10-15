@@ -3,6 +3,7 @@
 namespace App\Services\Network;
 
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Services\Exports\CsvRenderer;
 
 /**
@@ -28,7 +29,7 @@ class NetworkCsvExport
      *
      * @return iterable<int, list<string>>
      */
-    public function rows(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): iterable
+    public function rows(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): iterable
     {
         return $this->renderer->render(self::COLUMNS, $this->source->rows($from, $to, $city, $insurerId));
     }

@@ -5,6 +5,7 @@ namespace App\Services\Network;
 use App\Data\InsurerPenaltyFigures;
 use App\Data\PenaltySplitPharmacies;
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Enums\DeclarationStatus;
 use App\Enums\PenaltySettlement;
 use App\Services\Declarations\PenaltyCalculator;
@@ -45,7 +46,7 @@ class InsurerPenaltyAggregates
      * @param  list<int>  $insurerIds  déjà autorisés par le seuil d'anonymat
      * @return array<int, InsurerPenaltyFigures>
      */
-    public function forInsurers(array $insurerIds, Period $from, Period $to, ?string $city = null): array
+    public function forInsurers(array $insurerIds, Period $from, Period $to, string|RegionScope|null $city = null): array
     {
         if ($insurerIds === []) {
             return [];
@@ -113,7 +114,7 @@ class InsurerPenaltyAggregates
      * @param  list<int>  $insurerIds
      * @return array<int, int>
      */
-    protected function longestDelays(array $insurerIds, Period $from, Period $to, ?string $city): array
+    protected function longestDelays(array $insurerIds, Period $from, Period $to, string|RegionScope|null $city): array
     {
         $rows = $this->window->query($from, $to, $city)
             ->whereIn('declarations.insurer_id', $insurerIds)
@@ -174,7 +175,7 @@ class InsurerPenaltyAggregates
      * @param  array<int, array{0: int, 1: int}>  $clauses
      * @return array<int, array{0: int, 1: int, 2: int, 3: array{0: array<int, true>, 1: array<int, true>, 2: array<int, true>}, 4: array<int, string>}> due, recouvrée, abandonnée, officines de chaque part, ville de chaque officine
      */
-    protected function penaltiesByInsurer(array $insurerIds, array $clauses, Period $from, Period $to, ?string $city): array
+    protected function penaltiesByInsurer(array $insurerIds, array $clauses, Period $from, Period $to, string|RegionScope|null $city): array
     {
         if ($insurerIds === []) {
             return [];
@@ -292,7 +293,7 @@ class InsurerPenaltyAggregates
      * @param  list<int>  $insurerIds
      * @return array<int, list<array{0: int, 1: int}>>
      */
-    protected function instalments(array $insurerIds, Period $from, Period $to, ?string $city): array
+    protected function instalments(array $insurerIds, Period $from, Period $to, string|RegionScope|null $city): array
     {
         $query = DB::table('declaration_payments')
             ->join('declarations', 'declarations.id', '=', 'declaration_payments.declaration_id')

@@ -4,6 +4,7 @@ namespace App\Services\Network;
 
 use App\Data\PenaltyLedgerMonth;
 use App\Data\Period;
+use App\Data\RegionScope;
 use App\Services\Settings\SettingsRepository;
 
 /**
@@ -28,7 +29,7 @@ class NetworkPenaltyLedgerRows
     /**
      * @return iterable<int, list<string|int|null>>
      */
-    public function rows(Period $from, Period $to, ?string $city = null, ?int $insurerId = null): iterable
+    public function rows(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): iterable
     {
         $ledger = $this->journal->for($from, $to, $city, $insurerId);
         $reason = sprintf('moins de %d officines', $this->settings->anonymityMinPharmacies());

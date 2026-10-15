@@ -3,6 +3,7 @@
 namespace App\Services\Network;
 
 use App\Data\PenaltySplitPharmacies;
+use App\Data\RegionScope;
 
 /**
  * La règle de partition par ville, pour les agrégats réseau non filtrés.
@@ -21,6 +22,18 @@ use App\Data\PenaltySplitPharmacies;
  *
  * Pure : les comptes viennent des lecteurs, le seuil de l'appelant qui
  * détient SettingsRepository.
+ *
+ * **Filtre par régions (15/10/2026).** Une région regroupe des villes : son
+ * chiffre moins ses villes publiées rendrait ses villes retenues, et le total
+ * moins les régions publiées rendrait les villes hors région. D'où la règle
+ * de partition régionale (`*In()` avec un RegionScope) : un chiffre filtré
+ * par régions n'est publié que si **toute** la partition de l'entité est
+ * propre — la part cachée de chaque région, et celle du reste (villes sans
+ * région, officines sans ville), vaut 0 ou au moins le seuil. Indépendante
+ * de la sélection, donc monotone : une entité dont la partition n'est pas
+ * propre n'a aucun chiffre régional publié, et les règles non filtrées
+ * restent inchangées. Les comptes passés couvrent **tout le réseau**, pas
+ * seulement les régions choisies.
  */
 class CityPartition
 {
@@ -144,6 +157,152 @@ class CityPartition
         }
 
         return $hidden > 0 && $hidden < $minimum;
+    }
+
+    /**
+     * withholds(), selon le filtre : non filtré, une ville, des régions.
+     *
+     * @param  array<string, int>  $perCity  tout le réseau, NO_CITY compris
+     */
+    public static function withholdsIn(string|RegionScope|null $scope, array $perCity, int $minimum): bool
+    {
+        return match (true) {
+            $scope === null => self::withholds($perCity, $minimum),
+            is_string($scope) => false,
+            default => self::regionPartitionWithholds(
+                $perCity,
+                $scope,
+                fn (string $city, int $pharmacies): bool => $city === self::NO_CITY || ($pharmacies > 0 && $pharmacies < $minimum),
+                fn (array $hidden): bool => array_sum($hidden) > 0 && array_sum($hidden) < $minimum,
+            ),
+        };
+    }
+
+    /**
+     * withholdsSplit(), selon le filtre.
+     *
+     * @param  array<string, PenaltySplitPharmacies>  $perCity  tout le réseau
+     */
+    public static function withholdsSplitIn(string|RegionScope|null $scope, array $perCity, int $minimum): bool
+    {
+        return match (true) {
+            $scope === null => self::withholdsSplit($perCity, $minimum),
+            is_string($scope) => false,
+            default => self::regionPartitionWithholds(
+                $perCity,
+                $scope,
+                fn (string $city, PenaltySplitPharmacies $split): bool => $city === self::NO_CITY || $split->restsOnFewerThan($minimum),
+                fn (array $hidden): bool => self::sumSplits($hidden)->restsOnFewerThan($minimum),
+            ),
+        };
+    }
+
+    /**
+     * withholdsDue(), selon le filtre.
+     *
+     * @param  array<string, PenaltySplitPharmacies>  $perCity  tout le réseau
+     */
+    public static function withholdsDueIn(string|RegionScope|null $scope, array $perCity, int $minimum): bool
+    {
+        return match (true) {
+            $scope === null => self::withholdsDue($perCity, $minimum),
+            is_string($scope) => false,
+            default => self::regionPartitionWithholds(
+                $perCity,
+                $scope,
+                fn (string $city, PenaltySplitPharmacies $split): bool => $city === self::NO_CITY || $split->dueRestsOnFewerThan($minimum),
+                fn (array $hidden): bool => self::sumSplits($hidden)->due > 0 && self::sumSplits($hidden)->due < $minimum,
+            ),
+        };
+    }
+
+    /**
+     * hiddenCellsOfCityShareInsurers(), selon le filtre.
+     *
+     * Sous filtre régions, les assureurs concernés sont ceux dont la
+     * partition régionale n'est pas propre ; leurs lignes de ville publiées
+     * se soustraient du chiffre des régions choisies, qui rend alors leurs
+     * cellules sous le seuil **dans ces régions**. Leur union, en officines
+     * distinctes, ne doit pas reposer sur 1 à seuil − 1 officines.
+     *
+     * @param  array<int, array<string, array<int, true>>>  $cells  assureur → ville → officines, tout le réseau
+     */
+    public static function hiddenCellsOfCityShareInsurersIn(string|RegionScope|null $scope, array $cells, int $minimum): int
+    {
+        if ($scope === null) {
+            return self::hiddenCellsOfCityShareInsurers($cells, $minimum);
+        }
+
+        if (is_string($scope)) {
+            return 0;
+        }
+
+        $hidden = [];
+
+        foreach ($cells as $cities) {
+            $inScope = array_filter($cities, fn (string|int $city): bool => $scope->contains((string) $city), ARRAY_FILTER_USE_KEY);
+
+            if (array_sum(array_map('count', $inScope)) < $minimum
+                || ! self::withholdsIn($scope, array_map('count', $cities), $minimum)) {
+                continue;
+            }
+
+            foreach ($inScope as $pharmacies) {
+                if (count($pharmacies) < $minimum) {
+                    $hidden += $pharmacies;
+                }
+            }
+        }
+
+        return count($hidden);
+    }
+
+    /**
+     * Le cœur de la règle régionale : la part cachée de chaque bloc.
+     *
+     * Les blocs sont les régions, plus « le reste » (villes sans région et
+     * officines sans ville). Une ville dont la valeur est publiable n'entre
+     * dans aucun bloc.
+     *
+     * @template TValue
+     *
+     * @param  array<string, TValue>  $perCity
+     * @param  callable(string, TValue): bool  $isHidden
+     * @param  callable(list<TValue>): bool  $unsafe
+     */
+    protected static function regionPartitionWithholds(array $perCity, RegionScope $scope, callable $isHidden, callable $unsafe): bool
+    {
+        $blocks = [];
+
+        foreach ($perCity as $city => $value) {
+            $city = (string) $city;
+
+            if (! $isHidden($city, $value)) {
+                continue;
+            }
+
+            $blocks[$scope->regionOf[$city] ?? 'rest'][] = $value;
+        }
+
+        foreach ($blocks as $hidden) {
+            if ($unsafe($hidden)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  list<PenaltySplitPharmacies>  $splits
+     */
+    protected static function sumSplits(array $splits): PenaltySplitPharmacies
+    {
+        return new PenaltySplitPharmacies(
+            array_sum(array_map(fn (PenaltySplitPharmacies $split): int => $split->due, $splits)),
+            array_sum(array_map(fn (PenaltySplitPharmacies $split): int => $split->paid, $splits)),
+            array_sum(array_map(fn (PenaltySplitPharmacies $split): int => $split->waived, $splits)),
+        );
     }
 
     /**
