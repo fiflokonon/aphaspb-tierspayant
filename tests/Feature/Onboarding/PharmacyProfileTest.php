@@ -2,7 +2,6 @@
 
 use App\Enums\PharmacyRole;
 use App\Models\Insurer;
-use App\Models\Pharmacy;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
@@ -28,7 +27,6 @@ test('submitting the profile creates the officine and makes the user its owner',
     $this->actingAs($user)
         ->post(route('onboarding.profile.store'), [
             'name' => 'Pharmacie Le Bon Secours',
-            'onpb_license' => 'ONPB-4212',
             'city' => 'Cotonou',
             'whatsapp_phone' => '0197000000',
         ])
@@ -61,30 +59,19 @@ test('the titulaire comes from the Joomla account, never from the form', functio
     expect($user->fresh()->currentPharmacy->owner_name)->toBe('Awa Hounkpatin');
 });
 
-test('the ONPB licence may be left blank', function () {
+test('an ONPB licence posted anyway is ignored', function () {
     $user = User::factory()->notOnboarded()->create();
 
     $this->actingAs($user)
         ->post(route('onboarding.profile.store'), [
             'name' => 'Pharmacie Sans Licence',
+            'onpb_license' => 'ONPB-0001',
             'city' => 'Parakou',
             'whatsapp_phone' => '0197000000',
         ])
-        ->assertRedirect();
+        ->assertRedirect(route('onboarding.insurers'));
 
-    expect($user->fresh()->currentPharmacy->onpb_license)->toBeNull();
-});
-
-test('a duplicate ONPB licence is refused', function () {
-    Pharmacy::factory()->create(['onpb_license' => 'ONPB-0001']);
-
-    $this->actingAs(User::factory()->notOnboarded()->create())
-        ->post(route('onboarding.profile.store'), [
-            'name' => 'Pharmacie Copie',
-            'onpb_license' => 'ONPB-0001',
-            'city' => 'Cotonou',
-        ])
-        ->assertSessionHasErrors('onpb_license');
+    expect($user->fresh()->currentPharmacy->getAttributes())->not->toHaveKey('onpb_license');
 });
 
 test('the name, the city and the WhatsApp number are all required', function () {

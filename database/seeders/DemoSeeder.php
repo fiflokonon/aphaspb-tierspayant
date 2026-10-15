@@ -154,7 +154,6 @@ class DemoSeeder extends Seeder
             ['slug' => self::HERO_SLUG],
             [
                 'name' => 'Pharmacie Le Bon Secours',
-                'onpb_license' => 'ONPB-4212',
                 'city' => 'Cotonou',
                 'owner_name' => 'Awa Hounkpatin',
             ],

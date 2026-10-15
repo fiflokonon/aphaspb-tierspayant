@@ -45,13 +45,12 @@ class RegisteredPharmaciesController extends Controller
                 ['%'.mb_strtolower($search).'%'],
             ))
             ->orderBy('name')
-            ->paginate($perPage, ['id', 'name', 'city', 'onpb_license', 'whatsapp_phone', 'created_at'])
+            ->paginate($perPage, ['id', 'name', 'city', 'whatsapp_phone', 'created_at'])
             ->withQueryString()
             ->through(fn (Pharmacy $pharmacy) => [
                 'id' => $pharmacy->id,
                 'name' => $pharmacy->name,
                 'city' => $pharmacy->city,
-                'onpbLicense' => $pharmacy->onpb_license,
                 'phone' => $pharmacy->whatsapp_phone === null
                     ? null
                     : ['href' => 'tel:'.$pharmacy->whatsapp_phone, 'label' => WhatsappNumber::display($pharmacy->whatsapp_phone)],

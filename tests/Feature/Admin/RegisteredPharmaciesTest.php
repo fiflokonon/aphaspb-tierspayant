@@ -12,7 +12,6 @@ test('the list carries the identity the CDC allows', function () {
     Pharmacy::factory()->create([
         'name' => 'Pharmacie Le Bon Secours',
         'city' => 'Cotonou',
-        'onpb_license' => 'ONPB-4212',
     ]);
 
     $this->actingAs(User::factory()->networkAdmin()->create())
@@ -24,7 +23,6 @@ test('the list carries the identity the CDC allows', function () {
 
             expect($page->toArray()['component'])->toBe('admin/Pharmacies')
                 ->and($row['city'])->toBe('Cotonou')
-                ->and($row['onpbLicense'])->toBe('ONPB-4212')
                 ->and($row)->toHaveKey('registeredAt');
         });
 });
@@ -72,7 +70,7 @@ test('the list exposes no declaration data whatsoever', function () {
 
             expect($row)->not->toBeNull()
                 ->and(array_keys($row))
-                ->toBe(['id', 'name', 'city', 'onpbLicense', 'phone', 'registeredAt']);
+                ->toBe(['id', 'name', 'city', 'phone', 'registeredAt']);
 
             $serialised = json_encode($props, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
 

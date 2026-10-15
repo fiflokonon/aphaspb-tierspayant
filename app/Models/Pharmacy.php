@@ -19,7 +19,6 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $name
  * @property string $slug
- * @property string|null $onpb_license
  * @property string|null $city
  * @property string|null $owner_name
  * @property string|null $whatsapp_phone
@@ -30,7 +29,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
  */
-#[Fillable(['name', 'slug', 'onpb_license', 'city', 'owner_name', 'whatsapp_phone'])]
+#[Fillable(['name', 'slug', 'city', 'owner_name', 'whatsapp_phone'])]
 class Pharmacy extends Model
 {
     /** @use HasFactory<PharmacyFactory> */

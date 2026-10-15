@@ -12,7 +12,6 @@ type Row = {
     id: number;
     name: string;
     city: string | null;
-    onpbLicense: string | null;
     phone: { href: string; label: string } | null;
     registeredAt: string | null;
 };
@@ -34,8 +33,8 @@ const props = defineProps<{
     pageSizes: number[];
 }>();
 
-const TEMPLATE = '2fr 1fr 1fr 1.3fr 1.1fr';
-const COLUMNS = ['Officine', 'Ville', 'N° Onpb', 'WhatsApp', 'Inscrite le'];
+const TEMPLATE = '2fr 1.1fr 1.3fr 1.1fr';
+const COLUMNS = ['Officine', 'Ville', 'WhatsApp', 'Inscrite le'];
 
 const city = ref<string | null>(props.filters.city);
 const search = ref(props.filters.search ?? '');
@@ -83,29 +82,21 @@ const footer = computed(
     <Head title="Pharmacies inscrites" />
 
     <div class="pharmacies-page">
-
         <!-- =====================================================
              INTRODUCTION + FILTRES
         ====================================================== -->
         <section class="pharmacies-intro">
-
             <div class="intro-decoration"></div>
 
             <div class="intro-main">
-
                 <!-- TITRE -->
                 <div class="intro-content">
-
                     <div class="intro-icon">
                         <span>+</span>
                     </div>
 
                     <div class="intro-text">
-                   
-
-                        <h1>
-                            Pharmacies inscrites
-                        </h1>
+                        <h1>Pharmacies inscrites</h1>
 
                         <span class="intro-period">
                             Officines actuellement enregistrées dans le réseau
@@ -114,25 +105,16 @@ const footer = computed(
                             </template>
                         </span>
                     </div>
-
                 </div>
 
                 <!-- FILTRES -->
                 <div class="intro-filters">
-
                     <!-- RECHERCHE -->
                     <div class="filter-item search-filter">
-
-                        <span class="filter-label">
-                            RECHERCHE
-                        </span>
+                        <span class="filter-label"> RECHERCHE </span>
 
                         <div class="search-box">
-
-                            <span
-                                class="search-icon"
-                                aria-hidden="true"
-                            >
+                            <span class="search-icon" aria-hidden="true">
                                 ⌕
                             </span>
 
@@ -153,20 +135,15 @@ const footer = computed(
                             >
                                 ×
                             </button>
-
                         </div>
-
                     </div>
 
                     <!-- VILLE -->
                     <div class="filter-item city-filter-item">
-
-                        <span class="filter-label">
-                            VILLE
-                        </span>
+                        <span class="filter-label"> VILLE </span>
 
                         <div class="city-filter">
-<!-- 
+                            <!-- 
                             <span
                                 class="city-filter-icon"
                                 aria-hidden="true"
@@ -179,52 +156,35 @@ const footer = computed(
                                 :options="cityOptions"
                                 aria-label="Filtrer par ville"
                             />
-
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
-
         </section>
-
 
         <!-- =====================================================
              CONTENU
         ====================================================== -->
         <div class="pharmacies-body">
-
             <!-- =================================================
                  TABLEAU
             ================================================== -->
             <section class="pharmacies-table-section">
-
                 <div class="section-top-line"></div>
 
                 <div class="table-heading">
-
                     <div class="table-heading-main">
-
                         <div class="table-heading-icon">
                             <span>⌘</span>
                         </div>
 
                         <div>
-
                             <!-- <span class="section-eyebrow">
                                 DÉTAIL DU RÉSEAU
                             </span> -->
 
-                            <h2>
-                                Officines du réseau
-                            </h2>
-
-                           
-
+                            <h2>Officines du réseau</h2>
                         </div>
-
                     </div>
 
                     <!-- STATUT -->
@@ -235,9 +195,7 @@ const footer = computed(
                         Réseau actif
 
                     </div> -->
-
                 </div>
-
 
                 <!-- =================================================
                      DATA TABLE
@@ -249,80 +207,44 @@ const footer = computed(
                     :footer="footer"
                     class="pharmacies-table"
                 >
-
                     <DataTableRow
                         v-for="row in pharmacies.data"
                         :key="row.id"
                         :template="TEMPLATE"
                         class="pharmacy-row"
                     >
-
                         <!-- NOM -->
                         <div class="pharmacy-name-cell">
-
                             <div class="pharmacy-avatar">
                                 {{ row.name?.charAt(0)?.toUpperCase() }}
                             </div>
 
                             <div class="pharmacy-name-content">
-
-                                <div
-                                    class="pharmacy-name"
-                                    :title="row.name"
-                                >
+                                <div class="pharmacy-name" :title="row.name">
                                     {{ row.name }}
                                 </div>
 
                                 <span class="pharmacy-status">
-
                                     <span class="mini-status-dot"></span>
 
                                     Officine inscrite
-
                                 </span>
-
                             </div>
-
                         </div>
-
 
                         <!-- VILLE -->
                         <div class="city-cell">
-
-                            <span
-                                class="city-marker"
-                                aria-hidden="true"
-                            >
+                            <span class="city-marker" aria-hidden="true">
                                 ●
                             </span>
 
                             <span>
                                 {{ row.city ?? '-' }}
                             </span>
-
                         </div>
-
-
-                        <!-- ONPB -->
-                        <div class="license-cell">
-
-                            <span
-                                class="license-icon"
-                                aria-hidden="true"
-                            >
-                                #
-                            </span>
-
-                            <span>
-                                {{ row.onpbLicense ?? '-' }}
-                            </span>
-
-                        </div>
-
 
                         <!-- WHATSAPP -->
                         <div class="phone-cell">
-
                             <a
                                 v-if="row.phone"
                                 :href="row.phone.href"
@@ -346,17 +268,11 @@ const footer = computed(
                             >
                                 -
                             </span>
-
                         </div>
-
 
                         <!-- DATE -->
                         <div class="date-cell">
-
-                            <span
-                                class="date-icon"
-                                aria-hidden="true"
-                            >
+                            <span class="date-icon" aria-hidden="true">
                                 <CalendarDays
                                     class="size-[13px]"
                                     :stroke-width="2"
@@ -366,31 +282,20 @@ const footer = computed(
                             <span>
                                 {{ row.registeredAt ?? '-' }}
                             </span>
-
                         </div>
-
                     </DataTableRow>
-
 
                     <!-- =================================================
                          AUCUN RÉSULTAT
                     ================================================== -->
-                    <div
-                        v-if="!pharmacies.data.length"
-                        class="empty-state"
-                    >
+                    <div v-if="!pharmacies.data.length" class="empty-state">
+                        <div class="empty-icon">⌕</div>
 
-                        <div class="empty-icon">
-                            ⌕
-                        </div>
-
-                        <div class="empty-title">
-                            Aucune officine trouvée
-                        </div>
+                        <div class="empty-title">Aucune officine trouvée</div>
 
                         <p>
-                            Aucune officine ne correspond aux critères
-                            de recherche sélectionnés.
+                            Aucune officine ne correspond aux critères de
+                            recherche sélectionnés.
                         </p>
 
                         <button
@@ -404,19 +309,14 @@ const footer = computed(
                         >
                             Réinitialiser les filtres
                         </button>
-
                     </div>
-
                 </DataTable>
-
             </section>
-
 
             <!-- =================================================
                  PAGINATION
             ================================================== -->
             <div class="pagination-wrapper">
-
                 <Pagination
                     :page="pharmacies.current_page"
                     :last-page="pharmacies.last_page"
@@ -429,40 +329,29 @@ const footer = computed(
                     @update:page="reload"
                     @update:per-page="perPage = $event"
                 />
-
             </div>
-
 
             <!-- =================================================
                  NOTE
             ================================================== -->
             <div class="pharmacies-footnote">
-
-                <div class="footnote-icon">
-                    i
-                </div>
+                <div class="footnote-icon">i</div>
 
                 <p>
                     Les informations affichées correspondent aux officines
                     actuellement enregistrées dans le réseau.
                 </p>
-
             </div>
-
         </div>
-
     </div>
 </template>
 
-
 <style scoped>
-
 /* =========================================================
    VARIABLES
    ========================================================= */
 
 .pharmacies-page {
-
     --page-bg: #f8faf9;
 
     --surface: #ffffff;
@@ -492,13 +381,11 @@ const footer = computed(
     font-family: 'Manrope', sans-serif;
 }
 
-
 /* =========================================================
    INTRODUCTION
    ========================================================= */
 
 .pharmacies-intro {
-
     position: relative;
 
     display: flex;
@@ -516,27 +403,16 @@ const footer = computed(
 
     border-radius: 18px;
 
-    background:
-        linear-gradient(
-            110deg,
-            #ffffff 0%,
-            #ffffff 58%,
-            #f7fbf9 100%
-        );
+    background: linear-gradient(110deg, #ffffff 0%, #ffffff 58%, #f7fbf9 100%);
 
-    animation:
-        introAppear
-        0.55s ease
-        both;
+    animation: introAppear 0.55s ease both;
 }
-
 
 /* =========================================================
    LIGNE SUPÉRIEURE
    ========================================================= */
 
 .pharmacies-intro::before {
-
     position: absolute;
 
     left: 24px;
@@ -548,24 +424,21 @@ const footer = computed(
 
     border-radius: 0 0 4px 4px;
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--primary),
-            #2b896d 70%,
-            var(--gold)
-        );
+    background: linear-gradient(
+        90deg,
+        var(--primary),
+        #2b896d 70%,
+        var(--gold)
+    );
 
     content: '';
 }
-
 
 /* =========================================================
    DÉCORATION
    ========================================================= */
 
 .intro-decoration {
-
     position: absolute;
 
     right: -65px;
@@ -574,8 +447,7 @@ const footer = computed(
     width: 210px;
     height: 210px;
 
-    border: 1px solid
-        rgb(0 102 76 / 0.07);
+    border: 1px solid rgb(0 102 76 / 0.07);
 
     border-radius: 50%;
 
@@ -583,7 +455,6 @@ const footer = computed(
 }
 
 .intro-decoration::after {
-
     position: absolute;
 
     right: 28px;
@@ -599,13 +470,11 @@ const footer = computed(
     content: '';
 }
 
-
 /* =========================================================
    INTRO MAIN
    ========================================================= */
 
 .intro-main {
-
     position: relative;
 
     z-index: 2;
@@ -620,13 +489,11 @@ const footer = computed(
     gap: 34px;
 }
 
-
 /* =========================================================
    TITRE
    ========================================================= */
 
 .intro-content {
-
     display: flex;
     align-items: center;
 
@@ -636,7 +503,6 @@ const footer = computed(
 }
 
 .intro-icon {
-
     width: 48px;
     height: 48px;
 
@@ -648,12 +514,7 @@ const footer = computed(
 
     border-radius: 14px;
 
-    background:
-        linear-gradient(
-            145deg,
-            var(--primary),
-            var(--primary-dark)
-        );
+    background: linear-gradient(145deg, var(--primary), var(--primary-dark));
 
     color: #ffffff;
 
@@ -663,12 +524,10 @@ const footer = computed(
 }
 
 .intro-text {
-
     min-width: 0;
 }
 
 .intro-eyebrow {
-
     display: block;
 
     margin-bottom: 4px;
@@ -683,7 +542,6 @@ const footer = computed(
 }
 
 .intro-text h1 {
-
     margin: 0;
 
     color: #203a31;
@@ -698,7 +556,6 @@ const footer = computed(
 }
 
 .intro-period {
-
     display: block;
 
     margin-top: 4px;
@@ -710,13 +567,11 @@ const footer = computed(
     font-weight: 600;
 }
 
-
 /* =========================================================
    FILTRES
    ========================================================= */
 
 .intro-filters {
-
     display: flex;
     align-items: flex-end;
 
@@ -732,7 +587,6 @@ const footer = computed(
 }
 
 .filter-item {
-
     display: flex;
     flex-direction: column;
 
@@ -744,7 +598,6 @@ const footer = computed(
 }
 
 .filter-label {
-
     color: black;
 
     font-size: 11px;
@@ -754,18 +607,15 @@ const footer = computed(
     letter-spacing: 0.12em;
 }
 
-
 /* =========================================================
    RECHERCHE
    ========================================================= */
 
 .search-filter {
-
     flex: 1.4;
 }
 
 .search-box {
-
     position: relative;
 
     display: flex;
@@ -787,31 +637,16 @@ const footer = computed(
 }
 
 .search-box:hover {
-
-    border-color:
-        color-mix(
-            in srgb,
-            var(--primary) 25%,
-            var(--border)
-        );
+    border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
 }
 
 .search-box:focus-within {
+    border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
 
-    border-color:
-        color-mix(
-            in srgb,
-            var(--primary) 42%,
-            var(--border)
-        );
-
-    box-shadow:
-        0 0 0 3px
-        rgb(0 102 76 / 0.06);
+    box-shadow: 0 0 0 3px rgb(0 102 76 / 0.06);
 }
 
 .search-icon {
-
     display: flex;
     align-items: center;
     justify-content: center;
@@ -826,7 +661,6 @@ const footer = computed(
 }
 
 .search-input {
-
     width: 100%;
     height: 100%;
 
@@ -845,13 +679,7 @@ const footer = computed(
 }
 
 .search-input::placeholder {
-
-    color:
-        color-mix(
-            in srgb,
-            var(--ink) 38%,
-            transparent
-        );
+    color: color-mix(in srgb, var(--ink) 38%, transparent);
 
     font-weight: 500;
 }
@@ -860,13 +688,11 @@ const footer = computed(
     display: none;
 }
 
-
 /* =========================================================
    CLEAR SEARCH
    ========================================================= */
 
 .clear-search {
-
     position: absolute;
 
     right: 8px;
@@ -899,24 +725,20 @@ const footer = computed(
 }
 
 .clear-search:hover {
-
     background: #dcefe8;
 
     color: var(--primary);
 }
-
 
 /* =========================================================
    VILLE
    ========================================================= */
 
 .city-filter-item {
-
     flex: 0.85;
 }
 
 .city-filter {
-
     position: relative;
 
     /* display: flex; */
@@ -940,17 +762,10 @@ const footer = computed(
 }
 
 .city-filter:hover {
-
-    border-color:
-        color-mix(
-            in srgb,
-            var(--primary) 25%,
-            var(--border)
-        );
+    border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
 }
 
 .city-filter-icon {
-
     position: absolute;
 
     left: 11px;
@@ -965,7 +780,6 @@ const footer = computed(
 }
 
 .city-filter :deep(select) {
-
     width: 100%;
 
     height: 100%;
@@ -989,13 +803,11 @@ const footer = computed(
     cursor: pointer;
 }
 
-
 /* =========================================================
    BODY
    ========================================================= */
 
 .pharmacies-body {
-
     display: flex;
     flex-direction: column;
 
@@ -1004,13 +816,11 @@ const footer = computed(
     padding-bottom: 40px;
 }
 
-
 /* =========================================================
    TABLE SECTION
    ========================================================= */
 
 .pharmacies-table-section {
-
     position: relative;
 
     width: 100%;
@@ -1023,19 +833,14 @@ const footer = computed(
 
     background: var(--surface);
 
-    animation:
-        fadeUp
-        0.55s ease
-        0.05s both;
+    animation: fadeUp 0.55s ease 0.05s both;
 }
-
 
 /* =========================================================
    LIGNE ACCENT
    ========================================================= */
 
 .section-top-line {
-
     position: absolute;
 
     left: 0;
@@ -1044,22 +849,19 @@ const footer = computed(
     width: 100%;
     height: 3px;
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--primary),
-            #27856a 65%,
-            var(--gold)
-        );
+    background: linear-gradient(
+        90deg,
+        var(--primary),
+        #27856a 65%,
+        var(--gold)
+    );
 }
-
 
 /* =========================================================
    TABLE HEADING
    ========================================================= */
 
 .table-heading {
-
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -1070,16 +872,10 @@ const footer = computed(
 
     border-bottom: 1px solid var(--border);
 
-    background:
-        linear-gradient(
-            135deg,
-            #ffffff,
-            #fbfdfc
-        );
+    background: linear-gradient(135deg, #ffffff, #fbfdfc);
 }
 
 .table-heading-main {
-
     display: flex;
     align-items: center;
 
@@ -1087,7 +883,6 @@ const footer = computed(
 }
 
 .table-heading-icon {
-
     width: 39px;
     height: 39px;
 
@@ -1111,7 +906,6 @@ const footer = computed(
 }
 
 .section-eyebrow {
-
     display: block;
 
     margin-bottom: 4px;
@@ -1126,7 +920,6 @@ const footer = computed(
 }
 
 .table-heading h2 {
-
     margin: 0;
 
     color: var(--ink);
@@ -1141,7 +934,6 @@ const footer = computed(
 }
 
 .table-heading p {
-
     max-width: 720px;
 
     margin: 7px 0 0;
@@ -1153,13 +945,11 @@ const footer = computed(
     line-height: 1.55;
 }
 
-
 /* =========================================================
    STATUT
    ========================================================= */
 
 .table-status {
-
     display: inline-flex;
     align-items: center;
 
@@ -1187,7 +977,6 @@ const footer = computed(
 }
 
 .status-dot {
-
     width: 6px;
     height: 6px;
 
@@ -1196,25 +985,21 @@ const footer = computed(
     background: var(--primary);
 }
 
-
 /* =========================================================
    TABLE
    ========================================================= */
 
 .pharmacies-table {
-
     border-radius: 0 0 18px 18px;
 
     overflow: hidden;
 }
-
 
 /* =========================================================
    PHARMACY
    ========================================================= */
 
 .pharmacy-name-cell {
-
     display: flex;
     align-items: center;
 
@@ -1224,7 +1009,6 @@ const footer = computed(
 }
 
 .pharmacy-avatar {
-
     width: 36px;
     height: 36px;
 
@@ -1234,17 +1018,11 @@ const footer = computed(
     align-items: center;
     justify-content: center;
 
-    border: 1px solid
-        rgb(0 102 76 / 0.12);
+    border: 1px solid rgb(0 102 76 / 0.12);
 
     border-radius: 10px;
 
-    background:
-        linear-gradient(
-            145deg,
-            var(--primary-soft),
-            #f8fcfa
-        );
+    background: linear-gradient(145deg, var(--primary-soft), #f8fcfa);
 
     color: var(--primary-dark);
 
@@ -1258,16 +1036,12 @@ const footer = computed(
 }
 
 .pharmacy-row:hover .pharmacy-avatar {
-
     transform: translateY(-1px);
 
-    box-shadow:
-        0 5px 14px
-        rgb(0 102 76 / 0.10);
+    box-shadow: 0 5px 14px rgb(0 102 76 / 0.1);
 }
 
 .pharmacy-name-content {
-
     min-width: 0;
 
     display: flex;
@@ -1277,7 +1051,6 @@ const footer = computed(
 }
 
 .pharmacy-name {
-
     max-width: 100%;
 
     overflow: hidden;
@@ -1294,7 +1067,6 @@ const footer = computed(
 }
 
 .pharmacy-status {
-
     display: inline-flex;
     align-items: center;
 
@@ -1308,7 +1080,6 @@ const footer = computed(
 }
 
 .mini-status-dot {
-
     width: 5px;
     height: 5px;
 
@@ -1318,29 +1089,20 @@ const footer = computed(
 
     background: var(--primary);
 
-    box-shadow:
-        0 0 0 3px
-        rgb(0 102 76 / 0.07);
+    box-shadow: 0 0 0 3px rgb(0 102 76 / 0.07);
 }
-
 
 /* =========================================================
    VILLE
    ========================================================= */
 
 .city-cell {
-
     display: flex;
     align-items: center;
 
     gap: 8px;
 
-    color:
-        color-mix(
-            in srgb,
-            var(--ink) 63%,
-            transparent
-        );
+    color: color-mix(in srgb, var(--ink) 63%, transparent);
 
     font-size: 13px;
 
@@ -1348,7 +1110,6 @@ const footer = computed(
 }
 
 .city-marker {
-
     width: 22px;
     height: 22px;
 
@@ -1365,59 +1126,11 @@ const footer = computed(
     font-size: 7px;
 }
 
-
-/* =========================================================
-   ONPB
-   ========================================================= */
-
-.license-cell {
-
-    display: flex;
-    align-items: center;
-
-    gap: 8px;
-
-    color:
-        color-mix(
-            in srgb,
-            var(--ink) 64%,
-            transparent
-        );
-
-
-
-    font-size: 13px;
-
-    font-weight: 600;
-}
-
-.license-icon {
-
-    width: 22px;
-    height: 22px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 7px;
-
-    background: var(--gold-soft);
-
-    color: var(--gold);
-
-    font-size: 9px;
-
-    font-weight: 800;
-}
-
-
 /* =========================================================
    WHATSAPP
    ========================================================= */
 
 .phone-cell {
-
     display: flex;
     align-items: center;
 
@@ -1429,7 +1142,6 @@ const footer = computed(
 }
 
 .phone-link {
-
     display: inline-flex;
     align-items: center;
 
@@ -1443,7 +1155,6 @@ const footer = computed(
 }
 
 .phone-link:hover {
-
     color: var(--primary-dark);
 
     text-decoration: underline;
@@ -1451,7 +1162,6 @@ const footer = computed(
 }
 
 .phone-icon {
-
     width: 22px;
     height: 22px;
 
@@ -1465,28 +1175,20 @@ const footer = computed(
 }
 
 .phone-missing {
-
     color: var(--muted-light);
 }
-
 
 /* =========================================================
    DATE
    ========================================================= */
 
 .date-cell {
-
     display: flex;
     align-items: center;
 
     gap: 8px;
 
-    color:
-        color-mix(
-            in srgb,
-            var(--ink) 60%,
-            transparent
-        );
+    color: color-mix(in srgb, var(--ink) 60%, transparent);
 
     font-size: 13px;
 
@@ -1494,7 +1196,6 @@ const footer = computed(
 }
 
 .date-icon {
-
     width: 22px;
     height: 22px;
 
@@ -1504,21 +1205,18 @@ const footer = computed(
 
     border-radius: 7px;
 
-    background:
-        rgb(0 102 76 / 0.06);
+    background: rgb(0 102 76 / 0.06);
 
     color: var(--primary);
 
     font-size: 12px;
 }
 
-
 /* =========================================================
    EMPTY STATE
    ========================================================= */
 
 .empty-state {
-
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1528,18 +1226,12 @@ const footer = computed(
 
     padding: 40px 20px;
 
-    border-top: 1px solid
-        color-mix(
-            in srgb,
-            var(--ink) 6%,
-            transparent
-        );
+    border-top: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
 
     text-align: center;
 }
 
 .empty-icon {
-
     width: 50px;
     height: 50px;
 
@@ -1549,8 +1241,7 @@ const footer = computed(
 
     margin-bottom: 13px;
 
-    border: 1px solid
-        rgb(0 102 76 / 0.12);
+    border: 1px solid rgb(0 102 76 / 0.12);
 
     border-radius: 15px;
 
@@ -1562,7 +1253,6 @@ const footer = computed(
 }
 
 .empty-title {
-
     color: var(--ink);
 
     font-size: 12.5px;
@@ -1571,7 +1261,6 @@ const footer = computed(
 }
 
 .empty-state p {
-
     max-width: 390px;
 
     margin: 6px 0 15px;
@@ -1584,13 +1273,11 @@ const footer = computed(
 }
 
 .empty-reset {
-
     height: 34px;
 
     padding: 0 14px;
 
-    border: 1px solid
-        rgb(0 102 76 / 0.16);
+    border: 1px solid rgb(0 102 76 / 0.16);
 
     border-radius: 8px;
 
@@ -1611,34 +1298,28 @@ const footer = computed(
 }
 
 .empty-reset:hover {
-
-    border-color:
-        rgb(0 102 76 / 0.30);
+    border-color: rgb(0 102 76 / 0.3);
 
     background: var(--primary-soft);
 
     transform: translateY(-1px);
 }
 
-
 /* =========================================================
    PAGINATION
    ========================================================= */
 
 .pagination-wrapper {
-
     margin-top: 0;
 
     padding: 0 2px;
 }
-
 
 /* =========================================================
    NOTE
    ========================================================= */
 
 .pharmacies-footnote {
-
     display: flex;
     align-items: center;
 
@@ -1650,16 +1331,10 @@ const footer = computed(
 
     border-radius: 13px;
 
-    background:
-        linear-gradient(
-            105deg,
-            #ffffff,
-            #fbfdfc
-        );
+    background: linear-gradient(105deg, #ffffff, #fbfdfc);
 }
 
 .footnote-icon {
-
     width: 19px;
     height: 19px;
 
@@ -1681,7 +1356,6 @@ const footer = computed(
 }
 
 .pharmacies-footnote p {
-
     margin: 0;
 
     color: var(--muted);
@@ -1691,13 +1365,11 @@ const footer = computed(
     line-height: 1.5;
 }
 
-
 /* =========================================================
    ANIMATIONS
    ========================================================= */
 
 @keyframes introAppear {
-
     from {
         opacity: 0;
         transform: translateY(7px);
@@ -1710,7 +1382,6 @@ const footer = computed(
 }
 
 @keyframes fadeUp {
-
     from {
         opacity: 0;
         transform: translateY(10px);
@@ -1722,13 +1393,11 @@ const footer = computed(
     }
 }
 
-
 /* =========================================================
    TABLET
    ========================================================= */
 
 @media (max-width: 1000px) {
-
     .pharmacies-page {
         padding-left: 6px;
         padding-right: 6px;
@@ -1747,15 +1416,12 @@ const footer = computed(
     }
 }
 
-
 /* =========================================================
    TABLET PETIT
    ========================================================= */
 
 @media (max-width: 850px) {
-
     .intro-main {
-
         flex-direction: column;
 
         align-items: stretch;
@@ -1768,7 +1434,6 @@ const footer = computed(
     }
 
     .intro-filters {
-
         width: 100%;
 
         padding-top: 16px;
@@ -1780,45 +1445,37 @@ const footer = computed(
     }
 
     .table-heading {
-
         flex-direction: column;
 
         gap: 12px;
     }
 
     .table-status {
-
         align-self: flex-start;
     }
 }
-
 
 /* =========================================================
    MOBILE
    ========================================================= */
 
 @media (max-width: 700px) {
-
     .pharmacies-page {
-
         padding: 0 4px 50px;
     }
 
     .pharmacies-intro {
-
         padding: 20px 17px;
 
         border-radius: 16px;
     }
 
     .pharmacies-intro::before {
-
         left: 17px;
         right: 17px;
     }
 
     .intro-icon {
-
         width: 43px;
         height: 43px;
 
@@ -1826,55 +1483,44 @@ const footer = computed(
     }
 
     .intro-text h1 {
-
         font-size: 19px;
     }
 
     .intro-filters {
-
         flex-wrap: wrap;
     }
 
     .filter-item {
-
         flex: 1 1 calc(50% - 6px);
     }
 
     .city-filter-item {
-
         flex-basis: 100%;
     }
 
     .table-heading {
-
         padding: 20px 16px 15px;
     }
 
     .table-heading h2 {
-
         font-size: 16px;
     }
 
     .table-heading p {
-
         font-size: 10.5px;
     }
 }
-
 
 /* =========================================================
    PETIT MOBILE
    ========================================================= */
 
 @media (max-width: 480px) {
-
     .pharmacies-intro {
-
         padding: 19px 15px;
     }
 
     .intro-filters {
-
         flex-direction: column;
 
         align-items: stretch;
@@ -1882,19 +1528,16 @@ const footer = computed(
 
     .filter-item,
     .city-filter-item {
-
         width: 100%;
 
         flex: 1 1 auto;
     }
 
     .table-heading-main {
-
         align-items: flex-start;
     }
 
     .table-heading-icon {
-
         width: 35px;
         height: 35px;
 
@@ -1902,17 +1545,14 @@ const footer = computed(
     }
 
     .section-eyebrow {
-
         font-size: 7.5px;
     }
 
     .pharmacy-name-cell {
-
         min-width: 175px;
     }
 
     .pharmacy-avatar {
-
         width: 32px;
         height: 32px;
 
@@ -1920,38 +1560,27 @@ const footer = computed(
     }
 
     .pharmacy-name {
-
         font-size: 13px;
     }
 
     .city-cell,
     .date-cell {
-
-        font-size: 13px;
-    }
-
-    .license-cell {
-
         font-size: 13px;
     }
 
     .pharmacies-footnote {
-
         align-items: flex-start;
     }
 }
-
 
 /* =========================================================
    ACCESSIBILITÉ
    ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-
     .pharmacies-page *,
     .pharmacies-page *::before,
     .pharmacies-page *::after {
-
         animation-duration: 0.01ms !important;
 
         animation-iteration-count: 1 !important;
@@ -1959,6 +1588,4 @@ const footer = computed(
         transition-duration: 0.01ms !important;
     }
 }
-
 </style>
-

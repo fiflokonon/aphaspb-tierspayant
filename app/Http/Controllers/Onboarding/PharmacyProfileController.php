@@ -16,7 +16,7 @@ use Inertia\Response;
  * Step 1 of the officine's own onboarding.
  *
  * Joomla owns account creation; what it cannot know is the officine itself —
- * its name, its ONPB licence, its city, its titulaire. A user arriving from a
+ * its name, its city, its titulaire. A user arriving from a
  * Joomla ticket has no Pharmacy at all, so this step creates it.
  */
 class PharmacyProfileController extends Controller
@@ -30,7 +30,7 @@ class PharmacyProfileController extends Controller
         }
 
         return Inertia::render('onboarding/Profile', [
-            'pharmacy' => $user->currentPharmacy?->only(['name', 'onpb_license', 'city', 'whatsapp_phone']),
+            'pharmacy' => $user->currentPharmacy?->only(['name', 'city', 'whatsapp_phone']),
             'cities' => $this->citySuggestions(),
         ]);
     }

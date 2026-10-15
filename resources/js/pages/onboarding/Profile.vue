@@ -7,7 +7,6 @@ import TextInput from '@/components/aphaspb/TextInput.vue';
 defineProps<{
     pharmacy: {
         name: string | null;
-        onpb_license: string | null;
         city: string | null;
         whatsapp_phone: string | null;
     } | null;
@@ -58,36 +57,18 @@ const ownerName = computed(() => page.props.auth.user?.name ?? '');
                 />
             </FormField>
 
-            <div class="flex flex-col gap-[11px] sm:flex-row sm:gap-[10px]">
-                <div class="flex-1">
-                    <FormField
-                        label="N° ONPB"
-                        :error="errors.onpb_license"
-                        hint="Optionnel"
-                    >
-                        <TextInput
-                            name="onpb_license"
-                            :model-value="pharmacy?.onpb_license ?? ''"
-                            :invalid="!!errors.onpb_license"
-                            placeholder="Optionnel"
-                        />
-                    </FormField>
-                </div>
-                <div class="flex-1">
-                    <FormField label="VILLE" :error="errors.city">
-                        <TextInput
-                            name="city"
-                            :model-value="pharmacy?.city ?? ''"
-                            :invalid="!!errors.city"
-                            placeholder="Cotonou"
-                            list="known-cities"
-                        />
-                        <datalist id="known-cities">
-                            <option v-for="c in cities" :key="c" :value="c" />
-                        </datalist>
-                    </FormField>
-                </div>
-            </div>
+            <FormField label="VILLE" :error="errors.city">
+                <TextInput
+                    name="city"
+                    :model-value="pharmacy?.city ?? ''"
+                    :invalid="!!errors.city"
+                    placeholder="Cotonou"
+                    list="known-cities"
+                />
+                <datalist id="known-cities">
+                    <option v-for="c in cities" :key="c" :value="c" />
+                </datalist>
+            </FormField>
 
             <FormField
                 label="WHATSAPP DE CONTACT"

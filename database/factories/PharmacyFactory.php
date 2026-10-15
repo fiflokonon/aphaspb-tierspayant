@@ -23,7 +23,6 @@ class PharmacyFactory extends Factory
         return [
             'name' => $name,
             'slug' => Str::slug($name),
-            'onpb_license' => fake()->boolean(70) ? 'ONPB-'.fake()->unique()->numberBetween(1000, 9999) : null,
             // Une ville fixe, pas tirée au hasard : la règle de partition par
             // ville (NetworkStatsService) retient un agrégat réseau dès que les
             // villes non publiables y pèsent 1 à seuil − 1 officines. Une ville

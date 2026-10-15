@@ -1,28 +1,18 @@
 <?php
 
 use App\Models\Pharmacy;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Schema;
 
 test('a pharmacy carries its own identifying fields', function () {
-    expect(Schema::hasColumns('pharmacies', ['onpb_license', 'city', 'owner_name']))->toBeTrue();
+    expect(Schema::hasColumns('pharmacies', ['city', 'owner_name']))->toBeTrue();
+});
+
+test('a pharmacy no longer carries an ONPB licence', function () {
+    expect(Schema::hasColumn('pharmacies', 'onpb_license'))->toBeFalse();
 });
 
 test('a pharmacy is never a personal space', function () {
     expect(Schema::hasColumn('pharmacies', 'is_personal'))->toBeFalse();
-});
-
-test('the ONPB licence is unique when given', function () {
-    Pharmacy::factory()->create(['onpb_license' => 'ONPB-001']);
-
-    expect(fn () => Pharmacy::factory()->create(['onpb_license' => 'ONPB-001']))
-        ->toThrow(UniqueConstraintViolationException::class);
-});
-
-test('the ONPB licence may be left out entirely', function () {
-    Pharmacy::factory()->count(2)->create(['onpb_license' => null]);
-
-    expect(Pharmacy::query()->whereNull('onpb_license')->count())->toBe(2);
 });
 
 test('a profile is complete once the city and the owner are known', function () {
