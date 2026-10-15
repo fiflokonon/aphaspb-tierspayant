@@ -141,6 +141,7 @@ class ConsoleNavigation
                 ['Pharmacies inscrites', 'admin.pharmacies', [], 'store'],
                 ['Suivi des déclarations', 'admin.declarations-followup', [], 'clipboard-check'],
                 ['Gestion des assureurs', 'admin.insurers', [], 'building-2'],
+                ['Régions pharmaceutiques', 'admin.regions', [], 'map'],
                 ['Exports CSV', 'admin.csv-exports', [], 'download'],
                 // Retirée de la navigation le 31/08/2026. L'écran et sa route
                 // existent toujours : seule l'entrée est masquée.

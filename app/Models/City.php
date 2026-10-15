@@ -6,6 +6,7 @@ use Database\Factories\CityFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -19,8 +20,10 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $name
  * @property string $department
+ * @property int|null $region_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read Region|null $region
  */
 #[Fillable(['name', 'department'])]
 class City extends Model
@@ -41,5 +44,15 @@ class City extends Model
             ->orderBy('name')
             ->pluck('name')
             ->all());
+    }
+
+    /**
+     * Get the pharmaceutical region this commune belongs to, if any.
+     *
+     * @return BelongsTo<Region, $this>
+     */
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
     }
 }

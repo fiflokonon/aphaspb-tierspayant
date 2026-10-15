@@ -6,6 +6,7 @@ import {
     FilePlus2,
     History,
     LayoutDashboard,
+    Map,
     Receipt,
     Store,
     TrendingUp,
@@ -34,6 +35,7 @@ const ICONS: Record<string, Component> = {
     store: Store,
     'clipboard-check': ClipboardCheck,
     receipt: Receipt,
+    map: Map,
 };
 
 /**

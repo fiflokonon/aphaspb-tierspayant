@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\NetworkExportController;
 use App\Http\Controllers\Admin\NetworkPenaltyLedgerController;
 use App\Http\Controllers\Admin\NetworkStatsController;
 use App\Http\Controllers\Admin\NetworkTrendsController;
+use App\Http\Controllers\Admin\RegionManagementController;
 use App\Http\Controllers\Admin\RegisteredPharmaciesController;
 use App\Http\Controllers\Auth\AccessDeniedController;
 use App\Http\Controllers\Auth\EmailConflictController;
@@ -51,6 +52,10 @@ Route::middleware(['auth', 'can:manage-network'])
         Route::get('insurers', [InsurerManagementController::class, 'index'])->name('insurers');
         Route::post('insurers', [InsurerManagementController::class, 'store'])->name('insurers.store');
         Route::patch('insurers/{insurer}', [InsurerManagementController::class, 'update'])->name('insurers.update');
+        Route::get('regions', [RegionManagementController::class, 'index'])->name('regions');
+        Route::post('regions', [RegionManagementController::class, 'store'])->name('regions.store');
+        Route::patch('regions/{region}', [RegionManagementController::class, 'update'])->name('regions.update');
+        Route::delete('regions/{region}', [RegionManagementController::class, 'destroy'])->name('regions.destroy');
         Route::patch('settings/anonymity', AnonymityThresholdController::class)->name('settings.anonymity');
         Route::get('csv-exports', [NetworkExportController::class, 'index'])->name('csv-exports');
         Route::get('csv-exports/download', [NetworkExportController::class, 'download'])->name('csv-exports.download');
