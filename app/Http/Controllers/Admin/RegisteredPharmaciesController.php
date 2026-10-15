@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
 use App\Models\Region;
+use App\Services\Network\RegionScopes;
 use App\Support\PageSize;
 use App\Support\WhatsappNumber;
 use Illuminate\Http\Request;
@@ -33,14 +34,17 @@ class RegisteredPharmaciesController extends Controller
     /** The size the roll opens at, until the admin picks another. */
     protected const PER_PAGE = 50;
 
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request, RegionScopes $regions): Response
     {
         $city = $request->string('city')->value() ?: null;
+        // Une ville choisie prime sur les régions, comme sur les écrans réseau.
+        $scope = $city === null ? $regions->fromIds($regions->requestedIds($request)) : null;
         $search = $request->string('search')->value() ?: null;
         $perPage = PageSize::resolve($request, self::PER_PAGE);
 
         $pharmacies = Pharmacy::query()
             ->when($city, fn ($query) => $query->where('city', $city))
+            ->when($scope, fn ($query) => $query->whereIn('city', $scope->cities ?? []))
             ->when($search, fn ($query) => $query->whereRaw(
                 'LOWER(name) LIKE ?',
                 ['%'.mb_strtolower($search).'%'],
@@ -77,7 +81,13 @@ class RegisteredPharmaciesController extends Controller
                 ->orderBy('city')
                 ->pluck('city')
                 ->all(),
-            'filters' => ['city' => $city, 'search' => $search, 'perPage' => $perPage],
+            'regions' => $regions->options(),
+            'filters' => [
+                'city' => $city,
+                'regions' => $scope->regionIds ?? [],
+                'search' => $search,
+                'perPage' => $perPage,
+            ],
             'pageSizes' => PageSize::OPTIONS,
         ]);
     }

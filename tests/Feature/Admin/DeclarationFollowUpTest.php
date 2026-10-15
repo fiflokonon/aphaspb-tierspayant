@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\City;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
+use App\Models\Region;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia;
@@ -84,6 +86,19 @@ test('state and city filters', function () {
 
     $this->actingAs($this->admin)->get(route('admin.declarations-followup', ['city' => 'Parakou', 'state' => 'all']))
         ->assertInertia(fn (AssertableInertia $page) => $page->has('pharmacies.data', 1)->where('pharmacies.data.0.name', 'Parakou Rien'));
+});
+
+test('the region filter narrows the follow-up to the communes of the chosen regions', function () {
+    $north = Region::factory()->create();
+    City::factory()->create(['name' => 'Parakou', 'region_id' => $north->id]);
+    followedPharmacy('Cotonou Rien');
+    followedPharmacy('Parakou Rien', city: 'Parakou');
+
+    $this->actingAs($this->admin)->get(route('admin.declarations-followup', ['regions' => [$north->id], 'state' => 'all']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('pharmacies.data', 1)
+            ->where('pharmacies.data.0.name', 'Parakou Rien')
+            ->where('selectedRegions', [$north->id]));
 });
 
 test('the screen never carries an insurer, an amount or a private note', function () {

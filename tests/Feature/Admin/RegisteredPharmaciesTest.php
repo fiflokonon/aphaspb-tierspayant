@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\City;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
+use App\Models\Region;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
@@ -105,6 +107,28 @@ test('the city filter narrows the list', function () {
 
             expect($names)->toContain('Ici')->and($names)->not->toContain('Ailleurs');
         });
+});
+
+test('the region filter narrows the list, and a chosen city wins over it', function () {
+    $north = Region::factory()->create();
+    City::factory()->create(['name' => 'Parakou', 'region_id' => $north->id]);
+    Pharmacy::factory()->create(['city' => 'Cotonou', 'name' => 'Sud']);
+    Pharmacy::factory()->create(['city' => 'Parakou', 'name' => 'Nord']);
+
+    $admin = User::factory()->networkAdmin()->notOnboarded()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.pharmacies', ['regions' => [$north->id]]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pharmacies.data.0.name', 'Nord')
+            ->has('pharmacies.data', 1)
+            ->where('filters.regions', [$north->id]));
+
+    $this->actingAs($admin)
+        ->get(route('admin.pharmacies', ['regions' => [$north->id], 'city' => 'Cotonou']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pharmacies.data.0.name', 'Sud')
+            ->where('filters.regions', []));
 });
 
 test('the search narrows the list by name', function () {

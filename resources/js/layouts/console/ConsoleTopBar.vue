@@ -3,7 +3,6 @@ import { Activity, ShieldCheck } from '@lucide/vue';
 import type { ConsoleAccount } from '@/types/console';
 import ConsoleAccountMenu from './ConsoleAccountMenu.vue';
 import ConsoleBell from './ConsoleBell.vue';
-import ConsoleSpaceChip from './ConsoleSpaceChip.vue';
 
 defineProps<{
     count: number;

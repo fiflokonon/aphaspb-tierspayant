@@ -13,8 +13,9 @@ import InsufficientDataRow from '@/components/aphaspb/InsufficientDataRow.vue';
 import KpiCard from '@/components/aphaspb/KpiCard.vue';
 import KpiRow from '@/components/aphaspb/KpiRow.vue';
 import PenaltyTrendCard from '@/components/aphaspb/PenaltyTrendCard.vue';
+import RegionFilter from '@/components/aphaspb/RegionFilter.vue';
 import { useQueryId, useQueryState } from '@/composables/useQueryState';
-import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
+import { useScopeFilter } from '@/composables/useScopeFilter';
 import { exportChartToPng } from '@/lib/chartPng';
 import { rankSlices } from '@/lib/donut';
 import { formatMillions } from '@/lib/millions';
@@ -34,6 +35,8 @@ type AmountRow = {
     invoiced: number | null;
     outstanding: number | null;
     recoveryRate: number | null;
+    /** Outstanding and rate withheld: too few creditors behind them. */
+    owedWithheld: boolean;
 };
 
 /**
@@ -62,6 +65,7 @@ const props = defineProps<{
         received: number | null;
         outstanding: number | null;
         recoveryRate: number | null;
+        owedWithheld: boolean;
         declaringPharmacies: number | null;
         weightedDelayDays: number | null;
         outstandingBeyond90: number | null;
@@ -74,6 +78,8 @@ const props = defineProps<{
     periods: { value: string; label: string }[];
     city: string | null;
     cities: string[];
+    regions: { id: number; name: string }[];
+    selectedRegions: number[];
     trend?: Trend;
     penaltyTrend?: PenaltyLedger;
 }>();
@@ -116,6 +122,23 @@ const withheldHint = computed(() =>
 const millions = (value: number | null): string =>
     props.summary.withheld ? 'retenu' : formatMillions(value ?? 0);
 
+/**
+ * Received and outstanding fall together when what is owed rests on too few
+ * creditors: the insurer sheet names them (15/10/2026).
+ */
+const owedWithheld = computed(
+    () => props.summary.withheld || props.summary.owedWithheld,
+);
+
+const owedMillions = (value: number | null): string =>
+    owedWithheld.value ? 'retenu' : formatMillions(value ?? 0);
+
+const owedHint = computed(() =>
+    props.summary.withheld
+        ? withheldHint.value
+        : `moins de ${props.summary.required} officines créancières sur ce périmètre`,
+);
+
 /** The months of the curve left blank, said in one line under the chart. */
 const withheldNote = computed(() => {
     const months = new Set<string>(props.trend?.withheldMonths ?? []);
@@ -130,7 +153,7 @@ const withheldNote = computed(() => {
 });
 
 const period = ref(props.period);
-const city = ref(props.city);
+const { city, regions } = useScopeFilter(props.city, props.selectedRegions);
 
 const cityOptions = computed(() => [
     { value: null, label: 'Toutes les villes' },
@@ -144,7 +167,7 @@ const cityOptions = computed(() => [
 function reload() {
     router.get(
         '/admin/trends',
-        { period: period.value, city: city.value },
+        { period: period.value, city: city.value, regions: regions.value },
         {
             only: [
                 'summary',
@@ -154,6 +177,7 @@ function reload() {
                 'period',
                 'periodLabel',
                 'city',
+                'selectedRegions',
             ],
             preserveState: true,
             preserveScroll: true,
@@ -162,7 +186,7 @@ function reload() {
     );
 }
 
-watch([period, city], reload);
+watch([period, city, regions], reload);
 
 /**
  * Every insurer's curve arrives in the deferred payload, so narrowing to one is
@@ -215,7 +239,7 @@ const chartHeading = computed(() =>
 const donutSlices = computed(() =>
     rankSlices(
         props.amounts
-            .filter((row) => row.sufficient)
+            .filter((row) => row.sufficient && row.outstanding !== null)
             .map((row) => ({
                 label: row.insurerName,
                 value: row.outstanding ?? 0,
@@ -270,11 +294,8 @@ async function exportChart() {
 </script>
 
 <template>
-   
-<Head title="Évolution du réseau" />
+    <Head title="Évolution du réseau" />
     <div class="network-evolution-page">
-      
-
         <section class="evolution-intro">
             <div class="intro-decoration"></div>
 
@@ -285,15 +306,12 @@ async function exportChart() {
                     </div>
 
                     <div class="intro-text">
-                        
                         <h1>Évolution du réseau</h1>
-                       
                     </div>
                 </div>
 
                 <div class="intro-filters">
                     <div class="filter-item">
-                       
                         <FilterSelect
                             v-model="period"
                             :options="periods"
@@ -302,11 +320,17 @@ async function exportChart() {
                     </div>
 
                     <div class="filter-item">
-                       
                         <FilterSelect
                             v-model="city"
                             :options="cityOptions"
                             aria-label="Filtrer par ville"
+                        />
+                    </div>
+
+                    <div class="filter-item">
+                        <RegionFilter
+                            v-model="regions"
+                            :regions="props.regions"
                         />
                     </div>
                 </div>
@@ -338,12 +362,12 @@ async function exportChart() {
 
                 <KpiCard
                     label="ENCAISSÉ"
-                    :value="millions(summary.received)"
-                    :unit="summary.withheld ? undefined : 'FCFA'"
+                    :value="owedMillions(summary.received)"
+                    :unit="owedWithheld ? undefined : 'FCFA'"
                     :tone="recoveryTone(summary.recoveryRate)"
                     :hint="
-                        summary.withheld
-                            ? withheldHint
+                        owedWithheld
+                            ? owedHint
                             : `${share(summary.received)} du facturé`
                     "
                 />
@@ -358,13 +382,15 @@ async function exportChart() {
 
                 <KpiCard
                     label="ENCOURS DU RÉSEAU"
-                    :value="millions(summary.outstanding)"
-                    :unit="summary.withheld ? undefined : 'FCFA'"
-                    :tone="summary.withheld ? 'neutral' : 'bad'"
+                    :value="owedMillions(summary.outstanding)"
+                    :unit="owedWithheld ? undefined : 'FCFA'"
+                    :tone="owedWithheld ? 'neutral' : 'bad'"
                     :hint="
-                        summary.withheld
-                            ? withheldHint
-                            : `${share(summary.outstanding)} du facturé · dont ${formatMillions(summary.outstandingBeyond90 ?? 0)} au-delà de 90 j`
+                        owedWithheld
+                            ? owedHint
+                            : summary.outstandingBeyond90 === null
+                              ? `${share(summary.outstanding)} du facturé · part au-delà de 90 j retenue`
+                              : `${share(summary.outstanding)} du facturé · dont ${formatMillions(summary.outstandingBeyond90)} au-delà de 90 j`
                     "
                 />
 
@@ -514,36 +540,25 @@ async function exportChart() {
             </div>
         </section>
 
-       
-
         <PenaltyTrendCard
             :ledger="penaltyTrend"
             :subtitle="`${periodLabel}${city === null ? '' : ` · ${city}`}`"
             filename="aphaspb-penalites-reseau"
         />
- <br>
+        <br />
         <section class="amounts-section">
             <div class="amounts-top-line"></div>
-              <div class="table-section-header">
-
+            <div class="table-section-header">
                 <div class="table-title-block">
+                    <div class="table-icon"></div>
 
-                    <div class="table-icon">
-                      
+                    <div style="padding: 10px">
+                        <h2 style="font-weight: 700">
+                            Montants agrégés par assureur
+                        </h2>
                     </div>
-
-                    <div style="padding: 10px;">
-
-                     
-                       
-            <h2 style="font-weight: 700;">Montants agrégés par assureur</h2>
-
-                    </div>
-
                 </div>
-
             </div>
-
 
             <div class="table-top-decoration"></div>
 
@@ -603,10 +618,16 @@ async function exportChart() {
 
                         <div class="amount-cell outstanding-cell">
                             <span class="amount-value">
-                                {{ formatMillions(row.outstanding ?? 0) }}
+                                {{
+                                    row.owedWithheld
+                                        ? 'retenu'
+                                        : formatMillions(row.outstanding ?? 0)
+                                }}
                             </span>
 
-                            <span class="amount-unit"> FCFA </span>
+                            <span v-if="!row.owedWithheld" class="amount-unit">
+                                FCFA
+                            </span>
                         </div>
 
                         <div
@@ -619,11 +640,14 @@ async function exportChart() {
                         >
                             <div class="recovery-value">
                                 {{
-                                    row.recoveryRate?.toLocaleString('fr-FR') ??
-                                    '-'
+                                    row.owedWithheld
+                                        ? 'retenu'
+                                        : (row.recoveryRate?.toLocaleString(
+                                              'fr-FR',
+                                          ) ?? '-')
                                 }}
 
-                                <span> % </span>
+                                <span v-if="!row.owedWithheld"> % </span>
                             </div>
 
                             <div class="recovery-bar">
@@ -968,7 +992,12 @@ async function exportChart() {
     top: 0;
     width: 100%;
     height: 3px;
-    background: linear-gradient(90deg, var(--primary) 0%, #24866b 58%, var(--gold) 100%);
+    background: linear-gradient(
+        90deg,
+        var(--primary) 0%,
+        #24866b 58%,
+        var(--gold) 100%
+    );
 }
 
 .trend-header {
@@ -1028,7 +1057,7 @@ async function exportChart() {
 .trend-heading p {
     max-width: 780px;
     margin: 9px 0 0;
-  
+
     font-size: 12px;
     line-height: 1.55;
 }
@@ -1213,7 +1242,6 @@ async function exportChart() {
 .insurer-details small {
     color: var(--muted-soft);
     font-size: 13px;
-    
 }
 
 .pharmacy-cell,
@@ -1575,4 +1603,3 @@ async function exportChart() {
     }
 }
 </style>
-

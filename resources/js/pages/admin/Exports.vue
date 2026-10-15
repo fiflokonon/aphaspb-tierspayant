@@ -2,7 +2,8 @@
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
-import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
+import RegionFilter from '@/components/aphaspb/RegionFilter.vue';
+import { appendRegions, useScopeFilter } from '@/composables/useScopeFilter';
 
 const props = defineProps<{
     downloadUrl: string;
@@ -12,6 +13,8 @@ const props = defineProps<{
     periods: { value: string; label: string }[];
     city: string | null;
     cities: string[];
+    regions: { id: number; name: string }[];
+    selectedRegions: number[];
     insurer: number | null;
     insurers: { id: number; name: string }[];
     /** The anonymity threshold as set, never a hardcoded five. */
@@ -19,7 +22,7 @@ const props = defineProps<{
 }>();
 
 const period = ref(props.period);
-const city = ref(props.city);
+const { city, regions } = useScopeFilter(props.city, props.selectedRegions);
 const insurer = ref(props.insurer);
 
 const cityOptions = computed(() => [
@@ -32,6 +35,21 @@ const insurerOptions = computed(() => [
     ...props.insurers.map((one) => ({ value: one.id, label: one.name })),
 ]);
 
+/** Ce que couvre le fichier : une ville, des régions, ou tout le réseau. */
+const scopeLabel = computed(() => {
+    if (city.value) {
+        return ` · ${city.value}`;
+    }
+
+    const names = props.regions
+        .filter((region) => regions.value.includes(region.id))
+        .map((region) => region.name);
+
+    return names.length > 0
+        ? ` · ${names.length > 1 ? 'régions' : 'région'} ${names.join(', ')}`
+        : ' · toutes les villes';
+});
+
 const insurerName = computed(
     () => props.insurers.find((one) => one.id === insurer.value)?.name,
 );
@@ -43,6 +61,8 @@ const hrefFor = (format: 'csv' | 'xlsx' | 'pdf') => {
     if (city.value) {
         query.set('city', city.value);
     }
+
+    appendRegions(query, regions.value);
 
     if (insurer.value) {
         query.set('insurer', String(insurer.value));
@@ -58,9 +78,20 @@ const pdfHref = computed(() => hrefFor('pdf'));
 function reload() {
     router.get(
         '/admin/csv-exports',
-        { period: period.value, city: city.value, insurer: insurer.value },
         {
-            only: ['period', 'periodLabel', 'city', 'insurer'],
+            period: period.value,
+            city: city.value,
+            regions: regions.value,
+            insurer: insurer.value,
+        },
+        {
+            only: [
+                'period',
+                'periodLabel',
+                'city',
+                'selectedRegions',
+                'insurer',
+            ],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -68,7 +99,7 @@ function reload() {
     );
 }
 
-watch([period, city, insurer], reload);
+watch([period, city, regions, insurer], reload);
 </script>
 
 <template>
@@ -78,7 +109,7 @@ watch([period, city, insurer], reload);
         <!-- =========================================================
              INTRODUCTION + FILTRES
         ========================================================== -->
-        <br>
+        <br />
         <section class="exports-intro">
             <div class="intro-decoration intro-decoration-one"></div>
             <div class="intro-decoration intro-decoration-two"></div>
@@ -104,18 +135,14 @@ watch([period, city, insurer], reload);
                     </div>
 
                     <div class="intro-text">
-                      
-
                         <h1>Exports CSV</h1>
-
-                    
 
                         <!-- <div class="intro-period">
                             <span class="period-dot"></span>
 
                             <span>
                                 {{ periodLabel }}
-                                {{ city ? ` · ${city}` : ' · toutes les villes' }}
+                                {{ scopeLabel }}
                                 {{
                                     insurerName
                                         ? ` · ${insurerName}`
@@ -128,36 +155,45 @@ watch([period, city, insurer], reload);
 
                 <!-- FILTRES -->
                 <div class="compact-filters">
-    <div class="filter-item">
-        <label for="period">Période</label>
-        <FilterSelect
-            id="period"
-            v-model="period"
-            :options="periods"
-            aria-label="Choisir la période"
-        />
-    </div>
+                    <div class="filter-item">
+                        <label for="period">Période</label>
+                        <FilterSelect
+                            id="period"
+                            v-model="period"
+                            :options="periods"
+                            aria-label="Choisir la période"
+                        />
+                    </div>
 
-    <div class="filter-item">
-        <label for="city">Ville</label>
-        <FilterSelect
-            id="city"
-            v-model="city"
-            :options="cityOptions"
-            aria-label="Filtrer par ville"
-        />
-    </div>
+                    <div class="filter-item">
+                        <label for="city">Ville</label>
+                        <FilterSelect
+                            id="city"
+                            v-model="city"
+                            :options="cityOptions"
+                            aria-label="Filtrer par ville"
+                        />
+                    </div>
 
-    <div class="filter-item">
-        <label for="insurer">Assureur</label>
-        <FilterSelect
-            id="insurer"
-            v-model="insurer"
-            :options="insurerOptions"
-            aria-label="Filtrer par assureur"
-        />
-    </div>
-</div>
+                    <div class="filter-item">
+                        <label>Régions</label>
+                        <RegionFilter
+                            v-model="regions"
+                            :regions="props.regions"
+                            label=""
+                        />
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="insurer">Assureur</label>
+                        <FilterSelect
+                            id="insurer"
+                            v-model="insurer"
+                            :options="insurerOptions"
+                            aria-label="Filtrer par assureur"
+                        />
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -173,13 +209,9 @@ watch([period, city, insurer], reload);
 
                 <div class="export-card-header">
                     <div class="card-heading">
-                        <span class="section-label">
-                            FICHIER D'EXPORT
-                        </span>
+                        <span class="section-label"> FICHIER D'EXPORT </span>
 
-                        <h2>
-                            Statistiques agrégées par assureur
-                        </h2>
+                        <h2>Statistiques agrégées par assureur</h2>
 
                         <p class="heading-description">
                             Un export synthétique des indicateurs du réseau,
@@ -192,7 +224,7 @@ watch([period, city, insurer], reload);
 
                         <span>
                             {{ periodLabel }}
-                            {{ city ? ` · ${city}` : ' · toutes les villes' }}
+                            {{ scopeLabel }}
                             {{
                                 insurerName
                                     ? ` · ${insurerName}`
@@ -206,9 +238,7 @@ watch([period, city, insurer], reload);
                      INFORMATION
                 ================================================== -->
                 <div class="export-description">
-                    <div class="description-icon">
-                        i
-                    </div>
+                    <div class="description-icon">i</div>
 
                     <div class="description-content">
                         <span class="description-title">
@@ -217,11 +247,7 @@ watch([period, city, insurer], reload);
 
                         <p>
                             <strong>{{ periodLabel }}</strong>
-                            {{
-                                city
-                                    ? ` · ${city}`
-                                    : ' · toutes les villes'
-                            }}
+                            {{ scopeLabel }}
                             {{
                                 insurerName
                                     ? ` · ${insurerName}`
@@ -265,30 +291,21 @@ watch([period, city, insurer], reload);
                     </div>
 
                     <div class="download-actions">
-                        <a
-                            :href="xlsxHref"
-                            class="download-button"
-                        >
-                            <span class="download-button-icon">
-                                ↓
-                            </span>
+                        <a :href="xlsxHref" class="download-button">
+                            <span class="download-button-icon"> ↓ </span>
 
                             <span class="download-button-text">
                                 Classeur Excel
                             </span>
 
-                            <span class="download-button-arrow">
-                                →
-                            </span>
+                            <span class="download-button-arrow"> → </span>
                         </a>
 
                         <a
                             :href="pdfHref"
                             class="download-button download-button-secondary"
                         >
-                            <span class="download-button-icon">
-                                ↓
-                            </span>
+                            <span class="download-button-icon"> ↓ </span>
 
                             <span class="download-button-text">
                                 Rapport PDF
@@ -299,13 +316,9 @@ watch([period, city, insurer], reload);
                             :href="csvHref"
                             class="download-button download-button-secondary"
                         >
-                            <span class="download-button-icon">
-                                ↓
-                            </span>
+                            <span class="download-button-icon"> ↓ </span>
 
-                            <span class="download-button-text">
-                                CSV
-                            </span>
+                            <span class="download-button-text"> CSV </span>
                         </a>
                     </div>
                 </div>
@@ -320,9 +333,7 @@ watch([period, city, insurer], reload);
                                 STRUCTURE DU FICHIER
                             </span>
 
-                            <h3>
-                                Colonnes exportées
-                            </h3>
+                            <h3>Colonnes exportées</h3>
                         </div>
 
                         <span class="columns-count">
@@ -367,20 +378,16 @@ watch([period, city, insurer], reload);
                 </div>
 
                 <div class="privacy-content">
-                    <span class="privacy-label">
-                        PROTECTION DES DONNÉES
-                    </span>
+                    <span class="privacy-label"> PROTECTION DES DONNÉES </span>
 
-                    <h3>
-                        Ce que le fichier ne contient jamais
-                    </h3>
+                    <h3>Ce que le fichier ne contient jamais</h3>
 
                     <p>
-                        Aucun nom d'officine, aucun montant individuel,
-                        aucune note privée. Un assureur déclaré par moins de
+                        Aucun nom d'officine, aucun montant individuel, aucune
+                        note privée. Un assureur déclaré par moins de
                         <strong>{{ anonymityThreshold }} officines</strong>
-                        apparaît avec une mention de données insuffisantes,
-                        sans chiffre détaillé.
+                        apparaît avec une mention de données insuffisantes, sans
+                        chiffre détaillé.
                     </p>
                 </div>
 
@@ -428,13 +435,8 @@ watch([period, city, insurer], reload);
     padding: 0 10px 60px;
 
     color: var(--ink);
-    font-family:
-        "Manrope",
-        ui-sans-serif,
-        system-ui,
-        sans-serif;
+    font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
 }
-
 
 .compact-filters {
     display: flex;
@@ -455,7 +457,7 @@ watch([period, city, insurer], reload);
 .filter-item label {
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: .08em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
 }
@@ -503,13 +505,7 @@ watch([period, city, insurer], reload);
     border: 1px solid var(--border);
     border-radius: 20px;
 
-    background:
-        linear-gradient(
-            135deg,
-            #ffffff 0%,
-            #fbfdfc 55%,
-            #f6faf8 100%
-        );
+    background: linear-gradient(135deg, #ffffff 0%, #fbfdfc 55%, #f6faf8 100%);
 
     /* box-shadow:
         0 10px 28px rgba(30, 60, 48, 0.045),
@@ -521,7 +517,7 @@ watch([period, city, insurer], reload);
 }
 
 .exports-intro::before {
-    content: "";
+    content: '';
 
     position: absolute;
     top: 0;
@@ -530,13 +526,12 @@ watch([period, city, insurer], reload);
 
     height: 3px;
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--primary),
-            #2b8c70 58%,
-            var(--gold)
-        );
+    background: linear-gradient(
+        90deg,
+        var(--primary),
+        #2b8c70 58%,
+        var(--gold)
+    );
 }
 
 .intro-main {
@@ -573,12 +568,7 @@ watch([period, city, insurer], reload);
 
     color: #ffffff;
 
-    background:
-        linear-gradient(
-            145deg,
-            var(--primary),
-            var(--primary-dark)
-        );
+    background: linear-gradient(145deg, var(--primary), var(--primary-dark));
 
     /* box-shadow:
         0 8px 18px rgba(0, 102, 76, 0.16); */
@@ -648,7 +638,7 @@ watch([period, city, insurer], reload);
     border-radius: 50%;
 
     background: var(--primary);
-/* 
+    /* 
     box-shadow:
         0 0 0 3px rgba(0, 102, 76, 0.08); */
 }
@@ -726,13 +716,10 @@ watch([period, city, insurer], reload);
 .filters-grid {
     display: grid;
 
-    grid-template-columns:
-        repeat(3, minmax(105px, 1fr));
+    grid-template-columns: repeat(3, minmax(105px, 1fr));
 
     gap: 8px;
 }
-
-
 
 /* ================================================================
    BODY
@@ -776,13 +763,12 @@ watch([period, city, insurer], reload);
 
     height: 3px;
 
-    background:
-        linear-gradient(
-            90deg,
-            var(--primary),
-            #2b8c70 60%,
-            var(--gold)
-        );
+    background: linear-gradient(
+        90deg,
+        var(--primary),
+        #2b8c70 60%,
+        var(--gold)
+    );
 }
 
 .export-card-header {
@@ -1071,7 +1057,7 @@ watch([period, city, insurer], reload);
     border-color: var(--primary-dark);
 
     color: #ffffff;
-/* 
+    /* 
     box-shadow:
         0 8px 18px rgba(0, 102, 76, 0.17); */
 }
@@ -1157,7 +1143,7 @@ watch([period, city, insurer], reload);
     margin: 0;
 
     color: var(--ink);
-/* 
+    /* 
     font-size: 12px; */
     font-weight: 800;
 }
@@ -1213,8 +1199,6 @@ watch([period, city, insurer], reload);
 
     color: var(--ink);
 
-  
-
     font-size: 14px;
 
     transition:
@@ -1262,13 +1246,8 @@ watch([period, city, insurer], reload);
     border: 1px solid rgba(176, 138, 69, 0.13);
     border-radius: 16px;
 
-    background:
-        linear-gradient(
-            135deg,
-            #fbf7ef,
-            #fffdf9
-        );
-/* 
+    background: linear-gradient(135deg, #fbf7ef, #fffdf9);
+    /* 
     box-shadow:
         0 7px 20px rgba(75, 65, 40, 0.035); */
 
@@ -1322,7 +1301,7 @@ watch([period, city, insurer], reload);
     margin: 0;
 
     color: var(--ink);
-/* 
+    /* 
     font-size: 12px; */
     font-weight: 800;
 }

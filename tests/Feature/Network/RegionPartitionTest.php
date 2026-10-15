@@ -160,6 +160,19 @@ test('the network screen reads the regions from the query string and offers them
         );
 });
 
+test('the CSV export honours the region filter', function () {
+    $other = Insurer::factory()->create(['name' => 'Seulement au Sud']);
+    paidIn($this->insurer, 'Parakou', 5);
+    paidIn($other, 'Cotonou', 5);
+
+    $csv = $this->actingAs(User::factory()->networkAdmin()->notOnboarded()->create())
+        ->get(route('admin.csv-exports.download', ['regions' => [$this->north->id], 'period' => 'last-12-months']))
+        ->streamedContent();
+
+    expect($csv)->toContain($this->insurer->name)
+        ->and($csv)->not->toContain('Seulement au Sud');
+});
+
 test('a chosen city wins over the regions', function () {
     paidIn($this->insurer, 'Parakou', 5);
     paidIn($this->insurer, 'Cotonou', 5);

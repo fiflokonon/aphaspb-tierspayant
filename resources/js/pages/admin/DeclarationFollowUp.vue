@@ -14,8 +14,9 @@ import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import Pagination from '@/components/aphaspb/Pagination.vue';
+import RegionFilter from '@/components/aphaspb/RegionFilter.vue';
 import StatusChip from '@/components/aphaspb/StatusChip.vue';
-import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
+import { useScopeFilter } from '@/composables/useScopeFilter';
 
 type CompletenessState = 'complete' | 'partial' | 'none';
 
@@ -43,6 +44,8 @@ const props = defineProps<{
     months: { value: string; label: string }[];
     city: string | null;
     cities: string[];
+    regions: { id: number; name: string }[];
+    selectedRegions: number[];
     state: string;
     summary: { complete: number; partial: number; none: number; total: number };
     pharmacies: Paginated<Row>;
@@ -71,7 +74,7 @@ const STATES = [
 ];
 
 const month = ref(props.month);
-const city = ref<string | null>(props.city);
+const { city, regions } = useScopeFilter(props.city, props.selectedRegions);
 const state = ref(props.state);
 
 const cityOptions = computed(() => [
@@ -82,9 +85,22 @@ const cityOptions = computed(() => [
 function reload(page: number) {
     router.get(
         '/admin/declarations-followup',
-        { month: month.value, city: city.value, state: state.value, page },
         {
-            only: ['pharmacies', 'summary', 'month', 'city', 'state'],
+            month: month.value,
+            city: city.value,
+            regions: regions.value,
+            state: state.value,
+            page,
+        },
+        {
+            only: [
+                'pharmacies',
+                'summary',
+                'month',
+                'city',
+                'selectedRegions',
+                'state',
+            ],
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -92,7 +108,7 @@ function reload(page: number) {
     );
 }
 
-watch([month, city, state], () => reload(1));
+watch([month, city, regions, state], () => reload(1));
 
 const summaryLine = computed(
     () =>
@@ -102,7 +118,7 @@ const summaryLine = computed(
 
 <template>
     <Head title="Suivi des déclarations" />
-    <br>
+    <br />
 
     <div class="followup-page">
         <!-- =========================================================
@@ -121,35 +137,21 @@ const summaryLine = computed(
                             stroke="currentColor"
                             stroke-width="1.7"
                         >
-                            <path
-                                d="M9 5h6"
-                                stroke-linecap="round"
-                            />
+                            <path d="M9 5h6" stroke-linecap="round" />
                             <path
                                 d="M9 3h6a1 1 0 0 1 1 1v1H8V4a1 1 0 0 1 1-1Z"
                             />
-                            <rect
-                                x="5"
-                                y="5"
-                                width="14"
-                                height="16"
-                                rx="2"
-                            />
+                            <rect x="5" y="5" width="14" height="16" rx="2" />
                             <path
                                 d="m8.5 11 1.8 1.8L14 9"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                             />
-                            <path
-                                d="M8.5 16h7"
-                                stroke-linecap="round"
-                            />
+                            <path d="M8.5 16h7" stroke-linecap="round" />
                         </svg>
                     </div>
 
                     <div class="intro-text">
-                        
-
                         <h1>Suivi des déclarations</h1>
 
                         <!-- <p class="intro-description">
@@ -158,7 +160,6 @@ const summaryLine = computed(
                         </p> -->
 
                         <div class="intro-period">
-                           
                             {{ summaryLine }}
                         </div>
                     </div>
@@ -175,7 +176,9 @@ const summaryLine = computed(
 
                     <div class="filters-grid">
                         <div class="filter-item">
-                              <label for="month" style="font-size: 11px;">MOIS</label>
+                            <label for="month" style="font-size: 11px"
+                                >MOIS</label
+                            >
                             <FilterSelect
                                 v-model="month"
                                 :options="months"
@@ -184,23 +187,35 @@ const summaryLine = computed(
                         </div>
 
                         <div class="filter-item">
-                              <label for="city" style="font-size: 11px;">VILLE</label>
+                            <label for="city" style="font-size: 11px"
+                                >VILLE</label
+                            >
 
                             <FilterSelect
                                 v-model="city"
                                 :options="cityOptions"
-                             
                                 aria-label="Filtrer par ville"
                             />
                         </div>
 
                         <div class="filter-item">
-                              <label for="state" style="font-size: 11px;">ÉTAT</label>
+                            <label style="font-size: 11px">RÉGIONS</label>
+
+                            <RegionFilter
+                                v-model="regions"
+                                :regions="props.regions"
+                                label=""
+                            />
+                        </div>
+
+                        <div class="filter-item">
+                            <label for="state" style="font-size: 11px"
+                                >ÉTAT</label
+                            >
 
                             <FilterSelect
                                 v-model="state"
                                 :options="STATES"
-                                
                                 aria-label="Filtrer par état"
                             />
                         </div>
@@ -258,16 +273,11 @@ const summaryLine = computed(
                             </div>
 
                             <div class="name-content">
-                                <div
-                                    class="name"
-                                    :title="row.name"
-                                >
+                                <div class="name" :title="row.name">
                                     {{ row.name }}
                                 </div>
 
-                                <span class="name-caption">
-                                    Officine
-                                </span>
+                                <span class="name-caption"> Officine </span>
                             </div>
                         </div>
 
@@ -283,11 +293,7 @@ const summaryLine = computed(
                                     <path
                                         d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"
                                     />
-                                    <circle
-                                        cx="12"
-                                        cy="10"
-                                        r="2.5"
-                                    />
+                                    <circle cx="12" cy="10" r="2.5" />
                                 </svg>
                             </span>
 
@@ -369,10 +375,7 @@ const summaryLine = computed(
                     </DataTableRow>
 
                     <!-- ÉTAT VIDE -->
-                    <div
-                        v-if="!pharmacies.data.length"
-                        class="empty-state"
-                    >
+                    <div v-if="!pharmacies.data.length" class="empty-state">
                         <div class="empty-icon">
                             <svg
                                 viewBox="0 0 24 24"
@@ -381,20 +384,12 @@ const summaryLine = computed(
                                 stroke-width="1.6"
                             >
                                 <circle cx="11" cy="11" r="6.5" />
-                                <path
-                                    d="m16 16 4 4"
-                                    stroke-linecap="round"
-                                />
-                                <path
-                                    d="M8.5 11h5"
-                                    stroke-linecap="round"
-                                />
+                                <path d="m16 16 4 4" stroke-linecap="round" />
+                                <path d="M8.5 11h5" stroke-linecap="round" />
                             </svg>
                         </div>
 
-                        <div class="empty-title">
-                            Aucune officine trouvée
-                        </div>
+                        <div class="empty-title">Aucune officine trouvée</div>
 
                         <p>
                             Aucune officine ne correspond aux critères
@@ -424,19 +419,14 @@ const summaryLine = computed(
                  NOTE
             ====================================================== -->
             <div class="followup-footnote">
-                <div class="footnote-icon" aria-hidden="true">
-                    i
-                </div>
+                <div class="footnote-icon" aria-hidden="true">i</div>
 
                 <div>
-                    <span class="footnote-title">
-                        À propos de ce suivi
-                    </span>
+                    <span class="footnote-title"> À propos de ce suivi </span>
 
                     <p>
-                        Ni assureur ni montant ne figurent ici :
-                        l'état d'un mois est tout ce que le réseau
-                        voit d'une officine.
+                        Ni assureur ni montant ne figurent ici : l'état d'un
+                        mois est tout ce que le réseau voit d'une officine.
                     </p>
                 </div>
             </div>
@@ -473,8 +463,13 @@ const summaryLine = computed(
     /* padding: 0 10px 60px; */
     /* background: var(--page-bg); */
     color: var(--ink);
-    font-family: "Manrope", system-ui, -apple-system, BlinkMacSystemFont,
-        "Segoe UI", sans-serif;
+    font-family:
+        'Manrope',
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        sans-serif;
 }
 
 /* ================================================================
@@ -488,12 +483,11 @@ const summaryLine = computed(
     padding: 26px 28px;
     border: 1px solid var(--border);
     border-radius: 20px;
-    background:
-        linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0.98),
-            rgba(247, 252, 249, 0.98)
-        );
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.98),
+        rgba(247, 252, 249, 0.98)
+    );
     /* box-shadow:
         0 10px 28px rgba(30, 60, 48, 0.045),
         0 2px 6px rgba(30, 60, 48, 0.025); */
@@ -501,7 +495,7 @@ const summaryLine = computed(
 }
 
 .followup-intro::before {
-    content: "";
+    content: '';
     position: absolute;
     top: 0;
     right: 0;
@@ -540,11 +534,7 @@ const summaryLine = computed(
     height: 50px;
     border-radius: 14px;
     color: #fff;
-    background: linear-gradient(
-        145deg,
-        var(--primary),
-        var(--primary-dark)
-    );
+    background: linear-gradient(145deg, var(--primary), var(--primary-dark));
     /* box-shadow: 0 8px 18px rgba(0, 102, 76, 0.16); */
 }
 

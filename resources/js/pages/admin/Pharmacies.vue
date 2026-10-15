@@ -6,7 +6,8 @@ import DataTable from '@/components/aphaspb/DataTable.vue';
 import DataTableRow from '@/components/aphaspb/DataTableRow.vue';
 import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import Pagination from '@/components/aphaspb/Pagination.vue';
-import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
+import RegionFilter from '@/components/aphaspb/RegionFilter.vue';
+import { useScopeFilter } from '@/composables/useScopeFilter';
 
 type Row = {
     id: number;
@@ -31,14 +32,23 @@ const props = defineProps<{
     pharmacies: Paginated<Row>;
     total: number;
     cities: string[];
-    filters: { city: string | null; search: string | null; perPage: number };
+    regions: { id: number; name: string }[];
+    filters: {
+        city: string | null;
+        regions: number[];
+        search: string | null;
+        perPage: number;
+    };
     pageSizes: number[];
 }>();
 
 const TEMPLATE = '2fr 1.1fr 1.3fr 1.1fr';
 const COLUMNS = ['Officine', 'Ville', 'WhatsApp', 'Inscrite le'];
 
-const city = ref<string | null>(props.filters.city);
+const { city, regions } = useScopeFilter(
+    props.filters.city,
+    props.filters.regions,
+);
 const search = ref(props.filters.search ?? '');
 const perPage = ref(props.filters.perPage);
 
@@ -52,6 +62,7 @@ function reload(page: number) {
         '/admin/pharmacies',
         {
             city: city.value,
+            regions: regions.value,
             search: search.value || null,
             per_page: perPage.value,
             page,
@@ -69,7 +80,7 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 
 // Debounced, and back to page one: the search fires on every keystroke, and a
 // narrowed list rarely still has the page the reader was on.
-watch([city, search, perPage], () => {
+watch([city, regions, search, perPage], () => {
     clearTimeout(timer);
     timer = setTimeout(() => reload(1), 250);
 });
@@ -159,6 +170,16 @@ const footer = computed(
                                 aria-label="Filtrer par ville"
                             />
                         </div>
+                    </div>
+
+                    <div class="filter-item">
+                        <span class="filter-label"> RÉGIONS </span>
+
+                        <RegionFilter
+                            v-model="regions"
+                            :regions="props.regions"
+                            label=""
+                        />
                     </div>
                 </div>
             </div>

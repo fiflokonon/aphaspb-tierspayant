@@ -6,6 +6,8 @@ import FilterSelect from '@/components/aphaspb/FilterSelect.vue';
 import NetworkPenaltyClaims from '@/components/aphaspb/NetworkPenaltyClaims.vue';
 import PenaltyLedgerTable from '@/components/aphaspb/PenaltyLedgerTable.vue';
 import PenaltyTrendCard from '@/components/aphaspb/PenaltyTrendCard.vue';
+import RegionFilter from '@/components/aphaspb/RegionFilter.vue';
+import { appendRegions, useScopeFilter } from '@/composables/useScopeFilter';
 import type {
     NetworkPenaltyClaims as Claims,
     PenaltyLedger,
@@ -19,13 +21,28 @@ const props = defineProps<{
     periods: { value: string; label: string }[];
     city: string | null;
     cities: string[];
+    regions: { id: number; name: string }[];
+    selectedRegions: number[];
     insurer: number | null;
     insurers: { id: number; name: string }[];
     downloadUrl: string;
 }>();
 
 const period = ref(props.period);
-const city = ref(props.city);
+const { city, regions } = useScopeFilter(props.city, props.selectedRegions);
+
+/** Ce que couvre le journal : une ville, des régions, ou rien de plus. */
+const scopeLabel = computed(() => {
+    if (city.value !== null) {
+        return ` · ${city.value}`;
+    }
+
+    const names = props.regions
+        .filter((region) => regions.value.includes(region.id))
+        .map((region) => region.name);
+
+    return names.length > 0 ? ` · ${names.join(', ')}` : '';
+});
 const insurer = ref(props.insurer);
 
 const cityOptions = computed(() => [
@@ -39,10 +56,15 @@ const insurerOptions = computed(() => [
 ]);
 
 /** Le journal et l'exigible sont différés : ils doivent être nommés dans `only` pour revenir. */
-watch([period, city, insurer], () =>
+watch([period, city, regions, insurer], () =>
     router.get(
         '/admin/penalties',
-        { period: period.value, city: city.value, insurer: insurer.value },
+        {
+            period: period.value,
+            city: city.value,
+            regions: regions.value,
+            insurer: insurer.value,
+        },
         {
             only: [
                 'penaltyTrend',
@@ -50,6 +72,7 @@ watch([period, city, insurer], () =>
                 'period',
                 'periodLabel',
                 'city',
+                'selectedRegions',
                 'insurer',
             ],
             preserveState: true,
@@ -66,6 +89,8 @@ const hrefFor = (format: 'csv' | 'xlsx' | 'pdf') => {
     if (city.value) {
         query.set('city', city.value);
     }
+
+    appendRegions(query, regions.value);
 
     if (insurer.value) {
         query.set('insurer', String(insurer.value));
@@ -99,10 +124,7 @@ const FORMATS = [
                         <h1>Journal des pénalités</h1>
 
                         <span class="intro-period">
-                            {{ periodLabel }}
-                            <template v-if="city !== null">
-                                · {{ city }}
-                            </template>
+                            {{ periodLabel }}{{ scopeLabel }}
                         </span>
                     </div>
                 </div>
@@ -125,6 +147,16 @@ const FORMATS = [
                             v-model="city"
                             :options="cityOptions"
                             aria-label="Filtrer par ville"
+                        />
+                    </div>
+
+                    <div class="filter-item">
+                        <span class="filter-label">RÉGIONS</span>
+
+                        <RegionFilter
+                            v-model="regions"
+                            :regions="props.regions"
+                            label=""
                         />
                     </div>
 
@@ -195,7 +227,7 @@ const FORMATS = [
                 <div class="analysis-card">
                     <PenaltyTrendCard
                         :ledger="penaltyTrend"
-                        :subtitle="`${periodLabel}${city === null ? '' : ` · ${city}`}`"
+                        :subtitle="`${periodLabel}${scopeLabel}`"
                         filename="aphaspb-journal-penalites-reseau"
                         :show-insurer-filter="false"
                     />
