@@ -14,9 +14,11 @@ readonly class InsurerAmounts
         public string $insurerName,
         public int $declaringPharmacies,
         public int $invoiced,
-        public int $received,
-        public int $outstanding,
+        /** Null with outstanding and recoveryRate when what is owed rests on too few creditors. */
+        public ?int $received,
+        public ?int $outstanding,
         public ?float $recoveryRate,
+        public bool $owedWithheld = false,
     ) {
         //
     }

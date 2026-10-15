@@ -26,6 +26,7 @@ class InsurerAmountsResource
      *     received: int|null,
      *     outstanding: int|null,
      *     recoveryRate: float|null,
+     *     owedWithheld: bool,
      * }
      */
     public static function fromEntry(
@@ -50,6 +51,9 @@ class InsurerAmountsResource
             'received' => $sufficient ? $entry->received : null,
             'outstanding' => $sufficient ? $entry->outstanding : null,
             'recoveryRate' => $sufficient ? $entry->recoveryRate : null,
+            // Reçu, encours et taux retenus ensemble : trop peu d'officines
+            // créancières, que la fiche assureur nomme (15/10/2026).
+            'owedWithheld' => $sufficient && $entry->owedWithheld,
         ];
     }
 }

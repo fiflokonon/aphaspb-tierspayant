@@ -36,6 +36,15 @@ class NetworkStatsService
      * this fragment is shared by the per-insurer and network aggregates, which
      * must never drift into judging the same delay by two different rules.
      */
+    /**
+     * Distinct officines an aggregate still owes money to.
+     *
+     * Since the insurer sheet names them (15/10/2026), any amount derived
+     * from what is still owed — received, outstanding, recovery rate — must
+     * rest on at least the threshold of them, not merely on the declarants.
+     */
+    protected const CREDITORS_COUNT = 'COUNT(DISTINCT CASE WHEN declarations.amount_invoiced > declarations.amount_received THEN declarations.pharmacy_id END) as creditors';
+
     protected const WITHIN_STANDARD_DELAY_SUM = "SUM(CASE WHEN status IN ('paid', 'partial') AND delay_days <= insurers.standard_delay_days THEN 1 ELSE 0 END) as within_threshold";
 
     public function __construct(
@@ -60,6 +69,7 @@ class NetworkStatsService
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(amount_invoiced) as amount_invoiced')
             ->selectRaw('SUM(amount_received) as amount_received')
+            ->selectRaw(self::CREDITORS_COUNT)
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN 1 ELSE 0 END) as settled")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days ELSE 0 END) as delay_total")
             ->selectRaw(self::WITHIN_STANDARD_DELAY_SUM)
@@ -75,7 +85,9 @@ class NetworkStatsService
             ->pluck('name', 'id');
 
         $instalments = $this->instalmentAggregates($from, $to, $city, $insurerId);
-        $partition = $this->insurerPartition($from, $to, $city, $insurerId);
+        $cells = is_string($city) ? [] : $this->partitionCells($from, $to, $insurerId);
+        $partition = $this->declaringPerCity($cells);
+        $creditors = $this->creditorsPerCity($cells);
 
         $indicators = [];
 
@@ -103,6 +115,7 @@ class NetworkStatsService
             $invoiced = (int) $row->amount_invoiced;
             $received = (int) $row->amount_received;
             $basis = (int) $row->delay_basis;
+            $owedWithheld = $this->owedWithheld((int) $row->creditors, $creditors[$insurerId] ?? [], $city, $minimum);
 
             $indicators[$insurerId] = new InsurerIndicators(
                 insurerName: (string) $names[$insurerId],
@@ -120,9 +133,9 @@ class NetworkStatsService
                 rejectionRate: $total > 0 ? round((int) $row->rejected / $total * 100, 1) : null,
                 unpaidRate: $total > 0 ? round((int) $row->unpaid / $total * 100, 1) : null,
                 amountInvoiced: $invoiced,
-                amountReceived: $received,
-                amountOutstanding: max(0, $invoiced - $received),
-                recoveryRate: $invoiced > 0 ? round($received / $invoiced * 100, 1) : null,
+                amountReceived: $owedWithheld ? null : $received,
+                amountOutstanding: $owedWithheld ? null : max(0, $invoiced - $received),
+                recoveryRate: $owedWithheld || $invoiced <= 0 ? null : round($received / $invoiced * 100, 1),
                 recoveredWithinDelayShare: $this->recoveredShare(
                     $instalments[$insurerId] ?? null,
                     $invoiced,
@@ -401,7 +414,10 @@ class NetworkStatsService
      * partition (CityPartition). Vide sous filtre ville.
      *
      * @param  list<int>  $insurerIds
-     * @return array<int, list<array{year: int, month: int, monthLabel: string, declaringPharmacies: int, cityPharmacies: array<string, int>, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>
+     *                                 `creditorPharmacies` / `creditorCityPharmacies` : the same, counting the
+     *                                 officines still owed money — the caller withholds received and
+     *                                 outstanding on them (creditor rule, 15/10/2026).
+     * @return array<int, list<array{year: int, month: int, monthLabel: string, declaringPharmacies: int, cityPharmacies: array<string, int>, creditorPharmacies: int, creditorCityPharmacies: array<string, int>, declarations: int, invoiced: int, received: int, outstanding: int, averageDelayDays: float|null}>>
      */
     public function monthlyByInsurer(array $insurerIds, Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): array
     {
@@ -416,6 +432,7 @@ class NetworkStatsService
             ->selectRaw('COUNT(*) as declarations')
             ->selectRaw('SUM(declarations.amount_invoiced) as invoiced')
             ->selectRaw('SUM(declarations.amount_received) as received')
+            ->selectRaw(self::CREDITORS_COUNT)
             ->selectRaw(
                 'AVG(CASE WHEN declarations.status IN (?, ?) THEN declarations.delay_days END) as average_delay',
                 DeclarationStatus::settledValues(),
@@ -426,21 +443,18 @@ class NetworkStatsService
             ->get();
 
         $cities = [];
+        $creditorCities = [];
 
         // Tout le réseau, filtre régions compris : la règle régionale lit la
-        // partition entière (CityPartition).
+        // partition entière (CityPartition). Les créancières aussi, pour le
+        // reçu et l'encours du mois.
         if (! is_string($city)) {
-            $counts = $this->perCity(
-                $this->baseQuery($from, $to, null, $insurerId)->whereIn('declarations.insurer_id', $insurerIds),
-                ['declarations.insurer_id', 'declarations.period_year', 'declarations.period_month'],
-            );
+            $all = $this->baseQuery($from, $to, null, $insurerId)->whereIn('declarations.insurer_id', $insurerIds);
 
-            foreach ($counts as $count) {
-                $cell = sprintf('%d|%d|%d', $count->insurer_id, $count->period_year, $count->period_month);
-                $cityKey = CityPartition::key($count->city);
-                // += : NULL et '' sont deux groupes SQL, une seule clé « sans ville ».
-                $cities[$cell][$cityKey] = ($cities[$cell][$cityKey] ?? 0) + (int) $count->pharmacies;
-            }
+            $cities = $this->monthlyCityCounts(clone $all);
+            $creditorCities = $this->monthlyCityCounts(
+                $all->whereColumn('declarations.amount_invoiced', '>', 'declarations.amount_received'),
+            );
         }
 
         $monthly = [];
@@ -455,6 +469,8 @@ class NetworkStatsService
                 'monthLabel' => MonthLabel::short((int) $row->period_month, (int) $row->period_year),
                 'declaringPharmacies' => (int) $row->declaring_pharmacies,
                 'cityPharmacies' => $cities[sprintf('%d|%d|%d', $row->insurer_id, $row->period_year, $row->period_month)] ?? [],
+                'creditorPharmacies' => (int) $row->creditors,
+                'creditorCityPharmacies' => $creditorCities[sprintf('%d|%d|%d', $row->insurer_id, $row->period_year, $row->period_month)] ?? [],
                 'declarations' => (int) $row->declarations,
                 'invoiced' => $invoiced,
                 'received' => $received,
@@ -464,6 +480,30 @@ class NetworkStatsService
         }
 
         return $monthly;
+    }
+
+    /**
+     * Distinct officines per city, for each insurer × month cell.
+     *
+     * @return array<string, array<string, int>> keyed « insurer|year|month », then by city key
+     */
+    protected function monthlyCityCounts(Builder $query): array
+    {
+        $cells = [];
+
+        $counts = $this->perCity(
+            $query,
+            ['declarations.insurer_id', 'declarations.period_year', 'declarations.period_month'],
+        );
+
+        foreach ($counts as $count) {
+            $cell = sprintf('%d|%d|%d', $count->insurer_id, $count->period_year, $count->period_month);
+            $cityKey = CityPartition::key($count->city);
+            // += : NULL et '' sont deux groupes SQL, une seule clé « sans ville ».
+            $cells[$cell][$cityKey] = ($cells[$cell][$cityKey] ?? 0) + (int) $count->pharmacies;
+        }
+
+        return $cells;
     }
 
     /**
@@ -496,10 +536,12 @@ class NetworkStatsService
             ->selectRaw("SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN delay_days * amount_received ELSE 0 END) as delay_weighted")
             ->selectRaw("SUM(CASE WHEN status IN ('paid', 'partial') THEN amount_received ELSE 0 END) as delay_basis")
+            ->selectRaw(self::CREDITORS_COUNT)
             ->first();
 
         $declaring = (int) ($row->declaring_pharmacies ?? 0);
-        $reason = $this->summaryWithheldReason($declaring, $minimum, $from, $to, $city, $insurerId);
+        $cells = is_string($city) || $declaring < $minimum ? [] : $this->partitionCells($from, $to, $insurerId);
+        $reason = $this->summaryWithheldReason($declaring, $minimum, $city, $cells);
 
         if ($reason !== null) {
             return [
@@ -530,7 +572,11 @@ class NetworkStatsService
             'weightedDelayDays' => $basis > 0 ? round((int) $row->delay_weighted / $basis, 1) : null,
             'withinThresholdShare' => $settled > 0 ? round((int) $row->within_threshold / $settled * 100, 1) : null,
             'rejectionRate' => $total > 0 ? round((int) $row->rejected / $total * 100, 1) : null,
-            'outstandingBeyond90' => $this->outstandingBeyond($from, $to, $city, 90, $insurerId),
+            // Une part de l'encours : elle tombe avec lui, et repose en plus
+            // sur ses propres créancières anciennes.
+            'outstandingBeyond90' => $this->summaryOwedWithheld((int) ($row->creditors ?? 0), $cells, $from, $to, $city, $insurerId, $minimum)
+                ? null
+                : $this->outstandingBeyond($from, $to, $city, 90, $insurerId, $minimum),
         ];
     }
 
@@ -552,6 +598,7 @@ class NetworkStatsService
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('SUM(amount_invoiced) as invoiced')
             ->selectRaw('SUM(amount_received) as received')
+            ->selectRaw(self::CREDITORS_COUNT)
             ->groupBy('insurer_id')
             ->get();
 
@@ -559,7 +606,9 @@ class NetworkStatsService
             ->whereIn('id', $rows->pluck('insurer_id'))
             ->pluck('name', 'id');
 
-        $partition = $this->insurerPartition($from, $to, $city, $insurerId);
+        $cells = is_string($city) ? [] : $this->partitionCells($from, $to, $insurerId);
+        $partition = $this->declaringPerCity($cells);
+        $creditors = $this->creditorsPerCity($cells);
 
         $amounts = [];
 
@@ -583,14 +632,18 @@ class NetworkStatsService
 
             $invoiced = (int) $row->invoiced;
             $received = (int) $row->received;
+            $owedWithheld = $this->owedWithheld((int) $row->creditors, $creditors[$insurerId] ?? [], $city, $minimum);
 
+            // Le facturé reste publié ; reçu, encours et taux tombent ensemble :
+            // facturé − reçu rendrait l'encours (fiche assureur, 15/10/2026).
             $amounts[$insurerId] = new InsurerAmounts(
                 insurerName: (string) $names[$insurerId],
                 declaringPharmacies: $declaring,
                 invoiced: $invoiced,
-                received: $received,
-                outstanding: max(0, $invoiced - $received),
-                recoveryRate: $invoiced > 0 ? round($received / $invoiced * 100, 1) : null,
+                received: $owedWithheld ? null : $received,
+                outstanding: $owedWithheld ? null : max(0, $invoiced - $received),
+                recoveryRate: $owedWithheld || $invoiced <= 0 ? null : round($received / $invoiced * 100, 1),
+                owedWithheld: $owedWithheld,
             );
         }
 
@@ -603,20 +656,29 @@ class NetworkStatsService
      * Age is counted from the end of the declared month, as on the officine
      * side: the CDC stores no invoice date.
      *
-     * Protected: it carries no threshold of its own, and is only published
-     * through networkSummary(), which withholds it with the rest.
+     * Protected: only published through networkSummary(), which withholds it
+     * with the rest of the owed amounts. Null as well when the old debts
+     * themselves rest on 1 to threshold − 1 creditors, or when their city
+     * partition would give them back: the sheet names who is owed.
+     *
+     * Under a region filter the query runs on the whole network, so the same
+     * rows give the scope's total and the whole partition.
      */
-    protected function outstandingBeyond(Period $from, Period $to, string|RegionScope|null $city, int $days, ?int $insurerId = null): int
+    protected function outstandingBeyond(Period $from, Period $to, string|RegionScope|null $city, int $days, ?int $insurerId, int $minimum): ?int
     {
-        $rows = $this->baseQuery($from, $to, $city, $insurerId)
-            ->whereRaw('amount_invoiced > amount_received')
-            ->select('period_year', 'period_month')
-            ->selectRaw('SUM(amount_invoiced - amount_received) as outstanding')
-            ->groupBy('period_year', 'period_month')
+        $rows = $this->baseQuery($from, $to, $city instanceof RegionScope ? null : $city, $insurerId)
+            ->join('pharmacies', 'pharmacies.id', '=', 'declarations.pharmacy_id')
+            ->whereColumn('declarations.amount_invoiced', '>', 'declarations.amount_received')
+            ->select('declarations.period_year', 'declarations.period_month', 'declarations.pharmacy_id')
+            ->selectRaw(CityPartition::canonicalCitySql('pharmacies').' as city')
+            ->selectRaw('SUM(declarations.amount_invoiced - declarations.amount_received) as outstanding')
+            ->groupBy('declarations.period_year', 'declarations.period_month', 'declarations.pharmacy_id', 'pharmacies.city')
             ->get();
 
         $today = now()->startOfDay();
         $total = 0;
+        $creditors = [];
+        $perCity = [];
 
         foreach ($rows as $row) {
             $age = (int) now()
@@ -625,9 +687,25 @@ class NetworkStatsService
                 ->startOfDay()
                 ->diffInDays($today, absolute: false);
 
-            if ($age > $days) {
-                $total += (int) $row->outstanding;
+            if ($age <= $days) {
+                continue;
             }
+
+            $key = CityPartition::key($row->city);
+            $perCity[$key][(int) $row->pharmacy_id] = true;
+
+            if ($city instanceof RegionScope && ! $city->contains($key)) {
+                continue;
+            }
+
+            $total += (int) $row->outstanding;
+            $creditors[(int) $row->pharmacy_id] = true;
+        }
+
+        $owed = count($creditors);
+
+        if (($owed > 0 && $owed < $minimum) || CityPartition::withholdsIn($city, array_map('count', $perCity), $minimum)) {
+            return null;
         }
 
         return $total;
@@ -648,7 +726,10 @@ class NetworkStatsService
      * the totals are withheld — a city of one declarant would otherwise print
      * that officine's exact invoice.
      *
-     * @return array{withheld: bool, withheldReason: 'too-few'|'city-share'|null, required: int, invoiced: int|null, received: int|null, outstanding: int|null, recoveryRate: float|null, declaringPharmacies: int|null}
+     * Received, outstanding and recovery rate also fall, together, when what
+     * is owed rests on too few creditors (summaryOwedWithheld()).
+     *
+     * @return array{withheld: bool, withheldReason: 'too-few'|'city-share'|null, required: int, invoiced: int|null, received: int|null, outstanding: int|null, recoveryRate: float|null, owedWithheld: bool, declaringPharmacies: int|null}
      */
     public function aggregatedAmounts(Period $from, Period $to, string|RegionScope|null $city = null, ?int $insurerId = null): array
     {
@@ -658,10 +739,12 @@ class NetworkStatsService
             ->selectRaw('COUNT(DISTINCT pharmacy_id) as declaring_pharmacies')
             ->selectRaw('SUM(amount_invoiced) as invoiced')
             ->selectRaw('SUM(amount_received) as received')
+            ->selectRaw(self::CREDITORS_COUNT)
             ->first();
 
         $declaring = (int) ($row->declaring_pharmacies ?? 0);
-        $reason = $this->summaryWithheldReason($declaring, $minimum, $from, $to, $city, $insurerId);
+        $cells = is_string($city) || $declaring < $minimum ? [] : $this->partitionCells($from, $to, $insurerId);
+        $reason = $this->summaryWithheldReason($declaring, $minimum, $city, $cells);
 
         if ($reason !== null) {
             return [
@@ -672,21 +755,24 @@ class NetworkStatsService
                 'received' => null,
                 'outstanding' => null,
                 'recoveryRate' => null,
+                'owedWithheld' => true,
                 'declaringPharmacies' => null,
             ];
         }
 
         $invoiced = (int) ($row->invoiced ?? 0);
         $received = (int) ($row->received ?? 0);
+        $owedWithheld = $this->summaryOwedWithheld((int) ($row->creditors ?? 0), $cells, $from, $to, $city, $insurerId, $minimum);
 
         return [
             'withheld' => false,
             'withheldReason' => null,
             'required' => $minimum,
             'invoiced' => $invoiced,
-            'received' => $received,
-            'outstanding' => max(0, $invoiced - $received),
-            'recoveryRate' => $invoiced > 0 ? round($received / $invoiced * 100, 1) : null,
+            'received' => $owedWithheld ? null : $received,
+            'outstanding' => $owedWithheld ? null : max(0, $invoiced - $received),
+            'recoveryRate' => $owedWithheld || $invoiced <= 0 ? null : round($received / $invoiced * 100, 1),
+            'owedWithheld' => $owedWithheld,
             'declaringPharmacies' => $declaring,
         ];
     }
@@ -708,13 +794,14 @@ class NetworkStatsService
      *   over every such insurer, in distinct officines, must not rest on 1 to
      *   threshold − 1 of them.
      *
-     * One query, only when no single city is chosen and the own count passed.
+     * The cells come from the caller, read once for every rule of the summary.
      * Under a region filter, the same two checks follow the region partition
      * rule (CityPartition::*In()).
      *
+     * @param  array<int, array<string, array<int, bool>>>  $cells  partitionCells(), empty under a city filter
      * @return 'too-few'|'city-share'|null
      */
-    protected function summaryWithheldReason(int $declaringPharmacies, int $minimum, Period $from, Period $to, string|RegionScope|null $city, ?int $insurerId): ?string
+    protected function summaryWithheldReason(int $declaringPharmacies, int $minimum, string|RegionScope|null $city, array $cells): ?string
     {
         if ($declaringPharmacies === 0) {
             return null;
@@ -727,8 +814,6 @@ class NetworkStatsService
         if (is_string($city)) {
             return null;
         }
-
-        $cells = $this->partitionCells($from, $to, $insurerId);
 
         $perCity = [];
 
@@ -750,22 +835,149 @@ class NetworkStatsService
     /**
      * Declaring pharmacies per insurer and city, for the city partition rule.
      *
-     * Empty when a city is chosen: a single city is published whole, there is
-     * nothing to subtract it from. One query otherwise — over the whole
-     * network even under a region filter, which reads the entire partition.
+     * Empty under a city filter: a single city is published whole, there is
+     * nothing to subtract it from. Under a region filter, the whole network.
      *
+     * @param  array<int, array<string, array<int, bool>>>  $cells
      * @return array<int, array<string, int>>
      */
-    protected function insurerPartition(Period $from, Period $to, string|RegionScope|null $city, ?int $insurerId): array
+    protected function declaringPerCity(array $cells): array
     {
-        if (is_string($city)) {
-            return [];
+        return array_map(fn (array $cities): array => array_map('count', $cities), $cells);
+    }
+
+    /**
+     * The same, counting only the officines still owed money.
+     *
+     * @param  array<int, array<string, array<int, bool>>>  $cells
+     * @return array<int, array<string, int>>
+     */
+    protected function creditorsPerCity(array $cells): array
+    {
+        return array_map(
+            fn (array $cities): array => array_map(fn (array $pharmacies): int => count(array_filter($pharmacies)), $cities),
+            $cells,
+        );
+    }
+
+    /**
+     * Whether an entry's owed amounts must be withheld.
+     *
+     * The insurer sheet names whom an insurer owes (InsurerCreditors). An
+     * outstanding figure resting on one creditor would then be that named
+     * officine's debt; and unfiltered (or by regions), the figure minus the
+     * published cities would give the creditors of the small cities back.
+     * Zero creditors publish: « nothing owed » names no one.
+     *
+     * @param  array<string, int>  $creditorsPerCity  whole network, empty under a city filter
+     */
+    protected function owedWithheld(int $creditors, array $creditorsPerCity, string|RegionScope|null $city, int $minimum): bool
+    {
+        return ($creditors > 0 && $creditors < $minimum)
+            || CityPartition::withholdsIn($city, $creditorsPerCity, $minimum);
+    }
+
+    /**
+     * owedWithheld() for a network summary, which sums every insurer.
+     *
+     * Two more ways back to a creditor, both closed here:
+     *
+     * - the summary minus the published cities (union of creditors per city);
+     * - the summary minus the published insurer rows gives the owed amounts of
+     *   the insurers whose rows do not publish them; minus their own published
+     *   city rows, it gives their creditors in the cities that withhold them.
+     *   The union of those creditors must not rest on 1 to threshold − 1.
+     *
+     * @param  array<int, array<string, array<int, bool>>>  $cells  whole network, empty under a city filter
+     */
+    protected function summaryOwedWithheld(int $creditors, array $cells, Period $from, Period $to, string|RegionScope|null $city, ?int $insurerId, int $minimum): bool
+    {
+        if ($creditors > 0 && $creditors < $minimum) {
+            return true;
         }
 
-        return array_map(
-            fn (array $cities): array => array_map('count', $cities),
-            $this->partitionCells($from, $to, $insurerId),
-        );
+        if (is_string($city)) {
+            return $this->belowMinimum(count($this->hiddenCreditorsInCity($from, $to, $city, $insurerId, $minimum)), $minimum);
+        }
+
+        $union = [];
+
+        foreach ($cells as $cities) {
+            foreach ($cities as $key => $pharmacies) {
+                $union[$key] = ($union[$key] ?? []) + array_filter($pharmacies);
+            }
+        }
+
+        if (CityPartition::withholdsIn($city, array_map('count', $union), $minimum)) {
+            return true;
+        }
+
+        $hidden = [];
+
+        foreach ($cells as $cities) {
+            $inScope = $city instanceof RegionScope
+                ? array_filter($cities, fn (string|int $key): bool => $city->contains((string) $key), ARRAY_FILTER_USE_KEY)
+                : $cities;
+
+            $declaring = count(array_replace(...array_values($inScope ?: [[]])));
+            $owing = count(array_filter(array_replace(...array_values($inScope ?: [[]]))));
+
+            $published = $declaring >= $minimum
+                && ! CityPartition::withholdsIn($city, array_map('count', $cities), $minimum)
+                && ! $this->owedWithheld($owing, array_map(fn (array $pharmacies): int => count(array_filter($pharmacies)), $cities), $city, $minimum);
+
+            if ($published) {
+                continue;
+            }
+
+            foreach ($inScope as $key => $pharmacies) {
+                $owed = array_filter($pharmacies);
+
+                if ((string) $key === CityPartition::NO_CITY || count($pharmacies) < $minimum || $this->belowMinimum(count($owed), $minimum)) {
+                    $hidden += $owed;
+                }
+            }
+        }
+
+        return $this->belowMinimum(count($hidden), $minimum);
+    }
+
+    /**
+     * Under a city filter: the creditors of the insurers whose city row does
+     * not publish what they owe. The summary of the city minus the published
+     * rows gives exactly their debts.
+     *
+     * @return array<int, true>
+     */
+    protected function hiddenCreditorsInCity(Period $from, Period $to, string $city, ?int $insurerId, int $minimum): array
+    {
+        $rows = $this->baseQuery($from, $to, $city, $insurerId)
+            ->select('declarations.insurer_id', 'declarations.pharmacy_id')
+            ->selectRaw('MAX(CASE WHEN declarations.amount_invoiced > declarations.amount_received THEN 1 ELSE 0 END) as owed')
+            ->groupBy('declarations.insurer_id', 'declarations.pharmacy_id')
+            ->get()
+            ->groupBy('insurer_id');
+
+        $hidden = [];
+
+        foreach ($rows as $pharmacies) {
+            $owed = $pharmacies->where('owed', 1)->pluck('pharmacy_id')->map(fn (mixed $id): int => (int) $id);
+
+            if ($pharmacies->count() >= $minimum && ! $this->belowMinimum($owed->count(), $minimum)) {
+                continue;
+            }
+
+            foreach ($owed as $id) {
+                $hidden[$id] = true;
+            }
+        }
+
+        return $hidden;
+    }
+
+    protected function belowMinimum(int $count, int $minimum): bool
+    {
+        return $count > 0 && $count < $minimum;
     }
 
     /**
@@ -776,23 +988,27 @@ class NetworkStatsService
      * officines. Rows are distinct (insurer, pharmacy) pairs — a few thousand
      * at most. NULL and '' cities share the « sans ville » key.
      *
-     * @return array<int, array<string, array<int, true>>>
+     * Each officine maps to whether it is still owed money in the cell: the
+     * same rows feed the creditor rule, without a query of their own.
+     *
+     * @return array<int, array<string, array<int, bool>>>
      */
     protected function partitionCells(Period $from, Period $to, ?int $insurerId): array
     {
         $rows = $this->baseQuery($from, $to, null, $insurerId)
             ->join('pharmacies', 'pharmacies.id', '=', 'declarations.pharmacy_id')
-            ->distinct()
             ->select('declarations.insurer_id', 'declarations.pharmacy_id')
             // La clé canonique, pas la chaîne : les compartiments doivent
             // suivre la collation, comme le filtre ville.
             ->selectRaw(CityPartition::canonicalCitySql('pharmacies').' as city')
+            ->selectRaw('MAX(CASE WHEN declarations.amount_invoiced > declarations.amount_received THEN 1 ELSE 0 END) as owed')
+            ->groupBy('declarations.insurer_id', 'declarations.pharmacy_id', 'pharmacies.city')
             ->get();
 
         $cells = [];
 
         foreach ($rows as $row) {
-            $cells[(int) $row->insurer_id][CityPartition::key($row->city)][(int) $row->pharmacy_id] = true;
+            $cells[(int) $row->insurer_id][CityPartition::key($row->city)][(int) $row->pharmacy_id] = (int) $row->owed === 1;
         }
 
         return $cells;

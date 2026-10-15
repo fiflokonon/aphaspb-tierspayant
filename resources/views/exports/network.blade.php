@@ -269,8 +269,8 @@
                         </div>
                     </td>
                     <td>{{ $row['amounts'] === null ? '-' : \App\Support\Fcfa::format($row['amounts']->invoiced) }}</td>
-                    <td>{{ $row['amounts'] === null ? '-' : \App\Support\Fcfa::format($row['amounts']->received) }}</td>
-                    <td>{{ $row['amounts'] === null ? '-' : \App\Support\Fcfa::format($row['amounts']->outstanding) }}</td>
+                    <td>{{ $row['amounts'] === null ? '-' : ($row['amounts']->received === null ? 'retenu' : \App\Support\Fcfa::format($row['amounts']->received)) }}</td>
+                    <td>{{ $row['amounts'] === null ? '-' : ($row['amounts']->outstanding === null ? 'retenu' : \App\Support\Fcfa::format($row['amounts']->outstanding)) }}</td>
                 </tr>
             @endforeach
 
@@ -345,7 +345,7 @@
                 </td>
                 <td>
                     <div class="value">
-                        {{ $row['amounts'] === null ? '-' : \App\Support\Fcfa::format($row['amounts']->outstanding) }}
+                        {{ $row['amounts'] === null ? '-' : ($row['amounts']->outstanding === null ? 'retenu' : \App\Support\Fcfa::format($row['amounts']->outstanding)) }}
                     </div>
                     <div class="label">Reste dû au réseau</div>
                 </td>
@@ -416,8 +416,8 @@
                             <td class="text">{{ $month['monthLabel'] }}</td>
                             <td>{{ $month['declarations'] }}</td>
                             <td>{{ \App\Support\Fcfa::format($month['invoiced']) }}</td>
-                            <td>{{ \App\Support\Fcfa::format($month['received']) }}</td>
-                            <td>{{ \App\Support\Fcfa::format($month['outstanding']) }}</td>
+                            <td>{{ $month['received'] === null ? 'retenu' : \App\Support\Fcfa::format($month['received']) }}</td>
+                            <td>{{ $month['outstanding'] === null ? 'retenu' : \App\Support\Fcfa::format($month['outstanding']) }}</td>
                             <td class="{{ $month['averageDelayDays'] !== null && $month['averageDelayDays'] > $indicators->standardDelayDays ? 'late' : '' }}">
                                 {{ $month['averageDelayDays'] === null ? '-' : number_format($month['averageDelayDays'], 1, ',', ' ').' j' }}
                             </td>

@@ -376,12 +376,14 @@ test('the network within threshold share honours each insurer own standard delay
 });
 
 test('amounts are summed and the outstanding balance derived', function () {
+    // Cinq créancières : depuis le 15/10/2026, l'encours repose aussi sur le
+    // seuil d'officines à qui l'assureur doit encore.
     recordForDistinctPharmacies($this->insurer, [
-        ['amount_invoiced' => 1_000_000, 'amount_received' => 1_000_000, 'delay_days' => 12],
+        ['amount_invoiced' => 1_000_000, 'amount_received' => 900_000, 'delay_days' => 12],
         ['amount_invoiced' => 1_000_000, 'amount_received' => 500_000, 'delay_days' => 40],
         ['amount_invoiced' => 1_000_000, 'amount_received' => 0, 'delay_days' => null],
-        ['amount_invoiced' => 1_000_000, 'amount_received' => 250_000, 'delay_days' => 55],
-        ['amount_invoiced' => 1_000_000, 'amount_received' => 250_000, 'delay_days' => 55],
+        ['amount_invoiced' => 1_000_000, 'amount_received' => 300_000, 'delay_days' => 55],
+        ['amount_invoiced' => 1_000_000, 'amount_received' => 300_000, 'delay_days' => 55],
     ]);
 
     $indicators = $this->service->perInsurer(new Period(2026, 8), new Period(2026, 8))[$this->insurer->id];
@@ -520,15 +522,19 @@ test('the network outstanding beyond ninety days counts only old enough months',
         ...array_fill(0, 4, ['amount_invoiced' => 100, 'amount_received' => 100, 'delay_days' => 10]),
     ]);
 
-    Declaration::factory()->create([
-        'pharmacy_id' => Pharmacy::factory(),
-        'insurer_id' => $this->insurer->id,
-        'period_year' => 2026,
-        'period_month' => 3,
-        'amount_invoiced' => 700_000,
-        'amount_received' => 0,
-        'delay_days' => null,
-    ]);
+    // Cinq créancières anciennes : l'encours de plus de 90 jours repose sur
+    // le seuil des siennes (15/10/2026).
+    foreach (range(1, 5) as $i) {
+        Declaration::factory()->create([
+            'pharmacy_id' => Pharmacy::factory(),
+            'insurer_id' => $this->insurer->id,
+            'period_year' => 2026,
+            'period_month' => 3,
+            'amount_invoiced' => 140_000,
+            'amount_received' => 0,
+            'delay_days' => null,
+        ]);
+    }
 
     $summary = $this->service->networkSummary(new Period(2026, 1), new Period(2026, 8));
 

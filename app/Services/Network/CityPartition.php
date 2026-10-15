@@ -86,7 +86,7 @@ class CityPartition
      * entrent pas : aucune de leurs lignes de ville n'est publiée, leur part
      * relève du risque accepté « synthèse − assureurs publiés ».
      *
-     * @param  array<int, array<string, array<int, true>>>  $cells  assureur → ville → officines
+     * @param  array<int, array<string, array<int, bool>>>  $cells  assureur → ville → officines
      */
     public static function hiddenCellsOfCityShareInsurers(array $cells, int $minimum): int
     {
@@ -225,7 +225,7 @@ class CityPartition
      * cellules sous le seuil **dans ces régions**. Leur union, en officines
      * distinctes, ne doit pas reposer sur 1 à seuil − 1 officines.
      *
-     * @param  array<int, array<string, array<int, true>>>  $cells  assureur → ville → officines, tout le réseau
+     * @param  array<int, array<string, array<int, bool>>>  $cells  assureur → ville → officines, tout le réseau
      */
     public static function hiddenCellsOfCityShareInsurersIn(string|RegionScope|null $scope, array $cells, int $minimum): int
     {

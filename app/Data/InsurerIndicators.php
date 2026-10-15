@@ -27,8 +27,9 @@ readonly class InsurerIndicators
         public ?float $rejectionRate,
         public ?float $unpaidRate,
         public int $amountInvoiced,
-        public int $amountReceived,
-        public int $amountOutstanding,
+        /** Null with amountOutstanding and recoveryRate under the creditor rule. */
+        public ?int $amountReceived,
+        public ?int $amountOutstanding,
         public ?float $recoveryRate,
         /**
          * Share of the invoiced amount actually paid within this insurer's own

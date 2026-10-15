@@ -180,12 +180,24 @@ class NetworkPdfExport
             // Les comptes par ville ne sortent jamais : sous le seuil, ce
             // sont des comptes exacts (règle « aucun compte sous le seuil »).
             $perCity = $month['cityPharmacies'] ?? [];
-            unset($month['cityPharmacies']);
+            $creditors = $month['creditorPharmacies'] ?? 0;
+            $creditorsPerCity = $month['creditorCityPharmacies'] ?? [];
+            unset($month['cityPharmacies'], $month['creditorPharmacies'], $month['creditorCityPharmacies']);
 
             // Règle de partition : ce mois, moins le même mois des rapports
             // par ville, rendrait les villes retenues (CityPartition).
             if ($month['declaringPharmacies'] >= $minimum && ! CityPartition::withholdsIn($city, $perCity, $minimum)) {
-                return [...$month, 'withheld' => false];
+                // Reçu et encours du mois reposent sur ses créancières, que la
+                // fiche assureur nomme : même règle que la ligne de période.
+                $owedWithheld = ($creditors > 0 && $creditors < $minimum)
+                    || CityPartition::withholdsIn($city, $creditorsPerCity, $minimum);
+
+                return [
+                    ...$month,
+                    'withheld' => false,
+                    'received' => $owedWithheld ? null : $month['received'],
+                    'outstanding' => $owedWithheld ? null : $month['outstanding'],
+                ];
             }
 
             return [
