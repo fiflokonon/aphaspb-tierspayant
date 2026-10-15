@@ -70,7 +70,7 @@ test('the list exposes no declaration data whatsoever', function () {
 
             expect($row)->not->toBeNull()
                 ->and(array_keys($row))
-                ->toBe(['id', 'name', 'city', 'phone', 'registeredAt']);
+                ->toBe(['id', 'name', 'slug', 'city', 'region', 'phone', 'registeredAt']);
 
             $serialised = json_encode($props, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
 

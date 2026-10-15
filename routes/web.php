@@ -3,10 +3,12 @@
 use App\Http\Controllers\Admin\AnonymityThresholdController;
 use App\Http\Controllers\Admin\DeclarationFollowUpController;
 use App\Http\Controllers\Admin\InsurerManagementController;
+use App\Http\Controllers\Admin\InsurerSheetController;
 use App\Http\Controllers\Admin\NetworkExportController;
 use App\Http\Controllers\Admin\NetworkPenaltyLedgerController;
 use App\Http\Controllers\Admin\NetworkStatsController;
 use App\Http\Controllers\Admin\NetworkTrendsController;
+use App\Http\Controllers\Admin\PharmacySheetController;
 use App\Http\Controllers\Admin\RegionManagementController;
 use App\Http\Controllers\Admin\RegisteredPharmaciesController;
 use App\Http\Controllers\Auth\AccessDeniedController;
@@ -46,12 +48,16 @@ Route::middleware(['auth', 'can:manage-network'])
         Route::get('network', NetworkStatsController::class)->name('network');
         Route::get('trends', NetworkTrendsController::class)->name('trends');
         Route::get('pharmacies', RegisteredPharmaciesController::class)->name('pharmacies');
+        // Fiches : un nom d'officine à côté d'un assureur qui lui doit de
+        // l'argent, sans montant par officine (décision du 15/10/2026).
+        Route::get('pharmacies/{pharmacy}', PharmacySheetController::class)->name('pharmacies.show');
         // Seul écran réseau où un nom d'officine côtoie une donnée de
         // déclaration (complet / partiel / rien) : spec suivi des déclarations.
         Route::get('declarations-followup', DeclarationFollowUpController::class)->name('declarations-followup');
         Route::get('insurers', [InsurerManagementController::class, 'index'])->name('insurers');
         Route::post('insurers', [InsurerManagementController::class, 'store'])->name('insurers.store');
         Route::patch('insurers/{insurer}', [InsurerManagementController::class, 'update'])->name('insurers.update');
+        Route::get('insurers/{insurer}', InsurerSheetController::class)->name('insurers.show');
         Route::get('regions', [RegionManagementController::class, 'index'])->name('regions');
         Route::post('regions', [RegionManagementController::class, 'store'])->name('regions.store');
         Route::patch('regions/{region}', [RegionManagementController::class, 'update'])->name('regions.update');

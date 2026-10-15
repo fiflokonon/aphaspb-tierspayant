@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
+use App\Models\Region;
 use App\Support\PageSize;
 use App\Support\WhatsappNumber;
 use Illuminate\Http\Request;
@@ -44,13 +45,23 @@ class RegisteredPharmaciesController extends Controller
                 'LOWER(name) LIKE ?',
                 ['%'.mb_strtolower($search).'%'],
             ))
+            ->select(['id', 'name', 'slug', 'city', 'whatsapp_phone', 'created_at'])
+            // La région se lit sur la ville, en SQL : une sous-requête par
+            // page, pas une par ligne.
+            ->addSelect(['region' => Region::query()
+                ->select('regions.name')
+                ->join('cities', 'cities.region_id', '=', 'regions.id')
+                ->whereColumn('cities.name', 'pharmacies.city')
+                ->limit(1)])
             ->orderBy('name')
-            ->paginate($perPage, ['id', 'name', 'city', 'whatsapp_phone', 'created_at'])
+            ->paginate($perPage)
             ->withQueryString()
             ->through(fn (Pharmacy $pharmacy) => [
                 'id' => $pharmacy->id,
                 'name' => $pharmacy->name,
+                'slug' => $pharmacy->slug,
                 'city' => $pharmacy->city,
+                'region' => $pharmacy->getAttribute('region'),
                 'phone' => $pharmacy->whatsapp_phone === null
                     ? null
                     : ['href' => 'tel:'.$pharmacy->whatsapp_phone, 'label' => WhatsappNumber::display($pharmacy->whatsapp_phone)],

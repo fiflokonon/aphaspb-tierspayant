@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { CalendarDays, Phone } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
@@ -11,7 +11,9 @@ import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
 type Row = {
     id: number;
     name: string;
+    slug: string;
     city: string | null;
+    region: string | null;
     phone: { href: string; label: string } | null;
     registeredAt: string | null;
 };
@@ -220,9 +222,13 @@ const footer = computed(
                             </div>
 
                             <div class="pharmacy-name-content">
-                                <div class="pharmacy-name" :title="row.name">
+                                <Link
+                                    :href="`/admin/pharmacies/${row.slug}`"
+                                    class="pharmacy-name"
+                                    :title="row.name"
+                                >
                                     {{ row.name }}
-                                </div>
+                                </Link>
 
                                 <span class="pharmacy-status">
                                     <span class="mini-status-dot"></span>
@@ -240,6 +246,12 @@ const footer = computed(
 
                             <span>
                                 {{ row.city ?? '-' }}
+                                <span
+                                    v-if="row.region"
+                                    class="block text-[12px] font-medium opacity-60"
+                                >
+                                    {{ row.region }}
+                                </span>
                             </span>
                         </div>
 
@@ -1051,6 +1063,8 @@ const footer = computed(
 }
 
 .pharmacy-name {
+    display: block;
+
     max-width: 100%;
 
     overflow: hidden;
@@ -1064,6 +1078,11 @@ const footer = computed(
     text-overflow: ellipsis;
 
     white-space: nowrap;
+}
+
+/* Le nom ouvre la fiche de l'officine. */
+.pharmacy-name:hover {
+    color: var(--primary);
 }
 
 .pharmacy-status {

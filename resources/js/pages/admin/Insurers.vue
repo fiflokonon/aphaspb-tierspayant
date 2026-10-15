@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import { Clock, ShieldCheck } from '@lucide/vue';
 import { ref } from 'vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
@@ -71,7 +71,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
         <div class="intro-text">
             <h1>Gestion des assureurs</h1>
         </div>
-   
+
         <section class="configuration-grid">
             <div class="configuration-card">
                 <div class="card-header">
@@ -277,41 +277,30 @@ function submitWhenComplete(event: Event, submit: () => void) {
         <section class="insurers-table-section">
             <div class="section-top-line"></div>
 
-            
-                <div class="table-heading">
+            <div class="table-heading">
+                <div class="table-heading-main">
+                    <div class="table-heading-icon">
+                        <span></span>
+                    </div>
 
-                    <div class="table-heading-main">
-
-                        <div class="table-heading-icon">
-                            <span></span>
-                        </div>
-
-                        <div style="padding: 10px;">
-
-                            <!-- <span class="section-eyebrow">
+                    <div style="padding: 10px">
+                        <!-- <span class="section-eyebrow">
                                 DÉTAIL DU RÉSEAU
                             </span> -->
 
-                            <h2 style="font-weight: 700;">
-                                Assureurs et courtiers
-                            </h2>
-
-                           
-
-                        </div>
-
+                        <h2 style="font-weight: 700">Assureurs et courtiers</h2>
                     </div>
+                </div>
 
-                    <!-- STATUT -->
-                    <!-- <div class="table-status">
+                <!-- STATUT -->
+                <!-- <div class="table-status">
 
                         <span class="status-dot"></span>
 
                         Réseau actif
 
                     </div> -->
-
-                </div>
+            </div>
 
             <DataTable
                 title=""
@@ -371,14 +360,15 @@ function submitWhenComplete(event: Event, submit: () => void) {
                             </Form>
 
                             <template v-else>
-                                <span
-                                    class="insurer-name"
+                                <Link
+                                    :href="`/admin/insurers/${row.id}`"
+                                    class="insurer-name insurer-sheet-link"
                                     :class="{
                                         inactive: !row.isActive,
                                     }"
                                 >
                                     {{ row.name }}
-                                </span>
+                                </Link>
 
                                 <span
                                     class="insurer-subtitle"
@@ -599,6 +589,11 @@ function submitWhenComplete(event: Event, submit: () => void) {
 </template>
 
 <style scoped>
+/* Le nom ouvre la fiche de l'assureur : officines partenaires et créancières. */
+.insurer-sheet-link:hover {
+    color: var(--primary);
+}
+
 .row-penalty-control {
     display: flex;
     align-items: center;
@@ -1046,8 +1041,6 @@ function submitWhenComplete(event: Event, submit: () => void) {
         transform 0.2s ease;
 }
 .intro-text h1 {
-   
-
     color: #203a31;
 
     font-size: 21px;
@@ -1212,7 +1205,6 @@ function submitWhenComplete(event: Event, submit: () => void) {
     color: color-mix(in srgb, var(--ink) 55%, transparent);
 
     /* font-size: 13px; */
-
 
     line-height: 1.55;
 }
@@ -1386,7 +1378,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
 
 .number-input:focus {
     border-color: color-mix(in srgb, var(--gold-mid) 45%, transparent);
-/* 
+    /* 
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold-mid) 7%, transparent); */
 }
 

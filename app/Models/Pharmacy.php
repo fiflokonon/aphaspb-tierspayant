@@ -156,6 +156,24 @@ class Pharmacy extends Model
     }
 
     /**
+     * The pharmaceutical region of this officine, read off its city.
+     *
+     * Never stored: moving a commune between regions moves its officines with
+     * it. Compared in SQL, so the database collation decides — « cotonou »
+     * finds Cotonou's region under MySQL as the city filter does.
+     */
+    public function regionName(): ?string
+    {
+        if (blank($this->city)) {
+            return null;
+        }
+
+        return Region::query()
+            ->whereHas('cities', fn ($query) => $query->where('name', $this->city))
+            ->value('name');
+    }
+
+    /**
      * Get the route key for the model.
      */
     public function getRouteKeyName(): string
