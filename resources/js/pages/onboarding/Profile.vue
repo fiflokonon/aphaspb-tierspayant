@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { Form, Head, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import FormField from '@/components/aphaspb/FormField.vue';
 import TextInput from '@/components/aphaspb/TextInput.vue';
 
-defineProps<{
+const props = defineProps<{
     pharmacy: {
         name: string | null;
         city: string | null;
         whatsapp_phone: string | null;
     } | null;
-    cities: string[];
+    cities: { name: string; region: string | null }[];
 }>();
 
 const page = usePage();
@@ -21,6 +21,16 @@ const page = usePage();
  * would promise an edit that does not happen.
  */
 const ownerName = computed(() => page.props.auth.user?.name ?? '');
+
+const city = ref(props.pharmacy?.city ?? '');
+
+/**
+ * The region is read off the chosen city, never typed: the association
+ * attaches each commune to a region, and the server derives it the same way.
+ */
+const region = computed(
+    () => props.cities.find((one) => one.name === city.value)?.region ?? null,
+);
 </script>
 
 <template>
@@ -57,18 +67,48 @@ const ownerName = computed(() => page.props.auth.user?.name ?? '');
                 />
             </FormField>
 
-            <FormField label="VILLE" :error="errors.city">
-                <TextInput
-                    name="city"
-                    :model-value="pharmacy?.city ?? ''"
-                    :invalid="!!errors.city"
-                    placeholder="Cotonou"
-                    list="known-cities"
-                />
-                <datalist id="known-cities">
-                    <option v-for="c in cities" :key="c" :value="c" />
-                </datalist>
-            </FormField>
+            <div class="flex flex-col gap-[11px] sm:flex-row sm:gap-[10px]">
+                <div class="flex-1">
+                    <FormField label="VILLE" :error="errors.city">
+                        <select
+                            v-model="city"
+                            name="city"
+                            class="h-[46px] w-full rounded-[10px] border-[1.5px] bg-card px-3 text-[13px] font-medium text-ink transition-shadow outline-none focus:border-gold-mid/[0.55] focus:shadow-[0_0_0_3px_rgb(217_163_37_/_0.13)]"
+                            :class="
+                                errors.city
+                                    ? 'border-terracotta'
+                                    : 'border-ink/[0.13]'
+                            "
+                        >
+                            <option value="" disabled>Choisir une ville</option>
+                            <option
+                                v-for="c in cities"
+                                :key="c.name"
+                                :value="c.name"
+                            >
+                                {{ c.name }}
+                            </option>
+                        </select>
+                    </FormField>
+                </div>
+                <div class="flex-1">
+                    <FormField
+                        label="RÉGION"
+                        :hint="
+                            city !== '' && region === null
+                                ? 'Cette ville n’est encore rattachée à aucune région.'
+                                : undefined
+                        "
+                    >
+                        <p
+                            class="flex h-[46px] items-center rounded-[10px] border-[1.5px] border-ink/[0.13] bg-ink/[0.03] px-3 text-[13px] font-medium text-ink/70"
+                            aria-live="polite"
+                        >
+                            {{ region ?? '—' }}
+                        </p>
+                    </FormField>
+                </div>
+            </div>
 
             <FormField
                 label="WHATSAPP DE CONTACT"

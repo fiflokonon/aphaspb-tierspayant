@@ -10,12 +10,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * A commune of Benin, offered as a suggestion when an officine registers.
+ * A commune of Benin, the closed list an officine picks its city from.
  *
- * Reference data, not a foreign key: pharmacies.city stays a string. An
- * officine whose locality is spelled differently, or which sits outside the
- * seeded list entirely, must still be able to register — the list proposes,
- * it does not decide.
+ * pharmacies.city stays a string rather than a foreign key: officines that
+ * registered before the list was imposed keep the spelling they typed. Since
+ * the regions arrived (15/10/2026), the onboarding only accepts a name from
+ * this table, because the officine's region follows from its city.
  *
  * @property int $id
  * @property string $name

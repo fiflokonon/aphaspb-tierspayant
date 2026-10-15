@@ -6,7 +6,6 @@ use App\Actions\Pharmacies\CreatePharmacy;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Onboarding\SavePharmacyProfileRequest;
 use App\Models\City;
-use App\Models\Pharmacy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -31,31 +30,28 @@ class PharmacyProfileController extends Controller
 
         return Inertia::render('onboarding/Profile', [
             'pharmacy' => $user->currentPharmacy?->only(['name', 'city', 'whatsapp_phone']),
-            'cities' => $this->citySuggestions(),
+            'cities' => $this->cityChoices(),
         ]);
     }
 
     /**
-     * The communes offered under the city field.
+     * The communes the city field offers, each with its pharmaceutical region.
      *
-     * The seeded communes plus whatever officines already registered: a
-     * locality outside the list, or a spelling the association has settled on,
-     * has to keep being suggested rather than vanish the day reference data
-     * arrives. The field itself stays free text — the list proposes.
+     * The list is closed: the region follows from the city, so a locality
+     * outside the reference data would leave the officine in no region. The
+     * region travels with each commune so the form can show it the moment a
+     * city is picked, without a round trip.
      *
-     * @return list<string>
+     * @return list<array{name: string, region: string|null}>
      */
-    protected function citySuggestions(): array
+    protected function cityChoices(): array
     {
-        $suggestions = array_unique([
-            ...City::names(),
-            ...Pharmacy::filterableCities(),
-        ]);
-
-        // sort() reindexes, so what comes back is already a list.
-        sort($suggestions, SORT_NATURAL | SORT_FLAG_CASE);
-
-        return $suggestions;
+        return array_values(City::query()
+            ->with('region:id,name')
+            ->orderBy('name')
+            ->get(['id', 'name', 'region_id'])
+            ->map(fn (City $city) => ['name' => $city->name, 'region' => $city->region?->name])
+            ->all());
     }
 
     public function store(SavePharmacyProfileRequest $request, CreatePharmacy $createPharmacy): RedirectResponse

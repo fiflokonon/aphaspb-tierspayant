@@ -31,24 +31,24 @@ test('the onboarding offers the seeded communes', function () {
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('cities', 77)
-            ->where('cities.0', 'Abomey')
+            ->where('cities.0', ['name' => 'Abomey', 'region' => null])
             ->etc(),
         );
 });
 
-test('a locality an officine already uses is still offered when it is not a commune', function () {
+test('a locality typed by an earlier officine is no longer offered', function () {
     Http::fake();
     $this->seed(CitySeeder::class);
 
-    // A hamlet, or a spelling the association settled on. Reference data
-    // arriving must not make it disappear from under the field.
+    // The list is closed since the regions arrived: a spelling outside it
+    // would leave the new officine in no region.
     Pharmacy::factory()->create(['city' => 'Ouassa-Péhunco']);
 
     $this->actingAs(User::factory()->notOnboarded()->create())
         ->get(route('onboarding.profile'))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('cities', 78)
+            ->has('cities', 77)
             ->etc(),
         );
 });

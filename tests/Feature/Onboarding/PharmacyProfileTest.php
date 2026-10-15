@@ -1,11 +1,21 @@
 <?php
 
 use App\Enums\PharmacyRole;
+use App\Models\City;
 use App\Models\Insurer;
+use App\Models\Region;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
-beforeEach(fn () => useJoomlaTestKeys());
+beforeEach(function () {
+    useJoomlaTestKeys();
+
+    // The city is picked from the reference list, so the communes the tests
+    // post have to exist.
+    foreach (['Cotonou', 'Parakou', 'Bohicon'] as $name) {
+        City::factory()->create(['name' => $name]);
+    }
+});
 
 test('a user arriving from Joomla has no pharmacy yet', function () {
     expect(User::factory()->notOnboarded()->create()->currentPharmacy)->toBeNull();
@@ -72,6 +82,36 @@ test('an ONPB licence posted anyway is ignored', function () {
         ->assertRedirect(route('onboarding.insurers'));
 
     expect($user->fresh()->currentPharmacy->getAttributes())->not->toHaveKey('onpb_license');
+});
+
+test('a city outside the reference list is refused', function () {
+    $user = User::factory()->notOnboarded()->create();
+
+    $this->actingAs($user)
+        ->post(route('onboarding.profile.store'), [
+            'name' => 'Pharmacie du Hameau',
+            'city' => 'Ouassa-Péhunco',
+            'whatsapp_phone' => '0197000000',
+        ])
+        ->assertSessionHasErrors(['city' => 'Choisissez une ville de la liste.']);
+
+    expect($user->fresh()->currentPharmacy)->toBeNull();
+});
+
+test('each offered city carries its region, so the form can show it', function () {
+    $south = Region::factory()->create(['name' => 'Sud']);
+    City::query()->where('name', 'Cotonou')->update(['region_id' => $south->id]);
+
+    $this->actingAs(User::factory()->notOnboarded()->create())
+        ->get(route('onboarding.profile'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('cities', [
+                ['name' => 'Bohicon', 'region' => null],
+                ['name' => 'Cotonou', 'region' => 'Sud'],
+                ['name' => 'Parakou', 'region' => null],
+            ])
+            ->etc(),
+        );
 });
 
 test('the name, the city and the WhatsApp number are all required', function () {
