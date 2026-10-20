@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Pharmacy;
 
 use App\Actions\Declarations\RecordDeclarationRevision;
+use App\Actions\Declarations\RecordNilDeclarations;
 use App\Actions\Declarations\RecordPaymentInstalments;
 use App\Actions\Declarations\SettlePenalty;
 use App\Data\Period;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Pharmacy\SaveDeclarationRequest;
 use App\Models\Declaration;
 use App\Models\DeclarationRevision;
+use App\Models\NilDeclaration;
 use App\Models\Pharmacy;
 use App\Services\Declarations\DeclarationCalendar;
 use App\Services\Declarations\MonthlyDeclarationRun;
@@ -48,6 +50,7 @@ class DeclarationController extends Controller
         if ($insurer === null) {
             return Inertia::render('pharmacy/DeclareDone', [
                 'declared' => $run->declaredCount(),
+                'withoutInvoice' => $run->nilCount(),
                 'period' => $this->periodPayload($period),
                 'periods' => $this->selectablePeriods($pharmacy),
                 'dashboardUrl' => route('dashboard', ['current_pharmacy' => $pharmacy->slug]),
@@ -57,6 +60,7 @@ class DeclarationController extends Controller
         // L'assureur porte la clause de pénalité : celui du tour, attaché sans
         // requête. Les versements, déjà chargés par le tour, en donnent le calcul.
         $declaration = $run->declarationFor($insurer)?->setRelation('insurer', $insurer);
+        $nilDeclaration = $run->nilDeclarationFor($insurer);
 
         return Inertia::render('pharmacy/Declare', [
             'insurer' => [
@@ -65,6 +69,9 @@ class DeclarationController extends Controller
                 'standardDelayDays' => $insurer->standard_delay_days,
             ],
             'progress' => $run->progressFor($insurer),
+            // Les autres assureurs encore sans réponse ce mois : la case
+            // « aucune facture non plus pour eux » n'apparaît que s'il y en a.
+            'remainingAfter' => $run->unansweredCount() - ($run->isAnswered($insurer) ? 0 : 1),
             'period' => $this->periodPayload($period),
             'periods' => $this->selectablePeriods($pharmacy),
             // The two date fields are bounded by the same span the request
@@ -72,6 +79,13 @@ class DeclarationController extends Controller
             'dateBounds' => [
                 'earliest' => sprintf('%04d-%02d-01', $period->year, $period->month),
                 'latest' => now()->toDateString(),
+            ],
+            // « Pas de facture ce mois » déjà répondu pour cet assureur : le
+            // formulaire reste ouvert, une vraie facture saisie le remplace.
+            'nilDeclaration' => $nilDeclaration === null ? null : [
+                'recordedAt' => $nilDeclaration->created_at?->toIso8601String(),
+                'authorName' => $nilDeclaration->author_name,
+                'destroyUrl' => route('pharmacy.nil-declarations.destroy', $nilDeclaration),
             ],
             'declaration' => $declaration === null ? null : [
                 'amount_invoiced' => $declaration->amount_invoiced,
@@ -127,8 +141,35 @@ class DeclarationController extends Controller
         RecordPaymentInstalments $recordInstalments,
         RecordDeclarationRevision $recordRevision,
         SettlePenalty $settle,
+        RecordNilDeclarations $recordNil,
     ): RedirectResponse {
         $pharmacy = $request->user()->currentPharmacy;
+        $year = $request->integer('period_year');
+        $month = $request->integer('period_month');
+
+        // Un montant facturé à zéro, c'est « pas de facture ce mois » : la
+        // réponse est enregistrée sans chiffre, rien n'entre dans les
+        // agrégats. Voir SaveDeclarationRequest::isNilDeclaration().
+        if ($request->isNilDeclaration()) {
+            $recordNil->handle($pharmacy, $year, $month, $request->user(), $request->integer('insurer_id'));
+            $remaining = $this->recordRemainingWithoutInvoice($request, $recordNil);
+
+            Inertia::flash('toast', [
+                'type' => 'success',
+                'message' => sprintf(
+                    '%s : pas de facture pour %s%s.',
+                    MonthLabel::short($month, $year),
+                    $pharmacy->insurers()->whereKey($request->integer('insurer_id'))->value('name'),
+                    match (true) {
+                        $remaining === 1 => ' ni pour 1 autre assureur',
+                        $remaining > 1 => " ni pour {$remaining} autres assureurs",
+                        default => '',
+                    },
+                ),
+            ]);
+
+            return $this->backToRound($year, $month);
+        }
 
         $choice = $request->penaltyChoice();
 
@@ -174,6 +215,15 @@ class DeclarationController extends Controller
                 ],
             );
 
+            // Une facture saisie contredit un « pas de facture » du même mois :
+            // c'est la facture qui fait foi.
+            NilDeclaration::query()
+                ->where('pharmacy_id', $pharmacy->id)
+                ->where('insurer_id', $declaration->insurer_id)
+                ->where('period_year', $declaration->period_year)
+                ->where('period_month', $declaration->period_month)
+                ->delete();
+
             // Written after the declaration, and only then: the delay of each
             // transfer is counted from the deposit date this save has settled.
             $reopened = $recordInstalments->handle($declaration, $request->instalments());
@@ -216,14 +266,46 @@ class DeclarationController extends Controller
             $recordRevision->handle($saved, $request->user());
         });
 
+        $this->recordRemainingWithoutInvoice($request, $recordNil);
+
         if ($notice !== null) {
             Inertia::flash('toast', $notice);
         }
 
-        // Carry the period only when catching up on a past month: without it
-        // each save would bounce back to the current month.
-        $year = $request->integer('period_year');
-        $month = $request->integer('period_month');
+        return $this->backToRound($year, $month);
+    }
+
+    /**
+     * « Aucune facture non plus pour les assureurs restants » : la case du
+     * formulaire, appliquée après l'enregistrement de l'assureur en cours, qui
+     * n'est donc jamais compté parmi les restants.
+     */
+    protected function recordRemainingWithoutInvoice(SaveDeclarationRequest $request, RecordNilDeclarations $recordNil): int
+    {
+        if (! $request->boolean('remaining_without_invoice')) {
+            return 0;
+        }
+
+        $run = new MonthlyDeclarationRun(
+            $request->user()->currentPharmacy,
+            new Period($request->integer('period_year'), $request->integer('period_month')),
+        );
+
+        $remaining = $run->unansweredCount();
+
+        if ($remaining > 0) {
+            $recordNil->handle($request->user()->currentPharmacy, $request->integer('period_year'), $request->integer('period_month'), $request->user());
+        }
+
+        return $remaining;
+    }
+
+    /**
+     * Carry the period only when catching up on a past month: without it each
+     * save would bounce back to the current month.
+     */
+    protected function backToRound(int $year, int $month): RedirectResponse
+    {
         $isCurrentMonth = $year === now()->year && $month === now()->month;
 
         return to_route('pharmacy.declare', $isCurrentMonth ? [] : [
@@ -253,7 +335,7 @@ class DeclarationController extends Controller
      *
      * Reaching a missed month used to mean typing the query string by hand.
      *
-     * @return list<array{year: int, month: int, label: string, isComplete: bool, isCurrent: bool, url: string}>
+     * @return list<array{year: int, month: int, label: string, isComplete: bool, isCurrent: bool, remaining: int, url: string}>
      */
     protected function selectablePeriods(Pharmacy $pharmacy): array
     {

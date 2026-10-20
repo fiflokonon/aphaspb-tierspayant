@@ -15,3 +15,6 @@ Raison technique de la garder : `delay_days` naît de la paire de dates, et tous
 Côté écran, `pharmacy/Declare` passe `required` au `DateField` de `paid_on` — le champ n'est affiché que si un montant a été reçu, soit exactement le cas où le serveur l'exige. Le dépôt de facture, lui, ne s'appuie encore que sur la validation serveur.
 
 Verrouillé par `tests/Feature/Pharmacy/DeclarationTest.php`, contrôle négatif vérifié.
+
+## Montant facturé à 0 = « pas de facture », sauf mois déjà déclaré
+Depuis le 15/10/2026, `isNilDeclaration()` (montant 0, aucun versement, statut non rejeté, aucune déclaration existante pour ce mois) détourne l'envoi vers `RecordNilDeclarations` : aucune ligne `declarations` à 0, et la date de dépôt n'est pas exigée (`requiredIf`). Un mois déjà déclaré passé à 0 est refusé : basculer supprimerait la déclaration et son historique de révisions. La case `remaining_without_invoice` (jamais cochée par défaut, pour qu'un oubli reste visible chez l'administrateur) marque ensuite les assureurs restants du mois. Attention : `AmountField` poste toujours « 0 » quand le champ est vide, donc un formulaire envoyé sans saisie devient un « pas de facture ». Le bouton affiche alors « Enregistrer : pas de facture ».

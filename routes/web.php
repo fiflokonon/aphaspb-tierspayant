@@ -25,6 +25,7 @@ use App\Http\Controllers\Pharmacies\PharmacyInvitationController;
 use App\Http\Controllers\Pharmacy\DeclarationController;
 use App\Http\Controllers\Pharmacy\DeclarationHistoryController;
 use App\Http\Controllers\Pharmacy\InsurerRelationshipController;
+use App\Http\Controllers\Pharmacy\NilDeclarationController;
 use App\Http\Controllers\Pharmacy\PaymentJourneyController;
 use App\Http\Controllers\Pharmacy\PenaltySettlementController;
 use App\Http\Controllers\Pharmacy\PharmacyExportController;
@@ -85,6 +86,8 @@ Route::middleware(['auth', 'can:declare-payments', 'onboarded'])
     ->group(function () {
         Route::get('declare', [DeclarationController::class, 'show'])->name('declare');
         Route::post('declare', [DeclarationController::class, 'store'])->name('declare.store');
+        Route::post('nil-declarations', [NilDeclarationController::class, 'store'])->name('nil-declarations.store');
+        Route::delete('nil-declarations/{nilDeclaration}', [NilDeclarationController::class, 'destroy'])->name('nil-declarations.destroy');
         Route::get('history', DeclarationHistoryController::class)->name('history');
         Route::get('insurers', [MyInsurersController::class, 'edit'])->name('insurers');
         Route::patch('insurers', [MyInsurersController::class, 'update'])->name('insurers.update');

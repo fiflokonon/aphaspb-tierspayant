@@ -5,6 +5,7 @@ namespace App\Services\Declarations;
 use App\Data\Period;
 use App\Models\Declaration;
 use App\Models\Insurer;
+use App\Models\NilDeclaration;
 use App\Models\Pharmacy;
 use Illuminate\Support\Collection;
 
@@ -23,6 +24,9 @@ class MonthlyDeclarationRun
     /** @var Collection<int, Declaration> */
     protected Collection $declarations;
 
+    /** @var Collection<int, NilDeclaration> */
+    protected Collection $nilDeclarations;
+
     public function __construct(
         protected Pharmacy $pharmacy,
         protected Period $period,
@@ -39,16 +43,41 @@ class MonthlyDeclarationRun
             ->with(['payments', 'revisions'])
             ->get()
             ->keyBy('insurer_id');
+
+        $this->nilDeclarations = $pharmacy->nilDeclarations()
+            ->where('period_year', $period->year)
+            ->where('period_month', $period->month)
+            ->get()
+            ->keyBy('insurer_id');
     }
 
     /**
-     * The first ticked insurer with nothing recorded for the period.
+     * The first ticked insurer with nothing recorded for the period — neither
+     * a declaration nor a « pas de facture ».
      */
     public function nextInsurer(): ?Insurer
     {
         return $this->insurers->first(
-            fn (Insurer $insurer) => ! $this->declarations->has($insurer->id),
+            fn (Insurer $insurer) => ! $this->isAnswered($insurer),
         );
+    }
+
+    /**
+     * Whether the insurer has its answer this month: a declaration or a
+     * « pas de facture ».
+     */
+    public function isAnswered(Insurer $insurer): bool
+    {
+        return $this->declarations->has($insurer->id)
+            || $this->nilDeclarations->has($insurer->id);
+    }
+
+    /**
+     * How many ticked insurers still have no answer this month.
+     */
+    public function unansweredCount(): int
+    {
+        return $this->insurers->reject(fn (Insurer $insurer) => $this->isAnswered($insurer))->count();
     }
 
     public function isComplete(): bool
@@ -66,9 +95,24 @@ class MonthlyDeclarationRun
         return $this->declarations->get($insurer->id);
     }
 
+    public function nilDeclarationFor(Insurer $insurer): ?NilDeclaration
+    {
+        return $this->nilDeclarations->get($insurer->id);
+    }
+
     public function declaredCount(): int
     {
         return $this->declarations->count();
+    }
+
+    /**
+     * How many ticked insurers were reported as having no invoice this month.
+     */
+    public function nilCount(): int
+    {
+        return $this->insurers->filter(
+            fn (Insurer $insurer) => $this->nilDeclarations->has($insurer->id),
+        )->count();
     }
 
     public function total(): int

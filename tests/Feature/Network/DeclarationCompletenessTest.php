@@ -5,6 +5,7 @@ use App\Enums\CompletenessState;
 use App\Enums\DeclarationStatus;
 use App\Models\Declaration;
 use App\Models\Insurer;
+use App\Models\NilDeclaration;
 use App\Models\Pharmacy;
 use App\Services\Network\DeclarationCompleteness;
 use Carbon\CarbonImmutable;
@@ -107,4 +108,19 @@ test('the query count stays flat however many officines there are', function () 
     $this->completeness->forMonth(new Period(2026, 8));
 
     expect(count(DB::getQueryLog()))->toBe($withOne)->and($withOne)->toBe(2);
+});
+
+test('an insurer reported without invoice completes the month like a declaration', function () {
+    [$first, $second] = $this->insurers;
+    $pharmacy = trackedPharmacy('Sans facture NSIA');
+    declareAugust($pharmacy, $first);
+    NilDeclaration::factory()->create([
+        'pharmacy_id' => $pharmacy->id,
+        'insurer_id' => $second->id,
+        'period_year' => 2026,
+        'period_month' => 8,
+    ]);
+
+    expect(statesFor($this->completeness->forMonth(new Period(2026, 8))))
+        ->toBe(['Sans facture NSIA' => CompletenessState::Complete]);
 });

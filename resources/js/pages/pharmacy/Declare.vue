@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
 
-import { Form, Head, Link, setLayoutProps } from '@inertiajs/vue3';
+import { Form, Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import NilDeclarationController from '@/actions/App/Http/Controllers/Pharmacy/NilDeclarationController';
 import AmountField from '@/components/aphaspb/AmountField.vue';
 import DateField from '@/components/aphaspb/DateField.vue';
 import DerivedStatusNotice from '@/components/aphaspb/DerivedStatusNotice.vue';
@@ -61,9 +62,15 @@ type Declaration = {
 const props = defineProps<{
     insurer: { id: number; name: string; standardDelayDays: number };
     progress: { current: number; total: number };
+    remainingAfter: number;
     period: { year: number; month: number; label: string };
     periods: SelectablePeriod[];
     dateBounds: { earliest: string; latest: string };
+    nilDeclaration: {
+        recordedAt: string | null;
+        authorName: string;
+        destroyUrl: string;
+    } | null;
     declaration: Declaration | null;
 }>();
 
@@ -207,6 +214,24 @@ const beyondStandardDelay = computed(
 
 const isLast = computed(() => props.progress.current >= props.progress.total);
 
+/**
+ * Un montant facturé à zéro sur un mois encore vierge part comme « pas de
+ * facture » : le serveur fait la même lecture
+ * (SaveDeclarationRequest::isNilDeclaration()). Ni dépôt ni versement n'ont
+ * alors de sens, et le bouton dit ce qui va être enregistré.
+ */
+const declaresNil = computed(
+    () => invoiced.value === 0 && !props.declaration && !rejected.value,
+);
+
+const submitLabel = computed(() => {
+    if (declaresNil.value) {
+        return 'Enregistrer : pas de facture';
+    }
+
+    return isLast.value ? 'Terminer le mois' : 'Assureur suivant';
+});
+
 const revisions = computed(() => props.declaration?.revisions ?? []);
 
 /**
@@ -228,6 +253,38 @@ function penaltyLine(index: number): string | null {
 }
 
 const historyOpen = ref(false);
+
+const nilProcessing = ref(false);
+
+/**
+ * « Pas de facture ce mois » : l'assureur est répondu sans montant, et le tour
+ * passe au suivant. Hors du <Form> principal, qui porte les montants.
+ */
+function declareNil(): void {
+    router.post(
+        NilDeclarationController.store.url(),
+        {
+            insurer_id: props.insurer.id,
+            period_year: props.period.year,
+            period_month: props.period.month,
+        },
+        {
+            onStart: () => (nilProcessing.value = true),
+            onFinish: () => (nilProcessing.value = false),
+        },
+    );
+}
+
+function withdrawNil(): void {
+    if (props.nilDeclaration === null) {
+        return;
+    }
+
+    router.delete(props.nilDeclaration.destroyUrl, {
+        onStart: () => (nilProcessing.value = true),
+        onFinish: () => (nilProcessing.value = false),
+    });
+}
 
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
     day: '2-digit',
@@ -268,10 +325,9 @@ const officine = computed(() => {
         v-if="pendingInvitations && pendingInvitations.length > 0"
         :invitations="pendingInvitations"
     /> -->
-    
 
     <div class="declare-page">
-        <br>
+        <br />
         <div class="declare-header">
             <Link
                 href="/pharmacy/history"
@@ -375,6 +431,30 @@ const officine = computed(() => {
                             :current="period"
                             class="mt-4"
                         />
+
+                        <div v-if="nilDeclaration" class="nil-notice">
+                            <p>
+                                <strong>Aucune facture ce mois</strong> pour
+                                {{ insurer.name }}, indiqué par
+                                {{ nilDeclaration.authorName }}
+                                <template v-if="nilDeclaration.recordedAt">
+                                    le
+                                    {{
+                                        formatMoment(nilDeclaration.recordedAt)
+                                    }}</template
+                                >. Saisir une facture ci-dessous remplacera
+                                cette mention.
+                            </p>
+
+                            <button
+                                type="button"
+                                class="nil-link"
+                                :disabled="nilProcessing"
+                                @click="withdrawNil"
+                            >
+                                Retirer la mention
+                            </button>
+                        </div>
                     </div>
 
                     <div class="amounts">
@@ -398,7 +478,13 @@ const officine = computed(() => {
                         déduit des deux - le délai - s'affiche à droite, près
                         du statut auquel il appartient.
                     -->
-                    <div class="dates">
+                    <p v-if="declaresNil" class="nil-hint">
+                        Montant à 0 : ce mois sera enregistré comme
+                        <strong>sans facture</strong> pour {{ insurer.name }}.
+                        Aucune date de dépôt n'est demandée.
+                    </p>
+
+                    <div v-if="!declaresNil" class="dates">
                         <DateField
                             v-model="depositedOn"
                             class="date-field"
@@ -418,6 +504,7 @@ const officine = computed(() => {
                         lieu d'un aller-retour serveur.
                     -->
                     <PaymentInstalments
+                        v-if="!declaresNil"
                         v-model="instalments"
                         :invoiced="invoiced"
                         :min-date="depositedOn ?? dateBounds.earliest"
@@ -482,7 +569,7 @@ const officine = computed(() => {
                         <span class="secondary-arrow"> → </span>
                     </button>
 
-                    <div class="private-note">
+                    <div v-if="!declaresNil" class="private-note">
                         <button
                             type="button"
                             class="note-toggle"
@@ -677,7 +764,10 @@ const officine = computed(() => {
                         </div>
                     </Transition>
 
-                    <div v-if="!exceedsInvoiced" class="status-card">
+                    <div
+                        v-if="!exceedsInvoiced && !declaresNil"
+                        class="status-card"
+                    >
                         <div class="status-card-glow"></div>
 
                         <DerivedStatusNotice
@@ -690,7 +780,7 @@ const officine = computed(() => {
                     </div>
 
                     <div
-                        v-if="carriesDelay && !exceedsInvoiced"
+                        v-if="carriesDelay && !exceedsInvoiced && !declaresNil"
                         class="delay-card"
                     >
                         <div class="delay-card-header">
@@ -747,18 +837,34 @@ const officine = computed(() => {
                     </p>
 
                     <div class="submit-area">
+                        <!--
+                            Geste explicite, jamais coché par défaut : un
+                            assureur oublié doit rester visible comme tel chez
+                            l'administrateur.
+                        -->
+                        <label v-if="remainingAfter > 0" class="remaining-nil">
+                            <input
+                                type="checkbox"
+                                name="remaining_without_invoice"
+                                value="1"
+                            />
+                            <span>
+                                Aucune facture non plus pour
+                                {{
+                                    remainingAfter > 1
+                                        ? `les ${remainingAfter} autres assureurs`
+                                        : `l'autre assureur`
+                                }}
+                                de ce mois
+                            </span>
+                        </label>
+
                         <button
                             type="submit"
                             :disabled="processing || exceedsInvoiced"
                             class="submit-button"
                         >
-                            <span class="submit-label">
-                                {{
-                                    isLast
-                                        ? 'Terminer le mois'
-                                        : 'Assureur suivant'
-                                }}
-                            </span>
+                            <span class="submit-label">{{ submitLabel }}</span>
 
                             <span class="submit-arrow"> → </span>
 
@@ -766,6 +872,16 @@ const officine = computed(() => {
                                 v-if="processing"
                                 class="submit-loader"
                             ></span>
+                        </button>
+
+                        <button
+                            v-if="!declaration && !nilDeclaration"
+                            type="button"
+                            class="nil-button"
+                            :disabled="processing || nilProcessing"
+                            @click="declareNil"
+                        >
+                            Pas de facture ce mois pour {{ insurer.name }}
                         </button>
 
                         <div class="security-note">
@@ -1488,6 +1604,101 @@ const officine = computed(() => {
 }
 
 .field-error,
+.nil-notice {
+    margin-top: 16px;
+    padding: 12px 14px;
+
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--officine) 8%, transparent);
+
+    color: var(--ink);
+
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.nil-link {
+    margin-top: 6px;
+    padding: 0;
+
+    border: 0;
+    background: transparent;
+
+    color: var(--ink);
+
+    font-size: 12.5px;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    cursor: pointer;
+}
+
+.nil-hint {
+    margin-top: 14px;
+    padding: 12px 14px;
+
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--officine) 8%, transparent);
+
+    color: var(--ink);
+
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.remaining-nil {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+
+    margin-bottom: 12px;
+
+    color: var(--ink);
+
+    font-size: 12.5px;
+    line-height: 1.45;
+
+    cursor: pointer;
+}
+
+.remaining-nil input {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+
+    accent-color: var(--officine);
+}
+
+.nil-button {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 10px;
+    padding: 0 14px;
+
+    border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+    border-radius: 13px;
+
+    background: transparent;
+    color: var(--ink);
+
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.nil-button:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--ink) 32%, transparent);
+}
+
+.nil-link:disabled,
+.nil-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
 .general-error {
     margin-top: 6px;
 

@@ -10,13 +10,20 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rules\RequiredIf;
 
 class SaveDeclarationRequest extends FormRequest
 {
     /**
+     * Memoized: read by a rule closure, by the after() hook and by the
+     * controller, for one query.
+     */
+    protected ?bool $hasExistingDeclaration = null;
+
+    /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, array<int, ValidationRule|Enum|string>>
+     * @return array<string, array<int, ValidationRule|Enum|RequiredIf|string>>
      */
     public function rules(): array
     {
@@ -40,8 +47,11 @@ class SaveDeclarationRequest extends FormRequest
             'status' => ['nullable', new Enum(DeclarationStatus::class)],
             // A monthly invoice cannot be filed before the month it covers, and
             // it cannot be dated in the future.
+            // Sans objet sur un montant à zéro : il n'y a pas eu de facture,
+            // donc pas de dépôt (voir isNilDeclaration()).
             'invoice_deposited_on' => [
-                'required',
+                Rule::requiredIf(fn (): bool => ! $this->isNilDeclaration()),
+                'nullable',
                 'date',
                 'before_or_equal:today',
                 ...($this->declaredMonthStart() === null
@@ -71,6 +81,9 @@ class SaveDeclarationRequest extends FormRequest
             // L'état que le formulaire a affiché. Absent (onglet ancien, API) :
             // store() se replie sur l'état enregistré.
             'penalty_settlement_shown' => ['nullable', Rule::in(['due', 'paid', 'waived'])],
+            // Case du formulaire : les assureurs encore sans réponse ce mois
+            // n'ont pas de facture non plus. Jamais cochée par défaut.
+            'remaining_without_invoice' => ['boolean'],
         ];
     }
 
@@ -116,6 +129,18 @@ class SaveDeclarationRequest extends FormRequest
     {
         $validator->after(function (Validator $validator) {
             if ($validator->errors()->hasAny(['amount_invoiced', 'payments'])) {
+                return;
+            }
+
+            // Un mois déjà déclaré ne bascule pas en « pas de facture » par un
+            // zéro : la déclaration et son historique de corrections seraient
+            // perdus. On corrige le montant, ou on rejette la facture.
+            if ($this->isZeroAmount() && $this->existingDeclaration()) {
+                $validator->errors()->add(
+                    'amount_invoiced',
+                    'Une facture est déjà enregistrée pour ce mois : corrigez son montant plutôt que de le passer à 0.',
+                );
+
                 return;
             }
 
@@ -230,6 +255,39 @@ class SaveDeclarationRequest extends FormRequest
     public function amountReceived(): int
     {
         return array_sum(array_column($this->instalments(), 'amount'));
+    }
+
+    /**
+     * Whether this submission is « pas de facture ce mois » rather than a
+     * declaration: nothing invoiced, nothing received, not a rejected invoice,
+     * and no declaration of this month to overwrite.
+     *
+     * A zero-amount declaration would need a deposit date it does not have,
+     * and would weigh in every network aggregate; NilDeclaration carries the
+     * answer without a figure.
+     */
+    public function isNilDeclaration(): bool
+    {
+        return $this->isZeroAmount()
+            && $this->instalments() === []
+            && ! $this->existingDeclaration();
+    }
+
+    protected function isZeroAmount(): bool
+    {
+        return $this->filled('amount_invoiced')
+            && $this->integer('amount_invoiced') === 0
+            && $this->input('status') !== DeclarationStatus::Rejected->value;
+    }
+
+    protected function existingDeclaration(): bool
+    {
+        return $this->hasExistingDeclaration ??= Declaration::query()
+            ->where('pharmacy_id', $this->user()->current_pharmacy_id)
+            ->where('insurer_id', $this->integer('insurer_id'))
+            ->where('period_year', $this->integer('period_year'))
+            ->where('period_month', $this->integer('period_month'))
+            ->exists();
     }
 
     /**

@@ -38,6 +38,8 @@ export type SelectablePeriod = {
     label: string;
     isComplete: boolean;
     isCurrent: boolean;
+    /** Ticked insurers still without a declaration or a « pas de facture ». */
+    remaining: number;
     url: string;
 };
 

@@ -6,6 +6,7 @@ use App\Data\Period;
 use App\Data\PharmacyCompleteness;
 use App\Data\RegionScope;
 use App\Enums\CompletenessState;
+use App\Models\NilDeclaration;
 use App\Models\Pharmacy;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -50,15 +51,20 @@ class DeclarationCompleteness
         // `decl_pharmacy_insurer_period_unique` interdit déjà deux lignes pour
         // un même assureur et un même mois, et aucun test ne peut l'en
         // distinguer — ne pas en écrire un qui prétendrait le faire.
-        $declared = DB::table('declarations')
+        //
+        // Un « pas de facture » répond au mois comme une déclaration
+        // (NilDeclaration::answeredMonths()) : sans lui, une officine sans
+        // facture pour un assureur restait « partielle » à jamais.
+        $declared = DB::query()
+            ->fromSub(NilDeclaration::answeredMonths(fn ($query) => $query
+                ->where('period_year', $month->year)
+                ->where('period_month', $month->month)), 'answered')
             ->join('insurer_pharmacy', function ($join) {
-                $join->on('insurer_pharmacy.pharmacy_id', '=', 'declarations.pharmacy_id')
-                    ->on('insurer_pharmacy.insurer_id', '=', 'declarations.insurer_id');
+                $join->on('insurer_pharmacy.pharmacy_id', '=', 'answered.pharmacy_id')
+                    ->on('insurer_pharmacy.insurer_id', '=', 'answered.insurer_id');
             })
-            ->where('declarations.period_year', $month->year)
-            ->where('declarations.period_month', $month->month)
-            ->groupBy('declarations.pharmacy_id')
-            ->selectRaw('declarations.pharmacy_id, COUNT(DISTINCT declarations.insurer_id) as declared')
+            ->groupBy('answered.pharmacy_id')
+            ->selectRaw('answered.pharmacy_id, COUNT(DISTINCT answered.insurer_id) as declared')
             ->pluck('declared', 'pharmacy_id');
 
         return array_values($pharmacies->map(function (Pharmacy $pharmacy) use ($declared): PharmacyCompleteness {

@@ -5,6 +5,7 @@ import type { SelectablePeriod } from '@/types/aphaspb';
 
 const props = defineProps<{
     declared: number;
+    withoutInvoice: number;
     period: { year: number; month: number; label: string };
     periods: SelectablePeriod[];
     dashboardUrl: string;
@@ -30,8 +31,13 @@ const props = defineProps<{
                 {{ props.declared }} déclaration{{
                     props.declared > 1 ? 's' : ''
                 }}
-                enregistrée{{ props.declared > 1 ? 's' : '' }}. Vous pouvez
-                revenir les corriger à tout moment.
+                enregistrée{{ props.declared > 1 ? 's' : ''
+                }}<template v-if="props.withoutInvoice > 0"
+                    >, {{ props.withoutInvoice }} assureur{{
+                        props.withoutInvoice > 1 ? 's' : ''
+                    }}
+                    sans facture</template
+                >. Vous pouvez revenir les corriger à tout moment.
             </p>
         </div>
 

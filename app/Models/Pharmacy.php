@@ -135,6 +135,16 @@ class Pharmacy extends Model
     }
 
     /**
+     * Get the months this pharmacy reported as having no invoice, per insurer.
+     *
+     * @return HasMany<NilDeclaration, $this>
+     */
+    public function nilDeclarations(): HasMany
+    {
+        return $this->hasMany(NilDeclaration::class);
+    }
+
+    /**
      * Get the insurers this pharmacy works with.
      *
      * @return BelongsToMany<Insurer, $this>

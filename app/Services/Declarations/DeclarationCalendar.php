@@ -3,8 +3,10 @@
 namespace App\Services\Declarations;
 
 use App\Models\Declaration;
+use App\Models\NilDeclaration;
 use App\Models\Pharmacy;
 use App\Support\MonthLabel;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Which months an officine may still declare, and which ones it owes.
@@ -15,17 +17,18 @@ use App\Support\MonthLabel;
  * was unreachable and the date fields of the current month refused anything
  * older. This is the list both ways in are drawn from.
  *
- * A month counts as owed when fewer insurers are declared than the officine
- * has ticked. That answer is read for thirteen months at once, in one grouped
- * query rather than thirteen MonthlyDeclarationRun instances: the dashboard
- * asks for it on every load.
+ * A month counts as owed when fewer insurers are answered — declared, or
+ * reported as having no invoice — than the officine has ticked. That answer
+ * is read for thirteen months at once, in one grouped query rather than
+ * thirteen MonthlyDeclarationRun instances: the dashboard asks for it on
+ * every load.
  */
 class DeclarationCalendar
 {
     /**
      * The current month and the twelve before it, newest first.
      *
-     * @return list<array{year: int, month: int, label: string, isComplete: bool, isCurrent: bool}>
+     * @return list<array{year: int, month: int, label: string, isComplete: bool, isCurrent: bool, remaining: int}>
      */
     public function months(Pharmacy $pharmacy): array
     {
@@ -46,6 +49,9 @@ class DeclarationCalendar
                 'label' => MonthLabel::long($month, $year),
                 'isComplete' => $expected > 0 && ($declared[$ordinal] ?? 0) >= $expected,
                 'isCurrent' => $ordinal === $current,
+                // Insurers still without an answer: the dashboard offers to
+                // report them all as having no invoice in one gesture.
+                'remaining' => max(0, $expected - ($declared[$ordinal] ?? 0)),
             ];
         }
 
@@ -58,7 +64,7 @@ class DeclarationCalendar
      * The month in progress is not late; it is what the dashboard's own
      * declare button is for, and listing it here would read as a reproach.
      *
-     * @return list<array{year: int, month: int, label: string, isComplete: bool, isCurrent: bool}>
+     * @return list<array{year: int, month: int, label: string, isComplete: bool, isCurrent: bool, remaining: int}>
      */
     public function outstanding(Pharmacy $pharmacy): array
     {
@@ -86,24 +92,26 @@ class DeclarationCalendar
         $earliest = ($now->year * 12 + $now->month) - Declaration::EARLIEST_MONTHS_BACK;
 
         // Counted on the query builder rather than through Eloquent: these
-        // rows are an aggregate projection, not declarations. The model
-        // carries no global scope, so nothing is lost by stepping past it.
+        // rows are an aggregate projection, not declarations.
         //
         // Joined to the insurers still ticked: a declaration for an insurer
         // the officine has since dropped does not complete a month. The
         // network's follow-up (DeclarationCompleteness) counts the same way,
         // so the officine is never chased for a month its own dashboard
         // calls done — or the other way round.
-        return Declaration::query()
-            ->toBase()
+        //
+        // A « pas de facture » answers a month exactly as a declaration does
+        // (NilDeclaration::answeredMonths()).
+        return DB::query()
+            ->fromSub(NilDeclaration::answeredMonths(fn ($query) => $query
+                ->where('pharmacy_id', $pharmacy->id)
+                ->whereRaw('(period_year * 12 + period_month) >= ?', [$earliest])), 'answered')
             ->join('insurer_pharmacy', function ($join) {
-                $join->on('insurer_pharmacy.pharmacy_id', '=', 'declarations.pharmacy_id')
-                    ->on('insurer_pharmacy.insurer_id', '=', 'declarations.insurer_id');
+                $join->on('insurer_pharmacy.pharmacy_id', '=', 'answered.pharmacy_id')
+                    ->on('insurer_pharmacy.insurer_id', '=', 'answered.insurer_id');
             })
-            ->where('declarations.pharmacy_id', $pharmacy->id)
-            ->selectRaw('declarations.period_year, declarations.period_month, COUNT(DISTINCT declarations.insurer_id) AS declared')
-            ->whereRaw('(declarations.period_year * 12 + declarations.period_month) >= ?', [$earliest])
-            ->groupBy('declarations.period_year', 'declarations.period_month')
+            ->selectRaw('answered.period_year, answered.period_month, COUNT(DISTINCT answered.insurer_id) AS declared')
+            ->groupBy('answered.period_year', 'answered.period_month')
             ->get()
             ->mapWithKeys(fn (object $row): array => [
                 ((int) $row->period_year * 12 + (int) $row->period_month) => (int) $row->declared,

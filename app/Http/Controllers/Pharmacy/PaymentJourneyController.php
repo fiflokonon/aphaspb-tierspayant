@@ -106,7 +106,7 @@ class PaymentJourneyController extends Controller
      * linked to the month in progress, so a month missed in June stayed
      * missed. Each entry carries the link that opens its round.
      *
-     * @return list<array{year: int, month: int, label: string, isComplete: bool, isCurrent: bool, url: string}>
+     * @return list<array{year: int, month: int, label: string, isComplete: bool, isCurrent: bool, remaining: int, url: string}>
      */
     protected function outstandingMonths(Pharmacy $pharmacy): array
     {

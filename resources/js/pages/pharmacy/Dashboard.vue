@@ -2,6 +2,7 @@
 import { Deferred, Head, Link, router } from '@inertiajs/vue3';
 import { CircleCheck, Clock, TriangleAlert } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import NilDeclarationController from '@/actions/App/Http/Controllers/Pharmacy/NilDeclarationController';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
 import ChartToolbar from '@/components/aphaspb/charts/ChartToolbar.vue';
 import InvoicedVsCollectedChart from '@/components/aphaspb/charts/InvoicedVsCollectedChart.vue';
@@ -22,7 +23,7 @@ import { formatAmount } from '@/lib/fcfa';
 import { formatMillions } from '@/lib/millions';
 import type { DashboardInvitation } from '@/types';
 import { isChartType } from '@/types/aphaspb';
-import type { PenaltyLedger } from '@/types/aphaspb';
+import type { PenaltyLedger, SelectablePeriod } from '@/types/aphaspb';
 
 type RecoveryRow = {
     insurerId: number;
@@ -104,7 +105,7 @@ const props = defineProps<{
     overdueSummary: OverdueSummary | null;
     insurerBands: InsurerBands;
     declareUrl: string;
-    outstandingMonths: { label: string; url: string }[];
+    outstandingMonths: SelectablePeriod[];
     filters: { insurer: number | null };
     journey?: JourneyPoint[];
     penaltyTrend?: PenaltyLedger;
@@ -113,6 +114,35 @@ const props = defineProps<{
 }>();
 
 const chartType = useQueryState('chart', 'bar', isChartType);
+
+/**
+ * Le mois dont l'officine s'apprête à dire « aucune facture » pour tous les
+ * assureurs restants. Deux temps : le geste couvre plusieurs assureurs d'un
+ * coup, il ne part pas sur un clic égaré.
+ */
+const nilMonth = ref<SelectablePeriod | null>(null);
+const nilProcessing = ref(false);
+
+function confirmNilMonth(): void {
+    const month = nilMonth.value;
+
+    if (month === null) {
+        return;
+    }
+
+    router.post(
+        NilDeclarationController.store.url(),
+        { period_year: month.year, period_month: month.month },
+        {
+            preserveScroll: true,
+            onStart: () => (nilProcessing.value = true),
+            onFinish: () => {
+                nilProcessing.value = false;
+                nilMonth.value = null;
+            },
+        },
+    );
+}
 const journeyInsurer = ref<number | null>(props.filters.insurer);
 
 const insurerOptions = computed(() => [
@@ -273,26 +303,20 @@ const RECOVERY_COLUMNS = [
 const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 </script>
 
-
 <template>
     <Head title="Tableau de bord" />
- 
+
     <PendingInvitationsModal
         v-if="pendingInvitations && pendingInvitations.length > 0"
         :invitations="pendingInvitations"
     />
 
     <div class="dashboard-page">
-        <br>
-             <div class="intro-text">
-
-                        <h1>Parcours des paiements</h1>
-
-                    </div>
-        <ConsoleHeader
-            title=""
-            class="dashboard-header"
-        >
+        <br />
+        <div class="intro-text">
+            <h1>Parcours des paiements</h1>
+        </div>
+        <ConsoleHeader title="" class="dashboard-header">
             <template #hero>
                 <DashboardKpis
                     :summary="summary"
@@ -327,17 +351,11 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 class="insurer-banner late"
             >
                 <div class="insurer-banner-icon-wrap">
-                    <TriangleAlert
-                        class="insurer-banner-icon"
-                        :size="17"
-                    />
+                    <TriangleAlert class="insurer-banner-icon" :size="17" />
                 </div>
 
                 <p class="insurer-banner-line">
-                    <Link
-                        :href="band.insurerUrl"
-                        class="insurer-banner-name"
-                    >
+                    <Link :href="band.insurerUrl" class="insurer-banner-name">
                         {{ band.insurerName }}
                     </Link>
 
@@ -348,9 +366,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
                     <span class="banner-separator">·</span>
 
-                    <strong>
-                        {{ formatAmount(band.outstanding) }} FCFA
-                    </strong>
+                    <strong> {{ formatAmount(band.outstanding) }} FCFA </strong>
 
                     <span class="banner-separator">·</span>
 
@@ -368,15 +384,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </section>
 
             <!-- Assureurs dans le délai -->
-            <section
-                v-if="insurerBands.owing"
-                class="insurer-banner owing"
-            >
+            <section v-if="insurerBands.owing" class="insurer-banner owing">
                 <div class="insurer-banner-icon-wrap">
-                    <Clock
-                        class="insurer-banner-icon"
-                        :size="17"
-                    />
+                    <Clock class="insurer-banner-icon" :size="17" />
                 </div>
 
                 <p class="insurer-banner-line">
@@ -398,15 +408,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             </section>
 
             <!-- Assureurs soldés -->
-            <section
-                v-if="insurerBands.settled"
-                class="insurer-banner settled"
-            >
+            <section v-if="insurerBands.settled" class="insurer-banner settled">
                 <div class="insurer-banner-icon-wrap">
-                    <CircleCheck
-                        class="insurer-banner-icon"
-                        :size="17"
-                    />
+                    <CircleCheck class="insurer-banner-icon" :size="17" />
                 </div>
 
                 <p class="insurer-banner-line">
@@ -447,8 +451,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     {{ showOverdueTable ? 'Masquer' : 'Voir' }} le détail
 
                     <template v-if="overdueSummary">
-                        ({{ overdueSummary.count }}
-                        facture{{ overdueSummary.count > 1 ? 's' : '' }})
+                        ({{ overdueSummary.count }} facture{{
+                            overdueSummary.count > 1 ? 's' : ''
+                        }})
                     </template>
                 </button>
             </div>
@@ -457,10 +462,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         <!-- =====================================================
              INVITATION WHATSAPP
              ===================================================== -->
-        <p
-            v-if="whatsappInvite"
-            class="whatsapp-invite"
-        >
+        <p v-if="whatsappInvite" class="whatsapp-invite">
             <span class="whatsapp-invite-icon">•</span>
 
             <span>
@@ -468,10 +470,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 joindre.
             </span>
 
-            <Link
-                :href="whatsappInvite.url"
-                class="whatsapp-invite-link"
-            >
+            <Link :href="whatsappInvite.url" class="whatsapp-invite-link">
                 Ajouter un numéro
             </Link>
         </p>
@@ -479,62 +478,91 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         <!-- =====================================================
              MOIS À RATTRAPER
              ===================================================== -->
-        <section
-            v-if="outstandingMonths.length > 0"
-            class="catch-up"
-        >
+        <section v-if="outstandingMonths.length > 0" class="catch-up">
             <div class="catch-up-header">
                 <div class="catch-up-icon">
                     <span>↻</span>
                 </div>
 
                 <div class="catch-up-text">
-                    <span class="catch-up-label">
-                        MOIS À RATTRAPER
-                    </span>
+                    <span class="catch-up-label"> MOIS À RATTRAPER </span>
 
                     <p>
                         Ces mois n'ont pas encore été déclarés pour tous vos
                         assureurs. Le rattrapage reste possible douze mois en
-                        arrière.
+                        arrière. Pas de facture un mois ? Indiquez-le avec «
+                        Aucune facture ».
                     </p>
                 </div>
             </div>
 
             <div class="catch-up-months">
-                <Link
+                <div
                     v-for="month in outstandingMonths"
                     :key="month.url"
-                    :href="month.url"
-                    class="catch-up-month"
+                    class="catch-up-item"
                 >
-                    {{ month.label }}
-                    <span class="month-arrow">→</span>
-                </Link>
+                    <Link :href="month.url" class="catch-up-month">
+                        {{ month.label }}
+                        <span class="month-arrow">→</span>
+                    </Link>
+
+                    <button
+                        type="button"
+                        class="catch-up-nil"
+                        :aria-pressed="nilMonth?.url === month.url"
+                        @click="nilMonth = month"
+                    >
+                        Aucune facture
+                    </button>
+                </div>
+            </div>
+
+            <div v-if="nilMonth" class="catch-up-confirm" role="alert">
+                <p>
+                    Aucune facture en {{ nilMonth.label.toLowerCase() }} pour
+                    {{
+                        nilMonth.remaining > 1
+                            ? `les ${nilMonth.remaining} assureurs restants`
+                            : `l'assureur restant`
+                    }}
+                    ? Le mois sera considéré comme déclaré. Vous pourrez
+                    toujours saisir une facture ensuite.
+                </p>
+
+                <div class="catch-up-confirm-actions">
+                    <button
+                        type="button"
+                        class="catch-up-confirm-yes"
+                        :disabled="nilProcessing"
+                        @click="confirmNilMonth"
+                    >
+                        Confirmer
+                    </button>
+                    <button
+                        type="button"
+                        class="catch-up-confirm-no"
+                        :disabled="nilProcessing"
+                        @click="nilMonth = null"
+                    >
+                        Annuler
+                    </button>
+                </div>
             </div>
         </section>
 
         <!-- =====================================================
              KPI
              ===================================================== -->
-        <DashboardKpis
-            :summary="summary"
-            surface="light"
-            class="kpis-page"
-        />
+        <DashboardKpis :summary="summary" surface="light" class="kpis-page" />
 
         <!-- =====================================================
              FACTURES EN RETARD
              ===================================================== -->
-        <section
-            v-if="showOverdueTable"
-            class="overdue-section"
-        >
+        <section v-if="showOverdueTable" class="overdue-section">
             <div class="section-intro">
                 <div>
-                    <span class="section-eyebrow">
-                        SUIVI DES IMPAYÉS
-                    </span>
+                    <span class="section-eyebrow"> SUIVI DES IMPAYÉS </span>
 
                     <h2>Factures en retard</h2>
 
@@ -557,10 +585,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     :template="OVERDUE_TEMPLATE"
                 >
                     <div>
-                        <Link
-                            :href="row.insurerUrl"
-                            class="overdue-insurer"
-                        >
+                        <Link :href="row.insurerUrl" class="overdue-insurer">
                             {{ row.insurerName }}
                         </Link>
                     </div>
@@ -620,9 +645,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     </div>
 
                     <div>
-                        <span class="card-eyebrow">
-                            ACTIVITÉ FINANCIÈRE
-                        </span>
+                        <span class="card-eyebrow"> ACTIVITÉ FINANCIÈRE </span>
 
                         <h2>
                             {{ journeyHeading.title }}
@@ -658,40 +681,25 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 </ChartToolbar>
             </div>
 
-            <div
-                ref="journeyArea"
-                class="journey-chart-area"
-            >
+            <div ref="journeyArea" class="journey-chart-area">
                 <OutstandingDonutChart
                     v-if="chartType === 'pie'"
                     :slices="donutSlices"
                     :height="200"
                 />
 
-                <Deferred
-                    v-else
-                    data="journey"
-                >
+                <Deferred v-else data="journey">
                     <template #fallback>
-                        <ChartSkeleton
-                            class="mt-5"
-                            :height="200"
-                        />
+                        <ChartSkeleton class="mt-5" :height="200" />
                     </template>
 
-                    <div
-                        v-if="journey"
-                        class="chart-wrapper"
-                    >
+                    <div v-if="journey" class="chart-wrapper">
                         <JourneyLineChart
                             v-if="chartType === 'line'"
                             :points="journey"
                         />
 
-                        <InvoicedVsCollectedChart
-                            v-else
-                            :points="journey"
-                        />
+                        <InvoicedVsCollectedChart v-else :points="journey" />
                     </div>
                 </Deferred>
             </div>
@@ -705,7 +713,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
             :subtitle="pharmacyName"
             filename="aphaspb-penalites-officine"
         />
-<br>
+        <br />
         <!-- =====================================================
              ENCOURS PAR ANCIENNETÉ
              ===================================================== -->
@@ -717,15 +725,11 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     </div>
 
                     <div>
-                        <span class="card-eyebrow">
-                            ANALYSE DES ENCOURS
-                        </span>
+                        <span class="card-eyebrow"> ANALYSE DES ENCOURS </span>
 
                         <h2>Encours par ancienneté</h2>
 
-                        <p>
-                            Ancienneté comptée depuis la fin du mois déclaré.
-                        </p>
+                        <p>Ancienneté comptée depuis la fin du mois déclaré.</p>
                     </div>
                 </div>
             </div>
@@ -766,8 +770,8 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         <p class="dashboard-source">
             <span class="source-mark">i</span>
 
-            Les indicateurs sont calculés à partir des déclarations
-            transmises par les officines participantes.
+            Les indicateurs sont calculés à partir des déclarations transmises
+            par les officines participantes.
         </p>
     </div>
 
@@ -788,8 +792,6 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                     sur les douze derniers mois.
                 </p>
             </div>
-
-       
         </div>
 
         <DataTable
@@ -976,27 +978,15 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 }
 
 .insurer-banner.owing {
-    border-color: color-mix(
-        in srgb,
-        var(--gold) 35%,
-        transparent
-    );
+    border-color: color-mix(in srgb, var(--gold) 35%, transparent);
 
-    background: color-mix(
-        in srgb,
-        var(--gold-soft) 78%,
-        #fff
-    );
+    background: color-mix(in srgb, var(--gold-soft) 78%, #fff);
 
     color: var(--ink);
 }
 
 .insurer-banner.owing .insurer-banner-icon-wrap {
-    background: color-mix(
-        in srgb,
-        var(--gold) 10%,
-        transparent
-    );
+    background: color-mix(in srgb, var(--gold) 10%, transparent);
 }
 
 .insurer-banner.owing .insurer-banner-icon {
@@ -1004,27 +994,15 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 }
 
 .insurer-banner.settled {
-    border-color: color-mix(
-        in srgb,
-        var(--primary) 28%,
-        transparent
-    );
+    border-color: color-mix(in srgb, var(--primary) 28%, transparent);
 
-    background: color-mix(
-        in srgb,
-        var(--primary-soft) 72%,
-        #fff
-    );
+    background: color-mix(in srgb, var(--primary-soft) 72%, #fff);
 
     color: var(--ink);
 }
 
 .insurer-banner.settled .insurer-banner-icon-wrap {
-    background: color-mix(
-        in srgb,
-        var(--primary) 9%,
-        transparent
-    );
+    background: color-mix(in srgb, var(--primary) 9%, transparent);
 }
 
 .insurer-banner.settled .insurer-banner-icon {
@@ -1069,11 +1047,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-weight: 700;
 
     text-decoration: underline;
-    text-decoration-color: color-mix(
-        in srgb,
-        currentColor 35%,
-        transparent
-    );
+    text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
     text-underline-offset: 3px;
 
     cursor: pointer;
@@ -1118,11 +1092,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 50%;
 
-    background: color-mix(
-        in srgb,
-        var(--officine) 10%,
-        transparent
-    );
+    background: color-mix(in srgb, var(--officine) 10%, transparent);
 
     color: var(--officine);
 
@@ -1150,11 +1120,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     margin: 16px 0 22px;
     padding: 17px 19px;
 
-    border: 1px solid color-mix(
-        in srgb,
-        var(--gold-mid) 30%,
-        transparent
-    );
+    border: 1px solid color-mix(in srgb, var(--gold-mid) 30%, transparent);
 
     border-radius: 14px;
 
@@ -1244,11 +1210,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     min-height: 33px;
     padding: 0 11px;
 
-    border: 1px solid color-mix(
-        in srgb,
-        var(--gold-mid) 38%,
-        transparent
-    );
+    border: 1px solid color-mix(in srgb, var(--gold-mid) 38%, transparent);
 
     border-radius: 9px;
 
@@ -1274,6 +1236,96 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 .month-arrow {
     color: var(--gold);
     font-size: 12px;
+}
+
+.catch-up-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.catch-up-nil {
+    min-height: 33px;
+    padding: 0 9px;
+
+    border: 0;
+    border-radius: 9px;
+
+    background: transparent;
+    color: color-mix(in srgb, var(--ink) 60%, transparent);
+
+    font-size: 10.5px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    cursor: pointer;
+}
+
+.catch-up-nil:hover,
+.catch-up-nil[aria-pressed='true'] {
+    color: var(--ink);
+}
+
+.catch-up-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+
+    margin-top: 12px;
+    margin-left: 47px;
+    padding: 11px 13px;
+
+    border-radius: 9px;
+    background: var(--gold-soft);
+}
+
+.catch-up-confirm p {
+    flex: 1 1 260px;
+    margin: 0;
+
+    color: var(--ink);
+
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+.catch-up-confirm-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.catch-up-confirm-yes,
+.catch-up-confirm-no {
+    min-height: 32px;
+    padding: 0 12px;
+
+    border-radius: 8px;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.catch-up-confirm-yes {
+    border: 0;
+    background: var(--ink);
+    color: var(--card);
+}
+
+.catch-up-confirm-no {
+    border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+    background: transparent;
+    color: var(--ink);
+}
+
+.catch-up-confirm-yes:disabled,
+.catch-up-confirm-no:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
 }
 
 /* =========================================================
@@ -1352,11 +1404,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     font-weight: 700;
 
     text-decoration: underline;
-    text-decoration-color: color-mix(
-        in srgb,
-        currentColor 30%,
-        transparent
-    );
+    text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
 
     text-underline-offset: 3px;
 }
@@ -1393,11 +1441,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     margin-bottom: 15px;
 
-    border: 1px solid color-mix(
-        in srgb,
-        var(--ink) 7%,
-        transparent
-    );
+    border: 1px solid color-mix(in srgb, var(--ink) 7%, transparent);
 
     border-radius: 16px;
 
@@ -1431,11 +1475,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     background: linear-gradient(
         90deg,
         var(--primary),
-        color-mix(
-            in srgb,
-            var(--primary) 25%,
-            transparent
-        )
+        color-mix(in srgb, var(--primary) 25%, transparent)
     );
 
     opacity: 0.9;
@@ -1550,12 +1590,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     background: var(--primary);
 
-    box-shadow:
-        0 0 0 4px color-mix(
-            in srgb,
-            var(--primary) 9%,
-            transparent
-        );
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 9%, transparent);
 
     animation: statusPulse 2.5s infinite;
 }
@@ -1635,11 +1670,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: 999px;
 
-    background: color-mix(
-        in srgb,
-        var(--ink) 6%,
-        transparent
-    );
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
 }
 
 .ageing-progress-fill {
@@ -1650,11 +1681,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     border-radius: inherit;
 
-    background: linear-gradient(
-        90deg,
-        var(--gold-mid),
-        var(--gold)
-    );
+    background: linear-gradient(90deg, var(--gold-mid), var(--gold));
 
     transform-origin: left center;
 
@@ -1793,30 +1820,15 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
 @keyframes statusPulse {
     0% {
-        box-shadow:
-            0 0 0 0 color-mix(
-                in srgb,
-                var(--primary) 24%,
-                transparent
-            );
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 24%, transparent);
     }
 
     70% {
-        box-shadow:
-            0 0 0 5px color-mix(
-                in srgb,
-                var(--primary) 0%,
-                transparent
-            );
+        box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary) 0%, transparent);
     }
 
     100% {
-        box-shadow:
-            0 0 0 0 color-mix(
-                in srgb,
-                var(--primary) 0%,
-                transparent
-            );
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent);
     }
 }
 
@@ -1867,6 +1879,10 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
     .catch-up-months {
         padding-left: 0;
+    }
+
+    .catch-up-confirm {
+        margin-left: 0;
     }
 }
 
@@ -2087,5 +2103,4 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         transition-duration: 0.01ms !important;
     }
 }
-
 </style>
