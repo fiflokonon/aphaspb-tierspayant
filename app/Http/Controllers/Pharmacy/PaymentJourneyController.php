@@ -9,6 +9,7 @@ use App\Models\EvaluationCampaign;
 use App\Models\Pharmacy;
 use App\Models\PharmacyInvitation;
 use App\Services\Declarations\DeclarationCalendar;
+use App\Services\Declarations\DeclarationRange;
 use App\Services\Declarations\OverduePaymentsService;
 use App\Services\Pharmacy\PharmacyPenaltyLedger;
 use App\Services\Pharmacy\PharmacyStatsService;
@@ -37,6 +38,7 @@ class PaymentJourneyController extends Controller
         protected DeclarationCalendar $calendar,
         protected OverduePaymentsService $overdue,
         protected PharmacyPenaltyLedger $penaltyLedger,
+        protected DeclarationRange $range,
     ) {
         //
     }
@@ -61,6 +63,7 @@ class PaymentJourneyController extends Controller
             'filters' => ['insurer' => $insurerId],
             'declareUrl' => route('pharmacy.declare'),
             'outstandingMonths' => $this->outstandingMonths($pharmacy),
+            'declarationFloor' => MonthLabel::long($this->range->floor()->month, $this->range->floor()->year),
             'pendingInvitations' => $this->pendingInvitations($request),
             // Le numéro sert au réseau à rappeler une déclaration manquante ;
             // l'invite ne s'adresse qu'à qui peut modifier la fiche.

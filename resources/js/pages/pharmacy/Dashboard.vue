@@ -111,6 +111,7 @@ const props = defineProps<{
     penaltyTrend?: PenaltyLedger;
     pendingInvitations?: DashboardInvitation[];
     whatsappInvite?: { url: string } | null;
+    declarationFloor: string;
     evaluationCampaign?: {
         year: number;
         closesOn: string;
@@ -535,9 +536,9 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
                     <p>
                         Ces mois n'ont pas encore été déclarés pour tous vos
-                        assureurs. Le rattrapage reste possible douze mois en
-                        arrière. Pas de facture un mois ? Indiquez-le avec «
-                        Aucune facture ».
+                        assureurs. Le rattrapage reste possible jusqu'à
+                        {{ declarationFloor.toLowerCase() }}. Pas de facture un
+                        mois ? Indiquez-le avec « Aucune facture ».
                     </p>
                 </div>
             </div>

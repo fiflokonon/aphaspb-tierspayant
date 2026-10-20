@@ -21,6 +21,20 @@ class SettingsRepository
 
     public const EVALUATION_RESULTS_SHARED = 'evaluation_results_shared';
 
+    /** The oldest declarable month, as an ordinal (year × 12 + month). */
+    public const DECLARATION_FLOOR = 'declaration_floor';
+
+    public const CATCH_UP_MONTHS = 'catch_up_months_before_signup';
+
+    /**
+     * Where the floor stands until the admin moves it, in months back.
+     *
+     * Read once and then written down: the twelve-month window the platform
+     * started with stops sliding on the day this code goes live, instead of
+     * quietly retiring a month of history every month.
+     */
+    public const DEFAULT_FLOOR_MONTHS_BACK = 12;
+
     /**
      * The lowest the anonymity threshold may be set to.
      *
@@ -38,6 +52,7 @@ class SettingsRepository
     protected const DEFAULTS = [
         self::ANONYMITY_MIN_PHARMACIES => 5,
         self::EVALUATION_RESULTS_SHARED => 0,
+        self::CATCH_UP_MONTHS => 3,
     ];
 
     /**
@@ -57,6 +72,43 @@ class SettingsRepository
     public function evaluationResultsShared(): bool
     {
         return $this->integer(self::EVALUATION_RESULTS_SHARED) === 1;
+    }
+
+    /**
+     * The oldest month any officine may declare, as an ordinal.
+     *
+     * Frozen on first read (DEFAULT_FLOOR_MONTHS_BACK) rather than given a
+     * constant default: a constant would either slide with the clock or pin
+     * an arbitrary date into the code.
+     */
+    public function declarationFloorOrdinal(): int
+    {
+        $stored = Cache::rememberForever(
+            $this->cacheKey(self::DECLARATION_FLOOR),
+            fn (): ?string => Setting::query()->where('key', self::DECLARATION_FLOOR)->value('value'),
+        );
+
+        if ($stored !== null) {
+            return (int) $stored;
+        }
+
+        $floor = now()->startOfMonth()->subMonths(self::DEFAULT_FLOOR_MONTHS_BACK);
+        $ordinal = $floor->year * 12 + $floor->month;
+
+        $this->set(self::DECLARATION_FLOOR, $ordinal);
+        // Remis en cache aussitôt : set() le vide, et la lecture suivante
+        // repasserait sinon par la base.
+        Cache::forever($this->cacheKey(self::DECLARATION_FLOOR), (string) $ordinal);
+
+        return $ordinal;
+    }
+
+    /**
+     * How many months before its sign-up a new officine is expected to declare.
+     */
+    public function catchUpMonthsBeforeSignup(): int
+    {
+        return $this->integer(self::CATCH_UP_MONTHS);
     }
 
     public function set(string $key, int|string $value): void

@@ -44,6 +44,16 @@ readonly class Period
     }
 
     /**
+     * The period an ordinal (year * 12 + month) stands for.
+     */
+    public static function fromOrdinal(int $ordinal): self
+    {
+        $year = intdiv($ordinal - 1, 12);
+
+        return new self($year, $ordinal - $year * 12);
+    }
+
+    /**
      * Express the period as a single sortable integer.
      *
      * Comparing (year, month) pairs in SQL is awkward; this collapses them to

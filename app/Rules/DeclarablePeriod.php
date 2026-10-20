@@ -2,7 +2,9 @@
 
 namespace App\Rules;
 
-use App\Models\Declaration;
+use App\Data\Period;
+use App\Services\Declarations\DeclarationRange;
+use App\Support\MonthLabel;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Translation\PotentiallyTranslatedString;
@@ -10,8 +12,9 @@ use Illuminate\Translation\PotentiallyTranslatedString;
 /**
  * Validate a [year, month] pair a pharmacy may still declare.
  *
- * The CDC allows catching up on missed months, but only twelve back: beyond
- * that the recollection is unreliable and the statistics stop being useful.
+ * The CDC allows catching up on missed months, down to a floor the admin
+ * sets (DeclarationRange): beyond it the recollection is unreliable and the
+ * statistics stop being useful.
  */
 class DeclarablePeriod implements ValidationRule
 {
@@ -45,18 +48,19 @@ class DeclarablePeriod implements ValidationRule
             return;
         }
 
-        $declared = $year * 12 + $month;
-        $now = now();
-        $current = $now->year * 12 + $now->month;
+        $range = app(DeclarationRange::class);
+        $declared = (new Period($year, $month))->toOrdinal();
 
-        if ($declared > $current) {
+        if ($declared > $range->current()->toOrdinal()) {
             $fail('Une période future ne peut pas être déclarée.');
 
             return;
         }
 
-        if ($current - $declared > Declaration::EARLIEST_MONTHS_BACK) {
-            $fail('Le rattrapage est limité à 12 mois en arrière.');
+        $floor = $range->floor();
+
+        if ($declared < $floor->toOrdinal()) {
+            $fail('Les déclarations ne remontent pas avant '.mb_strtolower(MonthLabel::long($floor->month, $floor->year)).'.');
         }
     }
 }

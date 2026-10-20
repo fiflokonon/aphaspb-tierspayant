@@ -8,6 +8,7 @@ use App\Data\RegionScope;
 use App\Enums\CompletenessState;
 use App\Models\NilDeclaration;
 use App\Models\Pharmacy;
+use App\Services\Declarations\DeclarationRange;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -26,18 +27,36 @@ use Illuminate\Support\Facades\DB;
  */
 class DeclarationCompleteness
 {
+    public function __construct(protected DeclarationRange $range)
+    {
+        //
+    }
+
     /**
+     * Les officines à qui ce mois est réclamé, et ce qu'elles en ont déclaré.
+     *
+     * Réclamé selon DeclarationRange::expectedFrom(), comme sur le tableau de
+     * bord de l'officine : inscrite au plus tard N mois après lui. Rien n'est
+     * réclamé sous le plancher.
+     *
      * @return list<PharmacyCompleteness>
      */
     public function forMonth(Period $month, string|RegionScope|null $city = null): array
     {
-        $dayAfter = CarbonImmutable::create($month->year, $month->month, 1)->addMonth();
+        if ($month->toOrdinal() < $this->range->floor()->toOrdinal()) {
+            return [];
+        }
+
+        // Inscrite avant le début du mois M + N + 1 : M fait partie de ses
+        // mois attendus. La même borne que expectedFrom(), écrite en SQL.
+        $signedUpBefore = CarbonImmutable::create($month->year, $month->month, 1)
+            ->addMonths(1 + $this->range->catchUpMonths());
 
         $pharmacies = Pharmacy::query()
             ->select(['id', 'name', 'city', 'whatsapp_phone'])
             ->withCount('insurers')
             ->whereHas('insurers')
-            ->where('created_at', '<', $dayAfter)
+            ->where('created_at', '<', $signedUpBefore)
             ->when(is_string($city), fn ($query) => $query->where('city', $city))
             // Aucune règle d'anonymat ici : ni montant ni agrégat, l'écran
             // nomme déjà chaque officine. Les régions se filtrent en SQL.

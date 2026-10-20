@@ -7,7 +7,9 @@ use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\NilDeclaration;
 use App\Models\Pharmacy;
+use App\Services\Declarations\DeclarationRange;
 use App\Services\Network\DeclarationCompleteness;
+use App\Services\Settings\SettingsRepository;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -63,7 +65,8 @@ test('complete, partial and none on one month', function () {
     ]);
 });
 
-test('an officine without insurer, deleted, or registered after the month is not tracked', function () {
+test('an officine without insurer, deleted, or registered beyond its catch-up is not tracked', function () {
+    app(SettingsRepository::class)->set(SettingsRepository::CATCH_UP_MONTHS, 0);
     Pharmacy::factory()->create(['name' => 'Sans assureur', 'created_at' => '2026-01-10']);
     trackedPharmacy('Supprimée')->delete();
     trackedPharmacy('Trop récente', ['created_at' => '2026-09-02']);
@@ -72,11 +75,23 @@ test('an officine without insurer, deleted, or registered after the month is not
     expect(array_keys(statesFor($this->completeness->forMonth(new Period(2026, 8)))))->toBe(['Suivie']);
 });
 
-test('an officine registered during the month is tracked for it, not for the month before', function () {
+test('a new officine is chased for the catch-up months before its registration, and no further', function () {
+    app(SettingsRepository::class)->set(SettingsRepository::CATCH_UP_MONTHS, 2);
     trackedPharmacy('Arrivée le 15 août', ['created_at' => '2026-08-15']);
 
+    // Inscrite en août, deux mois de rattrapage : juin et juillet lui sont
+    // réclamés, mai non.
     expect($this->completeness->forMonth(new Period(2026, 8)))->toHaveCount(1)
-        ->and($this->completeness->forMonth(new Period(2026, 7)))->toHaveCount(0);
+        ->and($this->completeness->forMonth(new Period(2026, 6)))->toHaveCount(1)
+        ->and($this->completeness->forMonth(new Period(2026, 5)))->toHaveCount(0);
+});
+
+test('nothing is chased below the declaration floor', function () {
+    trackedPharmacy('Fondatrice', ['created_at' => '2024-01-10']);
+    app(SettingsRepository::class)->set(SettingsRepository::DECLARATION_FLOOR, (new Period(2026, 3))->toOrdinal());
+
+    expect($this->completeness->forMonth(new Period(2026, 3)))->toHaveCount(1)
+        ->and($this->completeness->forMonth(new Period(2026, 2)))->toHaveCount(0);
 });
 
 test('a rejected declaration counts, one for an insurer no longer ticked does not', function () {
@@ -97,6 +112,9 @@ test('the city filter narrows the roll', function () {
 
 test('the query count stays flat however many officines there are', function () {
     trackedPharmacy('Seule');
+    // Le premier accès fige le plancher en base : un coût unique, pas un N+1.
+    app(DeclarationRange::class)->floor();
+    app(DeclarationRange::class)->catchUpMonths();
     DB::enableQueryLog();
     $this->completeness->forMonth(new Period(2026, 8));
     $withOne = count(DB::getQueryLog());

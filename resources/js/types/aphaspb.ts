@@ -27,7 +27,7 @@ export const statusChipClass: Record<DeclarationStatus, string> = {
 };
 
 /**
- * A month the officine may declare: the current one and the twelve before it.
+ * A month the officine may declare: from the current one down to the admin's floor.
  *
  * Built server-side by DeclarationCalendar, url included, so no screen has to
  * assemble a query string of its own.

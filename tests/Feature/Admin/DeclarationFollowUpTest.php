@@ -12,7 +12,7 @@ use Inertia\Testing\AssertableInertia;
 beforeEach(function () {
     useJoomlaTestKeys();
     $this->travelTo(CarbonImmutable::create(2026, 9, 28));
-    $this->admin = User::factory()->networkAdmin()->create();
+    $this->admin = User::factory()->networkAdmin()->notOnboarded()->create();
     $this->insurer = Insurer::factory()->create(['name' => 'Assureur Secret']);
 });
 

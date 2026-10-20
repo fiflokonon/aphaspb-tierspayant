@@ -6,6 +6,7 @@ use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
+use App\Services\Declarations\DeclarationRange;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
@@ -244,6 +245,9 @@ test('the dashboard query count does not grow with the overdue invoices', functi
         ->create(['standard_delay_days' => 30]);
 
     overdueOn($user, $insurer, 100);
+    // Le premier accès fige le plancher en base : un coût unique, pas un N+1.
+    app(DeclarationRange::class)->floor();
+    app(DeclarationRange::class)->catchUpMonths();
 
     DB::enableQueryLog();
     $this->actingAs($user)->get(dashboardUrlFor($user))->assertOk();

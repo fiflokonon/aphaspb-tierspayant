@@ -63,11 +63,6 @@ class Declaration extends Model
     use HasFactory;
 
     /**
-     * How far back a pharmacy may still record a missed month.
-     */
-    public const EARLIEST_MONTHS_BACK = 12;
-
-    /**
      * The default attribute values.
      *
      * `amount_received` is no longer written by the form — it is the sum of the

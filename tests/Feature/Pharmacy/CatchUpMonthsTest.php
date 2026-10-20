@@ -1,11 +1,13 @@
 <?php
 
+use App\Data\Period;
 use App\Enums\PharmacyRole;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
 use App\Models\User;
 use App\Services\Declarations\DeclarationCalendar;
+use App\Services\Settings\SettingsRepository;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
@@ -25,7 +27,9 @@ function officineOwing(int $count): array
 {
     $user = User::factory()->notOnboarded()->create();
 
-    $pharmacy = Pharmacy::factory()->create();
+    // Inscrite bien avant le plancher : tous les mois déclarables lui sont
+    // réclamés. Le cas d'une officine récente a son propre test.
+    $pharmacy = Pharmacy::factory()->create(['created_at' => '2024-01-10']);
     $pharmacy->members()->attach($user, ['role' => PharmacyRole::Owner->value]);
     $user->switchPharmacy($pharmacy);
 
@@ -41,7 +45,7 @@ function officineOwing(int $count): array
     return [$user->fresh(), $pharmacy, $insurers];
 }
 
-test('the calendar spans the current month and the twelve before it', function () {
+test('the calendar spans the current month down to the floor, frozen twelve months back by default', function () {
     [, $pharmacy] = officineOwing(1);
 
     $months = app(DeclarationCalendar::class)->months($pharmacy);
@@ -171,4 +175,25 @@ test('a declaration for an insurer no longer ticked does not complete a month', 
     $july = collect(app(DeclarationCalendar::class)->months($pharmacy))->firstWhere('month', 7);
 
     expect($july['isComplete'])->toBeFalse();
+});
+
+test('the calendar follows the floor the admin sets', function () {
+    [, $pharmacy] = officineOwing(1);
+    app(SettingsRepository::class)->set(SettingsRepository::DECLARATION_FLOOR, (new Period(2024, 8))->toOrdinal());
+
+    $months = app(DeclarationCalendar::class)->months($pharmacy);
+
+    expect($months)->toHaveCount(25)
+        ->and(end($months))->toMatchArray(['year' => 2024, 'month' => 8]);
+});
+
+test('a recent officine is only asked for the months since its registration plus the catch-up', function () {
+    [, $pharmacy] = officineOwing(1);
+    $pharmacy->forceFill(['created_at' => '2026-07-20'])->save();
+    app(SettingsRepository::class)->set(SettingsRepository::CATCH_UP_MONTHS, 2);
+
+    // Inscrite en juillet, deux mois de rattrapage : mai, juin et juillet sont
+    // réclamés ; avril reste déclarable, mais n'est pas réclamé.
+    expect(array_map(fn (array $month): int => $month['month'], app(DeclarationCalendar::class)->outstanding($pharmacy)))->toBe([5, 6, 7])
+        ->and(collect(app(DeclarationCalendar::class)->months($pharmacy))->contains(fn (array $month): bool => $month['year'] === 2026 && $month['month'] === 4))->toBeTrue();
 });

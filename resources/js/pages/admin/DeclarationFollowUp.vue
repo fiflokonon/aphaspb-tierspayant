@@ -7,7 +7,7 @@
  * d'assureurs, ni montant. La relance part sur WhatsApp ou par téléphone ; la
  * plateforme ne l'envoie pas.
  */
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import { MessageCircle, Phone } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import DataTable from '@/components/aphaspb/DataTable.vue';
@@ -49,7 +49,46 @@ const props = defineProps<{
     state: string;
     summary: { complete: number; partial: number; none: number; total: number };
     pharmacies: Paginated<Row>;
+    declarationRange: {
+        floorYear: number;
+        floorMonth: number;
+        floorLabel: string;
+        catchUpMonths: number;
+        maxCatchUpMonths: number;
+    };
 }>();
+
+const MONTH_NAMES = [
+    'Janvier',
+    'Février',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Août',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Décembre',
+];
+
+/**
+ * Le plancher des déclarations et le rattrapage des nouvelles officines.
+ * Réglé ici parce que c'est cet écran qui en montre l'effet : les mois
+ * réclamés à chaque officine.
+ */
+const rangeForm = useForm({
+    floor_year: String(props.declarationRange.floorYear),
+    floor_month: props.declarationRange.floorMonth,
+    catch_up_months: String(props.declarationRange.catchUpMonths),
+});
+
+function saveRange(): void {
+    rangeForm.patch('/admin/settings/declaration-range', {
+        preserveScroll: true,
+    });
+}
 
 const TEMPLATE = '2fr 1fr 1fr 1.2fr 1.3fr';
 const COLUMNS = ['Officine', 'Ville', 'État du mois', 'Contact', 'Relance'];
@@ -223,6 +262,84 @@ const summaryLine = computed(
                 </div>
             </div>
         </section>
+
+        <!-- =========================================================
+             FENÊTRE DE DÉCLARATION
+        ========================================================== -->
+        <details
+            class="mb-6 rounded-[var(--radius-card)] bg-card p-5 shadow-[var(--surface-shadow)]"
+        >
+            <summary class="cursor-pointer text-[14px] font-bold text-ink">
+                Fenêtre de déclaration — depuis
+                {{ declarationRange.floorLabel.toLowerCase() }}, rattrapage de
+                {{ declarationRange.catchUpMonths }} mois pour une nouvelle
+                officine
+            </summary>
+
+            <p class="mt-3 max-w-[720px] text-[13px]/[1.55] text-ink/60">
+                Les officines peuvent déclarer tout mois à partir du plancher.
+                Une officine n'est relancée que pour les mois qui suivent son
+                inscription, plus le nombre de mois de rattrapage choisi ici —
+                sans jamais descendre sous le plancher.
+            </p>
+
+            <form
+                class="mt-4 flex flex-wrap items-end gap-4"
+                @submit.prevent="saveRange"
+            >
+                <label class="flex flex-col gap-1 text-[12.5px] text-ink/60">
+                    Mois du plancher
+                    <select
+                        v-model="rangeForm.floor_month"
+                        class="h-[40px] rounded-[10px] border-[1.5px] border-ink/[0.13] bg-card px-3 text-[13px] text-ink"
+                    >
+                        <option
+                            v-for="(name, index) in MONTH_NAMES"
+                            :key="name"
+                            :value="index + 1"
+                        >
+                            {{ name }}
+                        </option>
+                    </select>
+                </label>
+
+                <label class="flex flex-col gap-1 text-[12.5px] text-ink/60">
+                    Année du plancher
+                    <input
+                        v-model="rangeForm.floor_year"
+                        inputmode="numeric"
+                        class="h-[40px] w-[96px] rounded-[10px] border-[1.5px] border-ink/[0.13] bg-card px-3 text-[13px] text-ink"
+                    />
+                </label>
+
+                <label class="flex flex-col gap-1 text-[12.5px] text-ink/60">
+                    Rattrapage d'une nouvelle officine (mois)
+                    <input
+                        v-model="rangeForm.catch_up_months"
+                        type="number"
+                        min="0"
+                        :max="declarationRange.maxCatchUpMonths"
+                        class="h-[40px] w-[96px] rounded-[10px] border-[1.5px] border-ink/[0.13] bg-card px-3 text-[13px] text-ink"
+                    />
+                </label>
+
+                <button
+                    type="submit"
+                    :disabled="rangeForm.processing"
+                    class="h-[40px] rounded-[10px] bg-primary px-4 text-[12.5px] font-bold text-primary-foreground disabled:opacity-60"
+                >
+                    Enregistrer
+                </button>
+            </form>
+
+            <p
+                v-for="(error, field) in rangeForm.errors"
+                :key="field"
+                class="mt-2 text-[13px] text-terracotta-dark"
+            >
+                {{ error }}
+            </p>
+        </details>
 
         <!-- =========================================================
              CONTENU

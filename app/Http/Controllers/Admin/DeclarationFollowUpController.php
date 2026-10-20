@@ -8,6 +8,7 @@ use App\Data\RegionScope;
 use App\Enums\CompletenessState;
 use App\Http\Controllers\Controller;
 use App\Models\Pharmacy;
+use App\Services\Declarations\DeclarationRange;
 use App\Services\Network\DeclarationCompleteness;
 use App\Services\Network\RegionScopes;
 use App\Support\MonthLabel;
@@ -33,8 +34,10 @@ class DeclarationFollowUpController extends Controller
     /** @var list<string> */
     protected const STATES = ['to-chase', 'all', 'complete', 'partial', 'none'];
 
-    public function __construct(protected DeclarationCompleteness $completeness)
-    {
+    public function __construct(
+        protected DeclarationCompleteness $completeness,
+        protected DeclarationRange $range,
+    ) {
         //
     }
 
@@ -81,22 +84,36 @@ class DeclarationFollowUpController extends Controller
                 'total' => count($rows),
             ],
             'pharmacies' => $paginator,
+            'declarationRange' => [
+                'floorYear' => $this->range->floor()->year,
+                'floorMonth' => $this->range->floor()->month,
+                'floorLabel' => MonthLabel::long($this->range->floor()->month, $this->range->floor()->year),
+                'catchUpMonths' => $this->range->catchUpMonths(),
+                'maxCatchUpMonths' => DeclarationRange::MAX_CATCH_UP_MONTHS,
+            ],
         ]);
     }
 
     /**
-     * Les douze mois terminés, du plus récent au plus ancien.
+     * Les douze mois terminés, du plus récent au plus ancien, sans descendre
+     * sous le plancher : rien n'y est réclamé.
+     *
+     * Le mois en cours en dernier recours, quand le plancher vient d'être
+     * posé sur lui : l'écran a toujours un mois à montrer.
      *
      * @return list<Period>
      */
     protected function months(): array
     {
         $start = now()->startOfMonth();
+        $floor = $this->range->floor()->toOrdinal();
 
-        return array_map(fn (int $back): Period => new Period(
+        $months = array_values(array_filter(array_map(fn (int $back): Period => new Period(
             $start->subMonths($back)->year,
             $start->subMonths($back)->month,
-        ), range(1, 12));
+        ), range(1, 12)), fn (Period $one): bool => $one->toOrdinal() >= $floor));
+
+        return $months === [] ? [$this->range->current()] : $months;
     }
 
     /**

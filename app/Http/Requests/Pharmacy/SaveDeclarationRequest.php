@@ -342,12 +342,4 @@ class SaveDeclarationRequest extends FormRequest
             'payments.*.paid_on.after_or_equal' => 'Le paiement ne peut pas précéder le dépôt de la facture.',
         ];
     }
-
-    /**
-     * Keep the constant reachable from the request for the period bounds.
-     */
-    public function earliestMonthsBack(): int
-    {
-        return Declaration::EARLIEST_MONTHS_BACK;
-    }
 }

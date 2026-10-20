@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AnonymityThresholdController;
 use App\Http\Controllers\Admin\DeclarationFollowUpController;
+use App\Http\Controllers\Admin\DeclarationRangeController;
 use App\Http\Controllers\Admin\EvaluationCampaignController;
 use App\Http\Controllers\Admin\EvaluationSharingController;
 use App\Http\Controllers\Admin\InsurerManagementController;
@@ -58,6 +59,7 @@ Route::middleware(['auth', 'can:manage-network'])
         // Seul écran réseau où un nom d'officine côtoie une donnée de
         // déclaration (complet / partiel / rien) : spec suivi des déclarations.
         Route::get('declarations-followup', DeclarationFollowUpController::class)->name('declarations-followup');
+        Route::patch('settings/declaration-range', DeclarationRangeController::class)->name('settings.declaration-range');
         Route::get('insurers', [InsurerManagementController::class, 'index'])->name('insurers');
         Route::post('insurers', [InsurerManagementController::class, 'store'])->name('insurers.store');
         Route::patch('insurers/{insurer}', [InsurerManagementController::class, 'update'])->name('insurers.update');
