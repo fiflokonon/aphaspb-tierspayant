@@ -19,6 +19,8 @@ class SettingsRepository
 {
     public const ANONYMITY_MIN_PHARMACIES = 'anonymity_min_pharmacies';
 
+    public const EVALUATION_RESULTS_SHARED = 'evaluation_results_shared';
+
     /**
      * The lowest the anonymity threshold may be set to.
      *
@@ -35,6 +37,7 @@ class SettingsRepository
      */
     protected const DEFAULTS = [
         self::ANONYMITY_MIN_PHARMACIES => 5,
+        self::EVALUATION_RESULTS_SHARED => 0,
     ];
 
     /**
@@ -43,6 +46,17 @@ class SettingsRepository
     public function anonymityMinPharmacies(): int
     {
         return $this->integer(self::ANONYMITY_MIN_PHARMACIES);
+    }
+
+    /**
+     * Whether the officines see the network's insurer evaluation averages.
+     *
+     * Off until the admin decides otherwise: the averages are the network's
+     * opinion of its insurers, and publishing it is the association's call.
+     */
+    public function evaluationResultsShared(): bool
+    {
+        return $this->integer(self::EVALUATION_RESULTS_SHARED) === 1;
     }
 
     public function set(string $key, int|string $value): void

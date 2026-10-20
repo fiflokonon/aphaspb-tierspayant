@@ -6,7 +6,9 @@ use App\Data\PresentedNotification;
 use App\Models\PharmacyInvitation;
 use App\Notifications\Declarations\NetworkOverdueDigest;
 use App\Notifications\Declarations\OverduePaymentsDigest;
+use App\Notifications\Evaluations\EvaluationCampaignOpened;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Carbon;
 
 /**
  * Ramener chaque forme de notification à une seule, lisible par le front.
@@ -24,6 +26,7 @@ class NotificationPresenter
         [$title, $body, $href, $tone] = match ($notification->type) {
             OverduePaymentsDigest::class => self::overdueDigest($data),
             NetworkOverdueDigest::class => self::networkDigest($data),
+            EvaluationCampaignOpened::class => self::evaluationCampaign($data),
             default => self::unknown(),
         };
 
@@ -103,6 +106,23 @@ class NotificationPresenter
             ),
             route('admin.trends', absolute: false),
             'warn',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{0: string, 1: string, 2: string|null, 3: string}
+     */
+    protected static function evaluationCampaign(array $data): array
+    {
+        return [
+            sprintf('Évaluation des assureurs %d ouverte', (int) ($data['year'] ?? 0)),
+            sprintf(
+                "Notez vos assureurs jusqu'au %s.",
+                Carbon::parse((string) ($data['closes_on'] ?? 'today'))->format('d/m/Y'),
+            ),
+            route('pharmacy.evaluations', absolute: false),
+            'neutral',
         ];
     }
 

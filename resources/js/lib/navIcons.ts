@@ -8,6 +8,7 @@ import {
     LayoutDashboard,
     Map,
     Receipt,
+    Star,
     Store,
     TrendingUp,
 } from '@lucide/vue';
@@ -36,6 +37,7 @@ const ICONS: Record<string, Component> = {
     'clipboard-check': ClipboardCheck,
     receipt: Receipt,
     map: Map,
+    star: Star,
 };
 
 /**

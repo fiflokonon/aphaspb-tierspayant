@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\AnonymityThresholdController;
 use App\Http\Controllers\Admin\DeclarationFollowUpController;
+use App\Http\Controllers\Admin\EvaluationCampaignController;
+use App\Http\Controllers\Admin\EvaluationSharingController;
 use App\Http\Controllers\Admin\InsurerManagementController;
 use App\Http\Controllers\Admin\InsurerSheetController;
 use App\Http\Controllers\Admin\NetworkExportController;
@@ -24,6 +26,7 @@ use App\Http\Controllers\Onboarding\PharmacyProfileController;
 use App\Http\Controllers\Pharmacies\PharmacyInvitationController;
 use App\Http\Controllers\Pharmacy\DeclarationController;
 use App\Http\Controllers\Pharmacy\DeclarationHistoryController;
+use App\Http\Controllers\Pharmacy\InsurerEvaluationController;
 use App\Http\Controllers\Pharmacy\InsurerRelationshipController;
 use App\Http\Controllers\Pharmacy\NilDeclarationController;
 use App\Http\Controllers\Pharmacy\PaymentJourneyController;
@@ -64,6 +67,10 @@ Route::middleware(['auth', 'can:manage-network'])
         Route::patch('regions/{region}', [RegionManagementController::class, 'update'])->name('regions.update');
         Route::delete('regions/{region}', [RegionManagementController::class, 'destroy'])->name('regions.destroy');
         Route::patch('settings/anonymity', AnonymityThresholdController::class)->name('settings.anonymity');
+        Route::get('evaluations', [EvaluationCampaignController::class, 'index'])->name('evaluations');
+        Route::post('evaluations', [EvaluationCampaignController::class, 'store'])->name('evaluations.store');
+        Route::patch('evaluations/{campaign}', [EvaluationCampaignController::class, 'update'])->name('evaluations.update');
+        Route::patch('settings/evaluation-sharing', EvaluationSharingController::class)->name('settings.evaluation-sharing');
         Route::get('csv-exports', [NetworkExportController::class, 'index'])->name('csv-exports');
         Route::get('csv-exports/download', [NetworkExportController::class, 'download'])->name('csv-exports.download');
         Route::get('penalties', [NetworkPenaltyLedgerController::class, 'index'])->name('penalty-ledger');
@@ -94,6 +101,9 @@ Route::middleware(['auth', 'can:declare-payments', 'onboarded'])
         // Nommée « show » : Wayfinder dérive le symbole TypeScript du dernier
         // segment du nom de route, et un mot réservé JS y casse l'inférence.
         Route::get('insurers/{insurer}', InsurerRelationshipController::class)->name('insurers.show');
+        Route::get('evaluations', [InsurerEvaluationController::class, 'index'])->name('evaluations');
+        Route::get('evaluations/{insurer}', [InsurerEvaluationController::class, 'edit'])->name('evaluations.edit');
+        Route::put('evaluations/{insurer}', [InsurerEvaluationController::class, 'update'])->name('evaluations.update');
         Route::post('declarations/{declaration}/penalty-settlement', [PenaltySettlementController::class, 'store'])->name('penalty-settlement.store');
         Route::delete('declarations/{declaration}/penalty-settlement', [PenaltySettlementController::class, 'destroy'])->name('penalty-settlement.destroy');
         // Nommée « data-exports » et non « exports » : Wayfinder dérive le nom

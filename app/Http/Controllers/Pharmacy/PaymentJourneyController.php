@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Pharmacy;
 use App\Data\OverdueLine;
 use App\Data\Period;
 use App\Http\Controllers\Controller;
+use App\Models\EvaluationCampaign;
 use App\Models\Pharmacy;
 use App\Models\PharmacyInvitation;
 use App\Services\Declarations\DeclarationCalendar;
@@ -66,6 +67,7 @@ class PaymentJourneyController extends Controller
             'whatsappInvite' => $pharmacy->whatsapp_phone === null && $request->user()->can('update', $pharmacy)
                 ? ['url' => route('pharmacies.edit', $pharmacy, absolute: false)]
                 : null,
+            'evaluationCampaign' => $this->evaluationCampaign($pharmacy),
 
             // The chart is the only expensive read on this page, so it arrives
             // after the first paint rather than delaying it.
@@ -78,6 +80,35 @@ class PaymentJourneyController extends Controller
                 fn () => $this->penaltyLedger->for($pharmacy, ...Period::lastMonths(self::MONTHS))->toArray(),
             ),
         ]);
+    }
+
+    /**
+     * La campagne d'évaluation ouverte, tant qu'il reste un assureur à noter.
+     *
+     * Rien quand tout est évalué : le bandeau est un rappel, pas un état.
+     *
+     * @return array{year: int, closesOn: string, total: int, remaining: int, url: string}|null
+     */
+    protected function evaluationCampaign(Pharmacy $pharmacy): ?array
+    {
+        $campaign = EvaluationCampaign::current();
+
+        if ($campaign === null) {
+            return null;
+        }
+
+        $progress = $campaign->progressOf($pharmacy);
+
+        if ($progress['remaining'] === 0) {
+            return null;
+        }
+
+        return [
+            'year' => $campaign->year,
+            'closesOn' => $campaign->closes_on->toDateString(),
+            ...$progress,
+            'url' => route('pharmacy.evaluations', absolute: false),
+        ];
     }
 
     /**

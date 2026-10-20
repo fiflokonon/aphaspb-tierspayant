@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Deferred, Head, Link, router } from '@inertiajs/vue3';
-import { CircleCheck, Clock, TriangleAlert } from '@lucide/vue';
+import { CircleCheck, Clock, Star, TriangleAlert } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import NilDeclarationController from '@/actions/App/Http/Controllers/Pharmacy/NilDeclarationController';
 import ChartSkeleton from '@/components/aphaspb/charts/ChartSkeleton.vue';
@@ -111,6 +111,13 @@ const props = defineProps<{
     penaltyTrend?: PenaltyLedger;
     pendingInvitations?: DashboardInvitation[];
     whatsappInvite?: { url: string } | null;
+    evaluationCampaign?: {
+        year: number;
+        closesOn: string;
+        total: number;
+        remaining: number;
+        url: string;
+    } | null;
 }>();
 
 const chartType = useQueryState('chart', 'bar', isChartType);
@@ -458,6 +465,45 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
                 </button>
             </div>
         </div>
+
+        <!-- =====================================================
+             CAMPAGNE D'ÉVALUATION DES ASSUREURS
+             ===================================================== -->
+        <p
+            v-if="evaluationCampaign"
+            class="flex flex-wrap items-center gap-3 rounded-[var(--radius-band)] bg-gold/15 px-4 py-3 text-[13.5px]/[1.5] text-ink"
+        >
+            <Star
+                :size="16"
+                class="shrink-0 text-gold-dark"
+                aria-hidden="true"
+            />
+
+            <span class="flex-1">
+                La campagne d'évaluation {{ evaluationCampaign.year }} est
+                ouverte jusqu'au
+                {{
+                    new Date(evaluationCampaign.closesOn).toLocaleDateString(
+                        'fr-FR',
+                    )
+                }}
+                :
+                {{ evaluationCampaign.remaining }} assureur{{
+                    evaluationCampaign.remaining > 1 ? 's' : ''
+                }}
+                sur {{ evaluationCampaign.total }} reste{{
+                    evaluationCampaign.remaining > 1 ? 'nt' : ''
+                }}
+                à évaluer.
+            </span>
+
+            <Link
+                :href="evaluationCampaign.url"
+                class="font-bold text-gold-ink underline-offset-2 hover:underline"
+            >
+                Évaluer mes assureurs
+            </Link>
+        </p>
 
         <!-- =====================================================
              INVITATION WHATSAPP
