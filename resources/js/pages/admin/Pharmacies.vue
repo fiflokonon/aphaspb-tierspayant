@@ -385,24 +385,13 @@ const footer = computed(
    ========================================================= */
 
 .pharmacies-page {
-    --page-bg: #f8faf9;
+    --page-bg: var(--rv-f8faf9);
 
     --surface: #ffffff;
-    --surface-soft: #fbfdfc;
+    --surface-soft: var(--rv-fbfdfc);
 
-    --ink: #243a32;
-
-    --muted: #788780;
-    --muted-light: #9da8a3;
-
-    --primary: #00664c;
-    --primary-dark: #005741;
-    --primary-soft: #eef7f3;
-
-    --gold: #b08a45;
-    --gold-soft: #fbf7ef;
-
-    --border: #e5ebe8;
+    --muted: var(--rv-788780);
+    --muted-light: var(--rv-9da8a3);
 
     position: relative;
 
@@ -436,7 +425,12 @@ const footer = computed(
 
     border-radius: 18px;
 
-    background: linear-gradient(110deg, #ffffff 0%, #ffffff 58%, #f7fbf9 100%);
+    background: linear-gradient(
+        110deg,
+        #ffffff 0%,
+        #ffffff 58%,
+        var(--rv-f7fbf9) 100%
+    );
 
     animation: introAppear 0.55s ease both;
 }
@@ -460,7 +454,7 @@ const footer = computed(
     background: linear-gradient(
         90deg,
         var(--primary),
-        #2b896d 70%,
+        var(--rv-2b896d) 70%,
         var(--gold)
     );
 
@@ -480,7 +474,7 @@ const footer = computed(
     width: 210px;
     height: 210px;
 
-    border: 1px solid rgb(0 102 76 / 0.07);
+    border: 1px solid var(--rv-00664c-a07);
 
     border-radius: 50%;
 
@@ -577,7 +571,7 @@ const footer = computed(
 .intro-text h1 {
     margin: 0;
 
-    color: #203a31;
+    color: var(--rv-203a31);
 
     font-size: 21px;
 
@@ -616,7 +610,7 @@ const footer = computed(
 
     padding-left: 28px;
 
-    border-left: 1px solid #e8eeeb;
+    border-left: 1px solid var(--rv-e8eeeb);
 }
 
 .filter-item {
@@ -676,7 +670,7 @@ const footer = computed(
 .search-box:focus-within {
     border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
 
-    box-shadow: 0 0 0 3px rgb(0 102 76 / 0.06);
+    box-shadow: 0 0 0 3px var(--rv-00664c-a06);
 }
 
 .search-icon {
@@ -758,7 +752,7 @@ const footer = computed(
 }
 
 .clear-search:hover {
-    background: #dcefe8;
+    background: var(--rv-dcefe8);
 
     color: var(--primary);
 }
@@ -885,7 +879,7 @@ const footer = computed(
     background: linear-gradient(
         90deg,
         var(--primary),
-        #27856a 65%,
+        var(--rv-27856a) 65%,
         var(--gold)
     );
 }
@@ -905,7 +899,7 @@ const footer = computed(
 
     border-bottom: 1px solid var(--border);
 
-    background: linear-gradient(135deg, #ffffff, #fbfdfc);
+    background: linear-gradient(135deg, #ffffff, var(--rv-fbfdfc));
 }
 
 .table-heading-main {
@@ -925,7 +919,7 @@ const footer = computed(
     align-items: center;
     justify-content: center;
 
-    border: 1px solid #d9ebe4;
+    border: 1px solid var(--rv-d9ebe4);
 
     border-radius: 12px;
 
@@ -994,7 +988,7 @@ const footer = computed(
 
     padding: 0 11px;
 
-    border: 1px solid #dcebe5;
+    border: 1px solid var(--rv-dcebe5);
 
     border-radius: 9px;
 
@@ -1051,11 +1045,11 @@ const footer = computed(
     align-items: center;
     justify-content: center;
 
-    border: 1px solid rgb(0 102 76 / 0.12);
+    border: 1px solid var(--rv-00664c-a12);
 
     border-radius: 10px;
 
-    background: linear-gradient(145deg, var(--primary-soft), #f8fcfa);
+    background: linear-gradient(145deg, var(--primary-soft), var(--rv-f8fcfa));
 
     color: var(--primary-dark);
 
@@ -1071,7 +1065,7 @@ const footer = computed(
 .pharmacy-row:hover .pharmacy-avatar {
     transform: translateY(-1px);
 
-    box-shadow: 0 5px 14px rgb(0 102 76 / 0.1);
+    box-shadow: 0 5px 14px var(--rv-00664c-a1);
 }
 
 .pharmacy-name-content {
@@ -1129,7 +1123,7 @@ const footer = computed(
 
     background: var(--primary);
 
-    box-shadow: 0 0 0 3px rgb(0 102 76 / 0.07);
+    box-shadow: 0 0 0 3px var(--rv-00664c-a07);
 }
 
 /* =========================================================
@@ -1245,7 +1239,7 @@ const footer = computed(
 
     border-radius: 7px;
 
-    background: rgb(0 102 76 / 0.06);
+    background: var(--rv-00664c-a06);
 
     color: var(--primary);
 
@@ -1281,7 +1275,7 @@ const footer = computed(
 
     margin-bottom: 13px;
 
-    border: 1px solid rgb(0 102 76 / 0.12);
+    border: 1px solid var(--rv-00664c-a12);
 
     border-radius: 15px;
 
@@ -1317,7 +1311,7 @@ const footer = computed(
 
     padding: 0 14px;
 
-    border: 1px solid rgb(0 102 76 / 0.16);
+    border: 1px solid var(--rv-00664c-a16);
 
     border-radius: 8px;
 
@@ -1338,7 +1332,7 @@ const footer = computed(
 }
 
 .empty-reset:hover {
-    border-color: rgb(0 102 76 / 0.3);
+    border-color: var(--rv-00664c-a3);
 
     background: var(--primary-soft);
 
@@ -1371,7 +1365,7 @@ const footer = computed(
 
     border-radius: 13px;
 
-    background: linear-gradient(105deg, #ffffff, #fbfdfc);
+    background: linear-gradient(105deg, #ffffff, var(--rv-fbfdfc));
 }
 
 .footnote-icon {
@@ -1479,7 +1473,7 @@ const footer = computed(
         padding-top: 16px;
         padding-left: 0;
 
-        border-top: 1px solid #e8eeeb;
+        border-top: 1px solid var(--rv-e8eeeb);
 
         border-left: 0;
     }

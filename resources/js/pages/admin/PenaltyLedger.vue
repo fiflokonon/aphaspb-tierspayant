@@ -324,25 +324,15 @@ const FORMATS = [
 
 <style scoped>
 .penalty-ledger-page {
-    --page-bg: #f8faf9;
+    --page-bg: var(--rv-f8faf9);
     --surface: #ffffff;
-    --surface-soft: #fbfdfc;
+    --surface-soft: var(--rv-fbfdfc);
 
-    --ink: #243a32;
-    --muted: #788780;
-    --muted-light: #9da8a3;
+    --muted: var(--rv-788780);
+    --muted-light: var(--rv-9da8a3);
 
-    --primary: #00664c;
-    --primary-dark: #005741;
-    --primary-soft: #eef7f3;
-
-    --gold: #b08a45;
-    --gold-soft: #fbf7ef;
-
-    --danger: #b96558;
-    --danger-soft: #fbf1ef;
-
-    --border: #e5ebe8;
+    --danger: var(--rv-b96558);
+    --danger-soft: var(--rv-fbf1ef);
 
     position: relative;
     width: 100%;
@@ -387,7 +377,12 @@ const FORMATS = [
     border: 1px solid var(--border);
     border-radius: 18px;
 
-    background: linear-gradient(110deg, #ffffff 0%, #ffffff 58%, #f7fbf9 100%);
+    background: linear-gradient(
+        110deg,
+        #ffffff 0%,
+        #ffffff 58%,
+        var(--rv-f7fbf9) 100%
+    );
 
     /* box-shadow:
         0 7px 28px rgb(35 70 68 / 0.045); */
@@ -409,7 +404,7 @@ const FORMATS = [
     background: linear-gradient(
         90deg,
         var(--primary),
-        #2b896d 70%,
+        var(--rv-2b896d) 70%,
         var(--gold)
     );
 
@@ -425,7 +420,7 @@ const FORMATS = [
     width: 210px;
     height: 210px;
 
-    border: 1px solid rgb(0 102 76 / 0.07);
+    border: 1px solid var(--rv-00664c-a07);
     border-radius: 50%;
 
     pointer-events: none;
@@ -512,7 +507,7 @@ const FORMATS = [
 .intro-text h1 {
     margin: 0;
 
-    color: #203a31;
+    color: var(--rv-203a31);
 
     font-size: 21px;
     font-weight: 800;
@@ -544,7 +539,7 @@ const FORMATS = [
 
     padding-left: 28px;
 
-    border-left: 1px solid #e8eeeb;
+    border-left: 1px solid var(--rv-e8eeeb);
 }
 
 .filter-item {
@@ -617,7 +612,7 @@ const FORMATS = [
     background: linear-gradient(
         90deg,
         var(--primary),
-        #27856a 65%,
+        var(--rv-27856a) 65%,
         var(--gold)
     );
 }
@@ -645,7 +640,7 @@ const FORMATS = [
     align-items: center;
     justify-content: center;
 
-    border: 1px solid #d9ebe4;
+    border: 1px solid var(--rv-d9ebe4);
     border-radius: 12px;
 
     background: var(--primary-soft);
@@ -735,7 +730,7 @@ const FORMATS = [
 
     border-bottom: 1px solid var(--border);
 
-    background: linear-gradient(135deg, #ffffff, #fbfdfc);
+    background: linear-gradient(135deg, #ffffff, var(--rv-fbfdfc));
 }
 
 .table-status {
@@ -750,7 +745,7 @@ const FORMATS = [
 
     padding: 0 11px;
 
-    border: 1px solid #dcebe5;
+    border: 1px solid var(--rv-dcebe5);
     border-radius: 9px;
 
     background: var(--primary-soft);
@@ -793,10 +788,10 @@ const FORMATS = [
 
     padding: 11px 13px;
 
-    border: 1px solid #e6eee9;
+    border: 1px solid var(--rv-e6eee9);
     border-radius: 11px;
 
-    background: #f8fcfa;
+    background: var(--rv-f8fcfa);
 }
 
 .note-icon {
@@ -848,7 +843,7 @@ const FORMATS = [
     border: 1px solid var(--border);
     border-radius: 16px;
 
-    background: linear-gradient(105deg, #ffffff, #fbfdfc);
+    background: linear-gradient(105deg, #ffffff, var(--rv-fbfdfc));
 
     /* box-shadow:
         0 6px 22px rgb(30 68 57 / 0.04); */
@@ -946,7 +941,7 @@ const FORMATS = [
 }
 
 .export-link:hover {
-    border-color: #cfe1d9;
+    border-color: var(--rv-cfe1d9);
 
     background: var(--primary-soft);
 
@@ -1027,7 +1022,7 @@ const FORMATS = [
         padding-top: 16px;
         padding-left: 0;
 
-        border-top: 1px solid #e8eeeb;
+        border-top: 1px solid var(--rv-e8eeeb);
         border-left: 0;
     }
 

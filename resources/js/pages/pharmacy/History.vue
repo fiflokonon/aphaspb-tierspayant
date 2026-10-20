@@ -106,17 +106,14 @@ const footer = computed(
     <Head title="Historique" />
 
     <div class="history-page">
-        <br>
-            <div class="intro-text">
-                        
-                        <h1>Historique</h1>
-                       
-                    </div>
+        <br />
+        <div class="intro-text">
+            <h1>Historique</h1>
+        </div>
         <ConsoleHeader title="" class="intro-text">
             <template #filters>
                 <div class="history-filters">
                     <div class="filter-wrapper">
-                        
                         <FilterSelect
                             v-model="insurer"
                             :options="insurerOptions"
@@ -355,7 +352,6 @@ const footer = computed(
 </template>
 
 <style scoped>
-
 .intro-text h1 {
     margin: 0;
 

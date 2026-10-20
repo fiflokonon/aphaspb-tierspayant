@@ -72,28 +72,46 @@ defineProps<{
     z-index: -1;
     inset: 0 0 0 236px;
     pointer-events: none;
-    background: linear-gradient(180deg, rgb(255 255 255 / 0.22), transparent 22%);
+    background: linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.22),
+        transparent 22%
+    );
 }
 
 @media (min-width: 640px) {
-    .app-content { padding: 22px 24px 42px; }
+    .app-content {
+        padding: 22px 24px 42px;
+    }
 }
 
 @media (min-width: 1024px) {
-    .app-content { padding: 18px 30px 46px; }
+    .app-content {
+        padding: 18px 30px 46px;
+    }
 }
 
 @media (min-width: 1280px) {
-    .app-content { padding: 20px 38px 52px; }
+    .app-content {
+        padding: 20px 38px 52px;
+    }
 }
 
 @media (max-width: 1023px) {
-    .app-shell { flex-direction: column; }
-    .app-content::before { inset: 0; }
+    .app-shell {
+        flex-direction: column;
+    }
+    .app-content::before {
+        inset: 0;
+    }
 }
 
 @media (max-width: 639px) {
-    .app-shell { min-height: 100svh; }
-    .app-content { padding: 14px 12px 28px; }
+    .app-shell {
+        min-height: 100svh;
+    }
+    .app-content {
+        padding: 14px 12px 28px;
+    }
 }
 </style>

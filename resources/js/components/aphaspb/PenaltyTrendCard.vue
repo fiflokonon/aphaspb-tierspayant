@@ -113,9 +113,7 @@ async function exportChart() {
 </script>
 
 <template>
-    <section
-        class="rounded-[var(--radius-card)] bg-card p-5"
-    >
+    <section class="rounded-[var(--radius-card)] bg-card p-5">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h2 class="text-section font-semibold text-ink">

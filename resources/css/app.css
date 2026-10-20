@@ -7,11 +7,9 @@
 @source '../../storage/framework/views/*.php';
 
 @theme inline {
-
     --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
     /* --font-mono: 'JetBrains Mono', ui-monospace, monospace;
     --font-serif: 'Manrope', ui-sans-serif, system-ui, sans-serif; */
-
 
     /*
       Échelle typographique de la refonte. Définie ici et appliquée par les
@@ -46,7 +44,7 @@
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
---font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
     --color-background: var(--background);
     --color-foreground: var(--foreground);
 
@@ -124,7 +122,7 @@
     }
 }
 
- :root {
+:root {
     /* APhaSPB — Elegant clinical dashboard system */
     --ink: #17311f;
     --ink-soft: #617267;
@@ -174,7 +172,7 @@
     --sidebar-primary-foreground: var(--officine-deep);
     --sidebar-accent: rgb(255 255 255 / 0.09);
     --sidebar-accent-foreground: #ffffff;
-    --sidebar-border: rgb(255 255 255 / 0.10);
+    --sidebar-border: rgb(255 255 255 / 0.1);
     --sidebar-ring: #8bd8ca;
 
     --chart-1: var(--officine);
@@ -197,8 +195,10 @@
     --apha-card: var(--card);
     --apha-gold-dark: var(--gold-dark);
 
-    --surface-shadow: 0 1px 2px rgb(20 53 43 / 0.04), 0 10px 28px -16px rgb(20 53 43 / 0.24);
-    --surface-shadow-raised: 0 5px 12px rgb(20 53 43 / 0.07), 0 22px 45px -20px rgb(20 53 43 / 0.24);
+    --surface-shadow:
+        0 1px 2px rgb(20 53 43 / 0.04), 0 10px 28px -16px rgb(20 53 43 / 0.24);
+    --surface-shadow-raised:
+        0 5px 12px rgb(20 53 43 / 0.07), 0 22px 45px -20px rgb(20 53 43 / 0.24);
     --radius-card: 18px;
     --radius-band: 14px;
     --radius-nav: 12px;
@@ -246,3 +246,213 @@
   pour elle : PaletteSourceTest surveille désormais ce fichier hors de :root
   et de @theme, et une teinte écrite ici le ferait rougir.
 */
+
+/*
+    Palette de la revue du design (octobre 2026), reprise telle quelle.
+
+    Ces teintes vivaient en dur dans les pages et la coquille. Elles sont
+    ici avec leur valeur exacte, nommées d’après elle : le rendu ne change
+    pas d’un pixel, et la couleur retrouve une source unique. Beaucoup sont
+    des quasi-doublons du thème ; les regrouper est une décision de design,
+    à prendre avec l’auteure de la revue, pas un nettoyage mécanique.
+*/
+:root {
+    --rv-00523e: #00523e;
+    --rv-005741: #005741;
+    --rv-00664c: #00664c;
+    --rv-00664c-a025: rgb(0 102 76 / 0.025);
+    --rv-00664c-a05: rgba(0, 102, 76, 0.05);
+    --rv-00664c-a055: rgb(0 102 76 / 0.055);
+    --rv-00664c-a06: rgb(0 102 76 / 0.06);
+    --rv-00664c-a07: rgb(0 102 76 / 0.07);
+    --rv-00664c-a08: rgb(0 102 76 / 0.08);
+    --rv-00664c-a1: rgba(0, 102, 76, 0.1);
+    --rv-00664c-a12: rgb(0 102 76 / 0.12);
+    --rv-00664c-a16: rgb(0 102 76 / 0.16);
+    --rv-00664c-a18: rgba(0, 102, 76, 0.18);
+    --rv-00664c-a2: rgba(0, 102, 76, 0.2);
+    --rv-00664c-a28: rgb(0 102 76 / 0.28);
+    --rv-00664c-a3: rgb(0 102 76 / 0.3);
+    --rv-054d41-a26: rgb(5 77 65 / 0.26);
+    --rv-073d33-a55: rgb(7 61 51 / 0.55);
+    --rv-082b23-a1: rgb(8 43 35 / 0.1);
+    --rv-0a2b26: #0a2b26;
+    --rv-0c342d: #0c342d;
+    --rv-0c7667: #0c7667;
+    --rv-0d4c40: #0d4c40;
+    --rv-141d18-a025: rgba(20, 29, 24, 0.025);
+    --rv-141d18-a03: rgba(20, 29, 24, 0.03);
+    --rv-141d18-a035: rgba(20, 29, 24, 0.035);
+    --rv-141d18-a055: rgba(20, 29, 24, 0.055);
+    --rv-141d18-a06: rgba(20, 29, 24, 0.06);
+    --rv-148f79: #148f79;
+    --rv-16332a-a075: rgb(22 51 42 / 0.075);
+    --rv-17372d: #17372d;
+    --rv-1aa68e: #1aa68e;
+    --rv-1e4439-a055: rgb(30 68 57 / 0.055);
+    --rv-1e4439-a095: rgb(30 68 57 / 0.095);
+    --rv-1f3930: #1f3930;
+    --rv-20372f: #20372f;
+    --rv-203a31: #203a31;
+    --rv-233a32: #233a32;
+    --rv-23473f: #23473f;
+    --rv-243a32: #243a32;
+    --rv-24866b: #24866b;
+    --rv-274f49-a07: rgb(39 79 73 / 0.07);
+    --rv-274f49-a1: rgb(39 79 73 / 0.1);
+    --rv-274f49-a11: rgb(39 79 73 / 0.11);
+    --rv-27805f: #27805f;
+    --rv-27856a: #27856a;
+    --rv-2b5a52: #2b5a52;
+    --rv-2b896d: #2b896d;
+    --rv-2b8c70: #2b8c70;
+    --rv-2b8c7b: #2b8c7b;
+    --rv-318a70: #318a70;
+    --rv-4a9c83: #4a9c83;
+    --rv-4ebea9-a08: rgb(78 190 169 / 0.08);
+    --rv-617a73: #617a73;
+    --rv-6b7d76: #6b7d76;
+    --rv-70d2bf: #70d2bf;
+    --rv-70d2bf-a015: rgb(112 210 191 / 0.015);
+    --rv-70d2bf-a07: rgb(112 210 191 / 0.07);
+    --rv-70d2bf-a08: rgb(112 210 191 / 0.08);
+    --rv-71827c: #71827c;
+    --rv-71857f: #71857f;
+    --rv-74827b: #74827b;
+    --rv-788780: #788780;
+    --rv-78918a: #78918a;
+    --rv-7a8983: #7a8983;
+    --rv-7bd5c5: #7bd5c5;
+    --rv-7c8984: #7c8984;
+    --rv-876a32: #876a32;
+    --rv-8bd8ca: #8bd8ca;
+    --rv-8ccfc2: #8ccfc2;
+    --rv-8d6d36: #8d6d36;
+    --rv-8ed9cc: #8ed9cc;
+    --rv-9ce0d3: #9ce0d3;
+    --rv-9da8a3: #9da8a3;
+    --rv-a1aca7: #a1aca7;
+    --rv-b08a45: #b08a45;
+    --rv-b08a45-a07: rgba(176, 138, 69, 0.07);
+    --rv-b08a45-a08: rgba(176, 138, 69, 0.08);
+    --rv-b08a45-a1: rgba(176, 138, 69, 0.1);
+    --rv-b08a45-a13: rgba(176, 138, 69, 0.13);
+    --rv-b08a45-a17: rgba(176, 138, 69, 0.17);
+    --rv-b08a45-a2: rgba(176, 138, 69, 0.2);
+    --rv-b08a45-a22: rgb(176 138 69 / 0.22);
+    --rv-b45f50: #b45f50;
+    --rv-b96558: #b96558;
+    --rv-b9e5dc: #b9e5dc;
+    --rv-cfe0d8: #cfe0d8;
+    --rv-cfe1d9: #cfe1d9;
+    --rv-d8aa3b: #d8aa3b;
+    --rv-d8aa3b-a1: rgb(216 170 59 / 0.1);
+    --rv-d8e5df: #d8e5df;
+    --rv-d9ebe4: #d9ebe4;
+    --rv-dce8e2: #dce8e2;
+    --rv-dcebe4: #dcebe4;
+    --rv-dcebe5: #dcebe5;
+    --rv-dcefe8: #dcefe8;
+    --rv-e0eee8: #e0eee8;
+    --rv-e1eee9: #e1eee9;
+    --rv-e2ebe6: #e2ebe6;
+    --rv-e4eee9: #e4eee9;
+    --rv-e4f2ec: #e4f2ec;
+    --rv-e5ebe8: #e5ebe8;
+    --rv-e5ebe8-a8: rgba(229, 235, 232, 0.8);
+    --rv-e5ece8: #e5ece8;
+    --rv-e6eee9: #e6eee9;
+    --rv-e8eeeb: #e8eeeb;
+    --rv-eaf6f2: #eaf6f2;
+    --rv-edf1ef: #edf1ef;
+    --rv-eee4cf: #eee4cf;
+    --rv-eef6f3: #eef6f3;
+    --rv-eef7f3: #eef7f3;
+    --rv-eef8f3: #eef8f3;
+    --rv-f1f7f4: #f1f7f4;
+    --rv-f5faf8: #f5faf8;
+    --rv-f6faf8: #f6faf8;
+    --rv-f6fbf8: #f6fbf8;
+    --rv-f7faf8: #f7faf8;
+    --rv-f7fbf9: #f7fbf9;
+    --rv-f7fbfa: #f7fbfa;
+    --rv-f7fcf9-a98: rgba(247, 252, 249, 0.98);
+    --rv-f8faf9: #f8faf9;
+    --rv-f8fbf9: #f8fbf9;
+    --rv-f8fcfa: #f8fcfa;
+    --rv-fbf1ef: #fbf1ef;
+    --rv-fbf7ef: #fbf7ef;
+    --rv-fbfdfc: #fbfdfc;
+    --rv-fffdf9: #fffdf9;
+}
+
+/*
+    Les pages admin de la revue redéfinissent les tokens du thème sur leur
+    élément racine (vert #00664c au lieu du vert officine). Déplacé ici
+    tel quel : PaletteSourceTest interdit qu’un fichier Vue redéclare un
+    token du thème, et la portée reste la même — la classe racine de
+    chaque page est unique.
+*/
+.followup-page {
+    --ink: var(--rv-243a32);
+    --primary: var(--rv-00664c);
+    --primary-dark: var(--rv-005741);
+    --primary-soft: var(--rv-eef7f3);
+    --gold: var(--rv-b08a45);
+    --gold-soft: var(--rv-fbf7ef);
+    --border: var(--rv-e5ebe8);
+}
+
+.admin-exports-page {
+    --ink: var(--rv-243a32);
+    --primary: var(--rv-00664c);
+    --primary-dark: var(--rv-005741);
+    --primary-soft: var(--rv-eef7f3);
+    --gold: var(--rv-b08a45);
+    --gold-soft: var(--rv-fbf7ef);
+    --border: var(--rv-e5ebe8);
+}
+
+.network-page {
+    --apha-primary: var(--rv-00664c);
+    --apha-primary-dark: var(--rv-005741);
+    --apha-primary-soft: var(--rv-eef7f3);
+    --apha-gold: var(--rv-b08a45);
+    --apha-gold-soft: var(--rv-fbf7ef);
+    --apha-ink: var(--rv-243a32);
+    --apha-muted: var(--rv-788780);
+    --apha-light: var(--rv-9da8a3);
+    --apha-border: var(--rv-e5ebe8);
+    --apha-surface: #ffffff;
+    --apha-background: var(--rv-f8faf9);
+}
+
+.penalty-ledger-page {
+    --ink: var(--rv-243a32);
+    --primary: var(--rv-00664c);
+    --primary-dark: var(--rv-005741);
+    --primary-soft: var(--rv-eef7f3);
+    --gold: var(--rv-b08a45);
+    --gold-soft: var(--rv-fbf7ef);
+    --border: var(--rv-e5ebe8);
+}
+
+.pharmacies-page {
+    --ink: var(--rv-243a32);
+    --primary: var(--rv-00664c);
+    --primary-dark: var(--rv-005741);
+    --primary-soft: var(--rv-eef7f3);
+    --gold: var(--rv-b08a45);
+    --gold-soft: var(--rv-fbf7ef);
+    --border: var(--rv-e5ebe8);
+}
+
+.network-evolution-page {
+    --ink: var(--rv-20372f);
+    --border: var(--rv-e5ece8);
+    --primary: var(--rv-00664c);
+    --primary-dark: var(--rv-00523e);
+    --primary-soft: var(--rv-eef7f3);
+    --gold: var(--rv-b08a45);
+    --gold-soft: var(--rv-fbf7ef);
+}

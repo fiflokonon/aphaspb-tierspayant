@@ -955,7 +955,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     border-left-width: 3px;
     border-radius: 11px;
 
-    box-shadow: 0 2px 8px rgba(20, 29, 24, 0.025);
+    box-shadow: 0 2px 8px var(--rv-141d18-a025);
 
     transition:
         transform 0.2s ease,
@@ -964,7 +964,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
 .insurer-banner:hover {
     transform: translateY(-1px);
-    box-shadow: 0 7px 18px rgba(20, 29, 24, 0.055);
+    box-shadow: 0 7px 18px var(--rv-141d18-a055);
 }
 
 .insurer-banner-icon-wrap {
@@ -1177,7 +1177,7 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
         #fff
     );
 
-    box-shadow: 0 5px 18px rgba(20, 29, 24, 0.035);
+    box-shadow: 0 5px 18px var(--rv-141d18-a035);
 }
 
 .catch-up::before {
@@ -1495,8 +1495,8 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
     background: #fff;
 
     box-shadow:
-        0 4px 18px rgba(20, 29, 24, 0.035),
-        0 1px 2px rgba(20, 29, 24, 0.025);
+        0 4px 18px var(--rv-141d18-a035),
+        0 1px 2px var(--rv-141d18-a025);
 
     animation: cardAppear 0.5s ease both;
 
@@ -1507,8 +1507,8 @@ const ageingTotal = props.ageing.reduce((sum, band) => sum + band.amount, 0);
 
 .dashboard-card:hover {
     box-shadow:
-        0 10px 28px rgba(20, 29, 24, 0.06),
-        0 1px 2px rgba(20, 29, 24, 0.03);
+        0 10px 28px var(--rv-141d18-a06),
+        0 1px 2px var(--rv-141d18-a03);
 }
 
 .card-top-line {

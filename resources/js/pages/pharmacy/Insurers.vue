@@ -50,11 +50,10 @@ const losing = computed(() =>
     <Head title="Mes assureurs" />
 
     <div class="insurers-page">
-         <br>
-          <div class="intro-text"> 
-                        <h1>Mes assureurs</h1>
-                       
-                    </div>
+        <br />
+        <div class="intro-text">
+            <h1>Mes assureurs</h1>
+        </div>
         <ConsoleHeader title="" class="insurers-header" />
 
         <div class="insurers-layout">

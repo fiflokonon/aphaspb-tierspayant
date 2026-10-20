@@ -1041,7 +1041,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
         transform 0.2s ease;
 }
 .intro-text h1 {
-    color: #203a31;
+    color: var(--rv-203a31);
 
     font-size: 21px;
     font-weight: 800;

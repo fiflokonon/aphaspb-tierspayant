@@ -53,7 +53,10 @@ defineProps<{
 
 <style scoped>
 .console-header {
-    display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 .header-band {
     min-width: 0;
@@ -65,7 +68,7 @@ defineProps<{
     font-size: 11px;
     line-height: 1;
     font-weight: 700;
-    letter-spacing: .10em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--officine);
 }
@@ -81,7 +84,7 @@ defineProps<{
     line-height: 1.12;
     font-weight: 700;
     color: var(--ink);
-    letter-spacing: -.025em;
+    letter-spacing: -0.025em;
 }
 
 .header-eyebrow + .header-title {
@@ -99,16 +102,46 @@ defineProps<{
 }
 
 @media (min-width: 1024px) {
-    .console-header { flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 24px; }
-    .header-actions { flex-shrink: 0; justify-content: flex-end; }
-    .header-hero:not(:empty) { margin-top: 18px; }
+    .console-header {
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+    }
+    .header-actions {
+        flex-shrink: 0;
+        justify-content: flex-end;
+    }
+    .header-hero:not(:empty) {
+        margin-top: 18px;
+    }
 }
 
 @media (max-width: 1023.98px) {
-    .header-band { padding: 20px 20px 18px; border-radius: 18px; background: linear-gradient(135deg, var(--officine-deep), #0d4c40); box-shadow: 0 16px 34px -22px rgb(7 61 51 / .55); }
-    .header-eyebrow { color: #8ed9cc; }
-    .header-space { display: inline-flex; margin-bottom: 8px; }
-    .header-title { font-size: 28px; line-height: 1.08; color: #fff; }
-    .header-hero { margin-top: 15px; }
+    .header-band {
+        padding: 20px 20px 18px;
+        border-radius: 18px;
+        background: linear-gradient(
+            135deg,
+            var(--officine-deep),
+            var(--rv-0d4c40)
+        );
+        box-shadow: 0 16px 34px -22px var(--rv-073d33-a55);
+    }
+    .header-eyebrow {
+        color: var(--rv-8ed9cc);
+    }
+    .header-space {
+        display: inline-flex;
+        margin-bottom: 8px;
+    }
+    .header-title {
+        font-size: 28px;
+        line-height: 1.08;
+        color: #fff;
+    }
+    .header-hero {
+        margin-top: 15px;
+    }
 }
 </style>

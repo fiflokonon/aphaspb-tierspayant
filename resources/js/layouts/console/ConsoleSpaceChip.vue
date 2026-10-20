@@ -60,7 +60,6 @@ const space = computed(() => {
 </template>
 
 <style scoped>
-
 .space-chip {
     display: inline-flex;
     align-items: center;
@@ -71,21 +70,21 @@ const space = computed(() => {
 
     padding: 8px 12px;
 
-    border: 1px solid #e2ebe6;
+    border: 1px solid var(--rv-e2ebe6);
     border-radius: 10px;
 
-    background: #f7faf8;
+    background: var(--rv-f7faf8);
 
     font-family: 'Manrope', sans-serif;
 
-    color: #17372d;
+    color: var(--rv-17372d);
 
     transition: all 0.2s ease;
 }
 
 .space-chip:hover {
-    background: #f1f7f4;
-    border-color: #cfe0d8;
+    background: var(--rv-f1f7f4);
+    border-color: var(--rv-cfe0d8);
 }
 
 .space-dot {
@@ -96,9 +95,9 @@ const space = computed(() => {
 
     border-radius: 50%;
 
-    background: #00664c;
+    background: var(--rv-00664c);
 
-    box-shadow: 0 0 0 4px rgb(0 102 76 / 0.08);
+    box-shadow: 0 0 0 4px var(--rv-00664c-a08);
 }
 
 .space-name {
@@ -107,7 +106,7 @@ const space = computed(() => {
     font-size: 12px;
     font-weight: 700;
 
-    color: #17372d;
+    color: var(--rv-17372d);
 
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -119,7 +118,7 @@ const space = computed(() => {
     font-size: 11px;
     font-weight: 500;
 
-    color: #7a8983;
+    color: var(--rv-7a8983);
 }
 
 /* Icône */
@@ -136,7 +135,7 @@ const space = computed(() => {
 
     border-radius: 9px;
 
-    background: #00664c;
+    background: var(--rv-00664c);
     color: #ffffff;
 }
 
@@ -164,14 +163,13 @@ const space = computed(() => {
     font-size: 9px;
     font-weight: 700;
 
-    letter-spacing: 0.10em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
 
-    color: #6b7d76;
+    color: var(--rv-6b7d76);
 }
 
 /* Nom de l'officine */
-
 
 /* Ville */
 
@@ -181,7 +179,7 @@ const space = computed(() => {
     font-size: 11px;
     font-weight: 500;
 
-    color: #71827c;
+    color: var(--rv-71827c);
 }
 
 /* Version utilisée dans le bandeau vert */
@@ -225,7 +223,7 @@ const space = computed(() => {
 }
 
 .space-chip.on-band .space-city {
-    color: rgb(255 255 255 / 0.70);
+    color: rgb(255 255 255 / 0.7);
 }
 
 /* Mobile */

@@ -73,7 +73,7 @@ test('app.css is the file that does define the palette', function () {
     $css = File::get(resource_path('css/app.css'));
 
     expect($css)->toContain('--apha-primary: var(--officine)')
-        ->and($css)->toContain('--officine: #14764c');
+        ->and($css)->toContain('--officine: #0f8f78');
 });
 
 test('every custom property a Vue file reads is actually defined somewhere', function () {

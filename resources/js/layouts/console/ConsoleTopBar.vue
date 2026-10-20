@@ -28,7 +28,9 @@ defineProps<{
             <!-- <ConsoleSpaceChip /> -->
 
             <div class="topbar-status">
-                <span class="status-icon"><ShieldCheck class="size-[14px]" /></span>
+                <span class="status-icon"
+                    ><ShieldCheck class="size-[14px]"
+                /></span>
                 <span>Service opérationnel</span>
             </div>
         </div>
@@ -58,9 +60,13 @@ defineProps<{
     gap: 20px;
     margin-bottom: 24px;
     padding: 10px 12px 10px 16px;
-    border: 1px solid rgb(39 79 73 / .10);
+    border: 1px solid var(--rv-274f49-a1);
     border-radius: 18px;
-    background: linear-gradient(135deg, #f7fbfa 0%, #eef6f3 100%);
+    background: linear-gradient(
+        135deg,
+        var(--rv-f7fbfa) 0%,
+        var(--rv-eef6f3) 100%
+    );
     /* box-shadow: 0 8px 24px -18px rgb(36 82 72 / .30); */
     overflow: hidden;
 }
@@ -70,7 +76,7 @@ defineProps<{
     position: absolute;
     inset: 0 auto 0 0;
     width: 4px;
-    background: linear-gradient(180deg, #2b8c7b, #8ccfc2);
+    background: linear-gradient(180deg, var(--rv-2b8c7b), var(--rv-8ccfc2));
 }
 
 .topbar-context,
@@ -80,8 +86,12 @@ defineProps<{
     min-width: 0;
 }
 
-.topbar-context { gap: 10px; }
-.topbar-actions { gap: 9px; }
+.topbar-context {
+    gap: 10px;
+}
+.topbar-actions {
+    gap: 9px;
+}
 
 .topbar-brand-mark {
     width: 38px;
@@ -91,7 +101,7 @@ defineProps<{
     justify-content: center;
     flex-shrink: 0;
     border-radius: 12px;
-    background: #2b5a52;
+    background: var(--rv-2b5a52);
     /* box-shadow: 0 6px 16px rgb(39 79 73 / .16); */
 }
 
@@ -99,7 +109,7 @@ defineProps<{
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #b9e5dc;
+    background: var(--rv-b9e5dc);
     /* box-shadow: 0 0 0 5px rgb(185 229 220 / .12); */
 }
 
@@ -111,15 +121,15 @@ defineProps<{
 }
 
 .topbar-kicker {
-    color: #78918a;
+    color: var(--rv-78918a);
     font-family: var(--font-mono, ui-monospace, monospace);
     font-size: 8.5px;
     font-weight: 800;
-    letter-spacing: .13em;
+    letter-spacing: 0.13em;
 }
 
 .topbar-title {
-    color: #23473f;
+    color: var(--rv-23473f);
     font-size: 13.5px;
     font-weight: 750;
 }
@@ -129,10 +139,12 @@ defineProps<{
     width: 1px;
     height: 28px;
     flex-shrink: 0;
-    background: rgb(39 79 73 / .11);
+    background: var(--rv-274f49-a11);
 }
 
-.topbar-divider { margin: 0 3px; }
+.topbar-divider {
+    margin: 0 3px;
+}
 
 .topbar-status,
 .topbar-network {
@@ -140,7 +152,7 @@ defineProps<{
     align-items: center;
     gap: 6px;
     white-space: nowrap;
-    color: #617a73;
+    color: var(--rv-617a73);
     font-size: 11.5px;
     font-weight: 650;
 }
@@ -148,15 +160,25 @@ defineProps<{
 .topbar-status {
     padding: 8px 10px;
     border-radius: 10px;
-    background: rgb(255 255 255 / .68);
-    border: 1px solid rgb(39 79 73 / .07);
+    background: rgb(255 255 255 / 0.68);
+    border: 1px solid var(--rv-274f49-a07);
 }
 
-.status-icon { color: #2b8c7b; display: inline-flex; }
-.topbar-network { padding: 0 4px; color: #71857f; }
-.topbar-network svg { color: #2b8c7b; }
+.status-icon {
+    color: var(--rv-2b8c7b);
+    display: inline-flex;
+}
+.topbar-network {
+    padding: 0 4px;
+    color: var(--rv-71857f);
+}
+.topbar-network svg {
+    color: var(--rv-2b8c7b);
+}
 
 @media (max-width: 1280px) {
-    .topbar-network { display: none; }
+    .topbar-network {
+        display: none;
+    }
 }
 </style>

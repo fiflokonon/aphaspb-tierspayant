@@ -681,24 +681,17 @@ async function exportChart() {
 
 <style scoped>
 .network-evolution-page {
-    --page-bg: #f7faf8;
+    --page-bg: var(--rv-f7faf8);
     --surface: #ffffff;
-    --surface-soft: #fbfdfc;
-    --ink: #20372f;
-    --muted: #7c8984;
-    --muted-soft: #a1aca7;
-    --border: #e5ece8;
-    --primary: #00664c;
-    --primary-dark: #00523e;
-    --primary-soft: #eef7f3;
-    --success: #27805f;
-    --success-soft: #eef8f3;
-    --danger: #b96558;
-    --danger-soft: #fbf1ef;
-    --gold: #b08a45;
-    --gold-soft: #fbf7ef;
-    --shadow: 0 8px 30px rgb(30 68 57 / 0.055);
-    --shadow-hover: 0 15px 38px rgb(30 68 57 / 0.095);
+    --surface-soft: var(--rv-fbfdfc);
+    --muted: var(--rv-7c8984);
+    --muted-soft: var(--rv-a1aca7);
+    --success: var(--rv-27805f);
+    --success-soft: var(--rv-eef8f3);
+    --danger: var(--rv-b96558);
+    --danger-soft: var(--rv-fbf1ef);
+    --shadow: 0 8px 30px var(--rv-1e4439-a055);
+    --shadow-hover: 0 15px 38px var(--rv-1e4439-a095);
 
     position: relative;
     width: 100%;
@@ -734,7 +727,12 @@ async function exportChart() {
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: 18px;
-    background: linear-gradient(110deg, #ffffff 0%, #ffffff 60%, #f6fbf8 100%);
+    background: linear-gradient(
+        110deg,
+        #ffffff 0%,
+        #ffffff 60%,
+        var(--rv-f6fbf8) 100%
+    );
     /* box-shadow: 0 7px 28px rgb(35 70 68 / 0.045); */
     animation: fadeUp 0.5s ease both;
 }
@@ -746,7 +744,12 @@ async function exportChart() {
     top: 0;
     height: 2px;
     border-radius: 0 0 4px 4px;
-    background: linear-gradient(90deg, var(--primary), #318a70, var(--gold));
+    background: linear-gradient(
+        90deg,
+        var(--primary),
+        var(--rv-318a70),
+        var(--gold)
+    );
     content: '';
 }
 
@@ -756,7 +759,7 @@ async function exportChart() {
     top: -105px;
     width: 220px;
     height: 220px;
-    border: 1px solid rgb(0 102 76 / 0.06);
+    border: 1px solid var(--rv-00664c-a06);
     border-radius: 50%;
     pointer-events: none;
 }
@@ -821,7 +824,7 @@ async function exportChart() {
 
 .intro-text h1 {
     margin: 0;
-    color: #1f3930;
+    color: var(--rv-1f3930);
     font-size: 20px;
     font-weight: 800;
     line-height: 1.2;
@@ -891,14 +894,14 @@ async function exportChart() {
     bottom: -38px;
     width: 105px;
     height: 105px;
-    border: 1px solid rgb(0 102 76 / 0.055);
+    border: 1px solid var(--rv-00664c-a055);
     border-radius: 50%;
     content: '';
     pointer-events: none;
 }
 
 .metric-wrapper:hover {
-    border-color: #d8e5df;
+    border-color: var(--rv-d8e5df);
     /* box-shadow: var(--shadow-hover); */
     transform: translateY(-3px);
 }
@@ -995,7 +998,7 @@ async function exportChart() {
     background: linear-gradient(
         90deg,
         var(--primary) 0%,
-        #24866b 58%,
+        var(--rv-24866b) 58%,
         var(--gold) 100%
     );
 }
@@ -1007,7 +1010,7 @@ async function exportChart() {
     gap: 28px;
     padding: 25px 25px 18px;
     border-bottom: 1px solid var(--border);
-    background: linear-gradient(135deg, #ffffff 0%, #fbfdfc 100%);
+    background: linear-gradient(135deg, #ffffff 0%, var(--rv-fbfdfc) 100%);
 }
 
 .trend-heading {
@@ -1027,7 +1030,7 @@ async function exportChart() {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #d9ebe4;
+    border: 1px solid var(--rv-d9ebe4);
     border-radius: 12px;
     background: var(--primary-soft);
     color: var(--primary);
@@ -1069,10 +1072,10 @@ async function exportChart() {
     flex-shrink: 0;
     min-height: 34px;
     padding: 0 12px;
-    border: 1px solid rgb(176 138 69 / 0.22);
+    border: 1px solid var(--rv-b08a45-a22);
     border-radius: 10px;
     background: var(--gold-soft);
-    color: #8d6d36;
+    color: var(--rv-8d6d36);
     font-size: 11px;
     font-weight: 750;
     white-space: nowrap;
@@ -1092,7 +1095,7 @@ async function exportChart() {
     min-height: 51px;
     margin: 0 20px;
     padding: 9px 0;
-    border-bottom: 1px solid #edf1ef;
+    border-bottom: 1px solid var(--rv-edf1ef);
 }
 
 .chart-container {
@@ -1111,7 +1114,7 @@ async function exportChart() {
     gap: 20px;
     margin: 8px 20px 18px;
     padding: 12px 14px;
-    border: 1px solid #edf1ef;
+    border: 1px solid var(--rv-edf1ef);
     border-radius: 12px;
     background: var(--surface-soft);
 }
@@ -1215,9 +1218,9 @@ async function exportChart() {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #dcebe5;
+    border: 1px solid var(--rv-dcebe5);
     border-radius: 10px;
-    background: linear-gradient(145deg, var(--primary-soft), #f7fbf9);
+    background: linear-gradient(145deg, var(--primary-soft), var(--rv-f7fbf9));
     color: var(--primary-dark);
     font-size: 10px;
     font-weight: 850;
@@ -1298,7 +1301,7 @@ async function exportChart() {
     margin-top: 6px;
     overflow: hidden;
     border-radius: 99px;
-    background: #e8eeeb;
+    background: var(--rv-e8eeeb);
 }
 
 .recovery-fill {
@@ -1319,9 +1322,9 @@ async function exportChart() {
     gap: 10px;
     margin-top: 14px;
     padding: 13px 15px;
-    border: 1px solid #e6eee9;
+    border: 1px solid var(--rv-e6eee9);
     border-radius: 13px;
-    background: linear-gradient(100deg, #f8fcfa, #ffffff);
+    background: linear-gradient(100deg, var(--rv-f8fcfa), #ffffff);
 }
 
 .footnote-icon {
@@ -1399,7 +1402,7 @@ async function exportChart() {
         width: 100%;
         padding-top: 15px;
         padding-left: 0;
-        border-top: 1px solid #e8eeeb;
+        border-top: 1px solid var(--rv-e8eeeb);
         border-left: 0;
     }
 

@@ -86,7 +86,6 @@ function reload() {
 watch([period, insurer], reload);
 </script>
 
-
 <template>
     <Head title="Exporter mes données" />
 
@@ -124,17 +123,12 @@ watch([period, insurer], reload);
                             stroke-linecap="round"
                             stroke-linejoin="round"
                         />
-                        <path
-                            d="M5 20h14"
-                            stroke-linecap="round"
-                        />
+                        <path d="M5 20h14" stroke-linecap="round" />
                     </svg>
                 </div>
 
                 <div class="intro-copy">
-                    <span class="intro-eyebrow">
-                        EXPORT & DONNÉES
-                    </span>
+                    <span class="intro-eyebrow"> EXPORT & DONNÉES </span>
 
                     <h1>{{ pharmacyName }}</h1>
 
@@ -158,13 +152,7 @@ watch([period, insurer], reload);
                         stroke="currentColor"
                         stroke-width="1.7"
                     >
-                        <rect
-                            x="5"
-                            y="10"
-                            width="14"
-                            height="10"
-                            rx="2"
-                        />
+                        <rect x="5" y="10" width="14" height="10" rx="2" />
                         <path
                             d="M8 10V7a4 4 0 0 1 8 0v3"
                             stroke-linecap="round"
@@ -172,9 +160,7 @@ watch([period, insurer], reload);
                     </svg>
                 </span>
 
-                <span>
-                    Données privées
-                </span>
+                <span> Données privées </span>
             </div>
         </section>
 
@@ -182,17 +168,13 @@ watch([period, insurer], reload);
         <section class="formats-section">
             <div class="section-heading">
                 <div>
-                    <span class="section-kicker">
-                        FORMATS DISPONIBLES
-                    </span>
+                    <span class="section-kicker"> FORMATS DISPONIBLES </span>
 
-                    <h2>
-                        Choisissez votre format
-                    </h2>
+                    <h2>Choisissez votre format</h2>
 
                     <p>
-                        Téléchargez vos données dans le format adapté à
-                        votre besoin.
+                        Téléchargez vos données dans le format adapté à votre
+                        besoin.
                     </p>
                 </div>
             </div>
@@ -248,19 +230,13 @@ watch([period, insurer], reload);
                                 stroke="currentColor"
                                 stroke-width="1.8"
                             >
-                                <path
-                                    d="M12 4v11"
-                                    stroke-linecap="round"
-                                />
+                                <path d="M12 4v11" stroke-linecap="round" />
                                 <path
                                     d="m8 11 4 4 4-4"
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
                                 />
-                                <path
-                                    d="M5 20h14"
-                                    stroke-linecap="round"
-                                />
+                                <path d="M5 20h14" stroke-linecap="round" />
                             </svg>
                         </span>
                     </a>
@@ -269,63 +245,57 @@ watch([period, insurer], reload);
         </section>
 
         <!-- STRUCTURE DES DONNÉES -->
-<section class="columns-section">
-    <div class="columns-header">
-        <div class="columns-heading">
-            <div class="columns-icon">
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.6"
+        <section class="columns-section">
+            <div class="columns-header">
+                <div class="columns-heading">
+                    <div class="columns-icon">
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.6"
+                        >
+                            <rect x="3.5" y="4" width="17" height="16" rx="2" />
+                            <path d="M3.5 9h17" />
+                            <path d="M9 9v11" />
+                            <path d="M15 9v11" />
+                        </svg>
+                    </div>
+
+                    <div>
+                        <span class="section-kicker">
+                            STRUCTURE DES DONNÉES
+                        </span>
+
+                        <h2>Contenu de vos exports</h2>
+                    </div>
+                </div>
+
+                <div class="columns-count">
+                    <strong>{{ columns.length }}</strong>
+                    <span>colonnes</span>
+                </div>
+            </div>
+
+            <p class="columns-lede">
+                Les mêmes informations sont disponibles dans les exports CSV et
+                Excel. Chaque ligne correspond à un mois et à un assureur.
+            </p>
+
+            <div class="columns-list">
+                <span
+                    v-for="(column, index) in columns"
+                    :key="column"
+                    class="column-chip"
                 >
-                    <rect
-                        x="3.5"
-                        y="4"
-                        width="17"
-                        height="16"
-                        rx="2"
-                    />
-                    <path d="M3.5 9h17" />
-                    <path d="M9 9v11" />
-                    <path d="M15 9v11" />
-                </svg>
-            </div>
+                    <span class="column-index">
+                        {{ String(index + 1).padStart(2, '0') }}
+                    </span>
 
-            <div>
-                <span class="section-kicker">
-                    STRUCTURE DES DONNÉES
+                    {{ column }}
                 </span>
-
-                <h2>Contenu de vos exports</h2>
             </div>
-        </div>
-
-        <div class="columns-count">
-            <strong>{{ columns.length }}</strong>
-            <span>colonnes</span>
-        </div>
-    </div>
-
-    <p class="columns-lede">
-        Les mêmes informations sont disponibles dans les exports CSV et
-        Excel. Chaque ligne correspond à un mois et à un assureur.
-    </p>
-
-    <div class="columns-list">
-        <span
-            v-for="(column, index) in columns"
-            :key="column"
-            class="column-chip"
-        >
-            <span class="column-index">
-                {{ String(index + 1).padStart(2, '0') }}
-            </span>
-
-            {{ column }}
-        </span>
-    </div>
-</section>
+        </section>
 
         <!-- PRIVACY NOTE -->
         <section class="privacy-note">
@@ -337,10 +307,7 @@ watch([period, insurer], reload);
                     stroke-width="1.6"
                 >
                     <circle cx="12" cy="12" r="9" />
-                    <path
-                        d="M12 10v6"
-                        stroke-linecap="round"
-                    />
+                    <path d="M12 10v6" stroke-linecap="round" />
                     <circle
                         cx="12"
                         cy="7"
@@ -356,8 +323,8 @@ watch([period, insurer], reload);
 
                 <p>
                     Les exports disponibles ici concernent uniquement les
-                    déclarations de votre pharmacie et ne donnent accès
-                    qu’à vos propres données.
+                    déclarations de votre pharmacie et ne donnent accès qu’à vos
+                    propres données.
                 </p>
             </div>
         </section>
@@ -373,8 +340,7 @@ watch([period, insurer], reload);
     margin-top: 30px;
     padding: 22px 22px 20px;
 
-    border: 1px solid
-        color-mix(in srgb, var(--border) 78%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
 
     border-radius: 16px;
 
@@ -437,8 +403,7 @@ watch([period, insurer], reload);
 
     padding: 7px 11px;
 
-    border: 1px solid
-        color-mix(in srgb, var(--border) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 
     border-radius: 9px;
 
@@ -454,11 +419,7 @@ watch([period, insurer], reload);
     font-size: 9.5px;
     font-weight: 600;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 50%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 50%, transparent);
 }
 
 .columns-lede {
@@ -469,11 +430,7 @@ watch([period, insurer], reload);
     /* font-size: 11px; */
     line-height: 1.55;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 50%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 50%, transparent);
 }
 
 .columns-list {
@@ -493,30 +450,17 @@ watch([period, insurer], reload);
 
     padding: 4px 10px 4px 5px;
 
-    border: 1px solid
-        color-mix(in srgb, var(--border) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 
     border-radius: 8px;
 
-    background: color-mix(
-        in srgb,
-        var(--cream-state) 45%,
-        var(--card)
-    );
+    background: color-mix(in srgb, var(--cream-state) 45%, var(--card));
 
-    font-family: var(
-        --font-mono,
-        ui-monospace,
-        monospace
-    );
+    font-family: var(--font-mono, ui-monospace, monospace);
 
     font-size: 9.5px;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 76%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 76%, transparent);
 
     transition:
         background 0.15s ease,
@@ -525,11 +469,7 @@ watch([period, insurer], reload);
 }
 
 .column-chip:hover {
-    border-color: color-mix(
-        in srgb,
-        var(--primary) 25%,
-        var(--border)
-    );
+    border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
 
     background: var(--primary-soft);
 
@@ -550,11 +490,7 @@ watch([period, insurer], reload);
     font-size: 8px;
     font-weight: 700;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 42%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 42%, transparent);
 }
 
 @media (max-width: 680px) {
@@ -598,20 +534,15 @@ watch([period, insurer], reload);
 
     padding: 22px 24px;
 
-    border: 1px solid color-mix(
-        in srgb,
-        var(--border) 75%,
-        transparent
-    );
+    border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 
     border-radius: 18px;
 
-    background:
-        linear-gradient(
-            135deg,
-            color-mix(in srgb, var(--primary-soft) 42%, var(--card)),
-            var(--card) 72%
-        );
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--primary-soft) 42%, var(--card)),
+        var(--card) 72%
+    );
 
     /* box-shadow:
         0 10px 30px
@@ -635,8 +566,7 @@ watch([period, insurer], reload);
 
     flex: 0 0 46px;
 
-    border: 1px solid
-        color-mix(in srgb, var(--primary) 16%, var(--border));
+    border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--border));
 
     border-radius: 13px;
 
@@ -658,22 +588,14 @@ watch([period, insurer], reload);
 .section-kicker {
     display: block;
 
-    font-family: var(
-        --font-mono,
-        ui-monospace,
-        monospace
-    );
+    font-family: var(--font-mono, ui-monospace, monospace);
 
     font-size: 9px;
     font-weight: 700;
 
     letter-spacing: 0.13em;
 
-    color: color-mix(
-        in srgb,
-        var(--primary) 78%,
-        var(--ink)
-    );
+    color: color-mix(in srgb, var(--primary) 78%, var(--ink));
 }
 
 .intro-copy h1 {
@@ -692,11 +614,7 @@ watch([period, insurer], reload);
     /* font-size: 12px; */
     line-height: 1.55;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 55%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
 .intro-copy strong {
@@ -713,25 +631,16 @@ watch([period, insurer], reload);
 
     padding: 8px 12px;
 
-    border: 1px solid
-        color-mix(in srgb, var(--border) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 
     border-radius: 999px;
 
-    background: color-mix(
-        in srgb,
-        var(--card) 85%,
-        transparent
-    );
+    background: color-mix(in srgb, var(--card) 85%, transparent);
 
     font-size: 10.5px;
     font-weight: 650;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 62%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 62%, transparent);
 }
 
 .privacy-icon {
@@ -778,11 +687,7 @@ watch([period, insurer], reload);
     /* font-size: 11.px; */
     line-height: 1.5;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 52%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 52%, transparent);
 }
 
 /* =========================================================
@@ -811,8 +716,7 @@ watch([period, insurer], reload);
 
     padding: 18px;
 
-    border: 1px solid
-        color-mix(in srgb, var(--border) 82%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
 
     border-radius: 16px;
 
@@ -831,34 +735,21 @@ watch([period, insurer], reload);
 .format-card:hover {
     transform: translateY(-2px);
 
-    border-color: color-mix(
-        in srgb,
-        var(--primary) 24%,
-        var(--border)
-    );
-/* 
+    border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
+    /* 
     box-shadow:
         0 12px 28px
             color-mix(in srgb, var(--ink) 6%, transparent); */
 }
 
 .format-card-primary {
-    border-color: color-mix(
-        in srgb,
-        var(--primary) 20%,
-        var(--border)
-    );
+    border-color: color-mix(in srgb, var(--primary) 20%, var(--border));
 
-    background:
-        linear-gradient(
-            135deg,
-            color-mix(
-                in srgb,
-                var(--primary-soft) 48%,
-                var(--card)
-            ),
-            var(--card) 68%
-        );
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--primary-soft) 48%, var(--card)),
+        var(--card) 68%
+    );
 }
 
 .format-left {
@@ -878,35 +769,22 @@ watch([period, insurer], reload);
 
     flex: 0 0 48px;
 
-    border: 1px solid
-        color-mix(in srgb, var(--border) 75%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 
     border-radius: 13px;
 
     background: var(--cream-state);
 
-    font-family: var(
-        --font-mono,
-        ui-monospace,
-        monospace
-    );
+    font-family: var(--font-mono, ui-monospace, monospace);
 
     font-size: 10px;
     font-weight: 800;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 78%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 78%, transparent);
 }
 
 .format-badge-primary {
-    border-color: color-mix(
-        in srgb,
-        var(--primary) 18%,
-        transparent
-    );
+    border-color: color-mix(in srgb, var(--primary) 18%, transparent);
 
     background: var(--primary-soft);
 
@@ -940,11 +818,7 @@ watch([period, insurer], reload);
     /* font-size: 11.5px; */
     line-height: 1.55;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 53%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 53%, transparent);
 }
 
 .recommended-badge {
@@ -969,8 +843,7 @@ watch([period, insurer], reload);
 
     padding: 9px 11px 9px 13px;
 
-    border: 1px solid
-        color-mix(in srgb, var(--border) 90%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
 
     border-radius: 10px;
 
@@ -990,11 +863,7 @@ watch([period, insurer], reload);
 }
 
 .format-action:hover {
-    border-color: color-mix(
-        in srgb,
-        var(--primary) 35%,
-        var(--border)
-    );
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
 
     color: var(--primary);
 
@@ -1032,11 +901,7 @@ watch([period, insurer], reload);
 
     border-radius: 7px;
 
-    background: color-mix(
-        in srgb,
-        currentColor 9%,
-        transparent
-    );
+    background: color-mix(in srgb, currentColor 9%, transparent);
 }
 
 .format-arrow svg {
@@ -1052,8 +917,7 @@ watch([period, insurer], reload);
     margin-top: 30px;
     /* padding: 22px 0 0; */
 
-    border-top: 1px solid
-        color-mix(in srgb, var(--border) 80%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .columns-top {
@@ -1081,11 +945,7 @@ watch([period, insurer], reload);
 
     background: var(--cream-state);
 
-    color: color-mix(
-        in srgb,
-        var(--primary) 80%,
-        var(--ink)
-    );
+    color: color-mix(in srgb, var(--primary) 80%, var(--ink));
 }
 
 .columns-icon svg {
@@ -1100,8 +960,7 @@ watch([period, insurer], reload);
 
     padding: 7px 11px;
 
-    border: 1px solid
-        color-mix(in srgb, var(--border) 85%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
 
     border-radius: 9px;
 
@@ -1117,11 +976,7 @@ watch([period, insurer], reload);
     font-size: 9.5px;
     font-weight: 600;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 52%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 52%, transparent);
 }
 
 .columns-lede {
@@ -1132,11 +987,7 @@ watch([period, insurer], reload);
     /* font-size: 11.5px; */
     line-height: 1.6;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 53%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 53%, transparent);
 }
 
 .columns-list {
@@ -1156,26 +1007,17 @@ watch([period, insurer], reload);
 
     padding: 4px 9px 4px 5px;
 
-    border: 1px solid
-        color-mix(in srgb, var(--border) 78%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
 
     border-radius: 8px;
 
     background: var(--card);
 
-    font-family: var(
-        --font-mono,
-        ui-monospace,
-        monospace
-    );
+    font-family: var(--font-mono, ui-monospace, monospace);
 
     font-size: 9.5px;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 78%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 78%, transparent);
 
     transition:
         border-color 0.15s ease,
@@ -1183,17 +1025,9 @@ watch([period, insurer], reload);
 }
 
 .column-chip:hover {
-    border-color: color-mix(
-        in srgb,
-        var(--primary) 25%,
-        var(--border)
-    );
+    border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
 
-    background: color-mix(
-        in srgb,
-        var(--primary-soft) 38%,
-        var(--card)
-    );
+    background: color-mix(in srgb, var(--primary-soft) 38%, var(--card));
 }
 
 .column-index {
@@ -1210,11 +1044,7 @@ watch([period, insurer], reload);
     font-size: 8px;
     font-weight: 700;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 45%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 45%, transparent);
 }
 
 /* =========================================================
@@ -1230,16 +1060,11 @@ watch([period, insurer], reload);
 
     padding: 13px 15px;
 
-    border: 1px solid
-        color-mix(in srgb, var(--border) 72%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
 
     border-radius: 12px;
 
-    background: color-mix(
-        in srgb,
-        var(--cream-state) 48%,
-        var(--card)
-    );
+    background: color-mix(in srgb, var(--cream-state) 48%, var(--card));
 }
 
 .privacy-note-icon {
@@ -1276,11 +1101,7 @@ watch([period, insurer], reload);
     /* font-size: 10.5px; */
     line-height: 1.5;
 
-    color: color-mix(
-        in srgb,
-        var(--ink) 52%,
-        transparent
-    );
+    color: color-mix(in srgb, var(--ink) 52%, transparent);
 }
 
 /* =========================================================

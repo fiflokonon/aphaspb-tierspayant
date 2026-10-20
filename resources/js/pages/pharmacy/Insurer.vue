@@ -271,7 +271,7 @@ const reopen = (row: MonthRow) =>
                 hint="mois réglés et encours confondus"
             />
 
-               <KpiCard
+            <KpiCard
                 label="VOTRE DÉLAI MOYEN"
                 :value="
                     relationship.weightedDelayDays?.toLocaleString('fr-FR') ??
@@ -281,7 +281,7 @@ const reopen = (row: MonthRow) =>
                 hint="pondéré par les montants reçus"
             />
 
-              <KpiCard
+            <KpiCard
                 label="PÉNALITÉ RÉCLAMABLE"
                 :value="
                     relationship.penalty === null
@@ -319,7 +319,7 @@ const reopen = (row: MonthRow) =>
                 hint="pénalités payées ou annulées déduites"
             />
         </KpiRow> -->
-        <br>
+        <br />
 
         <DataTable title="" :columns="COLUMNS" :template="TEMPLATE">
             <DataTableRow

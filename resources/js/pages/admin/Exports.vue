@@ -105,7 +105,7 @@ watch([period, city, regions, insurer], reload);
 <template>
     <Head title="Exports CSV" />
 
-    <div class="exports-page">
+    <div class="exports-page admin-exports-page">
         <!-- =========================================================
              INTRODUCTION + FILTRES
         ========================================================== -->
@@ -414,22 +414,12 @@ watch([period, city, regions, insurer], reload);
 ================================================================ */
 
 .exports-page {
-    --page-bg: #f8faf9;
+    --page-bg: var(--rv-f8faf9);
     --surface: #ffffff;
-    --surface-soft: #fbfdfc;
+    --surface-soft: var(--rv-fbfdfc);
 
-    --ink: #243a32;
-    --muted: #788780;
-    --muted-light: #9da8a3;
-
-    --primary: #00664c;
-    --primary-dark: #005741;
-    --primary-soft: #eef7f3;
-
-    --gold: #b08a45;
-    --gold-soft: #fbf7ef;
-
-    --border: #e5ebe8;
+    --muted: var(--rv-788780);
+    --muted-light: var(--rv-9da8a3);
 
     width: 100%;
     padding: 0 10px 60px;
@@ -505,7 +495,12 @@ watch([period, city, regions, insurer], reload);
     border: 1px solid var(--border);
     border-radius: 20px;
 
-    background: linear-gradient(135deg, #ffffff 0%, #fbfdfc 55%, #f6faf8 100%);
+    background: linear-gradient(
+        135deg,
+        #ffffff 0%,
+        var(--rv-fbfdfc) 55%,
+        var(--rv-f6faf8) 100%
+    );
 
     /* box-shadow:
         0 10px 28px rgba(30, 60, 48, 0.045),
@@ -529,7 +524,7 @@ watch([period, city, regions, insurer], reload);
     background: linear-gradient(
         90deg,
         var(--primary),
-        #2b8c70 58%,
+        var(--rv-2b8c70) 58%,
         var(--gold)
     );
 }
@@ -652,7 +647,7 @@ watch([period, city, regions, insurer], reload);
 
     pointer-events: none;
 
-    border: 1px solid rgba(0, 102, 76, 0.05);
+    border: 1px solid var(--rv-00664c-a05);
 
     border-radius: 50%;
 }
@@ -672,7 +667,7 @@ watch([period, city, regions, insurer], reload);
     width: 200px;
     height: 200px;
 
-    border-color: rgba(176, 138, 69, 0.07);
+    border-color: var(--rv-b08a45-a07);
 }
 
 /* ================================================================
@@ -766,7 +761,7 @@ watch([period, city, regions, insurer], reload);
     background: linear-gradient(
         90deg,
         var(--primary),
-        #2b8c70 60%,
+        var(--rv-2b8c70) 60%,
         var(--gold)
     );
 }
@@ -834,7 +829,7 @@ watch([period, city, regions, insurer], reload);
 
     padding: 0 12px;
 
-    border: 1px solid rgba(0, 102, 76, 0.1);
+    border: 1px solid var(--rv-00664c-a1);
     border-radius: 9px;
 
     background: var(--primary-soft);
@@ -860,7 +855,7 @@ watch([period, city, regions, insurer], reload);
     margin-top: 19px;
     padding: 14px 15px;
 
-    border: 1px solid rgba(0, 102, 76, 0.05);
+    border: 1px solid var(--rv-00664c-a05);
     border-radius: 13px;
 
     background: var(--surface-soft);
@@ -963,7 +958,7 @@ watch([period, city, regions, insurer], reload);
     width: 43px;
     height: 43px;
 
-    border: 1px solid rgba(0, 102, 76, 0.08);
+    border: 1px solid var(--rv-00664c-a08);
     border-radius: 11px;
 
     background: var(--primary-soft);
@@ -1069,7 +1064,7 @@ watch([period, city, regions, insurer], reload);
 .download-button-secondary {
     border-color: var(--border);
 
-    background: rgba(0, 102, 76, 0.2);
+    background: var(--rv-00664c-a2);
 
     color: var(--ink);
 
@@ -1077,7 +1072,7 @@ watch([period, city, regions, insurer], reload);
 }
 
 .download-button-secondary:hover {
-    border-color: rgba(0, 102, 76, 0.2);
+    border-color: var(--rv-00664c-a2);
 
     background: var(--primary-soft);
 
@@ -1211,7 +1206,7 @@ watch([period, city, regions, insurer], reload);
 .column-tag:hover {
     transform: translateY(-1px);
 
-    border-color: rgba(0, 102, 76, 0.18);
+    border-color: var(--rv-00664c-a18);
 
     background: var(--primary-soft);
 
@@ -1243,10 +1238,10 @@ watch([period, city, regions, insurer], reload);
 
     padding: 17px 19px;
 
-    border: 1px solid rgba(176, 138, 69, 0.13);
+    border: 1px solid var(--rv-b08a45-a13);
     border-radius: 16px;
 
-    background: linear-gradient(135deg, #fbf7ef, #fffdf9);
+    background: linear-gradient(135deg, var(--rv-fbf7ef), var(--rv-fffdf9));
     /* 
     box-shadow:
         0 7px 20px rgba(75, 65, 40, 0.035); */
@@ -1264,10 +1259,10 @@ watch([period, city, regions, insurer], reload);
     width: 39px;
     height: 39px;
 
-    border: 1px solid rgba(176, 138, 69, 0.17);
+    border: 1px solid var(--rv-b08a45-a17);
     border-radius: 11px;
 
-    background: rgba(176, 138, 69, 0.1);
+    background: var(--rv-b08a45-a1);
 
     color: var(--gold);
 
@@ -1316,7 +1311,7 @@ watch([period, city, regions, insurer], reload);
 }
 
 .privacy-content strong {
-    color: #876a32;
+    color: var(--rv-876a32);
 
     font-weight: 850;
 }
@@ -1332,7 +1327,7 @@ watch([period, city, regions, insurer], reload);
     width: 58px;
     height: 58px;
 
-    border: 1px solid rgba(176, 138, 69, 0.2);
+    border: 1px solid var(--rv-b08a45-a2);
     border-radius: 50%;
 
     background: rgba(255, 255, 255, 0.7);

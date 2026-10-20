@@ -55,7 +55,7 @@ const model = defineModel<string | number | null>({ default: null });
         <select
             v-model="model"
             v-bind="$attrs"
-            class="h-full w-full cursor-pointer appearance-none bg-transparent pr-7  whitespace-nowrap outline-none"
+            class="h-full w-full cursor-pointer appearance-none bg-transparent pr-7 whitespace-nowrap outline-none"
             :class="[
                 size === 'compact' ? 'text-[11.5px]' : 'text-[15px]',
                 label

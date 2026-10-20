@@ -557,25 +557,15 @@ const summaryLine = computed(
 ================================================================ */
 
 .followup-page {
-    --page-bg: #f8faf9;
+    --page-bg: var(--rv-f8faf9);
     --surface: #ffffff;
-    --surface-soft: #fbfdfc;
+    --surface-soft: var(--rv-fbfdfc);
 
-    --ink: #243a32;
-    --muted: #788780;
-    --muted-light: #9da8a3;
+    --muted: var(--rv-788780);
+    --muted-light: var(--rv-9da8a3);
 
-    --primary: #00664c;
-    --primary-dark: #005741;
-    --primary-soft: #eef7f3;
-
-    --gold: #b08a45;
-    --gold-soft: #fbf7ef;
-
-    --danger: #b96558;
-    --danger-soft: #fbf1ef;
-
-    --border: #e5ebe8;
+    --danger: var(--rv-b96558);
+    --danger-soft: var(--rv-fbf1ef);
 
     /* padding: 0 10px 60px; */
     /* background: var(--page-bg); */
@@ -603,7 +593,7 @@ const summaryLine = computed(
     background: linear-gradient(
         135deg,
         rgba(255, 255, 255, 0.98),
-        rgba(247, 252, 249, 0.98)
+        var(--rv-f7fcf9-a98)
     );
     /* box-shadow:
         0 10px 28px rgba(30, 60, 48, 0.045),
@@ -621,7 +611,7 @@ const summaryLine = computed(
     background: linear-gradient(
         90deg,
         var(--primary),
-        #2b8c70 55%,
+        var(--rv-2b8c70) 55%,
         var(--gold)
     );
 }
@@ -720,7 +710,7 @@ const summaryLine = computed(
     position: absolute;
     z-index: 0;
     pointer-events: none;
-    border: 1px solid rgba(0, 102, 76, 0.05);
+    border: 1px solid var(--rv-00664c-a05);
     border-radius: 50%;
 }
 
@@ -736,7 +726,7 @@ const summaryLine = computed(
     bottom: -95px;
     width: 190px;
     height: 190px;
-    border-color: rgba(176, 138, 69, 0.08);
+    border-color: var(--rv-b08a45-a08);
 }
 
 /* ================================================================
@@ -812,7 +802,7 @@ const summaryLine = computed(
     background: linear-gradient(
         90deg,
         var(--primary),
-        #2b8c70 60%,
+        var(--rv-2b8c70) 60%,
         var(--gold)
     );
 }
@@ -847,7 +837,7 @@ const summaryLine = computed(
     align-items: center;
     gap: 8px;
     padding: 7px 11px;
-    border: 1px solid rgba(0, 102, 76, 0.1);
+    border: 1px solid var(--rv-00664c-a1);
     border-radius: 999px;
     color: var(--primary);
     background: var(--primary-soft);
@@ -861,7 +851,7 @@ const summaryLine = computed(
 ================================================================ */
 
 .followup-table {
-    border-top: 1px solid rgba(229, 235, 232, 0.8);
+    border-top: 1px solid var(--rv-e5ebe8-a8);
 }
 
 /* ================================================================
@@ -882,7 +872,7 @@ const summaryLine = computed(
     justify-content: center;
     width: 34px;
     height: 34px;
-    border: 1px solid rgba(0, 102, 76, 0.08);
+    border: 1px solid var(--rv-00664c-a08);
     border-radius: 10px;
     color: var(--primary);
     background: var(--primary-soft);
@@ -981,7 +971,7 @@ const summaryLine = computed(
 }
 
 .whatsapp-link:hover {
-    background: #e4f2ec;
+    background: var(--rv-e4f2ec);
     transform: translateY(-1px);
 }
 
@@ -1088,7 +1078,7 @@ const summaryLine = computed(
     justify-content: center;
     width: 22px;
     height: 22px;
-    border: 1px solid rgba(176, 138, 69, 0.2);
+    border: 1px solid var(--rv-b08a45-a2);
     border-radius: 7px;
     color: var(--gold);
     background: var(--gold-soft);
