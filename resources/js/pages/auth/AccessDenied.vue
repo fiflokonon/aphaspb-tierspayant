@@ -22,7 +22,7 @@ defineProps<{
                     </div>
 
                     <h1 class="mt-4 font-serif text-[24px]/[1.2] text-ink">
-                        Ce compte n'a pas accès au tiers-payant.
+                        Ce compte n'a pas accès à Kouètché.
                     </h1>
 
                     <p class="mt-3 text-[13px]/[1.55] text-ink/60">

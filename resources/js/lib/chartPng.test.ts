@@ -193,6 +193,21 @@ describe('exportChartToPng', () => {
         expect(canvasSize.width / 2).toBeGreaterThanOrEqual(760);
     });
 
+    test('the caption names the platform', async () => {
+        await exportChartToPng(containerWith(760, 220), {
+            title: 'Évolution du délai de paiement',
+            filename: 'delais',
+        });
+
+        expect(
+            drawn.some(
+                (one) =>
+                    one.op === 'text' &&
+                    one.text.startsWith('APHASPB · Kouètché : '),
+            ),
+        ).toBe(true);
+    });
+
     test('a container holding no chart yet draws nothing', async () => {
         const empty = { querySelector: () => null } as unknown as HTMLElement;
 

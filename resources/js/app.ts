@@ -3,7 +3,7 @@ import ConsoleShellLayout from '@/layouts/ConsoleShellLayout.vue';
 import OnboardingLayout from '@/layouts/OnboardingLayout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Kouètché';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

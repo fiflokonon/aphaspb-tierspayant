@@ -28,7 +28,7 @@ defineProps<{
 
                     <p class="mt-3 text-[13px]/[1.55] text-ink/60">
                         Votre connexion au site de l'APhaSPB a bien fonctionné.
-                        Un espace tiers-payant existe cependant déjà sous cette
+                        Un espace Kouètché existe cependant déjà sous cette
                         adresse, ouvert depuis un autre compte du site. Par
                         prudence, rien n'a été modifié ici et aucune session n'a
                         été ouverte : deux comptes distincts ne peuvent pas
