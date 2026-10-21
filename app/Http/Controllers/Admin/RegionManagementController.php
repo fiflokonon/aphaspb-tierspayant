@@ -17,6 +17,10 @@ use Inertia\Response;
  * A commune belongs to one region at most: the screen only offers the free
  * ones, and SaveRegionRequest refuses a commune already taken elsewhere.
  * Deleting a region frees its communes, it never deletes them.
+ *
+ * The screen picks communes by department, since the association's regions
+ * follow the departments; the link stays per commune, so a region can still
+ * take a department in part.
  */
 class RegionManagementController extends Controller
 {
@@ -35,10 +39,11 @@ class RegionManagementController extends Controller
                 ]),
             'cities' => City::query()
                 ->orderBy('name')
-                ->get(['id', 'name', 'region_id'])
+                ->get(['id', 'name', 'department', 'region_id'])
                 ->map(fn (City $city) => [
                     'id' => $city->id,
                     'name' => $city->name,
+                    'department' => $city->department,
                     'regionId' => $city->region_id,
                 ]),
         ]);
