@@ -20,7 +20,7 @@ defineProps<{
 
             <div class="topbar-context-copy">
                 <span class="topbar-kicker">ESPACE PROFESSIONNEL</span>
-                <span class="topbar-title">Tiers payant</span>
+                <span class="topbar-title">Kouètché</span>
             </div>
 
             <span class="topbar-divider"></span>
