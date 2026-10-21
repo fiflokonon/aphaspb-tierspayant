@@ -80,18 +80,82 @@ export function toggleDepartment(
 }
 
 /**
- * The departments a region holds, with how many of their communes: `held`
- * below `total` marks a department taken in part.
+ * One department as the region form shows it.
+ *
+ * `selectable` are the communes the edited region may take — its own and
+ * the free ones; `elsewhere` counts, per region, the communes already taken
+ * by another region, which the form shows but never offers.
  */
-export function regionCoverage(
+export type DepartmentTile = {
+    department: string;
+    selectable: RegionCity[];
+    total: number;
+    elsewhere: { regionId: number; count: number }[];
+};
+
+/**
+ * Every department, for the region being edited (`editingId`, or null for a
+ * new one).
+ */
+export function departmentTiles(
     cities: RegionCity[],
-    regionId: number,
+    editingId: number | null,
+): DepartmentTile[] {
+    return groupByDepartment(cities).map(({ department, cities: communes }) => {
+        const elsewhere = new Map<number, number>();
+
+        for (const city of communes) {
+            if (city.regionId !== null && city.regionId !== editingId) {
+                elsewhere.set(
+                    city.regionId,
+                    (elsewhere.get(city.regionId) ?? 0) + 1,
+                );
+            }
+        }
+
+        return {
+            department,
+            selectable: communes.filter(
+                (city) => city.regionId === null || city.regionId === editingId,
+            ),
+            total: communes.length,
+            elsewhere: [...elsewhere].map(([regionId, count]) => ({
+                regionId,
+                count,
+            })),
+        };
+    });
+}
+
+/**
+ * The departments `isHeld` picks communes from, with how many of their
+ * communes: `held` below `total` marks a department taken in part.
+ */
+function coverage(
+    cities: RegionCity[],
+    isHeld: (city: RegionCity) => boolean,
 ): DepartmentCoverage[] {
     return groupByDepartment(cities)
         .map(({ department, cities: communes }) => ({
             department,
-            held: communes.filter((city) => city.regionId === regionId).length,
+            held: communes.filter(isHeld).length,
             total: communes.length,
         }))
-        .filter((coverage) => coverage.held > 0);
+        .filter((entry) => entry.held > 0);
+}
+
+/** The departments a region holds, whole or in part. */
+export function regionCoverage(
+    cities: RegionCity[],
+    regionId: number,
+): DepartmentCoverage[] {
+    return coverage(cities, (city) => city.regionId === regionId);
+}
+
+/** The departments a selection of communes reaches, whole or in part. */
+export function selectionCoverage(
+    cities: RegionCity[],
+    selected: number[],
+): DepartmentCoverage[] {
+    return coverage(cities, (city) => selected.includes(city.id));
 }

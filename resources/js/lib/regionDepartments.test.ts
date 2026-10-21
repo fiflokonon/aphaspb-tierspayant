@@ -2,8 +2,10 @@ import { describe, expect, test } from 'vitest';
 import type { RegionCity } from './regionDepartments';
 import {
     departmentSelection,
+    departmentTiles,
     groupByDepartment,
     regionCoverage,
+    selectionCoverage,
     toggleDepartment,
 } from './regionDepartments';
 
@@ -60,5 +62,39 @@ describe('regionCoverage', () => {
             { department: 'Ouémé', held: 2, total: 3 },
             { department: 'Plateau', held: 2, total: 2 },
         ]);
+    });
+});
+
+describe('selectionCoverage', () => {
+    test('reads the selection, not the stored region', () => {
+        expect(selectionCoverage([...oueme, ...plateau], [3, 4])).toEqual([
+            { department: 'Ouémé', held: 1, total: 3 },
+            { department: 'Plateau', held: 1, total: 2 },
+        ]);
+    });
+});
+
+describe('departmentTiles', () => {
+    const cities = [...oueme, city(6, 'Ouémé', 5), ...plateau];
+
+    test('a new region is offered only the free communes, the rest counted per region', () => {
+        const [ouemeTile, plateauTile] = departmentTiles(cities, null);
+
+        expect(ouemeTile.selectable.map((c) => c.id)).toEqual([3]);
+        expect(ouemeTile.total).toBe(4);
+        expect(ouemeTile.elsewhere).toEqual([
+            { regionId: 3, count: 2 },
+            { regionId: 5, count: 1 },
+        ]);
+        expect(plateauTile.selectable).toEqual([]);
+    });
+
+    test('the edited region keeps its own communes on offer', () => {
+        const [ouemeTile, plateauTile] = departmentTiles(cities, 3);
+
+        expect(ouemeTile.selectable.map((c) => c.id)).toEqual([1, 2, 3]);
+        expect(ouemeTile.elsewhere).toEqual([{ regionId: 5, count: 1 }]);
+        expect(plateauTile.selectable.map((c) => c.id)).toEqual([4, 5]);
+        expect(plateauTile.elsewhere).toEqual([]);
     });
 });
