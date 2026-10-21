@@ -18,6 +18,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/js/** | .ai/rules/js.md |
 | resources/js/layouts/**, app/Support/ConsoleNavigation.php | .ai/rules/layouts-support.md |
 | resources/js/layouts/** | .ai/rules/layouts.md |
+| app/Http/Middleware/RecordAuditLog.php | .ai/rules/middleware.md |
 | app/Models/Declaration.php, app/Models/Insurer.php | .ai/rules/models.md |
 | app/Services/Network/** | .ai/rules/network.md |
 | app/Http/Controllers/Onboarding/** | .ai/rules/onboarding.md |

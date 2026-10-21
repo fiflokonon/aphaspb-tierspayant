@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureOnboarded;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RecordAuditLog;
 use App\Http\Middleware\SetPharmacyUrlDefaults;
 use App\Http\Middleware\VerifyJoomlaTokenVersion;
 use Illuminate\Foundation\Application;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
             SetPharmacyUrlDefaults::class,
             VerifyJoomlaTokenVersion::class,
+            RecordAuditLog::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
