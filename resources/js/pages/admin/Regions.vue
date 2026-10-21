@@ -5,6 +5,13 @@ import { computed, ref } from 'vue';
 import FormField from '@/components/aphaspb/FormField.vue';
 import TextInput from '@/components/aphaspb/TextInput.vue';
 import ConsoleHeader from '@/layouts/console/ConsoleHeader.vue';
+import type { RegionCity } from '@/lib/regionDepartments';
+import {
+    departmentSelection,
+    groupByDepartment,
+    regionCoverage,
+    toggleDepartment,
+} from '@/lib/regionDepartments';
 
 type Region = {
     id: number;
@@ -13,15 +20,9 @@ type Region = {
     cities: string[];
 };
 
-type City = {
-    id: number;
-    name: string;
-    regionId: number | null;
-};
-
 const props = defineProps<{
     regions: Region[];
-    cities: City[];
+    cities: RegionCity[];
 }>();
 
 /** La région en cours d'édition, ou null pour en créer une. */
@@ -35,21 +36,43 @@ const form = useForm({
 });
 
 /**
- * Les villes que la région éditée peut prendre : les siennes et les libres.
+ * Les villes que la région éditée peut prendre — les siennes et les libres —,
+ * regroupées par département.
  *
  * Une ville d'une autre région n'est jamais proposée — le serveur la
- * refuserait de toute façon, une ville n'appartenant qu'à une région.
+ * refuserait de toute façon, une ville n'appartenant qu'à une région. La
+ * recherche porte sur la ville ou sur son département.
  */
-const selectableCities = computed(() => {
+const selectableDepartments = computed(() => {
     const needle = citySearch.value.trim().toLocaleLowerCase('fr');
+    const matches = (text: string) =>
+        text.toLocaleLowerCase('fr').includes(needle);
 
-    return props.cities.filter(
-        (city) =>
-            (city.regionId === null || city.regionId === editing.value) &&
-            (needle === '' ||
-                city.name.toLocaleLowerCase('fr').includes(needle)),
+    return groupByDepartment(
+        props.cities.filter(
+            (city) =>
+                (city.regionId === null || city.regionId === editing.value) &&
+                (needle === '' ||
+                    matches(city.name) ||
+                    matches(city.department)),
+        ),
     );
 });
+
+/** Les départements de chaque région, entiers ou partiels. */
+const coverageByRegion = computed(
+    () =>
+        new Map(
+            props.regions.map((region) => [
+                region.id,
+                regionCoverage(props.cities, region.id),
+            ]),
+        ),
+);
+
+function selectDepartment(cities: RegionCity[]) {
+    form.city_ids = toggleDepartment(cities, form.city_ids);
+}
 
 const freeCityCount = computed(
     () => props.cities.filter((city) => city.regionId === null).length,
@@ -110,9 +133,11 @@ const cityError = computed(
         <ConsoleHeader title="Régions pharmaceutiques" />
 
         <p class="max-w-[720px] text-[14px]/[1.55] text-ink/60">
-            Une région regroupe plusieurs villes. Une ville n'appartient qu'à
-            une seule région : celles déjà rattachées ne sont pas proposées
-            ailleurs. L'officine hérite de la région de sa ville.
+            Une région regroupe des départements : cocher un département prend
+            toutes ses villes libres, et l'on peut encore en décocher une. Une
+            ville n'appartient qu'à une seule région : celles déjà rattachées ne
+            sont pas proposées ailleurs. L'officine hérite de la région de sa
+            ville.
         </p>
 
         <div class="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
@@ -137,37 +162,75 @@ const cityError = computed(
                 </FormField>
 
                 <FormField
-                    label="VILLES"
+                    label="DÉPARTEMENTS ET VILLES"
                     :error="cityError"
                     :hint="`${form.city_ids.length} sélectionnée(s) · ${freeCityCount} ville(s) sans région`"
                 >
                     <input
                         v-model="citySearch"
                         type="search"
-                        placeholder="Rechercher une ville…"
-                        aria-label="Rechercher une ville"
+                        placeholder="Rechercher un département ou une ville…"
+                        aria-label="Rechercher un département ou une ville"
                         class="mb-2 h-[38px] w-full rounded-[10px] border-[1.5px] border-ink/[0.13] bg-card px-3 text-[13px] text-ink outline-none focus:border-gold-mid/[0.55]"
                     />
 
                     <div
                         class="max-h-[280px] overflow-y-auto rounded-[10px] border border-ink/[0.08]"
                     >
-                        <label
-                            v-for="city in selectableCities"
-                            :key="city.id"
-                            class="flex cursor-pointer items-center gap-2 border-b border-ink/[0.05] px-3 py-2 text-[13px] text-ink last:border-b-0 hover:bg-cream-state"
+                        <div
+                            v-for="group in selectableDepartments"
+                            :key="group.department"
+                            class="border-b border-ink/[0.05] last:border-b-0"
                         >
-                            <input
-                                v-model="form.city_ids"
-                                type="checkbox"
-                                :value="city.id"
-                                class="accent-[var(--primary)]"
-                            />
-                            {{ city.name }}
-                        </label>
+                            <label
+                                class="flex cursor-pointer items-center gap-2 bg-cream-state/60 px-3 py-2 text-[13px] font-bold text-ink hover:bg-cream-state"
+                            >
+                                <input
+                                    type="checkbox"
+                                    :checked="
+                                        departmentSelection(
+                                            group.cities,
+                                            form.city_ids,
+                                        ) === 'all'
+                                    "
+                                    :indeterminate="
+                                        departmentSelection(
+                                            group.cities,
+                                            form.city_ids,
+                                        ) === 'some'
+                                    "
+                                    class="accent-[var(--primary)]"
+                                    @change="selectDepartment(group.cities)"
+                                />
+                                <span class="flex-1">{{
+                                    group.department
+                                }}</span>
+                                <span
+                                    class="text-[12.5px] font-medium text-ink/45"
+                                >
+                                    {{ group.cities.length }} ville{{
+                                        group.cities.length > 1 ? 's' : ''
+                                    }}
+                                </span>
+                            </label>
+
+                            <label
+                                v-for="city in group.cities"
+                                :key="city.id"
+                                class="flex cursor-pointer items-center gap-2 py-2 pr-3 pl-8 text-[13px] text-ink hover:bg-cream-state"
+                            >
+                                <input
+                                    v-model="form.city_ids"
+                                    type="checkbox"
+                                    :value="city.id"
+                                    class="accent-[var(--primary)]"
+                                />
+                                {{ city.name }}
+                            </label>
+                        </div>
 
                         <p
-                            v-if="selectableCities.length === 0"
+                            v-if="selectableDepartments.length === 0"
                             class="px-3 py-3 text-[13px] text-ink/45"
                         >
                             Aucune ville disponible.
@@ -259,12 +322,19 @@ const cityError = computed(
                         class="mt-3 flex flex-wrap gap-[6px]"
                     >
                         <li
-                            v-for="name in region.cities"
-                            :key="name"
+                            v-for="coverage in coverageByRegion.get(region.id)"
+                            :key="coverage.department"
                             class="flex items-center gap-1 rounded-full bg-cream-state px-[10px] py-[4px] text-[12.5px] font-medium text-ink/75"
                         >
                             <MapPin :size="12" aria-hidden="true" />
-                            {{ name }}
+                            {{ coverage.department }}
+                            <span
+                                v-if="coverage.held < coverage.total"
+                                class="text-ink/45"
+                            >
+                                · {{ coverage.held }}/{{ coverage.total }}
+                                villes
+                            </span>
                         </li>
                     </ul>
                 </article>

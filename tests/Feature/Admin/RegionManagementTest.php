@@ -12,8 +12,8 @@ beforeEach(function () {
 
 test('the screen lists the regions with their communes, and every commune with its region', function () {
     $region = Region::factory()->create(['name' => 'Sud']);
-    $cotonou = City::factory()->create(['name' => 'Cotonou', 'region_id' => $region->id]);
-    $parakou = City::factory()->create(['name' => 'Parakou']);
+    $cotonou = City::factory()->create(['name' => 'Cotonou', 'department' => 'Littoral', 'region_id' => $region->id]);
+    $parakou = City::factory()->create(['name' => 'Parakou', 'department' => 'Borgou']);
 
     $this->actingAs($this->admin)
         ->get(route('admin.regions'))
@@ -24,8 +24,8 @@ test('the screen lists the regions with their communes, and every commune with i
             ->where('regions.0.cityIds', [$cotonou->id])
             ->where('regions.0.cities', ['Cotonou'])
             ->where('cities', [
-                ['id' => $cotonou->id, 'name' => 'Cotonou', 'regionId' => $region->id],
-                ['id' => $parakou->id, 'name' => 'Parakou', 'regionId' => null],
+                ['id' => $cotonou->id, 'name' => 'Cotonou', 'department' => 'Littoral', 'regionId' => $region->id],
+                ['id' => $parakou->id, 'name' => 'Parakou', 'department' => 'Borgou', 'regionId' => null],
             ]),
         );
 });
