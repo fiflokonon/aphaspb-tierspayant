@@ -4,13 +4,16 @@ use App\Data\InsufficientData;
 use App\Data\InsurerIndicators;
 use App\Data\Period;
 use App\Enums\DeclarationStatus;
+use App\Models\City;
 use App\Models\Declaration;
 use App\Models\Insurer;
 use App\Models\Pharmacy;
+use App\Models\Region;
 use App\Services\Network\InsurerPenaltyAggregates;
 use App\Services\Network\NetworkPdfExport;
 use App\Services\Network\NetworkPenaltyJournal;
 use App\Services\Network\NetworkStatsService;
+use App\Services\Network\RegionScopes;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -176,4 +179,22 @@ test('on MySQL, accents and case make one city for the filter and the buckets', 
     expect(Pharmacy::filterableCities())->toHaveCount(3)
         ->and($this->stats->aggregatedAmounts(...[...$period, 'Bohicon'])['declaringPharmacies'])->toBe(5)
         ->and($this->stats->aggregatedAmounts(...$period)['withheldReason'])->toBe('city-share');
+})->group('mysql');
+
+test('on MySQL, the queries grouped on the canonical city pass ONLY_FULL_GROUP_BY', function () {
+    // Production, 27/10/2026 : erreur 1055 au filtre par régions. Le GROUP BY
+    // sur la sous-requête corrélée passe sous SQLite, pas sous MySQL strict.
+    if (DB::connection()->getDriverName() !== 'mysql') {
+        $this->markTestSkipped('MySQL uniquement.');
+    }
+
+    $region = Region::factory()->create();
+    City::factory()->create(['name' => 'Bohicon', 'region_id' => $region->id]);
+    unpaidIn($this->insurer, 'Bohicon', 3);
+    unpaidIn($this->insurer, 'bohicón', 2);
+    $scope = app(RegionScopes::class)->fromIds([$region->id]);
+    $period = [new Period(2026, 3), new Period(2026, 3)];
+
+    expect($scope->regionOf)->toBe(['Bohicon' => $region->id])
+        ->and($this->stats->monthlyByInsurer([$this->insurer->id], ...$period)[$this->insurer->id][0]['cityPharmacies'])->toBe(['Bohicon' => 5]);
 })->group('mysql');

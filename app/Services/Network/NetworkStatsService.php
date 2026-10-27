@@ -14,6 +14,7 @@ use App\Support\MonthLabel;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * The single path by which an APhaSPB account reads declarations.
@@ -1022,15 +1023,23 @@ class NetworkStatsService
      */
     protected function perCity(Builder $query, array $groups = []): Collection
     {
-        return $query
+        $columns = array_map(fn (string $group): string => Str::afterLast($group, '.'), $groups);
+
+        // Groupé sur la clé canonique : même compartiment que partout
+        // ailleurs, quelle que soit la graphie (CityPartition). Clé calculée
+        // dans une table dérivée : MySQL (ONLY_FULL_GROUP_BY) refuse un
+        // GROUP BY sur la sous-requête corrélée.
+        $keyed = $query
             ->join('pharmacies', 'pharmacies.id', '=', 'declarations.pharmacy_id')
             ->select($groups)
-            // Groupé sur la clé canonique : même compartiment que partout
-            // ailleurs, quelle que soit la graphie (CityPartition).
-            ->selectRaw(CityPartition::canonicalCitySql('pharmacies').' as city')
-            ->selectRaw('COUNT(DISTINCT declarations.pharmacy_id) as pharmacies')
-            ->groupBy($groups)
-            ->groupByRaw(CityPartition::canonicalCitySql('pharmacies'))
+            ->addSelect('declarations.pharmacy_id')
+            ->selectRaw(CityPartition::canonicalCitySql('pharmacies').' as city');
+
+        return DB::query()
+            ->fromSub($keyed, 'keyed')
+            ->select([...$columns, 'city'])
+            ->selectRaw('COUNT(DISTINCT pharmacy_id) as pharmacies')
+            ->groupBy([...$columns, 'city'])
             ->get();
     }
 
