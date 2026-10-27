@@ -407,6 +407,10 @@ function submitWhenComplete(event: Event, submit: () => void) {
                         Saisi, pas incrémenté : un administrateur qui recopie
                         une convention connaît le chiffre. Enregistré au
                         changement, donc la ligne ne porte pas de bouton.
+                        `submit()` et non `submit` : passé tel quel, Vue lui
+                        donne l'événement, que Inertia prend pour le bouton
+                        d'envoi — new FormData() lève une TypeError et rien
+                        ne part.
                     -->
                     <div>
                         <Form
@@ -424,7 +428,7 @@ function submitWhenComplete(event: Event, submit: () => void) {
                                     :disabled="processing"
                                     :aria-label="`Délai standard de ${row.name} en jours`"
                                     class="row-delay-input"
-                                    @change="submit"
+                                    @change="submit()"
                                 />
 
                                 <span class="row-delay-unit"> j </span>

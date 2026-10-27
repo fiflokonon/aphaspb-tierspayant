@@ -37,3 +37,6 @@ Motif : `resources/js/lib/chartPng.ts` a cassé deux fois en silence sur du calc
 Environnement `node`, **pas jsdom** : les tests bouchonnent eux-mêmes le peu de DOM nécessaire. Conséquence à connaître — ce runner couvre **la logique pure** (calculs, tri, mise en forme, géométrie). Il ne monte aucun composant Vue et ne voit **ni le CSS, ni les media queries, ni le rendu**. Une régression de mise en page reste invisible autrement qu'au navigateur : voir la règle sur `lg:h-screen lg:sticky` dans layouts.md, toujours valable.
 
 `vitest.config.ts` est dans les `ignores` d'eslint, comme `vite.config.ts`.
+
+## Appeler submit() de <Form> avec des parenthèses
+Dans le slot de `<Form>` d'Inertia, `submit(submitter?)` prend un bouton d'envoi en argument. `@change="submit"` lui passe l'événement : `new FormData(form, event)` lève une TypeError et aucune requête ne part, sans aucune erreur visible à l'écran (bug du délai standard sur admin/Insurers, 27/10/2026). Toujours écrire `@change="submit()"` (idem pour @input/@blur).

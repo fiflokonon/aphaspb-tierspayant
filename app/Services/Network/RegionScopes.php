@@ -91,14 +91,19 @@ class RegionScopes
      */
     protected function regionOfEveryCity(): array
     {
-        $key = CityPartition::canonicalCitySql('pharmacies');
-
-        return DB::table('pharmacies')
+        // Clé calculée dans une table dérivée, groupée dehors : MySQL
+        // (ONLY_FULL_GROUP_BY) refuse un GROUP BY sur la sous-requête corrélée.
+        $keyed = DB::table('pharmacies')
             ->join('cities', 'cities.name', '=', 'pharmacies.city')
             ->whereNotNull('cities.region_id')
-            ->selectRaw($key.' as city')
-            ->selectRaw('MIN(cities.region_id) as region_id')
-            ->groupByRaw($key)
+            ->selectRaw(CityPartition::canonicalCitySql('pharmacies').' as city')
+            ->addSelect('cities.region_id');
+
+        return DB::query()
+            ->fromSub($keyed, 'keyed')
+            ->select('city')
+            ->selectRaw('MIN(region_id) as region_id')
+            ->groupBy('city')
             ->get()
             ->mapWithKeys(fn (object $row): array => [CityPartition::key($row->city) => (int) $row->region_id])
             ->all();
