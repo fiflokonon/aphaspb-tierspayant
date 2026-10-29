@@ -8,6 +8,10 @@
  * chaque case émet aussitôt la nouvelle sélection, à charge pour la page de
  * recharger ses props.
  *
+ * La puce a une largeur plafonnée : au-delà, le résumé est tronqué par une
+ * ellipse (texte complet en infobulle) plutôt que de pousser les boutons
+ * voisins hors de la barre.
+ *
  * Le serveur fait primer une ville choisie sur les régions : la page vide
  * l'une quand on choisit l'autre, pour que l'écran dise ce qui est filtré.
  */
@@ -59,7 +63,12 @@ function toggle(id: number, checked: boolean | 'indeterminate') {
         <DropdownMenuTrigger
             :disabled="regions.length === 0"
             class="relative flex shrink-0 cursor-pointer items-baseline rounded-[10px] border border-input bg-card pr-7 whitespace-nowrap outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            :class="size === 'compact' ? 'h-[32px]' : 'h-[42px]'"
+            :class="
+                size === 'compact'
+                    ? 'h-[32px] max-w-[220px]'
+                    : 'h-[42px] max-w-[260px]'
+            "
+            :title="summary"
             :aria-label="`Filtrer par régions : ${summary}`"
         >
             <span
@@ -74,7 +83,7 @@ function toggle(id: number, checked: boolean | 'indeterminate') {
                 {{ label }}
             </span>
             <span
-                class="self-center"
+                class="min-w-0 self-center truncate"
                 :class="[
                     size === 'compact' ? 'text-[11.5px]' : 'text-[15px]',
                     label ? 'pl-[6px]' : 'pl-[13px]',
